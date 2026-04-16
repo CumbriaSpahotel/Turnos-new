@@ -132,10 +132,10 @@
                         turnLabel = t.turno.TipoInterpretado || t.turno.TurnoOriginal || '';
                     }
 
-                    const l = turnLabel.toLowerCase();
+                    const l = turnLabel.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
                     // Detectar Bajas (B, Baja, Baja Médica) o Permisos (P, Per, Permiso)
-                    const isBaja = l === 'b' || l.includes('baja');
-                    const isPermiso = l === 'p' || l.includes('permis');
+                    const isBaja = l.startsWith('b') || l.includes('baja');
+                    const isPermiso = l.startsWith('p') || l.includes('permis');
 
                     if (isBaja || isPermiso) {
                         if (empFilter && !t.empleado.toLowerCase().includes(empFilter)) return;
@@ -151,7 +151,9 @@
             });
 
             if (bajas.length === 0) {
-                container.innerHTML = `<div style="padding:5rem; text-align:center; opacity:0.5;">No hay bajas o permisos vigentes.</div>`;
+                let msg = 'No hay bajas o permisos vigentes.';
+                if (timeFilter === 'upcoming') msg = 'No hay <b>próximas</b> bajas o permisos. Prueba a cambiar el filtro a "Ver Todos".';
+                container.innerHTML = `<div style="padding:5rem; text-align:center; opacity:0.5;">${msg}</div>`;
                 return;
             }
 

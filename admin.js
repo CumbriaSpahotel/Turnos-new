@@ -106,7 +106,8 @@ window.updateDashboardStats = () => {
     const next7Str = next7.toISOString().split('T')[0];
     (data.schedule || []).forEach(g => {
         g.turnos.forEach(t => {
-            if (t.fecha >= today && t.fecha <= next7Str && String(t.turno).toLowerCase().includes('vacaciones')) nextVac++;
+            const raw = typeof t.turno === 'string' ? t.turno : (t.turno.TipoInterpretado || t.turno.TurnoOriginal || '');
+            if (t.fecha >= today && t.fecha <= next7Str && window.classify(raw) === 'v') nextVac++;
         });
     });
     const elVac = document.getElementById('stat-next-vac');
@@ -149,14 +150,14 @@ window.getMonday = (date) => {
 };
 
 window.classify = (raw) => {
-    const s = String(raw || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-    if (!s) return '';
+    if (!raw) return '';
+    const s = String(raw).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
+    if (s.startsWith('v')) return 'v';
+    if (s.startsWith('b') || s.includes('baja') || s.includes('permis') || s === 'p') return 'b';
+    if (s === 'd' || s.startsWith('desc')) return 'd';
     if (s.startsWith('m')) return 'm';
     if (s.startsWith('t')) return 't';
     if (s.startsWith('n')) return 'n';
-    if (s.startsWith('d')) return 'd';
-    if (s.startsWith('v') || s.includes('vacacion')) return 'v';
-    if (s.startsWith('b') || s.includes('baja') || s.includes('permiso')) return 'b';
     return '';
 };
 

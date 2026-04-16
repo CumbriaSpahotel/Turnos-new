@@ -133,9 +133,9 @@
                         turnLabel = t.turno.TipoInterpretado || t.turno.TurnoOriginal || '';
                     }
 
-                    const l = turnLabel.toLowerCase();
+                    const l = turnLabel.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
                     // Detectar Vacaciones (V, Vac, Vacaciones, etc.)
-                    if (l === 'v' || l.includes('vacac') || l.includes('vac. ')) {
+                    if (l.startsWith('v')) {
                         if (empFilter && !t.empleado.toLowerCase().includes(empFilter)) return;
                         vacations.push({ hotel: g.hotel, fecha: t.fecha, empleado: t.empleado, label: turnLabel });
                     }
@@ -143,7 +143,9 @@
             });
 
             if (vacations.length === 0) {
-                container.innerHTML = `<div style="padding:5rem; text-align:center; opacity:0.5;">No hay vacaciones registradas o el cuadrante está vacío.</div>`;
+                let msg = 'No hay vacaciones registradas o el cuadrante está vacío.';
+                if (timeFilter === 'upcoming') msg = 'No hay <b>próximas</b> vacaciones programadas. Prueba a cambiar el filtro a "Ver Todos".';
+                container.innerHTML = `<div style="padding:5rem; text-align:center; opacity:0.5;">${msg}</div>`;
                 return;
             }
 
