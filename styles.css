@@ -86,7 +86,36 @@ header {
   font-weight: 700;
 }
 
-.controls-container { display: flex; gap: 10px; align-items: center; }
+.controls-container { display: flex; gap: 12px; align-items: center; flex-wrap: nowrap; }
+
+.nav-weeks {
+  display: flex;
+  background: var(--bg2);
+  padding: 4px;
+  border-radius: 14px;
+  border: 1px solid var(--border);
+  gap: 4px;
+  flex-shrink: 0;
+}
+.nav-weeks .btn {
+  padding: 0.5rem 0.8rem;
+  font-size: 0.75rem;
+  border: none;
+  background: transparent;
+  color: var(--text-dim);
+  border-radius: 10px;
+  white-space: nowrap;
+}
+.nav-weeks .btn:hover {
+  background: var(--surface);
+  color: var(--accent);
+}
+.nav-weeks .btn#btnTodayW {
+  background: var(--accent);
+  color: white;
+  font-weight: 800;
+  box-shadow: 0 2px 8px rgba(22, 119, 255, 0.2);
+}
 
 .field select, .field input {
   background: var(--bg2);
