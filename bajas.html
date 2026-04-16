@@ -5,8 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TurnosWeb — Bajas y Permisos</title>
     <link rel="stylesheet" href="admin.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/themes/dark.css">
     <style>
         .nav-item.active { background: var(--accent-dim); color: var(--accent); border-right: 3px solid var(--accent); }
+        .flatpickr-calendar { background: var(--bg2) !important; border: 1px solid var(--border) !important; box-shadow: var(--shadow-lg) !important; }
+        .flatpickr-day.selected { background: var(--accent) !important; border-color: var(--accent) !important; }
+        .flatpickr-months .flatpickr-month { background: var(--bg2) !important; color: white !important; }
     </style>
 </head>
 <body class="dark-mode">
@@ -67,15 +72,17 @@
                     <h1 class="page-title">Bajas Médicas y Permisos</h1>
                     <p class="page-subtitle">Registro de ausencias justificadas y permisos retribuidos</p>
                 </div>
-                <div class="header-controls">
-                    <select id="filterTime" class="btn active" style="background:var(--accent); color:white;" onchange="renderBajas()">
-                        <option value="all">Ver Todos</option>
-                        <option value="upcoming" selected>Próximos</option>
-                        <option value="past">Pasados</option>
-                    </select>
-                    <input type="date" id="filterDate" class="btn" onchange="renderBajas()">
-                    <input type="text" id="filterEmp" class="btn" oninput="renderBajas()" placeholder="Buscar empleado...">
-                    <select id="filterHotel" class="btn" onchange="renderBajas()">
+                <div class="header-controls" style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
+                    <div id="rangeTrigger" class="date-range-picker-premium" style="display:flex; align-items:center; gap:10px; background:var(--bg3); border:1px solid var(--border); padding:8px 15px; border-radius:12px; cursor:pointer; min-width:260px;">
+                         <span style="font-size:1.1rem;" data-toggle>📅</span>
+                        <div style="display:flex; flex-direction:column;" data-toggle>
+                            <span style="font-size:0.6rem; color:var(--text-dim); font-weight:800; text-transform:uppercase; letter-spacing:0.05em;">Periodo Seleccionado</span>
+                            <span id="rangeLabel" style="font-size:0.85rem; font-weight:700; color:var(--accent);">Seleccionar Rango...</span>
+                        </div>
+                        <input type="text" id="filterDateRange" data-input style="display:none;">
+                    </div>
+                    <input type="text" id="filterEmp" class="btn" oninput="renderBajas()" placeholder="Buscar empleado..." style="flex:1; min-width:150px;">
+                    <select id="filterHotel" class="btn" onchange="renderBajas()" style="min-width:140px;">
                         <option value="">— Hotel —</option>
                         <option value="Sercotel Guadiana">Sercotel Guadiana</option>
                         <option value="Cumbria Spa&Hotel">Cumbria Spa&Hotel</option>
@@ -91,12 +98,14 @@
 
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/es.js"></script>
     <script src="firebase-config.js"></script>
 
     <script>
         const $ = (s) => document.querySelector(s);
-        
         let FULL_DATA = null;
+        let CURRENT_RANGE = { start: '', end: '' };
 
         function renderBajas() {
             const container = $('#bajasList');
@@ -106,10 +115,10 @@
                 return;
             }
 
-            const hotelFilter = $('#filterHotel').value;
-            const empFilter = $('#filterEmp').value.toLowerCase();
-            const timeFilter = $('#filterTime').value;
-            const dateFilter = $('#filterDate').value; // YYYY-MM-DD
+            const hotelFilter = $('#filterHotel')?.value || '';
+            const empFilter = $('#filterEmp')?.value.toLowerCase() || '';
+            const dStart = CURRENT_RANGE.start;
+            const dEnd = CURRENT_RANGE.end;
             const todayStr = new Date().toISOString().split('T')[0];
 
             let bajas = [];
@@ -117,14 +126,9 @@
                 if (hotelFilter && g.hotel !== hotelFilter) return;
                 if (!g.turnos) return;
                 g.turnos.forEach(t => {
-                    // Si hay filtro de fecha específica y no coincide, saltar
-                    if (dateFilter && t.fecha !== dateFilter) return;
-
-                    // Filtro de Tiempo (Próximos / Pasados) si no hay fecha específica marcada
-                    if (!dateFilter) {
-                        if (timeFilter === 'upcoming' && t.fecha < todayStr) return;
-                        if (timeFilter === 'past' && t.fecha > todayStr) return;
-                    }
+                    // Filtro de Rango
+                    if (dStart && t.fecha < dStart) return;
+                    if (dEnd && t.fecha > dEnd) return;
 
                     let turnLabel = '';
                     if (typeof t.turno === 'string') turnLabel = t.turno;
@@ -151,9 +155,7 @@
             });
 
             if (bajas.length === 0) {
-                let msg = 'No hay bajas o permisos vigentes.';
-                if (timeFilter === 'upcoming') msg = 'No hay <b>próximas</b> bajas o permisos. Prueba a cambiar el filtro a "Ver Todos".';
-                container.innerHTML = `<div style="padding:5rem; text-align:center; opacity:0.5;">${msg}</div>`;
+                container.innerHTML = `<div style="padding:5rem; text-align:center; opacity:0.5;">No hay bajas o permisos registrados en este periodo.</div>`;
                 return;
             }
 
@@ -211,10 +213,43 @@
             }
             localStorage.setItem('turnosweb_theme', mode);
         }
-        document.addEventListener('DOMContentLoaded', () => {
+        window.addEventListener('DOMContentLoaded', () => {
             const savedTheme = localStorage.getItem('turnosweb_theme') || 'dark';
             setTheme(savedTheme);
-            renderBajas();
+
+            const today = new Date();
+            const endOfYear = new Date(today.getFullYear(), 11, 31);
+
+            flatpickr("#rangeTrigger", {
+                wrap: true,
+                mode: "range",
+                locale: "es",
+                dateFormat: "Y-m-d",
+                defaultDate: [today, endOfYear],
+                onChange: (selectedDates) => {
+                    if (selectedDates.length === 2) {
+                        const s = selectedDates[0].toISOString().split('T')[0];
+                        const e = selectedDates[1].toISOString().split('T')[0];
+                        CURRENT_RANGE = { start: s, end: e };
+                        $('#rangeLabel').textContent = `${selectedDates[0].toLocaleDateString('es-ES')} — ${selectedDates[1].toLocaleDateString('es-ES')}`;
+                        renderBajas();
+                    }
+                },
+                onReady: (selectedDates) => {
+                    if (selectedDates.length === 2) {
+                        const s = selectedDates[0].toISOString().split('T')[0];
+                        const e = selectedDates[1].toISOString().split('T')[0];
+                        CURRENT_RANGE = { start: s, end: e };
+                        $('#rangeLabel').textContent = `${selectedDates[0].toLocaleDateString('es-ES')} — ${selectedDates[1].toLocaleDateString('es-ES')}`;
+                        renderBajas();
+                    }
+                }
+            });
+
+            if (localStorage.getItem('turnosweb_admin_data')) {
+                FULL_DATA = JSON.parse(localStorage.getItem('turnosweb_admin_data'));
+                renderBajas();
+            }
         });
     </script>
 </body>

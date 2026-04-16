@@ -5,19 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TurnosWeb — Historial de Cambios</title>
     <link rel="stylesheet" href="admin.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/themes/dark.css">
     <style>
-        /* Ajustes para el enlace activo en el sidebar */
-        .nav-item.active {
-            background: var(--accent-dim);
-            color: var(--accent);
-            border-right: 3px solid var(--accent);
-        }
-        .status-badge {
-            padding: 4px 10px;
-            border-radius: 20px;
-            font-size: 0.75rem;
-            font-weight: 600;
-        }
+        .nav-item.active { background: var(--accent-dim); color: var(--accent); border-right: 3px solid var(--accent); }
+        .flatpickr-calendar { background: var(--bg2) !important; border: 1px solid var(--border) !important; box-shadow: var(--shadow-lg) !important; }
+        .flatpickr-day.selected { background: var(--accent) !important; border-color: var(--accent) !important; }
+        .flatpickr-months .flatpickr-month { background: var(--bg2) !important; color: white !important; }
     </style>
 </head>
 <body class="dark-mode">
@@ -90,13 +84,15 @@
                     <h1 class="page-title">Cambios de Turno</h1>
                     <p class="page-subtitle">Registro histórico de permutas procesadas</p>
                 </div>
-                <div class="header-controls" style="display:flex; gap:10px; flex-wrap: wrap;">
-                    <select id="filterTime" class="btn" onchange="renderSwaps()" style="background:var(--accent); color:white; border:none; border-radius:10px; padding:7px 15px; font-weight:600;">
-                        <option value="future">Próximos</option>
-                        <option value="past">Anteriores</option>
-                        <option value="all">Ver Todos</option>
-                    </select>
-                    <input type="date" id="filterDate" class="btn" onchange="renderSwaps()" style="background:var(--bg); border:1px solid var(--border); color:var(--text); padding:7px; border-radius:10px;">
+                <div class="header-controls" style="display:flex; gap:10px; flex-wrap: wrap; align-items:center;">
+                    <div id="rangeTrigger" class="date-range-picker-premium" style="display:flex; align-items:center; gap:10px; background:var(--bg3); border:1px solid var(--border); padding:8px 15px; border-radius:12px; cursor:pointer; min-width:260px;">
+                        <span style="font-size:1.1rem;" data-toggle>📅</span>
+                        <div style="display:flex; flex-direction:column;" data-toggle>
+                            <span style="font-size:0.6rem; color:var(--text-dim); font-weight:800; text-transform:uppercase; letter-spacing:0.05em;">Periodo Seleccionado</span>
+                            <span id="rangeLabel" style="font-size:0.85rem; font-weight:700; color:var(--accent);">Seleccionar Rango...</span>
+                        </div>
+                        <input type="text" id="filterDateRange" data-input style="display:none;">
+                    </div>
                     <input type="text" id="filterEmp" class="btn" oninput="renderSwaps()" placeholder="Buscar empleado..." style="background:var(--bg); border:1px solid var(--border); color:var(--text); padding:7px 15px; border-radius:10px; flex-grow:1; min-width:150px;">
                     <select id="filterHotel" class="btn" onchange="renderSwaps()" style="background:var(--bg3); color:var(--text); border:1px solid var(--border); border-radius:10px; padding:7px 15px;">
                         <option value="">— Hotel —</option>
@@ -114,7 +110,9 @@
 
     <script>
         const $ = (s) => document.querySelector(s);
-        
+        let FULL_DATA = null;
+        let CURRENT_RANGE = { start: '', end: '' };
+
         function fmtDate(d) {
             if (!d) return '—';
             const parts = d.split('-');
@@ -154,46 +152,37 @@
                 swaps = extracted;
             }
 
+        let CURRENT_RANGE = { start: '', end: '' };
+
+        function renderSwaps() {
+            const container = $('#swapsList');
+            const data = FULL_DATA || JSON.parse(localStorage.getItem('turnosweb_admin_data') || '{"schedule":[]}');
+            
             // --- FILTRO TEMPORAL Y ORDENACIÓN ---
-            const timeFilter = $('#filterTime').value;
-            const hotelFilter = $('#filterHotel').value;
-            const dateFilter = $('#filterDate').value;
-            const empFilter = $('#filterEmp').value.toLowerCase();
+            const hotelFilter = $('#filterHotel')?.value || '';
+            const dStart = CURRENT_RANGE.start;
+            const dEnd = CURRENT_RANGE.end;
+            const empFilter = $('#filterEmp')?.value.toLowerCase() || '';
             const todayStr = new Date().toISOString().split('T')[0];
 
             if (hotelFilter) {
                 swaps = swaps.filter(s => s.hotel === hotelFilter);
             }
 
-            if (dateFilter) {
-                swaps = swaps.filter(s => s.fecha === dateFilter);
+            if (dStart) {
+                swaps = swaps.filter(s => s.fecha >= dStart);
             }
-
-            if (empFilter) {
-                swaps = swaps.filter(s => 
-                    s.emp1.toLowerCase().includes(empFilter) || 
-                    s.emp2.toLowerCase().includes(empFilter)
-                );
+            if (dEnd) {
+                swaps = swaps.filter(s => s.fecha <= dEnd);
             }
-
-            if (timeFilter === 'future') {
-                swaps = swaps.filter(s => s.fecha >= todayStr);
-                swaps.sort((a, b) => a.fecha.localeCompare(b.fecha)); // Futuros: el más cercano primero
-            } else if (timeFilter === 'past') {
-                swaps = swaps.filter(s => s.fecha < todayStr);
-                swaps.sort((a, b) => b.fecha.localeCompare(a.fecha)); // Pasados: el más reciente primero
-            } else {
-                swaps.sort((a, b) => b.fecha.localeCompare(a.fecha)); // Todos: descendente
-            }
+            swaps.sort((a, b) => b.fecha.localeCompare(a.fecha)); // Por defecto descendente (más recientes arriba)
 
             if (swaps.length === 0) {
-                const msg = timeFilter === 'future' ? 'No hay cambios futuros programados.' : 
-                            (timeFilter === 'past' ? 'No hay registro de cambios anteriores.' : 'No se han detectado cambios.');
                 container.innerHTML = `
                 <div style="padding:8rem 2rem; text-align:center;">
                     <div style="font-size:4rem; margin-bottom:1.5rem; opacity:0.1;">🔄</div>
-                    <p style="color:var(--text-muted); font-size:1.1rem;">${msg}</p>
-                    <p style="color:var(--text-dim); font-size:0.9rem; margin-top:10px;">Ajusta los filtros o carga un nuevo Excel.</p>
+                    <p style="color:var(--text-muted); font-size:1.1rem;">No se han detectado cambios en el periodo seleccionado.</p>
+                    <p style="color:var(--text-dim); font-size:0.9rem; margin-top:10px;">Ajusta los filtros de fecha o carga un nuevo Excel.</p>
                 </div>`;
                 return;
             }
@@ -290,10 +279,49 @@
             localStorage.setItem('turnosweb_theme', mode);
         }
 
+        window.addEventListener('scroll', () => {
+            const nav = $('.sidebar');
+            if (window.scrollY > 50) nav.classList.add('scrolled');
+            else nav.classList.remove('scrolled');
+        });
+
         window.addEventListener('DOMContentLoaded', () => {
             const savedTheme = localStorage.getItem('turnosweb_theme') || 'dark';
             setTheme(savedTheme);
-            renderSwaps();
+
+            const today = new Date();
+            const endOfYear = new Date(today.getFullYear(), 11, 31);
+
+            flatpickr("#rangeTrigger", {
+                wrap: true,
+                mode: "range",
+                locale: "es",
+                dateFormat: "Y-m-d",
+                defaultDate: [today, endOfYear],
+                onChange: (selectedDates) => {
+                    if (selectedDates.length === 2) {
+                        const s = selectedDates[0].toISOString().split('T')[0];
+                        const e = selectedDates[1].toISOString().split('T')[0];
+                        CURRENT_RANGE = { start: s, end: e };
+                        $('#rangeLabel').textContent = `${selectedDates[0].toLocaleDateString('es-ES')} — ${selectedDates[1].toLocaleDateString('es-ES')}`;
+                        renderSwaps();
+                    }
+                },
+                onReady: (selectedDates) => {
+                    if (selectedDates.length === 2) {
+                        const s = selectedDates[0].toISOString().split('T')[0];
+                        const e = selectedDates[1].toISOString().split('T')[0];
+                        CURRENT_RANGE = { start: s, end: e };
+                        $('#rangeLabel').textContent = `${selectedDates[0].toLocaleDateString('es-ES')} — ${selectedDates[1].toLocaleDateString('es-ES')}`;
+                        renderSwaps();
+                    }
+                }
+            });
+
+            if (localStorage.getItem('turnosweb_admin_data')) {
+                FULL_DATA = JSON.parse(localStorage.getItem('turnosweb_admin_data'));
+                renderSwaps();
+            }
         });
     </script>
 </body>

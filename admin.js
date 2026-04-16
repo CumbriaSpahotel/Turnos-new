@@ -59,12 +59,15 @@ window.syncToFirebase = async (data) => {
         return;
     }
     try {
-        // Antes de subir, comparamos brevemente
         const lastUpdate = new Date().toISOString();
         data.updated_at = lastUpdate;
         
+        // Incluimos los perfiles en el paquete de sincronización
+        const profiles = JSON.parse(localStorage.getItem('turnosweb_emp_profiles') || '{}');
+        data.profiles = profiles;
+        
         await db.ref('turnosweb/data').set(data);
-        window.parsedData = data; // La memoria local se actualiza DESPUÉS del éxito
+        window.parsedData = data; 
         window.saveData();
         
         window.addLog(`NUBE: Fuente de Verdad actualizada (${new Date().toLocaleTimeString()}) ✅`, 'ok');
@@ -171,28 +174,34 @@ window.saveData = () => {
 // 2. MOTOR DE PROCESAMIENTO EXCEL (PARSER)
 // ==========================================
 window.processWorkbook = (wb) => {
-    window.addLog('Iniciando procesamiento de Excel...');
+    window.addLog(`Analizando Excel (Hojas: ${wb.SheetNames.join(', ')})...`);
     const DIAS = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
-    const HOTEL_SHEETS = ['Cumbria Spa&Hotel', 'Sercotel Guadiana'];
-    const SUBS_SHEET = 'Sustituciones';
-
+    const SUBS_SHEETS = ['Sustituciones', 'Sustitución', 'Bajas'];
+    
     const subs = {};
     const swaps = {};
     const excluded = new Set();
     const scheduleRows = [];
     const allSwapsRaw = [];
 
-    if (wb.SheetNames.includes(SUBS_SHEET)) {
-        const rows = XLSX.utils.sheet_to_json(wb.Sheets[SUBS_SHEET], { defval: '' });
+    // 1. Procesar Hoja de Sustituciones (si existe)
+    const subsSheetName = wb.SheetNames.find(n => SUBS_SHEETS.some(s => n.toLowerCase().includes(s.toLowerCase())));
+    if (subsSheetName) {
+        window.addLog(`Procesando hoja de ausencias: ${subsSheetName}`);
+        const rows = XLSX.utils.sheet_to_json(wb.Sheets[subsSheetName], { defval: '' });
         rows.forEach(r => {
-            const fecha = window.isoDate(r['Fecha']);
+            const rawDate = r['Fecha'] || r['Día'];
+            const fecha = window.isoDate(rawDate);
             const hotel = String(r['Hotel'] || '').trim();
             const emp = String(r['Empleado'] || '').trim();
-            if (!fecha || !hotel || !emp) return;
-            const tipo = String(r['Tipo Ausencia'] || '').trim();
+            if (!fecha || !emp) return;
+            
+            const tipo = String(r['Tipo Ausencia'] || r['Tipo'] || '').trim();
             if (tipo.toLowerCase().includes('baja definitiva')) { excluded.add(emp); return; }
+            
             const sustit = String(r['Sustituto'] || '').trim();
-            const cambio = String(r['Cambio de Turno'] || '').trim();
+            const cambio = String(r['Cambio de Turno'] || r['Permuta'] || '').trim();
+            
             if (cambio) {
                 const key = `${hotel}|${fecha}`;
                 if (!swaps[key]) swaps[key] = [];
@@ -203,31 +212,61 @@ window.processWorkbook = (wb) => {
         });
     }
 
-    HOTEL_SHEETS.forEach(hotelName => {
-        if (!wb.SheetNames.includes(hotelName)) return;
-        const rawRows = XLSX.utils.sheet_to_json(wb.Sheets[hotelName], { defval: '' });
+    // 2. Procesar Hojas de Hoteles (Detección Automática)
+    wb.SheetNames.forEach(sheetName => {
+        if (sheetName === subsSheetName) return;
+        const sheet = wb.Sheets[sheetName];
+        const rawRows = XLSX.utils.sheet_to_json(sheet, { defval: '' });
+        if (rawRows.length === 0) return;
+
+        // Verificar si es una hoja de cuadrante (debe tener 'Empleado' o 'Nombre')
+        const firstRow = rawRows[0];
+        const hasEmpCol = Object.keys(firstRow).some(k => k.trim().toLowerCase().includes('empleado') || k.trim().toLowerCase().includes('nombre'));
+        if (!hasEmpCol) return;
+
+        window.addLog(`Procesando cuadrante: ${sheetName} (${rawRows.length} filas)`);
         const weekMap = {};
         rawRows.forEach(rawRow => {
             const row = {}; for (let k in rawRow) row[k.trim()] = rawRow[k];
-            const rawSemana = row['Semana'];
+            
+            // Buscar columna de semana
+            const semanaCol = Object.keys(row).find(k => k.toLowerCase().includes('semana'));
+            const rawSemana = row[semanaCol];
             if (!rawSemana) return;
+
             const weekDate = typeof rawSemana === 'number' ? new Date((rawSemana - 25569) * 86400 * 1000) : new Date(rawSemana);
             const semana = window.isoDate(window.getMonday(weekDate));
-            const emp = String(row['Empleado'] || '').trim();
+            
+            const empCol = Object.keys(row).find(k => k.toLowerCase().includes('empleado') || k.toLowerCase().includes('nombre'));
+            const emp = String(row[empCol] || '').trim();
+            
             if (!semana || !emp || excluded.has(emp)) return;
+            
             if (!weekMap[semana]) weekMap[semana] = { order: [], turnos: {} };
             if (!weekMap[semana].order.includes(emp)) weekMap[semana].order.push(emp);
+            
             DIAS.forEach((dia, i) => {
-                const turno = String(row[dia] || '').trim();
-                if (turno) weekMap[semana].turnos[`${emp}|${window.addDays(semana, i)}`] = turno;
+                // Mapeo flexible de días (por si faltan acentos)
+                const diaCol = Object.keys(row).find(k => 
+                    k.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').includes(
+                        dia.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+                    )
+                );
+                if (diaCol) {
+                    const turno = String(row[diaCol] || '').trim();
+                    if (turno) weekMap[semana].turnos[`${emp}|${window.addDays(semana, i)}`] = turno;
+                }
             });
         });
 
+        // Generar estructura final para este hotel
         Object.entries(weekMap).forEach(([lunes, weekData]) => {
             const turnos = weekData.turnos;
             const fechas = Array.from({ length: 7 }, (_, i) => window.addDays(lunes, i));
+            
+            // Aplicar Cambios de Turno (Permutas)
             fechas.forEach(fecha => {
-                const key = `${hotelName}|${fecha}`;
+                const key = `${sheetName}|${fecha}`;
                 (swaps[key] || []).forEach(([a, b]) => {
                     let rawA = turnos[`${a}|${fecha}`] || '', rawB = turnos[`${b}|${fecha}`] || '';
                     const tA = typeof rawA === 'object' ? (rawA.TurnoOriginal || '') : rawA;
@@ -236,10 +275,12 @@ window.processWorkbook = (wb) => {
                     turnos[`${b}|${fecha}`] = { TurnoOriginal: tA + ' 🔄', Sustituto: a, TipoInterpretado: 'C/T' };
                 });
             });
+
+            // Aplicar Sustituciones y Bajas
             const subsInWeek = new Set();
             Object.entries(turnos).forEach(([key, val]) => {
                 const [emp, fecha] = key.split('|');
-                const subKey = `${hotelName}|${fecha}|${emp}`;
+                const subKey = `${sheetName}|${fecha}|${emp}`;
                 if (subs[subKey]) {
                     const s = subs[subKey];
                     const originalStr = typeof val === 'object' ? (val.TurnoOriginal || '') : val;
@@ -247,13 +288,14 @@ window.processWorkbook = (wb) => {
                     if (s.Sustituto) subsInWeek.add(s.Sustituto);
                 }
             });
+
             const orden = [...weekData.order];
             subsInWeek.forEach(s => { if (!orden.includes(s)) orden.push(s); });
             const turnosArr = Object.entries(turnos).map(([k, v]) => {
                 const [empleado, fecha] = k.split('|');
                 return { empleado, fecha, turno: v };
             });
-            scheduleRows.push({ hotel: hotelName, semana_lunes: lunes, orden_empleados: orden, turnos: turnosArr });
+            scheduleRows.push({ hotel: sheetName, semana_lunes: lunes, orden_empleados: orden, turnos: turnosArr });
         });
     });
 
@@ -395,86 +437,98 @@ window.renderMonthlyCalendar = (filterHotel, monthStr) => {
     const area = $('#previewContent'); if (!window.parsedData || !area) return;
     area.innerHTML = '';
     
-    // Si monthStr es solo una fecha YYYY-MM-DD, extraemos el mes
     const now = monthStr ? new Date(monthStr) : new Date();
     const year = now.getFullYear();
     const month = now.getMonth();
-    
-    // Header navegación mes (UI elegante)
-    const header = document.createElement('div');
-    header.className = 'calendar-month-nav';
-    header.innerHTML = `
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem; padding:0 10px;">
-            <h2 style="margin:0; text-transform:uppercase; letter-spacing:1px; color:var(--accent); font-size:1.2rem;">
-                ${now.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' })}
-            </h2>
-            <div class="cal-legend" style="display:flex; gap:15px; font-size:0.7rem; font-weight:700;">
-                <div style="display:flex; align-items:center; gap:5px;"><span style="width:8px; height:8px; border-radius:50%; background:#22c55e;"></span> M</div>
-                <div style="display:flex; align-items:center; gap:5px;"><span style="width:8px; height:8px; border-radius:50%; background:#f59e0b;"></span> T</div>
-                <div style="display:flex; align-items:center; gap:5px;"><span style="width:8px; height:8px; border-radius:50%; background:#64748b;"></span> N</div>
-                <div style="display:flex; align-items:center; gap:5px;"><span style="width:8px; height:8px; border-radius:50%; background:#ef4444;"></span> D</div>
-            </div>
-        </div>
-    `;
-    area.appendChild(header);
-
-    const gridWrap = document.createElement('div');
-    gridWrap.className = 'calendar-wrap';
-    
-    // Días de la semana
-    const daysHeader = document.createElement('div');
-    daysHeader.style = "display:grid; grid-template-columns:repeat(7, 1fr); gap:10px; margin-bottom:10px; text-align:center; font-weight:800; font-size:0.7rem; color:var(--text-dim); text-transform:uppercase;";
-    ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'].forEach(d => {
-        daysHeader.innerHTML += `<div>${d}</div>`;
-    });
-    area.appendChild(daysHeader);
-
-    const grid = document.createElement('div');
-    grid.style = "display:grid; grid-template-columns:repeat(7, 1fr); gap:10px;";
-    
-    const firstDay = new Date(year, month, 1);
-    const startOffset = (firstDay.getDay() === 0 ? 6 : firstDay.getDay() - 1);
     const totalDays = new Date(year, month + 1, 0).getDate();
+    const todayStr = new Date().toISOString().split('T')[0];
     
-    // Celdas vacías mes anterior
-    for (let i = 0; i < startOffset; i++) {
-        grid.innerHTML += `<div style="aspect-ratio:1; opacity:0.1; background:var(--border); border-radius:10px;"></div>`;
-    }
+    const hotels = filterHotel ? [filterHotel] : [...new Set(window.parsedData.schedule.map(g => g.hotel))];
     
-    // Días del mes
-    for (let d = 1; d <= totalDays; d++) {
-        const dayStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
-        const isToday = dayStr === new Date().toISOString().split('T')[0];
-        const dayOfWeek = new Date(year, month, d).getDay();
-        const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
-        
-        let eventsHtml = '';
+    area.innerHTML = hotels.map(hotel => {
+        // Obtener empleados de este hotel
+        const emps = new Set();
         window.parsedData.schedule.forEach(g => {
-            if (filterHotel && g.hotel !== filterHotel) return;
-            g.turnos.forEach(t => {
-                if (t.fecha === dayStr) {
-                    const label = (typeof t.turno === 'object' ? t.turno.TipoInterpretado : t.turno) || '';
-                    const cls = window.classify(label);
-                    // Solo mostramos turnos de trabajo en el calendario (evitamos amontonar descansos)
-                    if (cls && cls !== 'd') {
-                        eventsHtml += `
-                            <div class="cal-badge ${cls}" style="font-size:0.6rem; padding:2px 5px; border-radius:4px; margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; background:var(--${cls}-dim); color:var(--text); border:1px solid var(--border);">
-                                <b style="color:var(--accent)">${g.hotel[0]}</b> ${t.empleado.split(' ')[0]}
-                            </div>`;
+            if (g.hotel === hotel) {
+                g.turnos.forEach(t => {
+                    const tDate = new Date(t.fecha);
+                    if (tDate.getFullYear() === year && tDate.getMonth() === month) {
+                        emps.add(t.empleado);
                     }
-                }
-            });
+                });
+            }
         });
 
-        grid.innerHTML += `
-            <div style="aspect-ratio:1; background:${isToday ? 'var(--accent-dim)' : 'var(--surface)'}; border:1px solid ${isToday ? 'var(--accent)' : 'var(--border)'}; border-radius:12px; padding:8px; overflow-y:auto; position:relative; box-shadow: var(--shadow-sm);">
-                <div style="font-size:0.8rem; font-weight:800; ${isWeekend ? 'color:var(--accent);' : ''}">${d}</div>
-                <div style="display:flex; flex-direction:column; gap:2px;">${eventsHtml}</div>
+        if (emps.size === 0) return '';
+
+        const sortedEmps = [...emps].sort();
+        
+        // Cabecera de días
+        let headers = '';
+        for (let d = 1; d <= totalDays; d++) {
+            const date = new Date(year, month, d);
+            const isWeekend = date.getDay() === 0 || date.getDay() === 6;
+            const dayName = date.toLocaleDateString('es-ES', { weekday: 'narrow' }).toUpperCase();
+            const dateISO = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+            const isToday = dateISO === todayStr;
+
+            headers += `
+                <th class="${isWeekend ? 'weekend' : ''} ${isToday ? 'today' : ''}" style="padding:4px; min-width:32px; ${isToday ? 'border:2px solid var(--accent);' : ''}">
+                    <div style="font-size:0.65rem; color:var(--text-dim);">${dayName}</div>
+                    <div style="font-size:0.85rem; font-weight:800;">${d}</div>
+                </th>`;
+        }
+
+        // Filas de empleados
+        const rows = sortedEmps.map(emp => {
+            let cells = '';
+            for (let d = 1; d <= totalDays; d++) {
+                const dayStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+                let shiftHtml = '-';
+                
+                window.parsedData.schedule.forEach(g => {
+                    if (g.hotel === hotel) {
+                        g.turnos.forEach(t => {
+                            if (t.empleado === emp && t.fecha === dayStr) {
+                                const raw = typeof t.turno === 'string' ? t.turno : (t.turno.TipoInterpretado || t.turno.TurnoOriginal || '');
+                                const cls = window.classify(raw);
+                                const label = cls ? cls.toUpperCase() : (raw ? raw[0].toUpperCase() : '-');
+                                shiftHtml = `<span class="turno-pill-mini ${cls}">${label}</span>`;
+                            }
+                        });
+                    }
+                });
+                
+                const date = new Date(year, month, d);
+                const isWeekend = date.getDay() === 0 || date.getDay() === 6;
+                const isToday = dayStr === todayStr;
+
+                cells += `<td class="${isWeekend ? 'weekend' : ''} ${isToday ? 'today' : ''}" style="padding:4px; text-align:center; height:45px;">${shiftHtml}</td>`;
+            }
+            return `<tr><td style="text-align:left; padding-left:1rem; font-weight:700; background:var(--surface); position:sticky; left:0; z-index:10; white-space:nowrap; border-right:1px solid var(--border);">${emp}</td>${cells}</tr>`;
+        });
+
+        return `
+            <div class="monthly-sheet-wrap" style="margin-bottom:3rem;">
+                <div class="week-head" style="display:flex; justify-content:space-between; align-items:center; padding:1rem 1.5rem; background:linear-gradient(90deg, var(--bg2), var(--bg3)); border-radius:15px 15px 0 0; border:1px solid var(--border); border-bottom:none;">
+                    <h3 style="margin:0; font-size:1.1rem; color:var(--accent);">${hotel} <span style="color:var(--text-muted); font-weight:400; font-size:0.9rem;">— ${now.toLocaleDateString('es-ES', {month:'long', year:'numeric'}).toUpperCase()}</span></h3>
+                </div>
+                <div class="table-container" style="overflow-x:auto; border-radius:0 0 15px 15px; border:1px solid var(--border); background:var(--surface);">
+                    <table class="preview-table monthly" style="width:100%; border-collapse:collapse; font-size:0.75rem;">
+                        <thead>
+                            <tr>
+                                <th style="position:sticky; left:0; z-index:11; min-width:150px; background:var(--bg3);">Empleado</th>
+                                ${headers}
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${rows.join('')}
+                        </tbody>
+                    </table>
+                </div>
             </div>
         `;
-    }
-    
-    area.appendChild(grid);
+    }).join('');
 };
 
 // ==========================================
@@ -483,13 +537,36 @@ window.renderMonthlyCalendar = (filterHotel, monthStr) => {
 window.calculateStats = () => {
     const stats = {};
     if (!window.parsedData) return stats;
+    
     window.parsedData.schedule.forEach(g => {
         g.turnos.forEach(t => {
-            if (!stats[t.empleado]) stats[t.empleado] = { emp: t.empleado, hotel: g.hotel, m: 0, t: 0, n: 0, v: 0, d: 0, b:0 };
-            const cls = window.classify(typeof t.turno === 'string' ? t.turno : (t.turno?.TurnoOriginal || ''));
+            if (!stats[t.empleado]) {
+                stats[t.empleado] = { 
+                    emp: t.empleado, 
+                    hotel: g.hotel, 
+                    m: 0, t: 0, n: 0, v: 0, d: 0, b:0, x: 0,
+                    history: []
+                };
+            }
+            const raw = typeof t.turno === 'string' ? t.turno : (t.turno.TipoInterpretado || t.turno.TurnoOriginal || '');
+            const cls = window.classify(raw);
             if (['m', 't', 'n', 'v', 'd', 'b'].includes(cls)) stats[t.empleado][cls]++;
+            else stats[t.empleado].x++;
+
+            stats[t.empleado].history.push({
+                fecha: t.fecha,
+                turno: raw,
+                cls: cls,
+                original: typeof t.turno === 'object' ? t.turno.TurnoOriginal : t.turno
+            });
         });
     });
+
+    // Ordenar historial por fecha descendente
+    Object.values(stats).forEach(s => {
+        s.history.sort((a,b) => b.fecha.localeCompare(a.fecha));
+    });
+
     return stats;
 };
 
@@ -498,18 +575,30 @@ window.populateEmployees = () => {
     const profiles = JSON.parse(localStorage.getItem('turnosweb_emp_profiles') || '{}');
     const stats = window.calculateStats();
     const hotels = [...new Set(Object.values(stats).map(s => s.hotel))].sort();
+    
     area.innerHTML = hotels.map(hotel => {
         const emps = Object.values(stats).filter(s => s.hotel === hotel).sort((a, b) => a.emp.localeCompare(b.emp));
         const cards = emps.map(s => {
             const p = profiles[s.emp] || {};
             const initials = s.emp.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
+            const totalWork = s.m + s.t + s.n;
+            
             return `<div class="emp-card" onclick="window.openEmpDrawer('${s.emp.replace(/'/g, "\\'")}')">
                 <div class="emp-card-top">
                     <div class="emp-avatar" style="--emp-hue:${Math.abs(s.emp.length * 17) % 360}">${initials}</div>
                     <div class="emp-card-info">
                         <div class="emp-card-name">${s.emp}</div>
-                        <div class="emp-card-hotel">${p.contrato || 'Fijo'}</div>
+                        <div class="emp-card-hotel">${p.puesto || 'Personal'}</div>
                     </div>
+                </div>
+                <div class="emp-card-stats">
+                    <div class="ecs-item"><span>M</span><b>${s.m}</b></div>
+                    <div class="ecs-item"><span>T</span><b>${s.t}</b></div>
+                    <div class="ecs-item"><span>N</span><b>${s.n}</b></div>
+                    <div class="ecs-item"><span>V</span><b>${s.v}</b></div>
+                </div>
+                <div class="emp-card-footer">
+                    <span>${totalWork} turnos trabajados</span>
                 </div>
             </div>`;
         }).join('');
@@ -523,45 +612,132 @@ window.openEmpDrawer = (name) => {
     if (!drawer || !body) return;
     
     drawer.classList.add('open');
-    const stats = window.calculateStats()[name] || { m:0, t:0, n:0, v:0, b:0, d:0, hotel: 'N/A' };
+    const allStats = window.calculateStats();
+    const s = allStats[name] || { m:0, t:0, n:0, v:0, b:0, d:0, hotel: 'N/A', history: [] };
     const profiles = JSON.parse(localStorage.getItem('turnosweb_emp_profiles') || '{}');
     const p = profiles[name] || {};
     
+    const initials = name.split(' ').map(n=>n[0]).join('').slice(0,2).toUpperCase();
+    const totalWorking = s.m + s.t + s.n;
+
     body.innerHTML = `
         <div class="drawer-header">
-            <div class="emp-avatar large" style="--emp-hue:${Math.abs(name.length * 17) % 360}">
-                ${name.split(' ').map(n=>n[0]).join('').slice(0,2).toUpperCase()}
-            </div>
+            <div class="emp-avatar large" style="--emp-hue:${Math.abs(name.length * 17) % 360}">${initials}</div>
             <div class="drawer-title-group">
-                <h2 style="margin:0; font-size:1.5rem;">${name}</h2>
-                <span class="status-badge" style="background:var(--success-dim); color:var(--success); border:none;">${stats.hotel}</span>
+                <h2 style="margin:0; font-size:1.6rem; letter-spacing:-0.02em;">${name}</h2>
+                <div style="display:flex; gap:6px; margin-top:4px;">
+                    <span class="status-badge" style="background:var(--accent-dim); color:var(--accent); border:none; font-size:0.7rem;">${s.hotel}</span>
+                    <span class="status-badge" style="background:var(--success-dim); color:var(--success); border:none; font-size:0.7rem;">${p.contrato || 'Fijo'}</span>
+                </div>
             </div>
         </div>
         
-        <div class="drawer-stats-grid" style="display:grid; grid-template-columns: repeat(3, 1fr); gap:10px; margin: 1.5rem 0;">
-            <div class="stat-mini"><span>Mañanas</span><strong>${stats.m}</strong></div>
-            <div class="stat-mini"><span>Tardes</span><strong>${stats.t}</strong></div>
-            <div class="stat-mini"><span>Noches</span><strong>${stats.n}</strong></div>
-            <div class="stat-mini"><span>Descansos</span><strong>${stats.d}</strong></div>
-            <div class="stat-mini"><span>Vacaciones</span><strong>${stats.v}</strong></div>
-            <div class="stat-mini"><span>Bajas</span><strong>${stats.b}</strong></div>
-        </div>
-
-        <div class="glass" style="padding:1.2rem; margin-top:1rem;">
-            <h4 style="margin-top:0; border-bottom:1px solid var(--border); padding-bottom:5px; color:var(--accent);">INFORMACIÓN LABORAL</h4>
-            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; font-size:0.85rem; margin-top:10px;">
-                <div><span style="color:var(--text-dim)">Contrato:</span><br><b>${p.contrato || 'Indefinido'}</b></div>
-                <div><span style="color:var(--text-dim)">Antigüedad:</span><br><b>${p.antiguedad || '—'}</b></div>
-                <div><span style="color:var(--text-dim)">Categoría:</span><br><b>${p.categoria || 'Operativo'}</b></div>
-                <div><span style="color:var(--text-dim)">Puesto:</span><br><b>${p.puesto || 'Recepción'}</b></div>
+        <div class="drawer-section-title">RESUMEN DE ACTIVIDAD</div>
+        <div class="drawer-stats-grid-premium">
+            <div class="stat-premium">
+                <span class="sp-label">Mañanas</span>
+                <span class="sp-value color-m">${s.m}</span>
+                <div class="sp-bar"><div class="sp-bar-fill color-m" style="width:${Math.min(100, (s.m/30)*100)}%"></div></div>
+            </div>
+            <div class="stat-premium">
+                <span class="sp-label">Tardes</span>
+                <span class="sp-value color-t">${s.t}</span>
+                <div class="sp-bar"><div class="sp-bar-fill color-t" style="width:${Math.min(100, (s.t/30)*100)}%"></div></div>
+            </div>
+            <div class="stat-premium">
+                <span class="sp-label">Noches</span>
+                <span class="sp-value color-n">${s.n}</span>
+                <div class="sp-bar"><div class="sp-bar-fill color-n" style="width:${Math.min(100, (s.n/30)*100)}%"></div></div>
+            </div>
+            <div class="stat-premium">
+                <span class="sp-label">Vacaciones</span>
+                <span class="sp-value color-v">${s.v}</span>
+                <div class="sp-bar"><div class="sp-bar-fill color-v" style="width:${Math.min(100, (s.v/30)*100)}%"></div></div>
+            </div>
+            <div class="stat-premium">
+                <span class="sp-label">Bajas</span>
+                <span class="sp-value color-b">${s.b}</span>
+                <div class="sp-bar"><div class="sp-bar-fill color-b" style="width:${Math.min(100, (s.b/10)*100)}%"></div></div>
+            </div>
+            <div class="stat-premium">
+                <span class="sp-label">Descansos</span>
+                <span class="sp-value color-d">${s.d}</span>
+                <div class="sp-bar"><div class="sp-bar-fill color-d" style="width:${Math.min(100, (s.d/30)*100)}%"></div></div>
             </div>
         </div>
 
-        <div style="margin-top:1.5rem; display:flex; gap:10px;">
-            <button class="btn active" style="flex:1;" onclick="alert('Funcionalidad en desarrollo: Imprimir Ficha')">🖨️ Imprimir</button>
-            <button class="btn" style="flex:1;" onclick="alert('Funcionalidad en desarrollo: Editar Perfil')">✏️ Editar</button>
+        <div class="glass" style="padding:1.2rem; margin-top:1.5rem; border-color:rgba(255,255,255,0.05);">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; border-bottom:1px solid var(--border); padding-bottom:8px;">
+                <h4 style="margin:0; color:var(--accent); font-size:0.8rem; text-transform:uppercase; letter-spacing:0.05em;">Ficha Técnica</h4>
+                <span style="font-size:0.75rem; color:var(--text-dim);">${totalWorking} servicios totales</span>
+            </div>
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px; font-size:0.85rem;">
+                <div>
+                    <span style="color:var(--text-dim); font-size:0.75rem;">Antigüedad</span><br>
+                    <input type="text" class="edit-input" id="edit-antiguedad" value="${p.antiguedad || ''}" placeholder="Ej: 2021" onchange="window.saveEmpField('${name}', 'antiguedad', this.value)">
+                </div>
+                <div>
+                    <span style="color:var(--text-dim); font-size:0.75rem;">Categoría</span><br>
+                    <input type="text" class="edit-input" id="edit-categoria" value="${p.categoria || ''}" placeholder="Ej: Operativo" onchange="window.saveEmpField('${name}', 'categoria', this.value)">
+                </div>
+                <div>
+                    <span style="color:var(--text-dim); font-size:0.75rem;">Puesto</span><br>
+                    <input type="text" class="edit-input" id="edit-puesto" value="${p.puesto || ''}" placeholder="Ej: Recepcionista" onchange="window.saveEmpField('${name}', 'puesto', this.value)">
+                </div>
+                <div>
+                    <span style="color:var(--text-dim); font-size:0.75rem;">Contrato</span><br>
+                    <select class="edit-input" onchange="window.saveEmpField('${name}', 'contrato', this.value)">
+                        <option value="Fijo" ${p.contrato === 'Fijo' ? 'selected' : ''}>Fijo</option>
+                        <option value="Eventual" ${p.contrato === 'Eventual' ? 'selected' : ''}>Eventual</option>
+                        <option value="Sustitución" ${p.contrato === 'Sustitución' ? 'selected' : ''}>Sustitución</option>
+                    </select>
+                </div>
+            </div>
+            <div style="margin-top:10px; font-size:0.7rem; color:var(--success); display:none;" id="save-indicator">✓ Cambios guardados y sincronizados</div>
+        </div>
+
+        <div class="drawer-section-title" style="margin-top:2rem;">HISTORIAL DE TURNOS RECIENTES</div>
+        <div class="history-list">
+            ${s.history.slice(0, 15).map(h => `
+                <div class="history-item">
+                    <div class="hi-date">
+                        <span class="hi-day">${new Date(h.fecha).toLocaleDateString('es-ES', {day:'2-digit'})}</span>
+                        <span class="hi-month">${new Date(h.fecha).toLocaleDateString('es-ES', {month:'short'}).replace('.','').toUpperCase()}</span>
+                    </div>
+                    <div class="hi-info">
+                        <div class="hi-label">${h.turno}</div>
+                        <div class="hi-sub">${h.original !== h.turno ? 'Orig: ' + h.original : s.hotel}</div>
+                    </div>
+                    <div class="hi-type"><span class="type-dot ${h.cls}"></span></div>
+                </div>
+            `).join('')}
+            ${s.history.length === 0 ? '<div style="padding:2rem; text-align:center; opacity:0.3; font-size:0.8rem;">No hay historial disponible</div>' : ''}
+        </div>
+
+        <div style="margin-top:2rem; display:flex; gap:10px; padding-bottom:2rem;">
+            <button class="btn active" style="flex:1;" onclick="alert('Generando informe detallado...')">📊 Informe PDF</button>
+            <button class="btn" style="flex:1;" onclick="alert('Funcionalidad de edición avanzada en desarrollo')">⚙️ Ajustes</button>
         </div>
     `;
+};
+
+window.saveEmpField = (name, field, value) => {
+    const profiles = JSON.parse(localStorage.getItem('turnosweb_emp_profiles') || '{}');
+    if (!profiles[name]) profiles[name] = {};
+    profiles[name][field] = value;
+    localStorage.setItem('turnosweb_emp_profiles', JSON.stringify(profiles));
+
+    // Mostrar feedback visual
+    const indicator = $('#save-indicator');
+    if (indicator) {
+        indicator.style.display = 'block';
+        setTimeout(() => { if (indicator) indicator.style.display = 'none'; }, 2000);
+    }
+
+    // Sincronizar inmediatamente a la nube
+    if (window.parsedData) {
+        window.syncToFirebase(window.parsedData);
+    }
 };
 
 window.closeEmpDrawer = () => { $('#empDrawer').classList.remove('open'); };
@@ -584,6 +760,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 // Solo sobreescribimos si es la carga inicial o si NO estamos procesando un Excel actulamente
                 if (!window.isProcessingExcel) {
                     window.parsedData = cloudData;
+                    if (cloudData.profiles) {
+                        localStorage.setItem('turnosweb_emp_profiles', JSON.stringify(cloudData.profiles));
+                    }
                     window.populatePreview();
                     window.populateEmployees();
                     window.updateDashboardStats();
