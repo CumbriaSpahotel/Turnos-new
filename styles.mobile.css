@@ -1,0 +1,74 @@
+:root{
+  --bg:#f6f8fb;
+  --card:#ffffff;
+  --line:#e7ecf3;
+  --text:#1f2937;
+  --muted:#6b7280;
+
+  /* Layout: ajusta aquí proporciones */
+  --col-nombre-min:88px;
+  --col-nombre: 24%;  /* ↓ más pequeño para dar más espacio a turnos */
+  --cell-pad: 10px 12px;
+
+  /* Píldoras */
+  --pill-gap: 8px;     /* ↑ separa cápsulas (reduce “apelotonado”) */
+  --pill-pad: 6px 10px;
+  --pill-radius: 999px;
+  --fz-base: 14px;
+  --fz-small: 12px;
+}
+
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--text);font:400 var(--fz-base)/1.35 system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial}
+.app-header{position:sticky;top:0;background:linear-gradient(#fff,#fff0);padding:12px 12px 8px;border-bottom:1px solid var(--line);z-index:5}
+.hotel-box{display:flex;gap:12px;align-items:center}
+.hotel-logo{width:38px;height:38px;object-fit:contain;opacity:.9}
+.hotel-meta h1{font-size:18px;margin:0 0 2px}
+.date-range{font-size:var(--fz-small);color:var(--muted)}
+
+.filters{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+.filters label{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--muted)}
+.filters input[type="date"], .filters select{padding:6px 8px;border:1px solid var(--line);border-radius:10px;background:#fff}
+.filters button{padding:8px 12px;border:1px solid var(--line);background:#fff;border-radius:12px;cursor:pointer}
+
+.viewport{padding:12px}
+.tabla{border:1px solid var(--line);background:var(--card);border-radius:14px;overflow:auto}
+
+/* Cabecera columnas */
+.t-head, .t-row{display:grid;grid-template-columns:minmax(var(--col-nombre-min),var(--col-nombre)) repeat(7, 1fr)}
+.t-head{position:sticky;top:78px;background:var(--card);z-index:4;border-bottom:1px solid var(--line)}
+.t-head .cell{padding:10px 8px;font-size:12px;color:var(--muted);text-align:center;white-space:nowrap}
+
+/* Filas */
+.t-row{border-bottom:1px solid var(--line)}
+.t-row .cell{padding:var(--cell-pad)}
+.t-row .cell.name{position:sticky;left:0;background:linear-gradient(90deg, #fff 60%, #fff8);border-right:1px solid var(--line);z-index:3}
+.name .emp{font-weight:600}
+
+/* Celdas de turnos: más espacio visual */
+.shifts{display:flex;flex-wrap:wrap;gap:var(--pill-gap);align-items:flex-start;min-height:36px}
+
+/* Píldoras */
+.pill{display:inline-flex;align-items:center;gap:6px;padding:var(--pill-pad);border-radius:var(--pill-radius);border:1px solid transparent;line-height:1}
+.pill small{font-size:12px;color:#506070}
+
+/* Colores de estado */
+.pill--manana{background:#e6f7ee;border-color:#c7eddc}
+.pill--tarde{background:#fff6db;border-color:#fdeab3}
+.pill--noche{background:#eef2f6;border-color:#d9e2ec}
+.pill--descanso{background:#ffe7ea;border-color:#ffccd3}
+.pill--vacaciones{background:#e6fbff;border-color:#c7f1ff}
+
+/* Iconos pequeños (emoji o SVG) */
+.pill .i{opacity:.9}
+
+/* Responsive tweaks */
+@media (max-width:640px){
+  :root{ --col-nombre: 28%; --col-nombre-min:84px; --pill-gap: 7px }
+  .t-head .cell{font-size:11px}
+  .filters{gap:6px}
+}
+
+/* Pie unificado */
+.doc-end-rule{height:10px;border:0;background:linear-gradient(90deg,#c6a44a,#e6d28f,#c6a44a);border-radius:10px;margin:22px 0 6px}
+.doc-end-space{height:28px}

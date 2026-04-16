@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>TurnosWeb — Cuadrante Público</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+  <link rel="stylesheet" href="styles.css">
+  <link rel="icon" type="image/png" href="Logo.png">
+</head>
+<body>
+  <header>
+    <div class="header-brand">
+      <img src="Logo.png" alt="Logo">
+      <div class="title-block">
+        <div class="title">TurnosWeb</div>
+        <div class="subtitle">Cuadrante Público</div>
+      </div>
+    </div>
+    
+    <div class="controls-container">
+      <div class="live-indicator" title="Sincronizado con el Panel de Control">
+        <div class="live-dot"></div>
+        <span>En Vivo</span>
+      </div>
+      
+      <div class="field">
+        <select id="hotelSelect" aria-label="Hotel"><option value="">— Hotel —</option></select>
+      </div>
+      <div class="field">
+         <select id="employeeFilter" aria-label="Empleado"><option value="">— Empleado —</option></select>
+      </div>
+      <div class="field" style="max-width: 140px;">
+        <input type="text" id="dateFrom" placeholder="Desde..." aria-label="Desde">
+      </div>
+      <div class="field" style="max-width: 140px;">
+        <input type="text" id="dateTo" placeholder="Hasta..." aria-label="Hasta">
+      </div>
+      <button class="btn theme-toggle" id="themeToggle" title="Cambiar Tema">🌙</button>
+    </div>
+  </header>
+
+  <div id="app"></div>
+  <div id="monthly-summary-container"></div>
+
+  <!-- Scripts -->
+  <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+  <script src="https://npmcdn.com/flatpickr/dist/l10ns/es.js"></script>
+  
+  <!-- Carga de datos base (fallback si Firebase falla) -->
+  <script src="data.js"></script>
+  
+  <script>
+    // Theme logic simple y robusta
+    const toggle = document.getElementById('themeToggle');
+    const setTheme = (mode) => {
+      document.body.classList.toggle('dark-mode', mode === 'dark');
+      if (toggle) toggle.textContent = mode === 'dark' ? '☀️' : '🌙';
+    };
+    
+    const savedTheme = localStorage.getItem('turnosweb_theme') || 'dark';
+    setTheme(savedTheme);
+
+    if (toggle) {
+        toggle.addEventListener('click', () => {
+            const isDark = document.body.classList.contains('dark-mode');
+            const nextMode = isDark ? 'light' : 'dark';
+            setTheme(nextMode);
+            localStorage.setItem('turnosweb_theme', nextMode);
+        });
+    }
+  </script>
+
+  <!-- Firebase Integration -->
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+  <script src="firebase-config.js"></script>
+
+  <script src="plantilla_adapter_semana.js"></script>
+  
+  <script>
+    // Conexión en tiempo real para el Cuadrante Público
+    if (window.firebase && window.firebaseConfig) {
+        try {
+            firebase.initializeApp(window.firebaseConfig);
+            const fbDb = firebase.database();
+            
+            fbDb.ref('turnosweb/data').on('value', (snapshot) => {
+                const cloudData = snapshot.val();
+                if (cloudData) {
+                    console.log("NUBE: Recibidos nuevos datos de Firebase.");
+                    window.FULL_DATA = cloudData;
+                    // El adaptador debería detectar el cambio o re-inicializarse
+                    if (window.Adapter && typeof window.Adapter.init === 'function') {
+                        window.Adapter.init(cloudData);
+                    } else if (typeof window.refreshContent === 'function') {
+                        // Fallback si no está encapsulado
+                        location.reload(); 
+                    }
+                }
+            });
+        } catch (e) {
+            console.error("Firebase Init Error:", e);
+        }
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,38 @@
+﻿# ▸ Carpetas temporales / locales
+.tmp.driveupload/
+turnosweb/
+logs/
+*.log
+*.tmp
+*.bak
+
+# ▸ Python / entornos
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# ▸ Archivos de sistema / IDE
+Thumbs.db
+.DS_Store
+.vscode/
+.idea/
+*.swp
+
+# ▸ Copias o artefactos de trabajo
+index.fixed*.html
+*.zip
+*.rar
+
+# ▸ Ficheros intermedios que no van a Pages
+*.csv
+~$*.xlsx
+~$*.xlsm
+~$*.docx
+
+# ▸ Submódulos y residuos de Git erróneos
+.gitmodules
+.git/modules/
+
+# ▸ PWA opcional (si no se usa en móvil)
+# service-worker.js

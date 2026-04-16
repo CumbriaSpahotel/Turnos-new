@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TurnosWeb — Historial de Cambios</title>
+    <link rel="stylesheet" href="admin.css">
+    <style>
+        /* Ajustes para el enlace activo en el sidebar */
+        .nav-item.active {
+            background: var(--accent-dim);
+            color: var(--accent);
+            border-right: 3px solid var(--accent);
+        }
+        .status-badge {
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body class="dark-mode">
+    <!-- NAVEGACIÓN LATERAL (CLONADA DE ADMIN.HTML) -->
+    <aside class="sidebar">
+        <div class="sidebar-brand">
+            <img src="Logo.png" alt="Logo" class="sidebar-logo">
+            <div class="brand-text">
+                <div class="sidebar-title">TurnosWeb</div>
+                <div class="sidebar-subtitle">PANEL ADMIN</div>
+            </div>
+        </div>
+
+        <nav class="sidebar-nav">
+            <div class="nav-group-label">CUADRANTE</div>
+            <a href="admin.html" class="nav-item" style="text-decoration:none;">
+                <span class="nav-icon">📁</span>
+                <span class="nav-label">Cargar Excel</span>
+            </a>
+            <a href="admin.html#preview" class="nav-item" style="text-decoration:none;">
+                <span class="nav-icon">📅</span>
+                <span class="nav-label">Vista Previa</span>
+            </a>
+            <a href="admin.html#employees" class="nav-item" style="text-decoration:none;">
+                <span class="nav-icon">👥</span>
+                <span class="nav-label">Empleados</span>
+            </a>
+            
+            <div class="nav-group-label">AUSENCIAS</div>
+            <a href="admin.html#vacations" class="nav-item" style="text-decoration:none;">
+                <span class="nav-icon">🏖️</span>
+                <span class="nav-label">Vacaciones</span>
+            </a>
+            <a href="admin.html#absences" class="nav-item" style="text-decoration:none;">
+                <span class="nav-icon">🏥</span>
+                <span class="nav-label">Bajas y Permisos</span>
+            </a>
+            <a href="cambios.html" class="nav-item active" style="text-decoration:none;">
+                <span class="nav-icon">🔄</span>
+                <span class="nav-label">Cambios de Turno</span>
+            </a>
+
+            <div class="nav-group-label">COMUNICACIÓN</div>
+            <a href="admin.html#requests" class="nav-item" style="text-decoration:none;">
+                <span class="nav-icon">📩</span>
+                <span class="nav-label">Solicitudes</span>
+            </a>
+            <a href="admin.html#inbox" class="nav-item" style="text-decoration:none;">
+                <span class="nav-icon">📫</span>
+                <span class="nav-label">Bandeja</span>
+            </a>
+
+            <div class="nav-group-label">SISTEMA</div>
+            <a href="admin.html#export" class="nav-item" style="text-decoration:none;">
+                <span class="nav-icon">📦</span>
+                <span class="nav-label">Configuración y Backup</span>
+            </a>
+        </nav>
+
+        <div class="sidebar-footer">
+            <button class="theme-toggle" onclick="location.href='admin.html'" title="Volver">🌙</button>
+        </div>
+    </aside>
+
+    <!-- ÁREA PRINCIPAL -->
+    <main class="main-wrap">
+        <section class="section active">
+            <header class="page-header">
+                <div>
+                    <h1 class="page-title">Cambios de Turno</h1>
+                    <p class="page-subtitle">Registro histórico de permutas procesadas</p>
+                </div>
+                <div class="header-controls" style="display:flex; gap:10px; flex-wrap: wrap;">
+                    <select id="filterTime" class="btn" onchange="renderSwaps()" style="background:var(--accent); color:white; border:none; border-radius:10px; padding:7px 15px; font-weight:600;">
+                        <option value="future">Próximos</option>
+                        <option value="past">Anteriores</option>
+                        <option value="all">Ver Todos</option>
+                    </select>
+                    <input type="date" id="filterDate" class="btn" onchange="renderSwaps()" style="background:var(--bg); border:1px solid var(--border); color:var(--text); padding:7px; border-radius:10px;">
+                    <input type="text" id="filterEmp" class="btn" oninput="renderSwaps()" placeholder="Buscar empleado..." style="background:var(--bg); border:1px solid var(--border); color:var(--text); padding:7px 15px; border-radius:10px; flex-grow:1; min-width:150px;">
+                    <select id="filterHotel" class="btn" onchange="renderSwaps()" style="background:var(--bg3); color:var(--text); border:1px solid var(--border); border-radius:10px; padding:7px 15px;">
+                        <option value="">— Hotel —</option>
+                        <option value="Sercotel Guadiana">Sercotel Guadiana</option>
+                        <option value="Cumbria Spa&Hotel">Cumbria Spa&Hotel</option>
+                    </select>
+                </div>
+            </header>
+
+            <div id="swapsList" class="glass-panel" style="padding:0; min-height:400px;">
+                <!-- Tabla generada por JS -->
+            </div>
+        </section>
+    </main>
+
+    <script>
+        const $ = (s) => document.querySelector(s);
+        
+        function fmtDate(d) {
+            if (!d) return '—';
+            const parts = d.split('-');
+            if (parts.length < 3) return d;
+            return `${parts[2]}/${parts[1]}/${parts[0]}`;
+        }
+
+        function renderSwaps() {
+            const container = $('#swapsList');
+            
+            let data = null;
+            try {
+                data = JSON.parse(localStorage.getItem('turnosweb_admin_data') || 'null');
+            } catch(e) { console.error(e); }
+
+            let swaps = data.swaps || [];
+            
+            // Si data.swaps está vacío, intentamos extraer de data.schedule (retrocompatibilidad)
+            if (swaps.length === 0 && data.schedule) {
+                console.log('Intentando extraer cambios desde el cuadrante existente...');
+                const extracted = [];
+                const seenPairs = new Set();
+                data.schedule.forEach(g => {
+                    (g.turnos || []).forEach(t => {
+                        if (t.turno && typeof t.turno === 'object' && t.turno.TipoInterpretado === 'C/T') {
+                            const emp1 = t.empleado;
+                            const emp2 = t.turno.Sustituto;
+                            const key = [g.hotel, t.fecha, emp1, emp2].sort().join('|');
+                            if (!seenPairs.has(key)) {
+                                seenPairs.add(key);
+                                extracted.push({ hotel: g.hotel, fecha: t.fecha, emp1, emp2 });
+                            }
+                        }
+                    });
+                });
+                swaps = extracted;
+            }
+
+            // --- FILTRO TEMPORAL Y ORDENACIÓN ---
+            const timeFilter = $('#filterTime').value;
+            const hotelFilter = $('#filterHotel').value;
+            const dateFilter = $('#filterDate').value;
+            const empFilter = $('#filterEmp').value.toLowerCase();
+            const todayStr = new Date().toISOString().split('T')[0];
+
+            if (hotelFilter) {
+                swaps = swaps.filter(s => s.hotel === hotelFilter);
+            }
+
+            if (dateFilter) {
+                swaps = swaps.filter(s => s.fecha === dateFilter);
+            }
+
+            if (empFilter) {
+                swaps = swaps.filter(s => 
+                    s.emp1.toLowerCase().includes(empFilter) || 
+                    s.emp2.toLowerCase().includes(empFilter)
+                );
+            }
+
+            if (timeFilter === 'future') {
+                swaps = swaps.filter(s => s.fecha >= todayStr);
+                swaps.sort((a, b) => a.fecha.localeCompare(b.fecha)); // Futuros: el más cercano primero
+            } else if (timeFilter === 'past') {
+                swaps = swaps.filter(s => s.fecha < todayStr);
+                swaps.sort((a, b) => b.fecha.localeCompare(a.fecha)); // Pasados: el más reciente primero
+            } else {
+                swaps.sort((a, b) => b.fecha.localeCompare(a.fecha)); // Todos: descendente
+            }
+
+            if (swaps.length === 0) {
+                const msg = timeFilter === 'future' ? 'No hay cambios futuros programados.' : 
+                            (timeFilter === 'past' ? 'No hay registro de cambios anteriores.' : 'No se han detectado cambios.');
+                container.innerHTML = `
+                <div style="padding:8rem 2rem; text-align:center;">
+                    <div style="font-size:4rem; margin-bottom:1.5rem; opacity:0.1;">🔄</div>
+                    <p style="color:var(--text-muted); font-size:1.1rem;">${msg}</p>
+                    <p style="color:var(--text-dim); font-size:0.9rem; margin-top:10px;">Ajusta los filtros o carga un nuevo Excel.</p>
+                </div>`;
+                return;
+            }
+            
+            // Deduplicar (ya hecho arriba en la extracción si era necesario, pero por seguridad)
+            const seen = new Set();
+            swaps = swaps.filter(s => {
+                const key = [s.hotel, s.fecha, s.emp1, s.emp2].sort().join('|');
+                if (seen.has(key)) return false;
+                seen.add(key);
+                return true;
+            });
+
+            if (hotelFilter) {
+                swaps = swaps.filter(s => s.hotel === hotelFilter);
+            }
+
+            const rows = swaps.map(s => `
+                <tr>
+                    <td style="padding:1.2rem;"><span class="status-badge" style="background:rgba(16, 232, 152, 0.1); color:#10e898;">✅ Confirmado</span></td>
+                    <td style="padding:1.2rem;"><b>${fmtDate(s.fecha)}</b></td>
+                    <td style="padding:1.2rem; color:var(--text-muted);">${s.hotel}</td>
+                    <td style="padding:1.2rem;">
+                        <div style="display:flex; align-items:center; gap:12px;">
+                            <span style="font-weight:600; color:var(--text);">${s.emp1}</span>
+                            <span style="color:var(--accent); font-weight:bold; opacity:0.8;">↔</span>
+                            <span style="font-weight:600; color:var(--text);">${s.emp2}</span>
+                        </div>
+                    </td>
+                </tr>
+            `).join('');
+
+            container.innerHTML = `
+                <div class="table-container">
+                    <table class="preview-table" style="width:100%;">
+                        <thead>
+                            <tr>
+                                <th style="text-align:left;">Estado</th>
+                                <th style="text-align:left;">Fecha</th>
+                                <th style="text-align:left;">Hotel</th>
+                                <th style="text-align:left;">Participantes</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${rows}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+        }
+
+        window.addEventListener('DOMContentLoaded', renderSwaps);
+    </script>
+</body>
+</html>

@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TurnosWeb — Panel Principal</title>
+    <link rel="stylesheet" href="admin.css">
+    <script src="xlsx.full.min.js"></script>
+</head>
+<body class="dark-mode">
+    <!-- NAVEGACIÓN LATERAL -->
+    <aside class="sidebar">
+        <div class="sidebar-brand">
+            <img src="Logo.png" alt="Logo" class="sidebar-logo">
+            <div class="brand-text">
+                <div class="sidebar-title">TurnosWeb</div>
+                <div class="sidebar-subtitle">PANEL ADMIN</div>
+            </div>
+        </div>
+
+        <nav class="sidebar-nav">
+            <div class="nav-group-label">CUADRANTE</div>
+            <button class="nav-item active" onclick="switchSection('home')" id="nav-home">
+                <span class="nav-icon">🏠</span>
+                <span class="nav-label">Inicio</span>
+            </button>
+            <button class="nav-item" onclick="switchSection('dashboard')" id="nav-dashboard">
+                <span class="nav-icon">📁</span>
+                <span class="nav-label">Cargar Excel</span>
+            </button>
+            <button class="nav-item" onclick="switchSection('preview')" id="nav-preview">
+                <span class="nav-icon">📅</span>
+                <span class="nav-label">Vista Previa</span>
+            </button>
+            <button class="nav-item" onclick="switchSection('employees')" id="nav-employees">
+                <span class="nav-icon">👥</span>
+                <span class="nav-label">Empleados</span>
+            </button>
+            
+            <div class="nav-group-label">AUSENCIAS</div>
+            <button class="nav-item" onclick="switchSection('vacations')" id="nav-vacations">
+                <span class="nav-icon">🏖️</span>
+                <span class="nav-label">Vacaciones</span>
+            </button>
+            <button class="nav-item" onclick="switchSection('absences')" id="nav-absences">
+                <span class="nav-icon">🏥</span>
+                <span class="nav-label">Bajas y Permisos</span>
+            </button>
+            <a href="cambios.html" class="nav-item" id="nav-swaps" style="text-decoration:none;">
+                <span class="nav-icon">🔄</span>
+                <span class="nav-label">Cambios de Turno</span>
+            </a>
+
+            <div class="nav-group-label">COMUNICACIÓN</div>
+            <button class="nav-item" onclick="switchSection('requests')" id="nav-requests">
+                <span class="nav-icon">📩</span>
+                <span class="nav-label">Solicitudes</span>
+                <span class="nav-badge" id="badge-requests">0</span>
+            </button>
+            <button class="nav-item" onclick="switchSection('inbox')" id="nav-inbox">
+                <span class="nav-icon">📫</span>
+                <span class="nav-label">Bandeja</span>
+            </button>
+
+            <div class="nav-group-label">SISTEMA</div>
+            <button class="nav-item" onclick="switchSection('export')" id="nav-export">
+                <span class="nav-icon">📦</span>
+                <span class="nav-label">Configuración y Backup</span>
+            </button>
+        </nav>
+
+        <div class="sidebar-footer">
+            <button class="theme-toggle" onclick="toggleTheme()" title="Cambiar Tema">🌙</button>
+        </div>
+    </aside>
+
+    <!-- ÁREA PRINCIPAL -->
+    <main class="main-wrap">
+        
+        <!-- INICIO / DASHBOARD -->
+        <section id="section-home" class="section active">
+            <header class="page-header">
+                <div>
+                    <h1 class="page-title">Panel de Control</h1>
+                    <p class="page-subtitle">Resumen operativo hoy: <span id="current-date-header"></span></p>
+                </div>
+            </header>
+
+            <div class="status-grid">
+                <div class="status-card">
+                    <div class="sc-label">Empleados en Turno</div>
+                    <div class="sc-value" id="stat-active-emp">0</div>
+                </div>
+                <div class="status-card ok">
+                    <div class="sc-label">Estado de la Red</div>
+                    <div class="sc-value" id="stat-sync">Sincronizado</div>
+                </div>
+                <div class="status-card">
+                    <div class="sc-label">Permutas Pendientes</div>
+                    <div class="sc-value" id="stat-pending-swaps">0</div>
+                </div>
+                <div class="status-card">
+                    <div class="sc-label">Próximas Vacaciones</div>
+                    <div class="sc-value" id="stat-next-vac">0</div>
+                </div>
+            </div>
+
+            <div class="dashboard-grid" style="display:grid; grid-template-columns: 1fr 1fr; gap:1.5rem; margin-top:1.5rem;">
+                <div class="log-panel" style="margin-top:0;">
+                    <div class="log-header">ALERTAS RECIENTES</div>
+                    <div id="home-alerts" class="log-body" style="height:250px;">
+                        <div style="padding:1rem; opacity:0.5; text-align:center;">No hay alertas pendientes.</div>
+                    </div>
+                </div>
+                <div class="log-panel" style="margin-top:0;">
+                    <div class="log-header">SINCRONIZACIÓN NUBE</div>
+                    <div id="homeLogBody" class="log-body" style="height:250px;"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- CARGAR EXCEL -->
+        <section id="section-dashboard" class="section">
+            <header class="page-header">
+                <div>
+                    <h1 class="page-title">Carga de Datos</h1>
+                    <p class="page-subtitle">Importación de cuadrantes desde Excel</p>
+                </div>
+            </header>
+
+            <div id="drop-zone" class="drop-zone">
+                <input type="file" id="fileInput" hidden accept=".xlsx, .xls">
+                <span class="drop-icon">📤</span>
+                <div class="drop-text">Arrastra el Cuadrante Excel aquí</div>
+                <div class="drop-sub">o selecciónalo manualmente</div>
+            </div>
+
+            <div class="status-grid">
+                <div class="status-card" id="card-status-excel">
+                    <div class="sc-label">Estado</div>
+                    <div class="sc-value" id="status-text">Listo</div>
+                </div>
+                <div class="status-card ok">
+                    <div class="sc-label">Plantilla</div>
+                    <div class="sc-value">v6.0</div>
+                </div>
+            </div>
+
+            <div class="log-panel">
+                <div class="log-header">REGISTRO DE ACTIVIDAD</div>
+                <div id="logBody" class="log-body"></div>
+            </div>
+        </section>
+
+        <!-- VISTA PREVIA -->
+        <section id="section-preview" class="section">
+            <header class="page-header">
+                <div><h1 class="page-title">Vista Previa</h1></div>
+                <div class="header-controls">
+                    <select id="prevHotel" class="btn" onchange="renderPreview()" style="background:var(--bg3); color:var(--text); border:1px solid var(--border); border-radius:10px; padding:7px 15px;"></select>
+                    <input type="date" id="prevWeekDate" class="btn" onchange="renderPreview()" style="background:var(--bg3); color:var(--text); border:1px solid var(--border); border-radius:10px; padding:7px 15px;">
+                    <div class="btn-group">
+                        <button class="btn active" id="btnViewWeekly" onclick="switchPreviewMode('weekly')">Semanal</button>
+                        <button class="btn" id="btnViewMonthly" onclick="switchPreviewMode('monthly')">Mensual</button>
+                    </div>
+                </div>
+            </header>
+            <div id="previewContent"></div>
+        </section>
+
+        <!-- EMPLEADOS -->
+        <section id="section-employees" class="section">
+            <header class="page-header"><div><h1 class="page-title">Empleados</h1></div></header>
+            <div id="employeesContent"></div>
+        </section>
+
+        <!-- VACACIONES -->
+        <section id="section-vacations" class="section">
+            <header class="page-header"><div><h1 class="page-title">Vacaciones</h1></div></header>
+            <div class="glass" style="padding:2rem;">Gestión de vacaciones anuales...</div>
+        </section>
+
+        <!-- BAJAS -->
+        <section id="section-absences" class="section">
+            <header class="page-header"><div><h1 class="page-title">Bajas y Permisos</h1></div></header>
+            <div class="glass" style="padding:2rem;">Registro de bajas médicas y permisos...</div>
+        </section>
+
+
+
+        <!-- BACKUP / CONFIGURACIÓN -->
+        <section id="section-export" class="section">
+            <header class="page-header"><div><h1 class="page-title">Backup y Configuración</h1></div></header>
+            <div class="glass" style="padding:2rem;">
+                <p style="margin-bottom:1.5rem; color:var(--text-muted);">Si tu navegador borra la configuración por seguridad (Tracking Prevention), descarga un backup aquí y cárgalo después.</p>
+                <div style="display:flex; gap:1rem;">
+                    <button class="btn active" onclick="exportConfig()" style="background:var(--accent); color:white; border:none; padding:10px 20px; border-radius:10px; cursor:pointer;">Descargar Backup JSON</button>
+                    <button class="btn" onclick="$('#configImport').click()" style="background:var(--bg3); color:var(--text); border:1px solid var(--border); padding:10px 20px; border-radius:10px; cursor:pointer;">Importar Backup</button>
+                    <input type="file" id="configImport" hidden onchange="importConfig()" accept=".json">
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- DRAWER -->
+    <div id="empDrawer" class="drawer-overlay" onclick="closeEmpDrawer()">
+        <div class="drawer-content" onclick="event.stopPropagation()">
+            <button class="drawer-close" onclick="closeEmpDrawer()">✕</button>
+            <div id="drawerBody"></div>
+        </div>
+    </div>
+
+    <!-- FIREBASE INTEGRATION -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+    <script src="firebase-config.js"></script>
+
+    <script src="admin.js?v=99"></script>
+</body>
+</html>
