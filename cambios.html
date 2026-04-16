@@ -245,6 +245,34 @@
             `;
         }
 
+    </script>
+    
+    <!-- FIREBASE INTEGRATION -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+    <script src="firebase-config.js"></script>
+
+    <script>
+        // Sincronización con la nube para Cambios de Turno
+        if (window.firebase && window.firebaseConfig) {
+            try {
+                firebase.initializeApp(window.firebaseConfig);
+                const fbDb = firebase.database();
+                console.log("Firebase inicializado en Cambios.");
+
+                // Escuchar cambios en la base de datos
+                fbDb.ref('turnosweb/data').on('value', (snapshot) => {
+                    const cloudData = snapshot.val();
+                    if (cloudData) {
+                        console.log("Datos recibidos de la nube en Cambios.");
+                        // Guardar en local para que renderSwaps lo use (opcional, pero mantiene consistencia)
+                        localStorage.setItem('turnosweb_admin_data', JSON.stringify(cloudData));
+                        renderSwaps(); 
+                    }
+                });
+            } catch (e) { console.error("Error Firebase Cambios:", e); }
+        }
+
         window.addEventListener('DOMContentLoaded', renderSwaps);
     </script>
 </body>
