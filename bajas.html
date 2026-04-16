@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TurnosWeb — Bajas y Permisos</title>
+    <link rel="stylesheet" href="admin.css">
+    <style>
+        .nav-item.active { background: var(--accent-dim); color: var(--accent); border-right: 3px solid var(--accent); }
+    </style>
+</head>
+<body class="dark-mode">
+    <aside class="sidebar">
+        <div class="sidebar-brand">
+            <img src="Logo.png" alt="Logo" class="sidebar-logo">
+            <div class="brand-text">
+                <div class="sidebar-title">TurnosWeb</div>
+                <div class="sidebar-subtitle">PANEL ADMIN</div>
+            </div>
+        </div>
+
+        <nav class="sidebar-nav">
+            <div class="nav-group-label">CUADRANTE</div>
+            <a href="admin.html" class="nav-item">
+                <span class="nav-icon">🏠</span>
+                <span class="nav-label">Inicio / Cargar</span>
+            </a>
+            <a href="admin.html#preview" class="nav-item">
+                <span class="nav-icon">📅</span>
+                <span class="nav-label">Vista Previa</span>
+            </a>
+            <a href="admin.html#employees" class="nav-item">
+                <span class="nav-icon">👥</span>
+                <span class="nav-label">Empleados</span>
+            </a>
+            
+            <div class="nav-group-label">AUSENCIAS</div>
+            <a href="vacaciones.html" class="nav-item">
+                <span class="nav-icon">🏖️</span>
+                <span class="nav-label">Vacaciones</span>
+            </a>
+            <a href="bajas.html" class="nav-item active">
+                <span class="nav-icon">🏥</span>
+                <span class="nav-label">Bajas y Permisos</span>
+            </a>
+            <a href="cambios.html" class="nav-item">
+                <span class="nav-icon">🔄</span>
+                <span class="nav-label">Cambios de Turno</span>
+            </a>
+
+            <div class="nav-group-label">SISTEMA</div>
+            <a href="admin.html#export" class="nav-item">
+                <span class="nav-icon">📦</span>
+                <span class="nav-label">Configuración</span>
+            </a>
+        </nav>
+
+        <div class="sidebar-footer">
+            <button class="theme-toggle" id="themeToggle" onclick="toggleTheme()">🌙</button>
+        </div>
+    </aside>
+
+    <main class="main-wrap">
+        <section class="section active">
+            <header class="page-header">
+                <div>
+                    <h1 class="page-title">Bajas Médicas y Permisos</h1>
+                    <p class="page-subtitle">Registro de ausencias justificadas y permisos retribuidos</p>
+                </div>
+                <div class="header-controls">
+                    <select id="filterTime" class="btn active" style="background:var(--accent); color:white;" onchange="renderBajas()">
+                        <option value="all">Ver Todos</option>
+                        <option value="upcoming" selected>Próximos</option>
+                        <option value="past">Pasados</option>
+                    </select>
+                    <input type="date" id="filterDate" class="btn" onchange="renderBajas()">
+                    <input type="text" id="filterEmp" class="btn" oninput="renderBajas()" placeholder="Buscar empleado...">
+                    <select id="filterHotel" class="btn" onchange="renderBajas()">
+                        <option value="">— Hotel —</option>
+                        <option value="Sercotel Guadiana">Sercotel Guadiana</option>
+                        <option value="Cumbria Spa&Hotel">Cumbria Spa&Hotel</option>
+                    </select>
+                </div>
+            </header>
+
+            <div id="bajasList" class="glass-panel" style="min-height:500px;">
+                <!-- Contenido generado por JS -->
+            </div>
+        </section>
+    </main>
+
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+    <script src="firebase-config.js"></script>
+
+    <script>
+        const $ = (s) => document.querySelector(s);
+        
+        let FULL_DATA = null;
+
+        function renderBajas() {
+            const container = $('#bajasList');
+            const data = FULL_DATA || JSON.parse(localStorage.getItem('turnosweb_admin_data') || '{"schedule":[]}');
+            if (!FULL_DATA && (!data.schedule || data.schedule.length === 0)) {
+                container.innerHTML = `<div style="padding:5rem; text-align:center; opacity:0.5;">⌛ Conectando con la base de datos...</div>`;
+                return;
+            }
+
+            const hotelFilter = $('#filterHotel').value;
+            const empFilter = $('#filterEmp').value.toLowerCase();
+            const timeFilter = $('#filterTime').value;
+            const dateFilter = $('#filterDate').value; // YYYY-MM-DD
+            const todayStr = new Date().toISOString().split('T')[0];
+
+            let bajas = [];
+            data.schedule.forEach(g => {
+                if (hotelFilter && g.hotel !== hotelFilter) return;
+                if (!g.turnos) return;
+                g.turnos.forEach(t => {
+                    // Si hay filtro de fecha específica y no coincide, saltar
+                    if (dateFilter && t.fecha !== dateFilter) return;
+
+                    // Filtro de Tiempo (Próximos / Pasados) si no hay fecha específica marcada
+                    if (!dateFilter) {
+                        if (timeFilter === 'upcoming' && t.fecha < todayStr) return;
+                        if (timeFilter === 'past' && t.fecha > todayStr) return;
+                    }
+
+                    let turnLabel = '';
+                    if (typeof t.turno === 'string') turnLabel = t.turno;
+                    else if (t.turno && typeof t.turno === 'object') {
+                        turnLabel = t.turno.TipoInterpretado || t.turno.TurnoOriginal || '';
+                    }
+
+                    const l = turnLabel.toLowerCase();
+                    // Detectar Bajas (B, Baja, Baja Médica) o Permisos (P, Per, Permiso)
+                    const isBaja = l === 'b' || l.includes('baja');
+                    const isPermiso = l === 'p' || l.includes('permis');
+
+                    if (isBaja || isPermiso) {
+                        if (empFilter && !t.empleado.toLowerCase().includes(empFilter)) return;
+                        bajas.push({ 
+                            hotel: g.hotel, 
+                            fecha: t.fecha, 
+                            empleado: t.empleado,
+                            tipo: isPermiso ? '📝 PERMISO' : '🏥 BAJA MÉDICA',
+                            color: isPermiso ? '#8b5cf6' : '#ef4444'
+                        });
+                    }
+                });
+            });
+
+            if (bajas.length === 0) {
+                container.innerHTML = `<div style="padding:5rem; text-align:center; opacity:0.5;">No hay bajas o permisos vigentes.</div>`;
+                return;
+            }
+
+            bajas.sort((a,b) => b.fecha.localeCompare(a.fecha));
+
+            const rows = bajas.map(b => `
+                <tr>
+                    <td style="padding:1rem;"><span class="status-badge" style="background:${b.color}22; color:${b.color}; border:none;">${b.tipo}</span></td>
+                    <td style="padding:1rem;"><b>${new Date(b.fecha).toLocaleDateString('es-ES', { day:'2-digit', month:'short', year:'numeric'})}</b></td>
+                    <td style="padding:1rem; color:var(--text-muted);">${b.hotel}</td>
+                    <td style="padding:1rem;"><b>${b.empleado}</b></td>
+                </tr>
+            `).join('');
+
+            container.innerHTML = `
+                <div class="table-container">
+                    <table class="preview-table" style="width:100%;">
+                        <thead>
+                            <tr>
+                                <th style="text-align:left;">Estado / Tipo</th>
+                                <th style="text-align:left;">Fecha</th>
+                                <th style="text-align:left;">Hotel</th>
+                                <th style="text-align:left;">Empleado</th>
+                            </tr>
+                        </thead>
+                        <tbody>${rows}</tbody>
+                    </table>
+                </div>
+            `;
+        }
+
+        if (window.firebase && window.firebaseConfig) {
+            firebase.initializeApp(window.firebaseConfig);
+            firebase.database().ref('turnosweb/data').on('value', (s) => {
+                const d = s.val();
+                if (d) {
+                    FULL_DATA = d;
+                    localStorage.setItem('turnosweb_admin_data', JSON.stringify(d));
+                    renderBajas();
+                }
+            });
+        }
+
+        function toggleTheme() {
+            const isLight = document.body.classList.contains('light-mode');
+            setTheme(isLight ? 'dark' : 'light');
+        }
+        function setTheme(mode) {
+            if (mode === 'light') {
+                document.body.classList.add('light-mode');
+                $('#themeToggle').textContent = '☀️';
+            } else {
+                document.body.classList.remove('light-mode');
+                $('#themeToggle').textContent = '🌙';
+            }
+            localStorage.setItem('turnosweb_theme', mode);
+        }
+        document.addEventListener('DOMContentLoaded', () => {
+            const savedTheme = localStorage.getItem('turnosweb_theme') || 'dark';
+            setTheme(savedTheme);
+            renderBajas();
+        });
+    </script>
+</body>
+</html>

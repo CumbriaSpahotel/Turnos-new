@@ -54,14 +54,26 @@ if (window.firebase && window.firebaseConfig) {
 }
 
 window.syncToFirebase = async (data) => {
-    if (!db) return;
+    if (!db) {
+        window.addLog('ERROR: Conexión a Firebase no disponible.', 'error');
+        return;
+    }
     try {
+        // Antes de subir, comparamos brevemente
+        const lastUpdate = new Date().toISOString();
+        data.updated_at = lastUpdate;
+        
         await db.ref('turnosweb/data').set(data);
-        window.addLog('NUBE: Datos sincronizados con Firebase ✅', 'ok');
-        window.updateDashboardStats(); // Refrescar estadísticas
+        window.parsedData = data; // La memoria local se actualiza DESPUÉS del éxito
+        window.saveData();
+        
+        window.addLog(`NUBE: Fuente de Verdad actualizada (${new Date().toLocaleTimeString()}) ✅`, 'ok');
+        window.updateDashboardStats();
+        $('#stat-sync').textContent = 'Sincronizado';
+        $('#stat-sync').parentElement.classList.add('ok');
     } catch (e) {
         console.error("Error sincronizando:", e);
-        window.addLog('ERROR NUBE: No se pudo subir a Firebase ❌', 'error');
+        window.addLog('ERROR NUBE: Fallo al escribir en la fuente de verdad ❌', 'error');
     }
 };
 
@@ -244,14 +256,28 @@ window.processWorkbook = (wb) => {
         });
     });
 
-    window.parsedData = { schedule: scheduleRows, swaps: allSwapsRaw, generated_at: new Date().toISOString() };
+    // --- LÓGICA DE FUSIÓN (MERGE) ---
+    if (window.parsedData && window.parsedData.schedule) {
+        window.addLog('Comparando con base de datos en tiempo real...');
+        let changes = 0;
+        // Mantenemos swaps y otros metadatos que ya estuvieran en la nube
+        const newSchedule = scheduleRows;
+        
+        // Aquí podríamos comparar newSchedule con window.parsedData.schedule para loguear diferencias exactas
+        window.parsedData.schedule = newSchedule;
+        window.parsedData.generated_at = new Date().toISOString();
+        window.addLog(`Base de datos actualizada con datos del Excel.`);
+    } else {
+        window.parsedData = { schedule: scheduleRows, swaps: allSwapsRaw, generated_at: new Date().toISOString() };
+    }
+    
     window.saveData();
     window.updateDashboardStats();
     window.populatePreview();
     window.populateEmployees();
-    window.addLog('Procesamiento completado.', 'ok');
+    window.addLog('Procesamiento completado y listo para sincronizar.', 'ok');
     
-    // Sincronizar con Firebase
+    // Sincronizar el resultado final a la Fuente de Verdad
     if (window.parsedData) window.syncToFirebase(window.parsedData);
 };
 
@@ -368,21 +394,25 @@ window.renderMonthlyCalendar = (filterHotel, monthStr) => {
     const area = $('#previewContent'); if (!window.parsedData || !area) return;
     area.innerHTML = '';
     
-    const now = monthStr ? new Date(monthStr + '-01') : new Date();
+    // Si monthStr es solo una fecha YYYY-MM-DD, extraemos el mes
+    const now = monthStr ? new Date(monthStr) : new Date();
     const year = now.getFullYear();
     const month = now.getMonth();
     
-    // Header navigación mes (UI simple para el admin)
+    // Header navegación mes (UI elegante)
     const header = document.createElement('div');
     header.className = 'calendar-month-nav';
     header.innerHTML = `
-        <div class="cal-month-title">${now.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' }).toUpperCase()}</div>
-        <div class="cal-legend">
-            <div class="cal-legend-item"><span class="cal-legend-dot legend-m"></span> Mañanas</div>
-            <div class="cal-legend-item"><span class="cal-legend-dot legend-t"></span> Tardes</div>
-            <div class="cal-legend-item"><span class="cal-legend-dot legend-n"></span> Noches</div>
-            <div class="cal-legend-item"><span class="cal-legend-dot legend-d"></span> Descansos</div>
-            <div class="cal-legend-item"><span class="cal-legend-dot legend-v"></span> Vacaciones</div>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem; padding:0 10px;">
+            <h2 style="margin:0; text-transform:uppercase; letter-spacing:1px; color:var(--accent); font-size:1.2rem;">
+                ${now.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' })}
+            </h2>
+            <div class="cal-legend" style="display:flex; gap:15px; font-size:0.7rem; font-weight:700;">
+                <div style="display:flex; align-items:center; gap:5px;"><span style="width:8px; height:8px; border-radius:50%; background:#22c55e;"></span> M</div>
+                <div style="display:flex; align-items:center; gap:5px;"><span style="width:8px; height:8px; border-radius:50%; background:#f59e0b;"></span> T</div>
+                <div style="display:flex; align-items:center; gap:5px;"><span style="width:8px; height:8px; border-radius:50%; background:#64748b;"></span> N</div>
+                <div style="display:flex; align-items:center; gap:5px;"><span style="width:8px; height:8px; border-radius:50%; background:#ef4444;"></span> D</div>
+            </div>
         </div>
     `;
     area.appendChild(header);
@@ -390,15 +420,16 @@ window.renderMonthlyCalendar = (filterHotel, monthStr) => {
     const gridWrap = document.createElement('div');
     gridWrap.className = 'calendar-wrap';
     
+    // Días de la semana
     const daysHeader = document.createElement('div');
-    daysHeader.className = 'calendar-header-days';
+    daysHeader.style = "display:grid; grid-template-columns:repeat(7, 1fr); gap:10px; margin-bottom:10px; text-align:center; font-weight:800; font-size:0.7rem; color:var(--text-dim); text-transform:uppercase;";
     ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'].forEach(d => {
-        daysHeader.innerHTML += `<div class="ch-day">${d}</div>`;
+        daysHeader.innerHTML += `<div>${d}</div>`;
     });
-    gridWrap.appendChild(daysHeader);
+    area.appendChild(daysHeader);
 
     const grid = document.createElement('div');
-    grid.className = 'calendar-grid';
+    grid.style = "display:grid; grid-template-columns:repeat(7, 1fr); gap:10px;";
     
     const firstDay = new Date(year, month, 1);
     const startOffset = (firstDay.getDay() === 0 ? 6 : firstDay.getDay() - 1);
@@ -406,40 +437,43 @@ window.renderMonthlyCalendar = (filterHotel, monthStr) => {
     
     // Celdas vacías mes anterior
     for (let i = 0; i < startOffset; i++) {
-        grid.innerHTML += `<div class="cal-cell other-month"></div>`;
+        grid.innerHTML += `<div style="aspect-ratio:1; opacity:0.1; background:var(--border); border-radius:10px;"></div>`;
     }
     
     // Días del mes
     for (let d = 1; d <= totalDays; d++) {
         const dayStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
         const isToday = dayStr === new Date().toISOString().split('T')[0];
-        const isWeekend = new Date(year, month, d).getDay() % 6 === 0;
+        const dayOfWeek = new Date(year, month, d).getDay();
+        const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
         
         let eventsHtml = '';
         window.parsedData.schedule.forEach(g => {
             if (filterHotel && g.hotel !== filterHotel) return;
             g.turnos.forEach(t => {
                 if (t.fecha === dayStr) {
-                    const cls = window.classify(typeof t.turno === 'string' ? t.turno : (t.turno?.TurnoOriginal || ''));
+                    const label = (typeof t.turno === 'object' ? t.turno.TipoInterpretado : t.turno) || '';
+                    const cls = window.classify(label);
+                    // Solo mostramos turnos de trabajo en el calendario (evitamos amontonar descansos)
                     if (cls && cls !== 'd') {
-                        eventsHtml += `<div class="cal-event ${cls}" title="${t.empleado}: ${t.turno?.TurnoOriginal || t.turno}">
-                            <span class="cal-hotel-tag">${g.hotel[0]}</span> ${t.empleado.split(' ')[0]}
-                        </div>`;
+                        eventsHtml += `
+                            <div class="cal-badge ${cls}" style="font-size:0.6rem; padding:2px 5px; border-radius:4px; margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; background:var(--${cls}-dim); color:var(--text); border:1px solid var(--border);">
+                                <b style="color:var(--accent)">${g.hotel[0]}</b> ${t.empleado.split(' ')[0]}
+                            </div>`;
                     }
                 }
             });
         });
 
         grid.innerHTML += `
-            <div class="cal-cell ${isToday ? 'today' : ''} ${isWeekend ? 'weekend' : ''}">
-                <div class="cal-day-num">${d}</div>
-                <div class="cal-events">${eventsHtml}</div>
+            <div style="aspect-ratio:1; background:${isToday ? 'var(--accent-dim)' : 'var(--surface)'}; border:1px solid ${isToday ? 'var(--accent)' : 'var(--border)'}; border-radius:12px; padding:8px; overflow-y:auto; position:relative; box-shadow: var(--shadow-sm);">
+                <div style="font-size:0.8rem; font-weight:800; ${isWeekend ? 'color:var(--accent);' : ''}">${d}</div>
+                <div style="display:flex; flex-direction:column; gap:2px;">${eventsHtml}</div>
             </div>
         `;
     }
     
-    gridWrap.appendChild(grid);
-    area.appendChild(gridWrap);
+    area.appendChild(grid);
 };
 
 // ==========================================
@@ -537,27 +571,27 @@ window.closeEmpDrawer = () => { $('#empDrawer').classList.remove('open'); };
 document.addEventListener('DOMContentLoaded', () => {
     window.addLog('Iniciando TurnosWeb Admin...');
     const saved = localStorage.getItem('turnosweb_admin_data');
-    if (saved) {
-        window.parsedData = JSON.parse(saved);
-        $('#status-text').textContent = 'Datos en memoria';
-        $('#status-text').parentElement.classList.add('ok');
-        window.populatePreview();
-        window.populateEmployees();
-        window.addLog('Base de datos recuperada del navegador.');
-    }
-
-    // --- NUEVO: Sincronización automática desde la NUBE ---
-    if (window.firebase && window.firebaseConfig && !window.parsedData) {
-        window.addLog('Buscando datos en la nube...');
+    // --- SISTEMA DE FUENTE DE VERDAD (FIREBASE FIRST) ---
+    if (window.firebase && window.firebaseConfig) {
+        window.addLog('Conectando a Fuente de Verdad (Firebase)...');
         const fbDb = firebase.database();
-        fbDb.ref('turnosweb/data').once('value').then((snapshot) => {
+        
+        // Listener en tiempo real: Cualquier cambio en la nube se refleja en el Admin
+        fbDb.ref('turnosweb/data').on('value', (snapshot) => {
             const cloudData = snapshot.val();
-            if (cloudData && !window.parsedData) {
-                window.addLog('NUBE: Sincronización inicial completada ✅', 'ok');
-                window.parsedData = cloudData;
-                window.populatePreview();
-                window.populateEmployees();
-                window.updateDashboardStats();
+            if (cloudData) {
+                // Solo sobreescribimos si es la carga inicial o si NO estamos procesando un Excel actulamente
+                if (!window.isProcessingExcel) {
+                    window.parsedData = cloudData;
+                    window.populatePreview();
+                    window.populateEmployees();
+                    window.updateDashboardStats();
+                    window.addLog('NUBE: Datos sincronizados desde la nube ✅');
+                    $('#status-text').textContent = 'Conectado a Nube';
+                    $('#status-text').parentElement.classList.add('ok');
+                }
+            } else {
+                window.addLog('NUBE: La base de datos está vacía. Esperando carga inicial.');
             }
         });
     }

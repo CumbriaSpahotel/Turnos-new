@@ -78,7 +78,7 @@
         </nav>
 
         <div class="sidebar-footer">
-            <button class="theme-toggle" onclick="location.href='admin.html'" title="Volver">🌙</button>
+            <button class="theme-toggle" id="themeToggle" onclick="toggleTheme()" title="Cambiar Tema">🌙</button>
         </div>
     </aside>
 
@@ -273,7 +273,28 @@
             } catch (e) { console.error("Error Firebase Cambios:", e); }
         }
 
-        window.addEventListener('DOMContentLoaded', renderSwaps);
+        // --- GESTIÓN DE TEMAS ---
+        function toggleTheme() {
+            const isLight = document.body.classList.contains('light-mode');
+            setTheme(isLight ? 'dark' : 'light');
+        }
+
+        function setTheme(mode) {
+            if (mode === 'light') {
+                document.body.classList.add('light-mode');
+                $('#themeToggle').textContent = '☀️';
+            } else {
+                document.body.classList.remove('light-mode');
+                $('#themeToggle').textContent = '🌙';
+            }
+            localStorage.setItem('turnosweb_theme', mode);
+        }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            const savedTheme = localStorage.getItem('turnosweb_theme') || 'dark';
+            setTheme(savedTheme);
+            renderSwaps();
+        });
     </script>
 </body>
 </html>

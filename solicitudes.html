@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TurnosWeb — Solicitudes</title>
+    <link rel="stylesheet" href="admin.css">
+    <style>
+        .nav-item.active { background: var(--accent-dim); color: var(--accent); border-right: 3px solid var(--accent); }
+        .request-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: transform 0.2s;
+        }
+        .request-card:hover { transform: translateY(-2px); border-color: var(--accent); }
+    </style>
+</head>
+<body class="dark-mode">
+    <aside class="sidebar">
+        <div class="sidebar-brand">
+            <img src="Logo.png" alt="Logo" class="sidebar-logo">
+            <div class="brand-text">
+                <div class="sidebar-title">TurnosWeb</div>
+                <div class="sidebar-subtitle">PANEL ADMIN</div>
+            </div>
+        </div>
+
+        <nav class="sidebar-nav">
+            <div class="nav-group-label">CUADRANTE</div>
+            <a href="admin.html" class="nav-item">
+                <span class="nav-icon">🏠</span>
+                <span class="nav-label">Inicio / Cargar</span>
+            </a>
+            <a href="admin.html#preview" class="nav-item">
+                <span class="nav-icon">📅</span>
+                <span class="nav-label">Vista Previa</span>
+            </a>
+            <a href="admin.html#employees" class="nav-item">
+                <span class="nav-icon">👥</span>
+                <span class="nav-label">Empleados</span>
+            </a>
+            
+            <div class="nav-group-label">AUSENCIAS</div>
+            <a href="vacaciones.html" class="nav-item">
+                <span class="nav-icon">🏖️</span>
+                <span class="nav-label">Vacaciones</span>
+            </a>
+            <a href="bajas.html" class="nav-item">
+                <span class="nav-icon">🏥</span>
+                <span class="nav-label">Bajas y Permisos</span>
+            </a>
+            <a href="cambios.html" class="nav-item">
+                <span class="nav-icon">🔄</span>
+                <span class="nav-label">Cambios de Turno</span>
+            </a>
+
+            <div class="nav-group-label">COMUNICACIÓN</div>
+            <a href="solicitudes.html" class="nav-item active">
+                <span class="nav-icon">📩</span>
+                <span class="nav-label">Solicitudes</span>
+            </a>
+            <a href="bandeja.html" class="nav-item">
+                <span class="nav-icon">📫</span>
+                <span class="nav-label">Bandeja</span>
+            </a>
+
+            <div class="nav-group-label">SISTEMA</div>
+            <a href="configuracion.html" class="nav-item">
+                <span class="nav-icon">📦</span>
+                <span class="nav-label">Configuración</span>
+            </a>
+        </nav>
+
+        <div class="sidebar-footer">
+            <button class="theme-toggle" id="themeToggle" onclick="toggleTheme()">🌙</button>
+        </div>
+    </aside>
+
+    <main class="main-wrap">
+        <section class="section active">
+            <header class="page-header">
+                <div>
+                    <h1 class="page-title">Solicitudes Pendientes</h1>
+                    <p class="page-subtitle">Peticiones de cambios de turno y permisos de empleados</p>
+                </div>
+            </header>
+
+            <div id="requestsList" class="glass-panel" style="min-height:500px; padding:2rem;">
+                <!-- Contenido generado por JS -->
+                <div style="text-align:center; opacity:0.5; padding:5rem;">
+                    ⌛ Conectando con el buzón de solicitudes...
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+    <script src="firebase-config.js"></script>
+
+    <script>
+        const $ = (s) => document.querySelector(s);
+        
+        function renderRequests(reqData) {
+            const container = $('#requestsList');
+            if (!reqData || Object.keys(reqData).length === 0) {
+                container.innerHTML = `<div style="padding:5rem; text-align:center; opacity:0.5;">📭 No hay solicitudes pendientes actualmente.</div>`;
+                return;
+            }
+
+            container.innerHTML = Object.entries(reqData).map(([id, req]) => `
+                <div class="request-card">
+                    <div>
+                        <div style="font-size:0.75rem; color:var(--accent); font-weight:700;">${req.tipo || 'PETICIÓN'}</div>
+                        <h3 style="margin:5px 0;">${req.empleado || 'Empleado Desconocido'}</h3>
+                        <div style="font-size:0.85rem; color:var(--text-dim);">${req.mensaje || 'Sin mensaje adicional'}</div>
+                    </div>
+                    <div style="display:flex; gap:10px;">
+                        <button class="btn ok" onclick="manageRequest('${id}', 'approve')">Aprobar</button>
+                        <button class="btn" style="border-color:var(--error); color:var(--error);" onclick="manageRequest('${id}', 'reject')">Rechazar</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        if (window.firebase && window.firebaseConfig) {
+            firebase.initializeApp(window.firebaseConfig);
+            firebase.database().ref('turnosweb/solicitudes').on('value', (s) => {
+                renderRequests(s.val());
+            });
+        }
+
+        function manageRequest(id, action) {
+            if (!confirm(`¿Estás seguro de que quieres ${action === 'approve' ? 'APROBAR' : 'RECHAZAR'} esta solicitud?`)) return;
+            firebase.database().ref(`turnosweb/solicitudes/${id}`).remove()
+                .then(() => alert('Solicitud procesada con éxito.'));
+        }
+
+        function toggleTheme() {
+            const isLight = document.body.classList.contains('light-mode');
+            setTheme(isLight ? 'dark' : 'light');
+        }
+        function setTheme(mode) {
+            document.body.classList.toggle('light-mode', mode === 'light');
+            $('#themeToggle').textContent = mode === 'light' ? '☀️' : '🌙';
+            localStorage.setItem('turnosweb_theme', mode);
+        }
+        document.addEventListener('DOMContentLoaded', () => {
+            setTheme(localStorage.getItem('turnosweb_theme') || 'dark');
+        });
+    </script>
+</body>
+</html>
