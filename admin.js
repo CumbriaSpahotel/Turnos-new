@@ -546,6 +546,22 @@ document.addEventListener('DOMContentLoaded', () => {
         window.addLog('Base de datos recuperada del navegador.');
     }
 
+    // --- NUEVO: Sincronización automática desde la NUBE ---
+    if (window.firebase && window.firebaseConfig && !window.parsedData) {
+        window.addLog('Buscando datos en la nube...');
+        const fbDb = firebase.database();
+        fbDb.ref('turnosweb/data').once('value').then((snapshot) => {
+            const cloudData = snapshot.val();
+            if (cloudData && !window.parsedData) {
+                window.addLog('NUBE: Sincronización inicial completada ✅', 'ok');
+                window.parsedData = cloudData;
+                window.populatePreview();
+                window.populateEmployees();
+                window.updateDashboardStats();
+            }
+        });
+    }
+
     const dropZone = $('#drop-zone');
     const fileIn = $('#fileInput');
 

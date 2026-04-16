@@ -125,12 +125,13 @@
         function renderSwaps() {
             const container = $('#swapsList');
             
-            let data = null;
+            let data = { swaps: [] };
             try {
-                data = JSON.parse(localStorage.getItem('turnosweb_admin_data') || 'null');
+                const saved = localStorage.getItem('turnosweb_admin_data');
+                if (saved) data = JSON.parse(saved);
             } catch(e) { console.error(e); }
 
-            let swaps = data.swaps || [];
+            let swaps = (data && data.swaps) ? data.swaps : [];
             
             // Si data.swaps está vacío, intentamos extraer de data.schedule (retrocompatibilidad)
             if (swaps.length === 0 && data.schedule) {
