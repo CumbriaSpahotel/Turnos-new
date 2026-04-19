@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TurnosWeb — Bajas y Permisos</title>
+    <link rel="icon" type="image/png" href="favicon.png">
     <link rel="stylesheet" href="admin.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
         <style>
@@ -155,13 +156,11 @@
         </div>
     </div>
 
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
     <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/es.js"></script>
-    <script src="firebase-config.js"></script>
-    <script src="data.js"></script>
-    <script src="data.ausencias.js"></script>
+    <script src="supabase-config.js?v=7.5"></script>
+    <script src="supabase-dao.js?v=7.5"></script>
 
 
     <script>
@@ -219,134 +218,81 @@
             }
         }
 
-        function renderBajas() {
-            const container = $('#bajasList');
-            // Prioridad: Firebase (FULL_DATA) -> localStorage -> Fallback data.js -> data.ausencias.js -> Vacío
-            let data = FULL_DATA;
-            
-            if (!data || !data.schedule) {
-                try {
-                    const local = localStorage.getItem('turnosweb_admin_data');
-                    if (local) data = JSON.parse(local);
-                } catch(e) {}
-            }
-
-            if (!data || !data.schedule) data = window.FULL_DATA;
-            if (!data || !data.schedule) data = window.AUSENCIAS_DATA; // Fallback extremo
-            if (!data) data = { schedule: [] };
-            
-            if (!data.schedule || data.schedule.length === 0) {
-                const isBlocked = !checkStorage();
-                container.innerHTML = `
-                    <div style="padding:5rem; text-align:center; opacity:0.5;">
-                        <div style="font-size:3rem; margin-bottom:1rem;">${isBlocked ? '🚫' : '⌛'}</div>
-                        <p>${isBlocked ? 
-                            '<b style="color:var(--danger);">Almacenamiento Bloqueado por el Navegador</b><br>Por favor, permite el acceso a datos en la configuración de seguridad.' : 
-                            'Esperando datos (Nube o Local)...'}</p>
-                    </div>`;
-                return;
-            }
-
-            populateHotels(data);
-
+        async function renderBajas() {
+            if (!window.TurnosDB) return;
+            const container = $('#bajasBody');
+            if (!container) return;
 
             const hotelFilter = $('#filterHotel')?.value || '';
             const empFilter = $('#filterEmp')?.value.toLowerCase() || '';
             const dStart = CURRENT_RANGE.start;
             const dEnd = CURRENT_RANGE.end;
-            const todayStr = new Date().toISOString().split('T')[0];
 
-            let bajas = [];
-            data.schedule.forEach(g => {
-                if (hotelFilter && g.hotel !== hotelFilter) return;
-                if (!g.turnos) return;
-                g.turnos.forEach(t => {
-                    // Filtro de Rango
-                    if (dStart && t.fecha < dStart) return;
-                    if (dEnd && t.fecha > dEnd) return;
+            try {
+                const bajas = await window.TurnosDB.fetchTipo('BAJA', dStart, dEnd);
+                const perms = await window.TurnosDB.fetchTipo('PERM', dStart, dEnd);
+                
+                let combined = [...bajas, ...perms];
+                if (hotelFilter) combined = combined.filter(v => v.hotel_id === hotelFilter);
+                if (empFilter) combined = combined.filter(v => v.empleado_id.toLowerCase().includes(empFilter));
 
-                    let turnLabel = '';
-                    if (typeof t.turno === 'string') turnLabel = t.turno;
-                    else if (t.turno && typeof t.turno === 'object') {
-                        turnLabel = t.turno.TipoInterpretado || t.turno.TurnoOriginal || '';
-                    }
-
-                    const l = turnLabel.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
-                    const isBaja = l.startsWith('b') || l.includes('baja');
-                    const isPermiso = l.startsWith('p') || l.includes('permis');
-                    let obs = '';
-                    if (typeof t.turno === 'object' && t.turno.Observaciones) obs = t.turno.Observaciones;
-
-                    if (isBaja || isPermiso) {
-                        if (empFilter && !t.empleado.toLowerCase().includes(empFilter)) return;
-                        bajas.push({ 
-                            hotel: g.hotel, 
-                            fecha: t.fecha, 
-                            empleado: t.empleado,
-                            tipo: isPermiso ? '📝 PERMISO' : '🏥 BAJA MÉDICA',
-                            color: isPermiso ? '#8b5cf6' : '#ef4444',
-                            obs: obs
-                        });
-                    }
-                });
-            });
-
-            if (data.manual_bajas) {
-                data.manual_bajas.forEach(mb => {
-                    if (hotelFilter && mb.hotel !== hotelFilter) return;
-                    if (dStart && mb.fecha < dStart) return;
-                    if (dEnd && mb.fecha > dEnd) return;
-                    if (empFilter && !mb.empleado.toLowerCase().includes(empFilter)) return;
-                    bajas.push(mb);
-                });
-            }
-
-            if (bajas.length === 0) {
-                container.innerHTML = `<div style="padding:5rem; text-align:center; opacity:0.5;">No hay bajas o permisos registrados en este periodo.</div>`;
-                return;
-            }
-
-            bajas.sort((a,b) => b.fecha.localeCompare(a.fecha));
-
-            const rows = bajas.map(b => `
-                <tr ${b.isManual ? 'style="background:rgba(255,255,255,0.01);"' : ''}>
-                    <td style="padding:1rem;"><span class="status-badge" style="background:${b.color}22; color:${b.color}; border:none;">${b.tipo}</span> ${b.isManual ? '<span style="font-size:0.6rem; opacity:0.5; margin-left:5px;">(Manual)</span>' : ''}</td>
-                    <td style="padding:1rem;"><b>${new Date(b.fecha).toLocaleDateString('es-ES', { day:'2-digit', month:'short', year:'numeric'})}</b></td>
-                    <td style="padding:1rem; color:var(--text-muted);">${b.hotel}</td>
-                    <td style="padding:1rem;"><b>${b.empleado}</b></td>
-                    <td style="padding:1rem; color:var(--text-muted); font-size:0.85rem;">${b.obs || '—'}</td>
-                </tr>
-            `).join('');
-
-            container.innerHTML = `
-                <div class="table-container">
-                    <table class="preview-table" style="width:100%;">
-                        <thead>
-                            <tr>
-                                <th style="text-align:left;">Estado / Tipo</th>
-                                <th style="text-align:left;">Fecha</th>
-                                <th style="text-align:left;">Hotel</th>
-                                <th style="text-align:left;">Empleado</th>
-                                <th style="text-align:left;">Motivo / Observaciones</th>
-                            </tr>
-                        </thead>
-                        <tbody>${rows}</tbody>
-                    </table>
-                </div>
-            `;
-        }
-
-        if (window.firebase && window.firebaseConfig) {
-            firebase.initializeApp(window.firebaseConfig);
-            firebase.database().ref('turnosweb/data').on('value', (s) => {
-                const d = s.val();
-                if (d) {
-                    FULL_DATA = d;
-                    localStorage.setItem('turnosweb_admin_data', JSON.stringify(d));
-                    renderBajas();
+                if (combined.length === 0) {
+                    container.innerHTML = `<div style="padding:5rem; text-align:center; opacity:0.5;">No hay bajas o permisos registrados en este periodo.</div>`;
+                    return;
                 }
-            });
+
+                combined.sort((a,b) => b.fecha.localeCompare(a.fecha));
+
+                const rows = combined.map(v => `
+                    <tr>
+                        <td style="padding:1rem;">
+                            ${v.tipo === 'BAJA' ? '🏥 <span style="font-weight:600; color:#ff5f57;">BAJA MÉDICA</span>' : '📄 <span style="font-weight:600; color:var(--accent);">PERMISO</span>'}
+                        </td>
+                        <td style="padding:1rem;"><b>${new Date(v.fecha).toLocaleDateString('es-ES', { day:'2-digit', month:'short', year:'numeric'})}</b></td>
+                        <td style="padding:1rem; color:var(--text-muted);">${v.hotel_id}</td>
+                        <td style="padding:1rem;"><b>${v.empleado_id}</b></td>
+                        <td style="padding:1rem; color:var(--text-muted); font-size:0.85rem;">${v.turno || 'Sin observaciones'}</td>
+                    </tr>
+                `).join('');
+
+                container.innerHTML = `
+                    <div class="table-container">
+                        <table class="preview-table" style="width:100%;">
+                            <thead>
+                                <tr>
+                                    <th style="text-align:left;">Tipo</th>
+                                    <th style="text-align:left;">Fecha</th>
+                                    <th style="text-align:left;">Hotel</th>
+                                    <th style="text-align:left;">Empleado</th>
+                                    <th style="text-align:left;">Motivo / Observaciones</th>
+                                </tr>
+                            </thead>
+                            <tbody>${rows}</tbody>
+                        </table>
+                    </div>
+                `;
+            } catch (err) {
+                container.innerHTML = `<div style="padding:2rem; color:red;">Error: ${err.message}</div>`;
+            }
         }
+
+        window.initSupabaseSync = async () => {
+            const syncText = $('#syncText');
+            const syncDot = $('#syncDot');
+            if (syncText) syncText.innerText = "Conectando...";
+            
+            try {
+                window.aplicarCambioLocal = () => renderBajas();
+                await renderBajas();
+                if (syncText) syncText.innerText = "Nube Conectada (Supabase)";
+                if (syncDot) syncDot.style.background = "#10e898";
+            } catch (e) {
+                if (syncText) syncText.innerText = "Error Supabase";
+                if (syncDot) syncDot.style.background = "#ff4444";
+            }
+        };
+
+        // Removed Legacy Firebase Logic
 
         function toggleTheme() {
             const isLight = document.body.classList.contains('light-mode');
@@ -395,10 +341,7 @@
                 }
             });
 
-            if (localStorage.getItem('turnosweb_admin_data')) {
-                FULL_DATA = JSON.parse(localStorage.getItem('turnosweb_admin_data'));
-                renderBajas();
-            }
+            window.initSupabaseSync();
         });
     </script>
     <script src="sync-status.js"></script>

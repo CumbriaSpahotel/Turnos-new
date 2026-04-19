@@ -396,35 +396,44 @@
     <div class="footerbar"></div>
   </main>
 
-  <!-- Firebase Integration -->
-  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
-  <script src="firebase-config.js"></script>
+  <!-- Supabase Integration -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="supabase-config.js?v=7.5"></script>
+  <script src="supabase-dao.js?v=7.5"></script>
 
   <!-- Adaptador de semana, normalizador y lógica móvil -->
-  <script src="plantilla_mobile_adapter.js?v=TS"></script>
-  <script src="mobile.patch.js?v=TS"></script>
-  <script src="mobile.app.js?v=TS"></script>
+  <script src="plantilla_mobile_adapter.js?v=7.5"></script>
+  <script src="mobile.app.js?v=7.5"></script>
   
   <script>
     // Sincronización Realtime para Móvil
-    if (window.firebase && window.firebaseConfig) {
-        // En móvil solemos reinicializar si ya está inicializado (defensivo)
-        if (!firebase.apps.length) firebase.initializeApp(window.firebaseConfig);
-        const fbDb = firebase.database();
+    window.initMobileSunc = async () => {
+        if (!window.TurnosDB) return;
         
-        fbDb.ref('turnosweb/data').on('value', (snapshot) => {
-            const cloudData = snapshot.val();
-            if (cloudData) {
-                console.log("MÓVIL NUBE: Datos actualizados.");
-                window.FULL_DATA = cloudData;
-                if (typeof window.refreshMobileView === 'function') {
-                    window.refreshMobileView();
-                }
+        const now = new Date();
+        const start = new Date(now.getFullYear(), now.getMonth(), 1);
+        const end = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+        
+        const inicio = start.toISOString().split('T')[0];
+        const fin = end.toISOString().split('T')[0];
 
-            }
-        });
-    }
+        // Carga inicial
+        const data = await window.TurnosDB.fetchRango(inicio, fin);
+        window.FULL_DATA = { schedule: [], flat: data }; // Proveemos ambos para compatibilidad
+        if (typeof window.refreshMobileView === 'function') window.refreshMobileView();
+
+        // Escuchar cambios
+        window.TurnosDB.initRealtime(inicio, fin);
+    };
+
+    // Callback para el DAO cuando hay cambios en tiempo real
+    window.aplicarCambioLocal = async (payload) => {
+        console.log("Cambio en tiempo real detectado:", payload);
+        // Recargar todo el rango para simplificar la lógica móvil existente
+        await window.initMobileSunc();
+    };
+
+    document.addEventListener('DOMContentLoaded', window.initMobileSunc);
   </script>
 
   <!-- Registro del Service Worker para que se pueda instalar como App -->
@@ -433,17 +442,21 @@
     const setTheme = (mode) => {
         document.body.classList.toggle('light-mode', mode === 'light');
         if (themeBtn) themeBtn.textContent = mode === 'light' ? '☀️' : '🌙';
-        localStorage.setItem('turnosweb_theme', mode);
+        try {
+            localStorage.setItem('turnosweb_theme', mode);
+        } catch(e) {}
     };
     setTheme(localStorage.getItem('turnosweb_theme') || 'light');
     if (themeBtn) themeBtn.onclick = () => setTheme(document.body.classList.contains('light-mode') ? 'dark' : 'light');
 
-    if ('serviceWorker' in navigator) {
+    if ('serviceWorker' in navigator && window.location.protocol !== 'file:') {
       window.addEventListener('load', function () {
         navigator.serviceWorker.register('service-worker.js')
           .then(() => console.log('Service Worker registrado'))
           .catch(err => console.error('Error al registrar SW', err));
       });
+    } else if (window.location.protocol === 'file:') {
+        console.warn("PWA: El protocolo 'file://' no soporta Service Workers. Usa un servidor local para habilitar la instalación.");
     }
   </script>
 </body>

@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login — TurnosWeb</title>
+    <link rel="stylesheet" href="admin.css">
+    <!-- Supabase SDK (OBLIGATORIO PRIMERO) -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="supabase-config.js"></script>
+</head>
+<body class="light-mode" style="display:flex; justify-content:center; align-items:center; height:100vh; background:var(--bg);">
+    <div class="glass" style="padding: 2.5rem; border-radius: 20px; width: 100%; max-width: 400px; text-align: center;">
+        <h2 style="margin-top:0;">Autenticación Segura</h2>
+        <p style="color:var(--text-dim); margin-bottom: 2rem;">Acceso exclusivo para administradores.</p>
+
+        <form id="loginForm">
+            <input type="email" id="email" class="search-input" placeholder="Correo electrónico" required autocomplete="username" style="width:100%; box-sizing:border-box; margin-bottom: 1rem; padding: 12px; border-radius: 10px;">
+            <input type="password" id="password" class="search-input" placeholder="Contraseña" required autocomplete="current-password" style="width:100%; box-sizing:border-box; margin-bottom: 1rem; padding: 12px; border-radius: 10px;">
+            <button type="submit" class="btn active" id="btnSubmit" style="width:100%; padding: 12px; background:var(--accent); color:white; border:none; border-radius: 10px; font-weight:bold;">INGRESAR</button>
+        </form>
+
+        <div id="error" style="color:#ff4444; margin-top:15px; font-size:0.9rem; min-height:1.2rem;"></div>
+    </div>
+
+    <script>
+        // 1. BLOQUEAR RECARGA DE FORMULARIO
+        document.getElementById('loginForm').onsubmit = async (e) => {
+            e.preventDefault(); 
+            await handleLogin();
+        };
+
+        // 2. LOGICA DE LOGIN REAL A SUPABASE
+        async function handleLogin() {
+            // CAPTURA ESTRICTA DE INPUTS
+            const email = document.getElementById('email').value.trim();
+            const password = document.getElementById('password').value.trim();
+            const btn = document.getElementById('btnSubmit');
+            const errorEl = document.getElementById('error');
+            
+            console.log("LOGIN DATA:", email, " (password masked)"); 
+            
+            btn.textContent = 'Verificando...';
+            btn.disabled = true;
+            btn.style.opacity = '0.5';
+            errorEl.textContent = '';
+
+            try {
+                // LLAMADA A SUPABASE
+                const { data, error } = await window.supabase.auth.signInWithPassword({
+                    email: email,
+                    password: password
+                });
+
+                if (error) {
+                    console.error("AUTH ERROR:", error);
+                    throw error;
+                }
+
+                console.log("LOGIN OK:", data);
+
+                // REDIRECCIÓN SI HAY SUCESO
+                window.location.href = 'admin.html';
+
+            } catch (err) {
+                errorEl.textContent = err.message;
+                btn.textContent = 'INGRESAR';
+                btn.disabled = false;
+                btn.style.opacity = '1';
+            }
+        }
+
+        // Si ya está logueado, rebotarlo al admin
+        window.addEventListener('DOMContentLoaded', async () => {
+            if (window.supabase) {
+                const { data: { session } } = await window.supabase.auth.getSession();
+                if (session) {
+                    window.location.replace('admin.html');
+                }
+            }
+        });
+    </script>
+</body>
+</html>

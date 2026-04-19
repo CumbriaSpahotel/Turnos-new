@@ -3282,25 +3282,49 @@ select.edit-input { cursor: pointer; height: 32px; }
 .preview-table.monthly .today { background: rgba(79,134,247,0.05) !important; }
 .preview-table.monthly .weekend { background: rgba(0,0,0,0.02) !important; }
 
-.turno-pill-mini {
-  font-size: 0.7rem;
-  font-weight: 900;
-  width: 26px;
-  height: 26px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 8px;
-}
-.turno-pill-mini.m { background:rgba(16,185,129,0.1); color:#10b981; }
-.turno-pill-mini.t { background:rgba(245,158,11,0.1); color:#f59e0b; }
-.turno-pill-mini.n { background:rgba(100,116,139,0.1); color:#64748b; }
-.turno-pill-mini.v { background:rgba(139,92,246,0.1); color:#8b5cf6; }
-.turno-pill-mini.d { background:rgba(239,68,68,0.1); color:#ef4444; }
-.turno-pill-mini.b { background:rgba(239,68,68,0.05); color:#ef4444; border:1px dashed #ef4444; }
+/* ══════════════════════ VIRTUAL TABLE V2 (MOBILE LOOK) ══════════════════════ */
+.preview-table-v2 { border-spacing: 0 6px; }
+.v-cell { padding: 4px; transition: all 0.2s; }
 
-/* Animations */
-@keyframes slideUp {
-  from { opacity: 0; transform: translateY(20px); }
-  to { opacity: 1; transform: translateY(0); }
+.v-pill {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    padding: 8px 12px;
+    border-radius: 12px;
+    font-size: 0.8rem;
+    font-weight: 700;
+    white-space: nowrap;
+    min-height: 36px;
+    transition: all 0.2s;
 }
+.v-pill small { font-size: 0.9rem; }
+
+/* Colores unificados con la versión móvil */
+.v-mañana .v-pill { background: rgba(16, 232, 152, 0.08); color: #10e898; }
+.v-tarde .v-pill { background: rgba(79, 134, 247, 0.1); color: #4f86f7; }
+.v-noche .v-pill { background: rgba(255, 178, 63, 0.08); color: #ffb23f; }
+.v-descanso .v-pill { background: rgba(255, 95, 87, 0.08); color: #ff5f57; }
+.v-vac .v-pill { background: rgba(139, 92, 246, 0.08); color: #8b5cf6; }
+.v-baja .v-pill { background: rgba(239, 68, 68, 0.1); color: #ef4444; border: 1px dashed rgba(239,68,68,0.3); }
+.v-perm .v-pill { background: rgba(6, 182, 212, 0.08); color: #06b6d4; }
+.v-cambio .v-pill { background: rgba(16, 232, 152, 0.15); color: #10e898; border: 1px solid rgba(16,232,152,0.3); }
+.v-empty .v-pill { opacity: 0.1; }
+
+.v-cell:hover .v-pill { transform: scale(1.05); filter: brightness(1.1); box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+
+/* Sticky headers fixed */
+.emp-cell {
+    background: var(--surface) !important;
+    font-size: 0.9rem !important;
+    border-bottom: 1px solid var(--border) !important;
+    box-shadow: 4px 0 10px rgba(0,0,0,0.02);
+}
+
+.header-row .emp-cell {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+}
+

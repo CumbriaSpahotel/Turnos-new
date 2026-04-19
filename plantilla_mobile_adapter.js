@@ -140,15 +140,42 @@ window.MobileAdapter = (function () {
   }
 
   function buildWeekData(FULL_DATA, hotel, monday) {
-    const schedule = (FULL_DATA && FULL_DATA.schedule) ? FULL_DATA.schedule : [];
-
     const mondayUTCDate = mondayUTC(monday);
     const mondayISO = isoFromUTCDate(mondayUTCDate);
-
     const weekDays = [];
     for (let i = 0; i < 7; i++) {
       weekDays.push(isoFromUTCDate(addDays(mondayUTCDate, i)));
     }
+
+    if (FULL_DATA && FULL_DATA.flat) {
+        // --- NUEVA LÓGICA SUPABASE (FLAT DATA) ---
+        const flat = FULL_DATA.flat;
+        const hotelNormTarget = normalizeHotelName(hotel);
+        
+        // Filtrar por hotel y fechas de la semana
+        const weekShifts = flat.filter(t => {
+            if (hotel && normalizeHotelName(t.hotel_id) !== hotelNormTarget) return false;
+            return weekDays.includes(t.fecha);
+        });
+
+        const turnosByEmpleado = {};
+        const seenEmp = new Set();
+        
+        weekShifts.forEach(t => {
+            const emp = t.empleado_id;
+            seenEmp.add(emp);
+            if (!turnosByEmpleado[emp]) turnosByEmpleado[emp] = {};
+            turnosByEmpleado[emp][t.fecha] = { turno: t.turno, tipo: t.tipo, sustituto: t.sustituto };
+        });
+
+        return {
+            monday: mondayUTCDate,
+            empleados: Array.from(seenEmp).sort(),
+            turnosByEmpleado
+        };
+    }
+
+    const schedule = (FULL_DATA && FULL_DATA.schedule) ? FULL_DATA.schedule : [];
 
     const hotelNormTarget = normalizeHotelName(hotel);
 

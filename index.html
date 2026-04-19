@@ -6,7 +6,11 @@
   <title>TurnosWeb — Cuadrante Público</title>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
   <link rel="stylesheet" href="styles.css">
-  <link rel="icon" type="image/png" href="Logo.png">
+  <link rel="icon" type="image/png" href="favicon.png">
+  <style>
+      :root { --accent: #4f86f7; --accent-dim: rgba(79, 134, 247, 0.1); }
+      body.dark-mode { --bg: #060910; --surface: #141929; --text: #dde4f8; --border: #1e2740; }
+  </style>
 </head>
 <body>
   <header>
@@ -19,90 +23,149 @@
     </div>
     
     <div class="controls-container">
-      <div class="live-indicator" title="Sincronizado con el Panel de Control">
-        <div class="live-dot"></div>
-        <span>En Vivo</span>
+      <div id="syncStatus" class="live-indicator">
+        <div id="syncDot" class="live-dot" style="background:#ff9800;"></div>
+        <span id="syncText">Conectando...</span>
       </div>
       
       <div class="field">
-        <select id="hotelSelect" aria-label="Hotel"><option value="">— Hotel —</option></select>
-      </div>
-      <div class="field">
-         <select id="employeeFilter" aria-label="Empleado"><option value="">— Empleado —</option></select>
+        <select id="hotelSelect" onchange="renderPublicView()"><option value="">— Hotel —</option></select>
       </div>
       <div class="field" style="max-width: 140px;">
-        <input type="text" id="dateFrom" placeholder="Desde..." aria-label="Desde">
+        <input type="text" id="dateRange" placeholder="Rango de fechas...">
       </div>
-      <div class="field" style="max-width: 140px;">
-        <input type="text" id="dateTo" placeholder="Hasta..." aria-label="Hasta">
-      </div>
-      <button class="btn theme-toggle" id="themeToggle" title="Cambiar Tema">🌙</button>
+      <button class="btn theme-toggle" id="themeToggle">🌙</button>
     </div>
   </header>
 
-  <div id="app"></div>
-  <div id="monthly-summary-container"></div>
+  <main id="app" style="padding:20px;"></main>
 
   <!-- Scripts -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
   <script src="https://npmcdn.com/flatpickr/dist/l10ns/es.js"></script>
   
-  <!-- Carga de datos base (fallback si Firebase falla) -->
-  <script src="data.js"></script>
-  
+  <script src="supabase-config.js?v=7.5"></script>
+  <script src="supabase-dao.js?v=7.5"></script>
+  <script src="plantilla_mobile_adapter.js?v=7.5"></script>
+
   <script>
-    // Theme logic simple y robusta
-    const toggle = document.getElementById('themeToggle');
+    const $ = (s) => document.querySelector(s);
+
+    // Lógica de Temas
+    const toggle = $('#themeToggle');
     const setTheme = (mode) => {
       document.body.classList.toggle('dark-mode', mode === 'dark');
       if (toggle) toggle.textContent = mode === 'dark' ? '☀️' : '🌙';
+      localStorage.setItem('turnosweb_theme', mode);
     };
-    
-    const savedTheme = localStorage.getItem('turnosweb_theme') || 'light';
-    setTheme(savedTheme);
+    setTheme(localStorage.getItem('turnosweb_theme') || 'light');
+    toggle?.addEventListener('click', () => setTheme(document.body.classList.contains('dark-mode') ? 'light' : 'dark'));
 
-    if (toggle) {
-        toggle.addEventListener('click', () => {
-            const isDark = document.body.classList.contains('dark-mode');
-            const nextMode = isDark ? 'light' : 'dark';
-            setTheme(nextMode);
-            localStorage.setItem('turnosweb_theme', nextMode);
-        });
-    }
-  </script>
+    async function renderPublicView() {
+        const container = $('#app');
+        const selHotel = $('#hotelSelect').value;
+        const rangeStr = $('#dateRange').value; 
+        
+        let start, end;
+        if (rangeStr && rangeStr.includes(' a ')) {
+            [start, end] = rangeStr.split(' a ');
+        } else {
+            const today = new Date();
+            start = today.toISOString().split('T')[0];
+            const nextWeek = new Date(); nextWeek.setDate(today.getDate() + 7);
+            end = nextWeek.toISOString().split('T')[0];
+        }
 
-  <!-- Firebase Integration -->
-  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
-  <script src="firebase-config.js"></script>
-
-  <script src="plantilla_adapter_semana.js"></script>
-  
-  <script>
-    // Conexión en tiempo real para el Cuadrante Público
-    if (window.firebase && window.firebaseConfig) {
         try {
-            firebase.initializeApp(window.firebaseConfig);
-            const fbDb = firebase.database();
+            const data = await window.TurnosDB.fetchRango(start, end);
             
-            fbDb.ref('turnosweb/data').on('value', (snapshot) => {
-                const cloudData = snapshot.val();
-                if (cloudData) {
-                    console.log("NUBE: Recibidos nuevos datos de Firebase.");
-                    window.FULL_DATA = cloudData;
-                    // El adaptador debería detectar el cambio o re-inicializarse
-                    if (window.Adapter && typeof window.Adapter.init === 'function') {
-                        window.Adapter.init(cloudData);
-                    } else if (typeof window.refreshContent === 'function') {
-                        // Fallback si no está encapsulado
-                        location.reload(); 
-                    }
-                }
-            });
+            // Usar el MobileAdapter para dar el look "Correcto" que pidió el usuario
+            const hotelsFound = [...new Set(data.map(t => t.hotel_id))].sort();
+            
+            if ($('#hotelSelect').options.length <= 1) {
+                $('#hotelSelect').innerHTML = '<option value="">— Hotel —</option>' + 
+                    hotelsFound.map(h => `<option value="${h}">${h}</option>`).join('');
+            }
+
+            let filtered = data;
+            if (selHotel) filtered = data.filter(t => t.hotel_id === selHotel);
+
+            if (filtered.length === 0) {
+                container.innerHTML = '<div style="text-align:center; padding:100px; opacity:0.5;">No hay turnos publicados para este periodo.</div>';
+                return;
+            }
+
+            // Renderizado estilo "Cards por Hotel" similar al móvil
+            const html = hotelsFound.filter(h => !selHotel || h === selHotel).map(hName => {
+                const hData = filtered.filter(t => t.hotel_id === hName);
+                if (hData.length === 0) return '';
+                
+                return `
+                    <div class="hotel-card" style="background:var(--surface); border-radius:15px; margin-bottom:20px; border:1px solid var(--border); overflow:hidden;">
+                        <div style="padding:15px; background:var(--bg3); font-weight:800; text-transform:uppercase; color:var(--accent);">${hName}</div>
+                        <div style="padding:10px; overflow-x:auto;">
+                            <table style="width:100%; border-collapse:collapse;">
+                                <!-- El renderizado aquí puede ser simplificado o usar una tabla estándar -->
+                                <thead>
+                                    <tr>
+                                        <th style="text-align:left; padding:8px;">Empleado</th>
+                                        ${[...new Set(hData.map(t=>t.fecha))].sort().map(f => `
+                                            <th style="padding:8px; font-size:0.7rem;">${f.split('-')[2]}/${f.split('-')[1]}</th>
+                                        `).join('')}
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${[...new Set(hData.map(t=>t.empleado_id))].sort().map(emp => `
+                                        <tr>
+                                            <td style="padding:8px; font-weight:700;">${emp}</td>
+                                            ${[...new Set(hData.map(t=>t.fecha))].sort().map(f => {
+                                                const shift = hData.find(t => t.empleado_id === emp && t.fecha === f);
+                                                if (!shift) return '<td></td>';
+                                                let cls = 'v-normal';
+                                                let label = shift.turno || '·';
+                                                if (shift.tipo === 'VAC' || label.toLowerCase().includes('vacac')) { label = '🏖️'; }
+                                                else if (shift.tipo === 'BAJA') { label = '🏥'; }
+                                                else if (shift.tipo === 'CT') { label = '🔄'; }
+                                                
+                                                return `<td style="padding:4px; text-align:center;"><div class="v-pill" style="min-height:30px; padding:4px;">${label}</div></td>`;
+                                            }).join('')}
+                                        </tr>
+                                    `).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+            
+            container.innerHTML = html;
+
         } catch (e) {
-            console.error("Firebase Init Error:", e);
+            container.innerHTML = `<div style="color:red;">Error: ${e.message}</div>`;
         }
     }
+
+    async function init() {
+        const syncText = $('#syncText');
+        const syncDot = $('#syncDot');
+        
+        flatpickr("#dateRange", {
+            mode: "range",
+            locale: "es",
+            dateFormat: "Y-m-d",
+            defaultDate: [new Date(), new Date(Date.now() + 7*24*60*60*1000)],
+            onChange: renderPublicView
+        });
+
+        window.aplicarCambioLocal = renderPublicView;
+        await renderPublicView();
+        
+        if (syncText) syncText.innerText = "Sincronizado";
+        if (syncDot) syncDot.style.background = "#10e898";
+    }
+
+    document.addEventListener('DOMContentLoaded', init);
   </script>
 </body>
 </html>

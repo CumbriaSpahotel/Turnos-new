@@ -3,31 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TurnosWeb — Historial de Cambios</title>
+    <title>TurnosWeb — Cambios de Turno</title>
+    <link rel="icon" type="image/png" href="favicon.png">
     <link rel="stylesheet" href="admin.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
-        <style>
+    <style>
         .nav-item.active { background: var(--accent-dim); color: var(--accent); border-right: 3px solid var(--accent); }
-        /* Personalización Flatpickr Premium */
-        .flatpickr-calendar { background: var(--bg2) !important; border: 1px solid var(--border) !important; box-shadow: var(--shadow-lg) !important; border-radius: 14px !important; padding: 10px !important; }
-        .flatpickr-months { margin-bottom: 10px; }
-        .flatpickr-months .flatpickr-month { background: transparent !important; color: var(--text) !important; fill: var(--text) !important; }
-        .flatpickr-months .flatpickr-prev-month, .flatpickr-months .flatpickr-next-month { fill: var(--text) !important; color: var(--text) !important; }
-        .flatpickr-months .flatpickr-prev-month:hover, .flatpickr-months .flatpickr-next-month:hover { background: var(--surface) !important; border-radius: 8px; }
-        .flatpickr-weekdays { background: transparent !important; }
-        span.flatpickr-weekday { color: var(--text-muted) !important; font-weight: 700; }
-        .flatpickr-day { color: var(--text) !important; border-radius: 8px !important; transition: all 0.2s; font-weight: 500; }
-        .flatpickr-day:hover { background: var(--surface) !important; color: var(--accent) !important; }
-        .flatpickr-day.selected, .flatpickr-day.startRange, .flatpickr-day.endRange { background: var(--accent) !important; border-color: var(--accent) !important; color: white !important; font-weight: bold; }
-        .flatpickr-day.inRange { background: var(--accent-dim) !important; border-color: transparent !important; box-shadow: none !important; color: var(--text) !important; border-radius: 0 !important; }
-        .flatpickr-day.startRange.endRange { border-radius: 8px !important; }
-        .flatpickr-day.startRange { border-top-right-radius: 0 !important; border-bottom-right-radius: 0 !important; }
-        .flatpickr-day.endRange { border-top-left-radius: 0 !important; border-bottom-left-radius: 0 !important; }
-        .flatpickr-day.today { border-color: var(--accent-dim) !important; background: rgba(79,134,247,0.05); }
     </style>
 </head>
 <body class="light-mode">
-    <!-- NAVEGACIÓN LATERAL (CLONADA DE ADMIN.HTML) -->
     <aside class="sidebar">
         <div class="sidebar-brand">
             <img src="Logo.png" alt="Logo" class="sidebar-logo">
@@ -36,316 +20,120 @@
                 <div class="sidebar-subtitle">PANEL ADMIN</div>
             </div>
         </div>
-
         <nav class="sidebar-nav">
             <div class="nav-group-label">CUADRANTE</div>
-            <a href="admin.html" class="nav-item" style="text-decoration:none;">
-                <span class="nav-icon">📁</span>
-                <span class="nav-label">Cargar Excel</span>
-            </a>
-            <a href="admin.html#preview" class="nav-item" style="text-decoration:none;">
-                <span class="nav-icon">📅</span>
-                <span class="nav-label">Vista Previa</span>
-            </a>
-            <a href="admin.html#employees" class="nav-item" style="text-decoration:none;">
-                <span class="nav-icon">👥</span>
-                <span class="nav-label">Empleados</span>
-            </a>
-            
+            <a href="admin.html" class="nav-item">🏠 <span class="nav-label">Inicio / Cargar</span></a>
+            <a href="admin.html#preview" class="nav-item">📅 <span class="nav-label">Vista Previa</span></a>
+            <a href="admin.html#employees" class="nav-item">👥 <span class="nav-label">Empleados</span></a>
             <div class="nav-group-label">AUSENCIAS</div>
-            <a href="admin.html#vacations" class="nav-item" style="text-decoration:none;">
-                <span class="nav-icon">🏖️</span>
-                <span class="nav-label">Vacaciones</span>
-            </a>
-            <a href="admin.html#absences" class="nav-item" style="text-decoration:none;">
-                <span class="nav-icon">🏥</span>
-                <span class="nav-label">Bajas y Permisos</span>
-            </a>
-            <a href="cambios.html" class="nav-item active" style="text-decoration:none;">
-                <span class="nav-icon">🔄</span>
-                <span class="nav-label">Cambios de Turno</span>
-            </a>
-
-            <div class="nav-group-label">COMUNICACIÓN</div>
-            <a href="admin.html#requests" class="nav-item" style="text-decoration:none;">
-                <span class="nav-icon">📩</span>
-                <span class="nav-label">Solicitudes</span>
-            </a>
-            <a href="admin.html#inbox" class="nav-item" style="text-decoration:none;">
-                <span class="nav-icon">📫</span>
-                <span class="nav-label">Bandeja</span>
-            </a>
-
+            <a href="vacaciones.html" class="nav-item">🏖️ <span class="nav-label">Vacaciones</span></a>
+            <a href="bajas.html" class="nav-item">🏥 <span class="nav-label">Bajas y Permisos</span></a>
+            <a href="cambios.html" class="nav-item active">🔄 <span class="nav-label">Cambios de Turno</span></a>
             <div class="nav-group-label">SISTEMA</div>
-            <a href="admin.html#export" class="nav-item" style="text-decoration:none;">
-                <span class="nav-icon">📦</span>
-                <span class="nav-label">Configuración y Backup</span>
-            </a>
+            <a href="admin.html#export" class="nav-item">📦 <span class="nav-label">Configuración</span></a>
         </nav>
-
         <div class="sidebar-footer">
-            <button class="theme-toggle" id="themeToggle" onclick="toggleTheme()" title="Cambiar Tema">🌙</button>
+            <button class="theme-toggle" onclick="toggleTheme()">🌙</button>
         </div>
     </aside>
 
-    <!-- ÁREA PRINCIPAL -->
     <main class="main-wrap">
         <section class="section active">
             <header class="page-header">
                 <div>
                     <h1 class="page-title">Cambios de Turno</h1>
-                    <p class="page-subtitle">Registro histórico de permutas procesadas</p>
+                    <p class="page-subtitle">Historial de permutas procesadas</p>
                 </div>
-                <div class="header-controls" style="display:flex; gap:10px; flex-wrap: wrap; align-items:center;">
-                    <div id="rangeTrigger" class="date-range-picker-premium" style="display:flex; align-items:center; gap:10px; background:var(--bg3); border:1px solid var(--border); padding:8px 15px; border-radius:12px; cursor:pointer; min-width:260px;">
-                        <span style="font-size:1.1rem;" data-toggle>📅</span>
-                        <div style="display:flex; flex-direction:column;" data-toggle>
-                            <span style="font-size:0.6rem; color:var(--text-dim); font-weight:800; text-transform:uppercase; letter-spacing:0.05em;">Periodo Seleccionado</span>
-                            <span id="rangeLabel" style="font-size:0.85rem; font-weight:700; color:var(--accent);">Seleccionar Rango...</span>
-                        </div>
-                        <input type="text" id="filterDateRange" data-input style="display:none;">
-                    </div>
-                    <input type="text" id="filterEmp" class="btn" oninput="renderSwaps()" placeholder="Buscar empleado..." style="background:var(--bg); border:1px solid var(--border); color:var(--text); padding:7px 15px; border-radius:10px; flex-grow:1; min-width:150px;">
-                    <select id="filterHotel" class="btn" onchange="renderSwaps()" style="background:var(--bg3); color:var(--text); border:1px solid var(--border); border-radius:10px; padding:7px 15px;">
-                        <option value="">— Hotel —</option>
-                        <option value="Sercotel Guadiana">Sercotel Guadiana</option>
-                        <option value="Cumbria Spa&Hotel">Cumbria Spa&Hotel</option>
-                    </select>
-                </div>
-            
-                <div id="syncStatus" class="status-badge-premium" style="margin-left:auto; display:flex; align-items:center; gap:8px; padding:6px 12px; border-radius:30px; font-size:0.75rem; font-weight:600; background:var(--bg3); border:1px solid var(--border);">
+                <div id="syncStatus" class="status-badge-premium" style="margin-left:auto; display:flex; align-items:center; gap:8px;">
                     <span id="syncDot" style="width:8px; height:8px; border-radius:50%; background:#ff9800;"></span>
-                    <span id="syncText" style="color:var(--text-dim);">Conectando...</span>
+                    <span id="syncText">Conectando...</span>
                 </div>
             </header>
-
-            <div id="swapsList" class="glass-panel" style="padding:0; min-height:400px;">
-                <!-- Tabla generada por JS -->
+            <div id="swapsBody" class="glass-panel" style="min-height:400px; padding:1.5rem;">
+                <!-- Dinámico -->
             </div>
         </section>
     </main>
 
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="supabase-config.js?v=7.5"></script>
+    <script src="supabase-dao.js?v=7.5"></script>
     <script>
         const $ = (s) => document.querySelector(s);
-        let FULL_DATA = null;
-        let CURRENT_RANGE = { start: '', end: '' };
-
+        
         function fmtDate(d) {
             if (!d) return '—';
             const parts = d.split('-');
-            if (parts.length < 3) return d;
             return `${parts[2]}/${parts[1]}/${parts[0]}`;
         }
 
-        function populateHotels(data) {
-            const hotels = [...new Set(data.schedule.map(g => g.hotel))].sort();
-            const select = $('#filterHotel');
-            if (select) {
-                const current = select.value;
-                select.innerHTML = '<option value="">— Hotel —</option>' + 
-                    hotels.map(h => `<option value="${h}" ${h === current ? 'selected' : ''}>${h}</option>`).join('');
-            }
-        }
-
-        function renderSwaps() {
-            const container = $('#swapsList');
-            // Prioridad: Firebase (FULL_DATA) -> localStorage -> Fallback data.js -> Vacío
-            const data = FULL_DATA || JSON.parse(localStorage.getItem('turnosweb_admin_data') || 'null') || window.FULL_DATA || {"schedule":[], "swaps":[]};
+        async function renderSwaps() {
+            if (!window.TurnosDB) return;
+            const container = $('#swapsBody');
             
-            if (!data.schedule || data.schedule.length === 0) {
-                container.innerHTML = `<div style="padding:5rem; text-align:center; opacity:0.5;">
-                    <div style="font-size:3rem; margin-bottom:1rem;">⌛</div>
-                    <p>Sincronizando con la nube...</p>
-                </div>`;
-                return;
-            }
-
-            populateHotels(data);
-
-
-            let swaps = data.swaps || [];
-            
-            // Si data.swaps está vacío, intentamos extraer de data.schedule (retrocompatibilidad)
-            if (swaps.length === 0 && data.schedule) {
-                const extracted = [];
-                const seenPairs = new Set();
-                data.schedule.forEach(g => {
-                    (g.turnos || []).forEach(t => {
-                        let turnLabel = '';
-                        if (typeof t.turno === 'string') turnLabel = t.turno;
-                        else if (t.turno && typeof t.turno === 'object') {
-                            turnLabel = t.turno.TipoInterpretado || t.turno.TurnoOriginal || '';
-                        }
-                        
-                        // Detectar etiqueta C/T o Cambio
-                        if (turnLabel.includes('C/T') || turnLabel.toLowerCase().includes('cambio')) {
-                            const emp1 = t.empleado;
-                            const emp2 = (t.turno && t.turno.Sustituto) ? t.turno.Sustituto : '—';
-                            let obs = '';
-                            if (typeof t.turno === 'object' && t.turno.Observaciones) obs = t.turno.Observaciones;
-                            const key = [g.hotel, t.fecha, emp1, emp2].sort().join('|');
-                            if (!seenPairs.has(key)) {
-                                seenPairs.add(key);
-                                extracted.push({ hotel: g.hotel, fecha: t.fecha, emp1, emp2, obs: obs });
-                            }
-                        }
-                    });
-                });
-                swaps = extracted;
-            }
-
-            const hotelFilter = $('#filterHotel')?.value || '';
-            const dStart = CURRENT_RANGE.start;
-            const dEnd = CURRENT_RANGE.end;
-            const empFilter = $('#filterEmp')?.value.toLowerCase() || '';
-
-            let filtered = swaps.filter(s => {
-                if (hotelFilter && s.hotel !== hotelFilter) return false;
-                if (dStart && s.fecha < dStart) return false;
-                if (dEnd && s.fecha > dEnd) return false;
-                if (empFilter && !(s.emp1.toLowerCase().includes(empFilter) || s.emp2.toLowerCase().includes(empFilter))) return false;
-                return true;
-            });
-
-            filtered.sort((a, b) => b.fecha.localeCompare(a.fecha));
-
-            if (filtered.length === 0) {
-                container.innerHTML = `
-                <div style="padding:8rem 2rem; text-align:center;">
-                    <div style="font-size:4rem; margin-bottom:1.5rem; opacity:0.1;">🔄</div>
-                    <p style="color:var(--text-muted); font-size:1.1rem;">No se han detectado cambios en el periodo seleccionado.</p>
-                </div>`;
-                return;
-            }
-
-            const rows = filtered.map(s => `
-                <tr>
-                    <td style="padding:1.2rem;"><span class="status-badge" style="background:rgba(16, 232, 152, 0.1); color:#10e898;">✅ Procesado</span></td>
-                    <td style="padding:1.2rem;"><b>${fmtDate(s.fecha)}</b></td>
-                    <td style="padding:1.2rem; color:var(--text-muted);">${s.hotel}</td>
-                    <td style="padding:1.2rem;">
-                        <div style="display:flex; align-items:center; gap:12px;">
-                            <span style="font-weight:600; color:var(--text);">${s.emp1}</span>
-                            <span style="color:var(--accent); font-weight:bold; opacity:0.8;">↔</span>
-                            <span style="font-weight:600; color:var(--text);">${s.emp2}</span>
-                        </div>
-                    </td>
-                    <td style="padding:1.2rem; color:var(--text-muted); font-size:0.85rem;">${s.obs || '—'}</td>
-                </tr>
-            `).join('');
-
-            container.innerHTML = `
-                <div class="table-container">
-                    <table class="preview-table" style="width:100%;">
-                        <thead>
-                            <tr>
-                                <th style="text-align:left;">Estado</th>
-                                <th style="text-align:left;">Fecha</th>
-                                <th style="text-align:left;">Hotel</th>
-                                <th style="text-align:left;">Participantes</th>
-                                <th style="text-align:left;">Motivo / Observaciones</th>
-                            </tr>
-                        </thead>
-                        <tbody>${rows}</tbody>
-                    </table>
-                </div>
-            `;
-        }
-
-    </script>
-    
-    <!-- FIREBASE INTEGRATION -->
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
-    <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/es.js"></script>
-    <script src="firebase-config.js"></script>
-    <script src="data.js"></script>
-
-
-    <script>
-        // Sincronización con la nube para Cambios de Turno
-        if (window.firebase && window.firebaseConfig) {
             try {
-                firebase.initializeApp(window.firebaseConfig);
-                const fbDb = firebase.database();
-                console.log("Firebase inicializado en Cambios.");
-
-                // Escuchar cambios en la base de datos
-                fbDb.ref('turnosweb/data').on('value', (snapshot) => {
-                    const cloudData = snapshot.val();
-                    if (cloudData) {
-                        console.log("Datos recibidos de la nube en Cambios.");
-                        // Guardar en local para que renderSwaps lo use (opcional, pero mantiene consistencia)
-                        localStorage.setItem('turnosweb_admin_data', JSON.stringify(cloudData));
-                        renderSwaps(); 
-                    }
-                });
-            } catch (e) { console.error("Error Firebase Cambios:", e); }
-        }
-
-        // --- GESTIÓN DE TEMAS ---
-        function toggleTheme() {
-            const isLight = document.body.classList.contains('light-mode');
-            setTheme(isLight ? 'dark' : 'light');
-        }
-
-        function setTheme(mode) {
-            if (mode === 'light') {
-                document.body.classList.add('light-mode');
-                $('#themeToggle').textContent = '☀️';
-            } else {
-                document.body.classList.remove('light-mode');
-                $('#themeToggle').textContent = '🌙';
-            }
-            localStorage.setItem('turnosweb_theme', mode);
-        }
-
-        window.addEventListener('scroll', () => {
-            const nav = $('.sidebar');
-            if (window.scrollY > 50) nav.classList.add('scrolled');
-            else nav.classList.remove('scrolled');
-        });
-
-        window.addEventListener('DOMContentLoaded', () => {
-            const savedTheme = localStorage.getItem('turnosweb_theme') || 'light';
-            setTheme(savedTheme);
-
-            const today = new Date();
-                        const endOfYear = new Date(today.getFullYear(), 11, 31);
-
-            flatpickr("#rangeTrigger", {
-                wrap: true,
-                mode: "range",
-                locale: "es",
-                dateFormat: "Y-m-d",
-                defaultDate: [today, endOfYear],
-                onChange: (selectedDates) => {
-                    if (selectedDates.length === 2) {
-                        const d1 = selectedDates[0]; const s = `${d1.getFullYear()}-${String(d1.getMonth()+1).padStart(2,'0')}-${String(d1.getDate()).padStart(2,'0')}`;
-                        const d2 = selectedDates[1]; const e = `${d2.getFullYear()}-${String(d2.getMonth()+1).padStart(2,'0')}-${String(d2.getDate()).padStart(2,'0')}`;
-                        CURRENT_RANGE = { start: s, end: e };
-                        $('#rangeLabel').textContent = `${selectedDates[0].toLocaleDateString('es-ES')} — ${selectedDates[1].toLocaleDateString('es-ES')}`;
-                        renderSwaps();
-                    }
-                },
-                onReady: (selectedDates) => {
-                    if (selectedDates.length === 2) {
-                        const d1 = selectedDates[0]; const s = `${d1.getFullYear()}-${String(d1.getMonth()+1).padStart(2,'0')}-${String(d1.getDate()).padStart(2,'0')}`;
-                        const d2 = selectedDates[1]; const e = `${d2.getFullYear()}-${String(d2.getMonth()+1).padStart(2,'0')}-${String(d2.getDate()).padStart(2,'0')}`;
-                        CURRENT_RANGE = { start: s, end: e };
-                        $('#rangeLabel').textContent = `${selectedDates[0].toLocaleDateString('es-ES')} — ${selectedDates[1].toLocaleDateString('es-ES')}`;
-                        renderSwaps();
-                    }
+                const data = await window.TurnosDB.fetchTipo('CT');
+                if (data.length === 0) {
+                    container.innerHTML = `<div style="padding:5rem; text-align:center; opacity:0.5;">No hay cambios de turno registrados.</div>`;
+                    return;
                 }
-            });
 
-            if (localStorage.getItem('turnosweb_admin_data')) {
-                FULL_DATA = JSON.parse(localStorage.getItem('turnosweb_admin_data'));
-                renderSwaps();
+                data.sort((a,b) => b.fecha.localeCompare(a.fecha));
+
+                const rows = data.map(s => `
+                    <tr>
+                        <td style="padding:1rem;"><span class="status-badge" style="background:rgba(16,232,152,0.1); color:#10e898; border:none; padding:4px 10px; border-radius:20px; font-size:0.7rem;">PROCESADO</span></td>
+                        <td style="padding:1rem;"><b>${fmtDate(s.fecha)}</b></td>
+                        <td style="padding:1rem;">${s.hotel_id}</td>
+                        <td style="padding:1rem;">
+                            <b>${s.empleado_id}</b> <span style="color:var(--accent);">↔</span> <b>${s.sustituto || '—'}</b>
+                        </td>
+                        <td style="padding:1rem; color:var(--text-muted); font-size:0.85rem;">${s.turno || 'Sin observaciones'}</td>
+                    </tr>
+                `).join('');
+
+                container.innerHTML = `
+                    <div class="table-container">
+                        <table class="preview-table" style="width:100%;">
+                            <thead>
+                                <tr>
+                                    <th style="text-align:left;">Estado</th>
+                                    <th style="text-align:left;">Fecha</th>
+                                    <th style="text-align:left;">Hotel</th>
+                                    <th style="text-align:left;">Participantes</th>
+                                    <th style="text-align:left;">Motivo / Observaciones</th>
+                                </tr>
+                            </thead>
+                            <tbody>${rows}</tbody>
+                        </table>
+                    </div>
+                `;
+            } catch (err) {
+                container.innerHTML = `<div style="padding:2rem; color:red;">Error: ${err.message}</div>`;
             }
+        }
+
+        window.initSupabaseSync = async () => {
+            const syncText = $('#syncText');
+            const syncDot = $('#syncDot');
+            try {
+                await renderSwaps();
+                if (syncText) syncText.innerText = "Supabase Conectado";
+                if (syncDot) syncDot.style.background = "#10e898";
+            } catch (e) {
+                if (syncText) syncText.innerText = "Error Conexión";
+            }
+        };
+
+        function toggleTheme() {
+            document.body.classList.toggle('light-mode');
+            localStorage.setItem('turnosweb_theme', document.body.classList.contains('light-mode') ? 'light' : 'dark');
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            if (localStorage.getItem('turnosweb_theme') === 'light') document.body.classList.add('light-mode');
+            window.initSupabaseSync();
         });
     </script>
-    <script src="sync-status.js"></script>
 </body>
 </html>

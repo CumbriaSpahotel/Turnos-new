@@ -43,10 +43,6 @@ window.switchSection = (id) => {
 
     const targetNav = $(`#nav-${id}`);
     if (targetNav) targetNav.classList.add('active');
-
-    // Carga bajo demanda si es necesario
-    if (id === 'preview') window.renderPreview();
-    if (id === 'excel') window.renderExcelView();
 };
 
 window.toggleTheme = () => {
@@ -64,32 +60,60 @@ window.fmtDate = (d) => {
 };
 
 // ==========================================
-// 0. SUPABASE SYNC LOGIC
+// 0. FIREBASE SYNC LOGIC
 // ==========================================
-window.syncToSupabase = async (flatData) => {
-    if (!window.TurnosDB) return;
-    try {
-        window.addLog(`🚀 INICIANDO MIGRACIÓN A SUPABASE...`, 'ok');
-        let processed = 0;
-        const total = flatData.length;
+let db = null;
+if (window.firebase && window.firebaseConfig) {
+    firebase.initializeApp(window.firebaseConfig);
+    db = firebase.database();
+    console.log("Firebase inicializado en Admin.");
+}
 
-        // Migración por lotes (opcional, upsert ya es eficiente)
-        // Por ahora lo hacemos directo para simplicidad
-        await window.TurnosDB.bulkUpsert(flatData);
+window.syncToFirebase = async (data) => {
+    if (!db) return;
+    try {
+        const schedule = data.schedule || [];
+        const total = schedule.length;
+        window.addLog(`🚀 INICIANDO TRANSFERENCIA SEGURA POR PARTES...`, 'ok');
         
-        window.addLog(`✨ MIGRACIÓN EXITOSA: ${total} registros sincronizados ✅`, 'ok');
+        // 1. Sincronizar Calendario fragmento a fragmento
+        for (let i = 0; i < total; i++) {
+            const week = schedule[i];
+            await db.ref(`turnosweb/data/schedule/${i}`).set(week);
+            if (i % 10 === 0 || i === total - 1) {
+                window.addLog(`🔄 Procesado: ${Math.round(((i+1)/total)*100)}% (${i+1}/${total} semanas)`);
+            }
+        }
+        
+        // 2. Sincronizar resto de datos (Swaps y Perfiles)
+        await db.ref('turnosweb/data/swaps').set(data.swaps || []);
+        
+        let profiles = {};
+        try { profiles = JSON.parse(localStorage.getItem('turnosweb_emp_profiles') || '{}'); } catch(e) {}
+        await db.ref('turnosweb/data/profiles').set(profiles);
+        
+        await db.ref('turnosweb/data/generated_at').set(data.generated_at);
+        await db.ref('turnosweb/data/updated_at').set(new Date().toISOString());
+
+        window.parsedData = data; 
+        window.saveData();
+        window.addLog(`✨ SINCRONIZACIÓN EXITOSA: ${total} semanas cargadas ✅`, 'ok');
         window.updateDashboardStats();
+        $('#stat-sync').textContent = 'Sincronizado';
+        $('#stat-sync').parentElement.classList.add('ok');
     } catch (e) {
-        console.error("Error migrando a Supabase:", e);
-        window.addLog(`⚠️ ERROR EN MIGRACIÓN: ${e.message}`, 'error');
+        console.error("Error sincronizando:", e);
+        window.addLog(`⚠️ ERROR EN TRANSFERENCIA: ${e.message}`, 'error');
     }
 };
 
 window.clearAllData = async () => {
-    if (!confirm("⚠️ ¿ESTÁS SEGURO? Esto borrará TODO el cuadrante de Supabase de forma permanente.")) return;
+    if (!confirm("⚠️ ¿ESTÁS SEGURO? Esto borrará TODO el cuadrante y el historial de la nube de forma permanente.")) return;
+    if (!db) return;
     try {
-        await window.TurnosDB.clearAll();
-        window.addLog("Base de datos vaciada", "warn");
+        await db.ref('turnosweb/data').remove();
+        localStorage.removeItem('turnosweb_admin_data');
+        window.parsedData = null;
         location.reload();
     } catch(e) {
         alert("Error al borrar: " + e.message);
@@ -142,9 +166,6 @@ window.isoDate = (date) => {
         // Excel base date is 1899-12-30. 
         // Note: 25569 is the number of days between 1899-12-30 and 1970-01-01
         d = new Date((date - 25569) * 86400 * 1000);
-    } else if (typeof date === 'string' && date.includes('-')) {
-        // Force local midnight to avoid timezone shifting
-        d = new Date(date + 'T00:00:00');
     } else {
         d = new Date(date);
     }
@@ -202,23 +223,21 @@ window.saveData = () => {
 // ==========================================
 // 2. MOTOR DE PROCESAMIENTO EXCEL (PARSER)
 // ==========================================
-window.processWorkbook = async (wb) => {
-    window.addLog(`🚀 INICIANDO MIGRACIÓN ESTRICTA A BASE DE DATOS...`);
+window.processWorkbook = (wb) => {
     window.addLog(`Analizando Excel (Hojas: ${wb.SheetNames.join(', ')})...`);
-    
     const DIAS = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
     const SUBS_SHEETS = ['Sustituciones', 'Sustitución', 'Bajas'];
-    const VALID_TYPES = ['VAC', 'BAJA', 'PERM', 'NORMAL', 'CT'];
     
     const subs = {};
-    const toInsert = [];
-    const seen = new Set();
-    const stats = { inserted: 0, skipped: 0, duplicates: 0 };
+    const swaps = {};
+    const excluded = new Set();
+    const scheduleRows = [];
+    const allSwapsRaw = [];
 
-    // 1. Procesar Hoja de Sustituciones (Normalización y Limpieza)
+    // 1. Procesar Hoja de Sustituciones (si existe)
     const subsSheetName = wb.SheetNames.find(n => SUBS_SHEETS.some(s => n.toLowerCase().includes(s.toLowerCase())));
     if (subsSheetName) {
-        window.addLog(`Analizando ausencias en: ${subsSheetName}`);
+        window.addLog(`Procesando hoja de ausencias: ${subsSheetName}`);
         const rows = XLSX.utils.sheet_to_json(wb.Sheets[subsSheetName], { defval: '' });
         rows.forEach(r => {
             const rawDate = r['Fecha'] || r['Día'];
@@ -226,134 +245,205 @@ window.processWorkbook = async (wb) => {
             const hotel = String(r['Hotel'] || '').trim();
             const emp = String(r['Empleado'] || '').trim();
             if (!fecha || !emp) return;
-
-            const tipoRaw = String(r['Tipo Ausencia'] || r['Tipo'] || '').trim();
+            
+            const tipo = String(r['Tipo Ausencia'] || r['Tipo'] || '').trim();
+            if (tipo.toLowerCase().includes('baja definitiva')) { excluded.add(emp); return; }
+            
+            const sustit = String(r['Sustituto'] || '').trim();
+            const cambio = String(r['Cambio de Turno'] || r['Permuta'] || '').trim();
             const motivo = String(r['Motivo'] || r['Observaciones'] || '').trim();
             
-            // Mapeo estricto a ENUMS compatibles con la DB
-            let tipo = 'NORMAL';
-            const m = motivo.toLowerCase();
-            const t = tipoRaw.toLowerCase();
+            if (cambio) {
+                const key = `${hotel}|${fecha}`;
+                if (!swaps[key]) swaps[key] = [];
+                swaps[key].push([emp, cambio].sort());
+                allSwapsRaw.push({ hotel, fecha, emp1: emp, emp2: cambio });
+            }
             
-            if (m.includes('vac') || t.includes('vac') || t === 'v') tipo = 'VAC';
-            else if (m.includes('baja') || m.includes('medico') || m.includes(' it') || t.includes('baja') || t.includes(' it')) tipo = 'BAJA';
-            else if (m.includes('permiso') || m.includes('asunto') || t.includes('per')) tipo = 'PERM';
-            else if (m.includes('cambio') || m.includes('c/t') || t.includes('cambio') || t === 'c/t') tipo = 'CT';
+            // --- INTERPRETACIÓN INTELIGENTE (LA "CLAVE" DE LA DISTRIBUCIÓN) ---
+            let interpretado = tipo;
+            const m = motivo.toLowerCase();
+            const t = tipo.toLowerCase();
+            
+            // Prioridad 1: Vacaciones (lo más común y solicitado)
+            if (m.includes('vac') || t.includes('vac') || t === 'v') {
+                interpretado = 'VAC';
+            } 
+            // Prioridad 2: Bajas / Incapacidad Temporal
+            else if (m.includes('baja') || m.includes('medico') || m.includes('enfer') || m.includes(' it') || t.includes('baja') || t.includes(' it')) {
+                interpretado = 'BAJA';
+            }
+            // Prioridad 3: Permisos Retribuidos / Asuntos Propios
+            else if (m.includes('permiso') || m.includes('asunto') || m.includes('fallecimiento') || m.includes('matrimonio') || t.includes('per')) {
+                interpretado = 'PERM';
+            }
+            // Prioridad 4: Cambios de Turno (C/T)
+            else if (m.includes('cambio') || m.includes('c/t') || m.includes('permut') || t.includes('cambio') || t === 'c/t') {
+                interpretado = 'CT';
+            }
+            // Por defecto si hay motivo pero no se clasifica
+            else if (motivo && !interpretado) {
+                interpretado = 'NORMAL';
+            }
 
-            subs[`${hotel}|${fecha}|${emp}`] = { 
-                sustituto: String(r['Sustituto'] || '').trim(), 
-                tipo: tipo, 
-                motivo: motivo 
-            };
+            if (sustit || tipo || motivo) {
+                subs[`${hotel}|${fecha}|${emp}`] = { 
+                    Sustituto: sustit, 
+                    TipoAusencia: tipo, 
+                    TipoInterpretado: interpretado, 
+                    Observaciones: motivo 
+                };
+            }
         });
     }
 
-    // 2. Procesar Hojas de Hoteles (Extracción y Normalización)
-    for (const sheetName of wb.SheetNames) {
-        if (sheetName === subsSheetName) continue;
+    // 2. Procesar Hojas de Hoteles (Detección Automática)
+    wb.SheetNames.forEach(sheetName => {
+        if (sheetName === subsSheetName) return;
         const sheet = wb.Sheets[sheetName];
         const rawRows = XLSX.utils.sheet_to_json(sheet, { defval: '' });
-        if (rawRows.length === 0) continue;
+        if (rawRows.length === 0) return;
 
+        // Verificar si es una hoja de cuadrante (debe tener 'Empleado' o 'Nombre')
         const firstRow = rawRows[0];
         const hasEmpCol = Object.keys(firstRow).some(k => k.trim().toLowerCase().includes('empleado') || k.trim().toLowerCase().includes('nombre'));
-        if (!hasEmpCol) continue;
+        if (!hasEmpCol) return;
 
-        window.addLog(`Procesando cuadrante: ${sheetName}...`);
-        
+        window.addLog(`Procesando cuadrante: ${sheetName} (${rawRows.length} filas)`);
+        const weekMap = {};
         rawRows.forEach(rawRow => {
-            const row = {}; for (let k in rawRow) row[String(k).trim()] = rawRow[k];
+            const row = {}; for (let k in rawRow) row[k.trim()] = rawRow[k];
             
+            // Buscar columna de semana
             const semanaCol = Object.keys(row).find(k => k.toLowerCase().includes('semana'));
             const rawSemana = row[semanaCol];
             if (!rawSemana) return;
 
             const weekDate = typeof rawSemana === 'number' ? new Date((rawSemana - 25569) * 86400 * 1000) : new Date(rawSemana);
-            const lunes = window.isoDate(window.getMonday(weekDate));
+            const semana = window.isoDate(window.getMonday(weekDate));
             
             const empCol = Object.keys(row).find(k => k.toLowerCase().includes('empleado') || k.toLowerCase().includes('nombre'));
             const emp = String(row[empCol] || '').trim();
             
-            if (!lunes || !emp) { stats.skipped++; return; }
+            if (!semana || !emp || excluded.has(emp)) return;
+            
+            if (!weekMap[semana]) weekMap[semana] = { order: [], turnos: {} };
+            if (!weekMap[semana].order.includes(emp)) weekMap[semana].order.push(emp);
             
             DIAS.forEach((dia, i) => {
+                // Mapeo flexible de días (por si faltan acentos)
                 const diaCol = Object.keys(row).find(k => 
                     k.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').includes(
                         dia.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
                     )
                 );
-                
                 if (diaCol) {
-                    const fecha = window.addDays(lunes, i);
-                    const rawTurno = String(row[diaCol] || '').trim();
-                    const subKey = `${sheetName}|${fecha}|${emp}`;
-                    
-                    let finalTurno = rawTurno;
-                    let finalTipo = 'NORMAL';
-
-                    // Sobrescribir con ausencias si existen
-                    if (subs[subKey]) {
-                        const s = subs[subKey];
-                        finalTipo = s.tipo;
-                        finalTurno = s.sustituto ? `${s.sustituto} (Sust)` : (rawTurno || s.tipo);
-                    } else if (rawTurno) {
-                        const quickClass = window.classify(rawTurno);
-                        const clsMapping = { 
-                            'v': 'VAC', 
-                            'b': 'BAJA', 
-                            'p': 'PERM', 
-                            'c/t': 'CT', 
-                            'ct': 'CT',
-                            'd': 'NORMAL', // Descanso es NORMAL en DB, pero Virtualizer detectará la 'D'
-                            'm': 'NORMAL',
-                            't': 'NORMAL',
-                            'n': 'NORMAL'
-                        };
-                        finalTipo = clsMapping[quickClass] || 'NORMAL';
-                    }
-
-                    // Validación de Identidad y Deduplicación Interna
-                    const uniqKey = `${emp}|${fecha}`;
-                    if (seen.has(uniqKey)) {
-                        stats.duplicates++;
-                        return;
-                    }
-                    seen.add(uniqKey);
-
-                    if (!finalTurno) return; // No insertar días vacíos sin turno ni ausencia
-
-                    toInsert.push({
-                        empleado_id: emp,
-                        fecha: fecha,
-                        turno: finalTurno,
-                        hotel_id: sheetName,
-                        tipo: VALID_TYPES.includes(finalTipo) ? finalTipo : 'NORMAL'
-                    });
-                    stats.inserted++;
+                    const turno = String(row[diaCol] || '').trim();
+                    if (turno) weekMap[semana].turnos[`${emp}|${window.addDays(semana, i)}`] = turno;
                 }
             });
         });
+
+        // Generar estructura final para este hotel
+        Object.entries(weekMap).forEach(([lunes, weekData]) => {
+            const turnos = weekData.turnos;
+            const fechas = Array.from({ length: 7 }, (_, i) => window.addDays(lunes, i));
+            
+            // Aplicar Cambios de Turno (Permutas)
+            fechas.forEach(fecha => {
+                const key = `${sheetName}|${fecha}`;
+                (swaps[key] || []).forEach(([a, b]) => {
+                    let rawA = turnos[`${a}|${fecha}`] || '', rawB = turnos[`${b}|${fecha}`] || '';
+                    const tA = typeof rawA === 'object' ? (rawA.TurnoOriginal || '') : rawA;
+                    const tB = typeof rawB === 'object' ? (rawB.TurnoOriginal || '') : rawB;
+                    turnos[`${a}|${fecha}`] = { TurnoOriginal: tB + ' 🔄', Sustituto: b, TipoInterpretado: 'CT' };
+                    turnos[`${b}|${fecha}`] = { TurnoOriginal: tA + ' 🔄', Sustituto: a, TipoInterpretado: 'CT' };
+                });
+            });
+
+            // Aplicar Sustituciones y Bajas (Incluso si no hay turno previo en el cuadrante)
+            const allEmpFechas = new Set([
+                ...Object.keys(turnos),
+                ...Object.keys(subs).filter(k => k.startsWith(sheetName)).map(k => {
+                    const parts = k.split('|');
+                    return `${parts[2]}|${parts[1]}`; // emp|fecha
+                })
+            ]);
+
+            const subsInWeek = new Set();
+            allEmpFechas.forEach(comb => {
+                const [emp, fecha] = comb.split('|');
+                const subKey = `${sheetName}|${fecha}|${emp}`;
+                const val = turnos[comb] || '';
+                
+                if (subs[subKey]) {
+                    const s = subs[subKey];
+                    const originalStr = typeof val === 'object' ? (val.TurnoOriginal || '') : val;
+                    turnos[comb] = { 
+                        TurnoOriginal: originalStr || '—', 
+                        Sustituto: s.Sustituto, 
+                        TipoInterpretado: s.TipoInterpretado || s.TipoAusencia || 'Ausencia', 
+                        Observaciones: s.Observaciones 
+                    };
+                    if (s.Sustituto) subsInWeek.add(s.Sustituto);
+                }
+            });
+
+            const orden = [...weekData.order];
+            subsInWeek.forEach(s => { if (!orden.includes(s)) orden.push(s); });
+            // Asegurar que personas con baja pero sin turno inicial entren en el orden
+            allEmpFechas.forEach(comb => {
+                const [emp, _] = comb.split('|');
+                if (!orden.includes(emp) && !excluded.has(emp)) orden.push(emp);
+            });
+            const turnosArr = Object.entries(turnos).map(([k, v]) => {
+                const [empleado, fecha] = k.split('|');
+                return { empleado, fecha, turno: v };
+            });
+            scheduleRows.push({ hotel: sheetName, semana_lunes: lunes, orden_empleados: orden, turnos: turnosArr });
+        });
+    });
+
+    // --- LÓGICA DE FUSIÓN (MERGE INTELIGENTE) ---
+    if (window.parsedData) {
+        window.addLog('Fusionando con datos existentes de la nube...');
+        
+        // 1. Fusionar Schedule (Cuadrante)
+        const scheduleMap = {};
+        (window.parsedData.schedule || []).forEach(g => {
+            scheduleMap[`${g.hotel}|${g.semana_lunes}`] = g;
+        });
+        scheduleRows.forEach(g => {
+            scheduleMap[`${g.hotel}|${g.semana_lunes}`] = g;
+        });
+        window.parsedData.schedule = Object.values(scheduleMap);
+        
+        // 2. Fusionar Cambios de Turno (Swaps)
+        const existingSwaps = window.parsedData.swaps || [];
+        const seenSwaps = new Set();
+        const mergedSwaps = [];
+        [...existingSwaps, ...allSwapsRaw].forEach(s => {
+            const key = [s.hotel, s.fecha, s.emp1, s.emp2].sort().join('|');
+            if (!seenSwaps.has(key)) {
+                seenSwaps.add(key);
+                mergedSwaps.push(s);
+            }
+        });
+        window.parsedData.swaps = mergedSwaps;
+        window.parsedData.generated_at = new Date().toISOString();
+    } else {
+        window.parsedData = { schedule: scheduleRows, swaps: allSwapsRaw, generated_at: new Date().toISOString() };
     }
 
-    // 3. Ejecutar Inserción por Batch en Supabase
-    if (toInsert.length > 0) {
-        window.addLog(`Cargando ${toInsert.length} registros válidos...`);
-        try {
-            await window.TurnosDB.migrateBatch(toInsert);
-            window.addLog(`✅ MIGRACIÓN COMPLETADA CON ÉXITO`, 'ok');
-            window.addLog(`Resumen: ${stats.inserted} insertados, ${stats.duplicates} duplicados omitidos.`);
-            
-            // Limpiar cache y refrescar UI
-            await localforage.clear();
-            window.renderPreview();
-        } catch (err) {
-            console.error("Error en migración batch:", err);
-            window.addLog(`❌ FALLO EN MIGRACIÓN: ${err.message}`, 'error');
-            alert("Error crítico durante la carga de datos. Revisa la consola.");
-        }
-    } else {
-        window.addLog(`⚠️ No se encontraron datos válidos para importar.`, 'warn');
-    }
+    
+    window.saveData();
+    window.updateDashboardStats();
+    window.populatePreview();
+    window.populateEmployees();
+    window.addLog('Procesamiento completado y listo para sincronizar.', 'ok');
+    
+    // Sincronizar el resultado final a la Fuente de Verdad
+    if (window.parsedData) window.syncToFirebase(window.parsedData);
 };
 
 // ==========================================
@@ -374,120 +464,20 @@ window.switchPreviewMode = (mode) => {
     window.renderPreview();
 };
 
-window.renderPreview = async () => {
-    if (!window.TurnosDB) return;
-    const area = $('#previewContent');
-    if (!area) return;
-    
-    area.innerHTML = `<div style="padding:2rem; text-align:center; opacity:0.5;">Preparando vista por hoteles...</div>`;
-    
-    const isWeekly = window._previewMode === 'weekly';
-    const selHotel = $('#prevHotel')?.value || 'all';
-    
-    let inicio, fin;
-    if (isWeekly) {
-        const activeDate = $('#prevWeekDate')?.value || window.isoDate(new Date());
-        const dt = new Date(activeDate); 
-        const off = (dt.getDay() === 0 ? -6 : 1 - dt.getDay());
-        dt.setDate(dt.getDate() + off);
-        inicio = window.isoDate(dt);
-        const finDt = new Date(dt);
-        finDt.setDate(finDt.getDate() + 6);
-        fin = window.isoDate(finDt);
-    } else {
-        const monthStr = $('#prevMonth')?.value || window.isoDate(new Date()).substring(0,7);
-        const dt = new Date(monthStr + "-01");
-        inicio = window.isoDate(dt);
-        const nextMonth = new Date(dt.getFullYear(), dt.getMonth() + 1, 0);
-        fin = window.isoDate(nextMonth);
-    }
-    
-    const data = await window.TurnosDB.fetchRango(inicio, fin);
-    
-    // Agrupar por Hotel
-    const hotelsInDB = await window.TurnosDB.getHotels();
-    const hotelsToRender = (selHotel === 'all') ? hotelsInDB : [selHotel];
-    
-    area.innerHTML = ''; // Limpiar
-    
-    for (const hotelName of hotelsToRender) {
-        const hotelData = data.filter(t => t.hotel_id === hotelName);
-        if (hotelData.length === 0 && selHotel !== 'all') {
-            area.innerHTML += `<div style="padding:2rem; text-align:center; opacity:0.3;">No hay datos para ${hotelName} en este periodo.</div>`;
-            continue;
-        } else if (hotelData.length === 0) continue;
-
-        // Crear contenedor para el hotel
-        const section = document.createElement('div');
-        section.className = 'hotel-preview-card';
-        section.style = `
-            background: var(--surface);
-            border-radius: 15px;
-            padding: 1rem;
-            margin-bottom: 2rem;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.05);
-            border: 1px solid var(--border);
-        `;
-        
-        const header = document.createElement('div');
-        header.style = 'font-weight:900; color:var(--accent); font-size:1rem; margin-bottom:1rem; text-transform:uppercase; letter-spacing:1px;';
-        header.textContent = hotelName;
-        section.appendChild(header);
-        
-        const tableArea = document.createElement('div');
-        section.appendChild(tableArea);
-        area.appendChild(section);
-        
-        // Renderizar tabla virtual para este hotel
-        await window.renderSemanaEnContenedor(tableArea, inicio, fin, hotelData);
-    }
-};
-
-window.renderSemanaEnContenedor = async (container, inicio, fin, hotelData) => {
-    const isMonthly = (new Date(fin) - new Date(inicio)) > (8 * 24 * 60 * 60 * 1000);
-    
-    // Construir columnas
-    const columns = [];
-    let curr = new Date(inicio);
-    const end = new Date(fin);
-    while (curr <= end) {
-        const iso = window.isoDate(curr);
-        const dayName = ['DOMINGO','LUNES','MARTES','MIÉRCOLES','JUEVES','VIERNES','SÁBADO'][curr.getDay()];
-        columns.push({
-            dbFecha: iso,
-            title: dayName,
-            subtitle: `${curr.getDate()}/${curr.getMonth()+1}`,
-            isWeekend: curr.getDay() === 0 || curr.getDay() === 6,
-            isToday: iso === window.isoDate(new Date())
-        });
-        curr.setDate(curr.getDate() + 1);
-    }
-    
-    const virtualTable = new window.VirtualTable(container, {
-        columns: columns,
-        rowHeight: isMonthly ? 30 : 50,
-        compact: isMonthly
-    });
-    
-    // Transformar datos para la tabla
-    const empNames = Array.from(new Set(hotelData.map(t => t.empleado_id))).sort();
-    const rows = empNames.map(name => {
-        const empShifts = hotelData.filter(t => t.empleado_id === name);
-        const cells = columns.map(c => {
-            const shift = empShifts.find(s => s.fecha === c.dbFecha);
-            return shift ? { turno: shift.turno, tipo: shift.tipo, sustituto: shift.sustituto } : { turno: '', tipo: 'NORMAL' };
-        });
-        return { empName: name, cells: cells };
-    });
-    
-    virtualTable.setData(rows);
-    
-    container.addEventListener('cellEdit', (e) => {
-        window.abrirEditorRapido(e.detail.empleado, e.detail.fecha, e.detail.cellElement);
-    });
+window.renderPreview = () => {
+    const hotel = $('#prevHotel')?.value || '';
+    if (window._previewMode === 'weekly') window.renderWeeklyPreview(hotel, $('#prevWeekDate')?.value);
+    else window.renderMonthlyCalendar(hotel, $('#prevMonth')?.value);
 };
 
 window.populatePreview = () => {
+    if (!window.parsedData) return;
+    const hotels = [...new Set(window.parsedData.schedule.map(g => g.hotel))].sort();
+    const prevHotel = $('#prevHotel');
+    if (prevHotel) {
+        prevHotel.innerHTML = '<option value="">— Todo —</option>' + hotels.map(h => `<option value="${h}">${h}</option>`).join('');
+    }
+    
     // Inicializar Flatpickrs
     if (window.flatpickr) {
         flatpickr("#prevWeekDate", {
@@ -504,224 +494,226 @@ window.populatePreview = () => {
             onChange: () => window.renderPreview()
         });
     }
-    
-    // Disparar carga base
-    setTimeout(() => window.renderPreview(), 500);
+    window.renderPreview();
 };
 
-window.populateHotels = async () => {
-    const hotels = await window.TurnosDB.getHotels();
+window.renderWeeklyPreview = (filterHotel, filterDate) => {
+    const area = $('#previewContent'); if (!window.parsedData || !area) return;
+    let groups = window.parsedData.schedule;
+    if (filterHotel) groups = groups.filter(g => g.hotel === filterHotel);
     
-    const sel = $('#prevHotel');
-    if (sel) {
-        sel.innerHTML = `<option value="all">TODOS LOS HOTELES</option>` + 
-            hotels.map(h => `<option value="${h}">${h}</option>`).join('');
-    }
+    // Por defecto: Mostrar solo la semana actual si no hay filtro
+    const activeDate = filterDate || window.isoDate(new Date());
+    const dt = new Date(activeDate); 
+    const off = (dt.getDay() === 0 ? -6 : 1 - dt.getDay());
+    dt.setDate(dt.getDate() + off); 
+    const mondayIso = window.isoDate(dt);
+    groups = groups.filter(g => g.semana_lunes === mondayIso);
 
-    const selExcel = $('#excelHotel');
-    if (selExcel) {
-        selExcel.innerHTML = `<option value="all">Ver Todos los Hoteles</option>` + 
-            hotels.map(h => `<option value="${h}">${h}</option>`).join('');
-    }
-};
-
-// ==========================================
-// 3. ORQUESTADOR DE RENDERIZACIÓN PÚBLICA (VIRTUALIZADO)
-// ==========================================
-window.currentSemana = { inicio: null, fin: null, data: [] };
-window.virtualTable = null;
-
-window.renderSemana = async (inicio, fin) => {
-    const area = $('#previewContent');
-    if (!area) return;
-    
-    // Mostramos estado de carga visual si es necesario
-    if (!window.virtualTable) {
-        area.innerHTML = `<div style="padding:4rem; text-align:center; color:var(--text-dim);">Cargando Cuadrante Seguro...</div>`;
-    }
-
-    try {
-        // 1. Fetch via DAO
-        let data = await window.TurnosDB.fetchRango(inicio, fin);
-        
-        const selHotel = $('#prevHotel')?.value;
-        if (selHotel && selHotel !== 'all' && selHotel !== '') {
-            data = data.filter(t => t.hotel_id === selHotel);
-        }
-        
-        window.currentSemana = { inicio, fin, data };
-
-        // 2. Definir Columnas
-        const columns = [];
-        let currentDate = new Date(inicio);
-        const endDate = new Date(fin);
-        while (currentDate <= endDate) {
-            const iso = window.isoDate(currentDate);
-            const dayName = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'][currentDate.getDay()];
-            columns.push({
-                dbFecha: iso,
-                title: dayName,
-                subtitle: `${currentDate.getDate()}/${currentDate.getMonth()+1}`,
-                isWeekend: currentDate.getDay() === 0 || currentDate.getDay() === 6,
-                isToday: window.isoDate(new Date()) === iso
-            });
-            currentDate.setDate(currentDate.getDate() + 1);
-        }
-
-        // 3. Agrupación por Hotel (Vista Multi-Hotel)
-        const hotelsFound = [...new Set(data.map(t => t.hotel_id))].sort();
-        const vData = [];
-
-        hotelsFound.forEach(hName => {
-            // Cabecera por hotel
-            vData.push({ isHeader: true, title: hName });
-
-            const hShifts = data.filter(t => t.hotel_id === hName);
-            const empMap = {};
-            hShifts.forEach(t => {
-                if (!empMap[t.empleado_id]) empMap[t.empleado_id] = {};
-                empMap[t.empleado_id][t.fecha] = t;
-            });
-
-            // Empleados ordenados
-            Object.keys(empMap).sort().forEach(emp => {
-                vData.push({
-                    empName: emp,
-                    cells: columns.map(col => {
-                        const shift = empMap[emp][col.dbFecha] || { tipo: 'NORMAL', turno: '' };
-                        return { tipo: shift.tipo, turno: shift.turno, sustituto: shift.sustituto };
-                    })
-                });
-            });
-        });
-
-        // 4. Inicializar Virtual Table
-        const isMonthly = (new Date(fin) - new Date(inicio)) > (8 * 24 * 60 * 60 * 1000);
-        
-        if (!window.virtualTable || window.virtualTable.columns.length !== columns.length || window.virtualTable.columns[0]?.dbFecha !== columns[0]?.dbFecha) {
-            window.virtualTable = new window.VirtualTable(area, {
-                columns: columns,
-                rowHeight: isMonthly ? 36 : 56,
-                compact: isMonthly
-            });
-            area.addEventListener('cellEdit', (e) => window.abrirEditorRapido(e.detail.empleado, e.detail.fecha, e.detail.cellElement));
-        }
-
-        window.virtualTable.setData(vData);
-
-    } catch (err) {
-        console.error("Fallo renderizando semana:", err);
-        area.innerHTML = `<div style="padding:2rem; color:red; text-align:center;">Error de Datos: ${err.message}</div>`;
-    }
-};
-
-window.aplicarCambioLocal = (payload) => {
-    // Callback disparado por el websocket de Supabase (DAO)
-    if (!window.virtualTable) return;
-    if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') {
-        window.virtualTable.updateRow(payload.new);
-    }
-};
-
-// ==========================================
-// 4. EDITOR MODAL EN VIVO
-// ==========================================
-window.abrirEditorRapido = (empleadoId, fecha, cellEl) => {
-    let modal = document.getElementById('quickEditModal');
-    if(modal) modal.remove();
-    
-    modal = document.createElement('div');
-    modal.id = 'quickEditModal';
-    modal.style = `position:fixed; top:50%; left:50%; transform:translate(-50%, -50%); background:var(--surface); padding:25px; border-radius:15px; box-shadow:0 10px 50px rgba(0,0,0,0.6); z-index:9999; display:flex; gap:10px; flex-direction:column; border:1px solid var(--border); min-width:300px;`;
-    
-    modal.innerHTML = `
-        <h3 style="margin:0 0 10px 0; text-align:center;">✍️ Editar Turno</h3>
-        <p style="margin:0 0 15px 0; text-align:center; color:var(--text-dim);"><b>${empleadoId}</b> &bull; ${fecha}</p>
-        
-        <input type="text" id="quickTurno" placeholder="Ej: M, T, N" class="search-input" style="text-align:center; margin-bottom:15px; font-size:1.2rem; font-weight:bold;" autocomplete="off" value="${cellEl.textContent.trim() === '·' ? '' : cellEl.textContent.trim()}">
-        
-        <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
-            <button class="btn" style="background:rgba(255, 152, 0, 0.2); color:#ff9800;" onclick="window.seleccionarTipo('${empleadoId}','${fecha}','VAC')">🏖️ VAC</button>
-            <button class="btn" style="background:rgba(233, 30, 99, 0.2); color:#e91e63;" onclick="window.seleccionarTipo('${empleadoId}','${fecha}','BAJA')">🤒 BAJA</button>
-            <button class="btn" style="background:rgba(33, 150, 243, 0.2); color:#2196f3;" onclick="window.seleccionarTipo('${empleadoId}','${fecha}','PERM')">📄 PERM</button>
-            <button class="btn" style="background:rgba(156, 39, 176, 0.2); color:#9c27b0;" onclick="window.seleccionarTipo('${empleadoId}','${fecha}','CT')">🔄 CT</button>
-            <button class="btn active" style="grid-column: span 2; background:var(--accent); color:white;" onclick="window.seleccionarTipo('${empleadoId}','${fecha}','NORMAL')">✅ GUARDAR (NORMAL)</button>
-        </div>
-        <button class="btn" style="background:transparent; color:var(--text-dim); margin-top:10px;" onclick="document.getElementById('quickEditModal').remove()">Cancelar</button>
-    `;
-    document.body.appendChild(modal);
-    window.requestAnimationFrame(() => document.getElementById('quickTurno').focus());
-};
-
-window.validarTurno = (fecha, tipo) => {
-    const hoy = new Date().toISOString().split('T')[0];
-    
-    // Regla: No editar pasado (configurable)
-    if (fecha < hoy) {
-        throw new Error("No se pueden modificar turnos en fechas pasadas.");
-    }
-    
-    const VALID_TYPES = ['VAC', 'BAJA', 'PERM', 'NORMAL', 'CT'];
-    if (!VALID_TYPES.includes(tipo)) {
-        throw new Error(`Tipo de turno inválido: ${tipo}`);
-    }
-};
-
-window.seleccionarTipo = async (empleado_id, fecha, tipo) => {
-    const turnoVal = document.getElementById('quickTurno')?.value || '';
-    const modal = document.getElementById('quickEditModal');
-    
-    // 1. VALIDACIÓN DE NEGOCIO PREVIA
-    try {
-        window.validarTurno(fecha, tipo);
-    } catch (ve) {
-        alert("🚨 Validacion: " + ve.message);
+    if (groups.length === 0) {
+        area.innerHTML = `
+            <div class="glass" style="padding:3rem; text-align:center;">
+                <div style="font-size:3rem; margin-bottom:1rem;">📅</div>
+                <h3 style="color:var(--text);">No hay turnos para esta semana</h3>
+                <p style="color:var(--text-dim); font-size:0.8rem;">Prueba a seleccionar otra fecha en el calendario de arriba.</p>
+                <button class="btn active" style="margin-top:15px; background:var(--accent); color:white; border:none; padding:10px 20px; border-radius:10px;" onclick="$('#prevWeekDate')._flatpickr.setDate(new Date()); window.renderPreview();">Ir a hoy</button>
+            </div>`;
         return;
     }
+
+    area.innerHTML = groups.map(g => {
+        const weekDays = Array.from({ length: 7 }, (_, i) => window.addDays(g.semana_lunes, i));
+        
+        // Cabeceras de tabla
+        const headers = weekDays.map(dayIso => {
+            const d = new Date(dayIso);
+            const name = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'][d.getDay()];
+            const monthName = d.toLocaleDateString('es-ES', { month: 'long' });
+            const capitalizedMonth = monthName.charAt(0).toUpperCase() + monthName.slice(1);
+            const isWeekend = d.getDay() === 0 || d.getDay() === 6;
+            return `<th class="${isWeekend ? 'weekend' : ''}">
+                <span class="day-name">${name}</span>
+                <span class="day-number">${d.getDate()}/${capitalizedMonth}</span>
+            </th>`;
+        }).join('');
+
+        const grid = {};
+        g.turnos.forEach(t => { 
+            if (!grid[t.empleado]) grid[t.empleado] = {}; 
+            grid[t.empleado][t.fecha] = t.turno; 
+        });
+
+        const rows = g.orden_empleados.map(emp => {
+            const cells = weekDays.map((day, i) => {
+                const val = grid[emp]?.[day] || '';
+                let label = '';
+                let shiftCls = 'x';
+                let isSwap = false;
+
+                if (typeof val === 'object') {
+                    // Si es una ausencia/sustitución, mostramos el tipo interpretado o el motivo corto
+                    if (val.TipoInterpretado && val.TipoInterpretado !== 'CT') {
+                        label = val.TipoInterpretado;
+                    } else {
+                        label = val.TurnoOriginal || '—';
+                    }
+                    isSwap = val.TipoInterpretado === 'CT';
+                } else {
+                    label = val || '—';
+                }
+
+                shiftCls = window.getShiftClass(window.classify(label));
+                const isWeekend = i >= 5; // S, D are indices 5, 6
+                
+                // Limpiar label para mostrar solo iniciales o códigos cortos si es muy largo
+                let displayLabel = String(label).replace(/[🔄]/g, '').trim();
+                if (displayLabel.length > 12) displayLabel = displayLabel.substring(0, 10) + '...';
+
+                return `<td class="${isWeekend ? 'weekend' : ''}">
+                    <span class="turno-pill turno-${shiftCls}">
+                        ${displayLabel} ${isSwap ? '🔄' : ''}
+                    </span>
+                </td>`;
+            }).join('');
+            return `<tr><td><b>${emp}</b></td>${cells}</tr>`;
+        });
+
+        return `
+        <div class="preview-week week">
+            <div class="preview-week-header week-head">
+                <h3>${g.hotel} — Semana del ${window.fmtDate(g.semana_lunes)}</h3>
+            </div>
+            <div class="preview-table-wrap table-container">
+                <table class="preview-table">
+                    <thead>
+                        <tr>
+                            <th>Personal</th>
+                            ${headers}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${rows.join('')}
+                    </tbody>
+                </table>
+            </div>
+        </div>`;
+    }).join('');
+};
+
+window.renderMonthlyCalendar = (filterHotel, monthStr) => {
+    const area = $('#previewContent'); if (!window.parsedData || !area) return;
+    area.innerHTML = '';
     
-    // 2. GUARDAR ESTADO PREVIO PARA POSIBLE ROLLBACK
-    let oldData = null;
-    const empRow = window.virtualTable?.data.find(r => r.empName === empleado_id);
-    const cellIdx = window.virtualTable?.columns.findIndex(c => c.dbFecha === fecha);
-    if (empRow && cellIdx !== -1) {
-        oldData = { ...empRow.cells[cellIdx] };
-    }
-
-    if (modal) {
-        modal.style.opacity = '0.5';
-        modal.style.pointerEvents = 'none';
-    }
+    const now = monthStr ? new Date(monthStr + "-02") : new Date(); // Use 02 to avoid timezone shifts
+    const year = now.getFullYear();
+    const month = now.getMonth();
+    const totalDays = new Date(year, month + 1, 0).getDate();
+    const todayStr = new Date().toISOString().split('T')[0];
     
-    try {
-        const hotelFallback = $('#prevHotel')?.value || 'DEFAULT';
-        
-        // 3. OPTIMISTIC UI + SYNC STATE VISIBLE
-        if (window.virtualTable) {
-            window.virtualTable.updateRowOptimistic({ empleado_id, fecha, tipo, turno: turnoVal });
-        }
-        
-        // 4. PERSISTENCIA CON TRAZABILIDAD (DAO INCLUYE AUTH EMAIL)
-        await window.TurnosDB.upsertTurno(empleado_id, fecha, turnoVal, tipo, hotelFallback);
-        
-        if(modal) modal.remove();
-        window.addLog(`Turno ${tipo} guardado para ${empleado_id}`, 'ok');
+    const hotels = filterHotel ? [filterHotel] : [...new Set(window.parsedData.schedule.map(g => g.hotel))];
+    
+    area.innerHTML = hotels.map(hotel => {
+        // Obtener empleados de este hotel
+        const emps = new Set();
+        window.parsedData.schedule.forEach(g => {
+            if (g.hotel === hotel) {
+                g.turnos.forEach(t => {
+                    const tDate = new Date(t.fecha);
+                    if (tDate.getFullYear() === year && tDate.getMonth() === month) {
+                        emps.add(t.empleado);
+                    }
+                });
+            }
+        });
 
-    } catch(e) {
-        console.error("[SYNC ERROR]", e);
+        if (emps.size === 0) return '';
+
+        const sortedEmps = [...emps].sort();
         
-        // 5. ROLLBACK AUTOMÁTICO + ESTADO DE ERROR VISUAL
-        if (window.virtualTable && oldData) {
-            window.virtualTable.rollbackRow(empleado_id, fecha, oldData);
+        // Cabecera de días
+        let headers = '';
+        for (let d = 1; d <= totalDays; d++) {
+            const date = new Date(year, month, d);
+            const isWeekend = date.getDay() === 0 || date.getDay() === 6;
+            const dayName = date.toLocaleDateString('es-ES', { weekday: 'narrow' }).toUpperCase();
+            const dateISO = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+            const isToday = dateISO === todayStr;
+
+            headers += `
+                <th class="${isWeekend ? 'weekend' : ''} ${isToday ? 'today' : ''}" style="padding:1px; width:22px; ${isToday ? 'outline:1px solid var(--accent);' : ''}">
+                    <div style="font-size:0.4rem; color:var(--text-dim); line-height:1;">${dayName}</div>
+                    <div style="font-size:0.55rem; font-weight:900; line-height:1;">${d}</div>
+                </th>`;
         }
 
-        window.addLog(`❌ FALLO: ${e.message}`, 'error');
-        alert("⚠️ Error de Red: No se pudo sincronizar. El cambio ha sido revertido.");
-        
-        if(modal) {
-            modal.style.opacity = '1';
-            modal.style.pointerEvents = 'auto';
-        }
-    }
+        // Filas de empleados
+        const rows = sortedEmps.map(emp => {
+            let cells = '';
+            for (let d = 1; d <= totalDays; d++) {
+                const dayStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+                let shiftCls = '';
+                let displayLabel = '';
+                
+                window.parsedData.schedule.forEach(g => {
+                    if (g.hotel === hotel) {
+                        g.turnos.forEach(t => {
+                            if (t.empleado === emp && t.fecha === dayStr) {
+                                let label = '';
+                                if (typeof t.turno === 'object') {
+                                    label = (t.turno.TipoInterpretado && t.turno.TipoInterpretado !== 'CT') 
+                                        ? t.turno.TipoInterpretado 
+                                        : (t.turno.TurnoOriginal || '—');
+                                } else {
+                                    label = t.turno || '—';
+                                }
+                                
+                                const cls = window.classify(label);
+                                shiftCls = window.getShiftClass(cls);
+                                displayLabel = cls ? cls.toUpperCase() : (label ? label[0].toUpperCase() : '');
+                            }
+                        });
+                    }
+                });
+                
+                const date = new Date(year, month, d);
+                const isWeekend = date.getDay() === 0 || date.getDay() === 6;
+                const isToday = dayStr === todayStr;
+
+                // Definir color de fondo basado en el tipo de turno directamente en el TD
+                let style = `width:22px; height:22px; padding:0; text-align:center; font-size:0.5rem; font-weight:bold; border:0.5px solid rgba(0,0,0,0.05);`;
+                if (shiftCls && shiftCls !== 'x') {
+                    cells += `<td class="${isWeekend ? 'weekend' : ''} ${isToday ? 'today' : ''} turno-${shiftCls}" style="${style} color:white; opacity:0.9;">${displayLabel}</td>`;
+                } else {
+                    cells += `<td class="${isWeekend ? 'weekend' : ''} ${isToday ? 'today' : ''}" style="${style} color:var(--text-dim); opacity:0.3;">·</td>`;
+                }
+            }
+            return `<tr><td style="text-align:left; padding-left:0.4rem; font-size:0.55rem; font-weight:700; background:var(--surface); position:sticky; left:0; z-index:10; white-space:nowrap; border-right:1px solid var(--border); width:75px;">${emp}</td>${cells}</tr>`;
+        });
+
+        return `
+            <div class="monthly-sheet-wrap" style="margin-bottom:3rem; animation: slideUp 0.4s ease-out;">
+                <div class="week-head" style="display:flex; justify-content:space-between; align-items:center; padding:1.2rem 1.8rem; background:linear-gradient(90deg, var(--bg2), var(--bg3)); border-radius:18px 18px 0 0; border:1px solid var(--border); border-bottom:none;">
+                    <div style="display:flex; align-items:center; gap:15px;">
+                        <div style="width:12px; height:12px; border-radius:50%; background:var(--accent); box-shadow: 0 0 10px var(--accent);"></div>
+                        <h3 style="margin:0; font-size:1.2rem; font-weight:900; color:var(--text); letter-spacing:-0.03em;">${hotel} <span style="color:var(--text-muted); font-weight:500; font-size:0.95rem; margin-left:10px;">• ${now.toLocaleDateString('es-ES', {month:'long', year:'numeric'}).toUpperCase()}</span></h3>
+                    </div>
+                </div>
+                <div class="table-container" style="overflow-x:auto; border-radius:0 0 18px 18px; border:1px solid var(--border); background:var(--surface); box-shadow:var(--shadow);">
+                    <table class="preview-table monthly" style="width:100%; border-collapse:collapse; min-width:max-content;">
+                        <thead>
+                            <tr>
+                                <th style="position:sticky; left:0; z-index:11; min-width:200px; background:var(--bg3); padding:0.8rem 1.5rem; text-align:left; border-right:2px solid var(--border);">PERSONAL</th>
+                                ${headers}
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${rows.join('')}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        `;
+    }).join('');
 };
 
 // ==========================================
@@ -963,43 +955,71 @@ document.addEventListener('DOMContentLoaded', () => {
         document.body.classList.remove('light-mode');
     }
 
-    // --- SISTEMA DE FUENTE DE VERDAD (SUPABASE CLOUD) ---
-    window.addLog('Conectando a Fuente de Verdad (Supabase Cloud)...');
-    
-    // Inicialización de UI y Datos
-    (async function init() {
-        // Asegurar valores iniciales en los selectores de fecha
-        if ($('#prevMonth') && !$('#prevMonth').value) {
-            const now = new Date();
-            $('#prevMonth').value = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
-        }
-        if ($('#prevWeekDate') && !$('#prevWeekDate').value) {
-            $('#prevWeekDate').value = window.isoDate(new Date());
-        }
+    const saved = localStorage.getItem('turnosweb_admin_data');
+    // --- SISTEMA DE FUENTE DE VERDAD (FIREBASE FIRST) ---
+    if (window.firebase && window.firebaseConfig) {
+        window.addLog('Conectando a Fuente de Verdad (Firebase)...');
+        const fbDb = firebase.database();
         
-        // Carga inicial de componentes
-        await window.populateHotels();
-        window.populatePreview();
-        window.populateEmployees();
-        window.updateDashboardStats();
-        
-        window.addLog(`Sistema listo y sincronizado.`, 'ok');
-        
-        // Info en Dashboard
-        try {
-            const homeLog = $('#homeLogBody');
-            if (homeLog && !window.homeLogInit) {
-                const info = document.createElement('div');
-                info.style.padding = '10px';
-                info.innerHTML = `
-                    <div style="font-size:0.8rem; font-weight:900; color:var(--accent); margin-bottom:5px;">✓ BASE DE DATOS ACTIVA</div>
-                    <div style="font-size:0.75rem; opacity:0.7;">Origen: Supabase Cloud</div>
-                `;
-                homeLog.prepend(info);
-                window.homeLogInit = true;
+        // Listener en tiempo real: Cualquier cambio en la nube se refleja en el Admin
+        fbDb.ref('turnosweb/data').on('value', (snapshot) => {
+            const cloudData = snapshot.val();
+            if (cloudData) {
+                if (!window.isProcessingExcel) {
+                    // Sanitizar datos para remover posibles duplicados históricos
+                    if (cloudData.schedule) {
+                        cloudData.schedule.forEach(g => {
+                            if (g.turnos && Array.isArray(g.turnos)) {
+                                const uniqueTurnos = new Map();
+                                g.turnos.forEach(t => {
+                                    uniqueTurnos.set(`${t.empleado}|${t.fecha}`, t);
+                                });
+                                g.turnos = Array.from(uniqueTurnos.values());
+                            }
+                        });
+                    }
+                    window.parsedData = cloudData;
+                    try {
+                        if (cloudData.profiles) {
+                            localStorage.setItem('turnosweb_emp_profiles', JSON.stringify(cloudData.profiles));
+                        }
+                    } catch(e) { console.warn("Storage bloqueado."); }
+                    
+                    // Asegurar que el selector de mes tiene un valor inicial si está en el DOM
+                    if ($('#prevMonth') && !$('#prevMonth').value) {
+                         const now = new Date();
+                         $('#prevMonth').value = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+                    }
+
+                    window.populatePreview();
+                    window.populateEmployees();
+                    window.updateDashboardStats();
+                    
+                    const time = new Date().toLocaleTimeString();
+                    const date = new Date().toLocaleDateString();
+                    window.addLog(`Sincronización exitosa con la nube`, 'ok');
+                    
+                    // Mostrar info en el Dashboard
+                    try {
+                        const homeLog = $('#homeLogBody');
+                        if (homeLog && !window.homeLogInit) {
+                            const info = document.createElement('div');
+                            info.style.padding = '10px';
+                            info.innerHTML = `
+                                <div style="font-size:0.8rem; font-weight:900; color:var(--accent); margin-bottom:5px;">✓ BASE DE DATOS ACTIVA</div>
+                                <div style="font-size:0.75rem; opacity:0.7;">Última actualización: ${date} ${time}</div>
+                                <div style="font-size:0.75rem; opacity:0.7;">Origen: Firebase RTDB</div>
+                            `;
+                            homeLog.prepend(info);
+                            window.homeLogInit = true;
+                        }
+                    } catch(e) {}
+                }
+            } else {
+                window.addLog('NUBE: La base de datos está vacía. Esperando carga inicial.');
             }
-        } catch(e) {}
-    })();
+        });
+    }
 
     const dropZone = $('#drop-zone');
     const fileIn = $('#fileInput');
@@ -1068,77 +1088,3 @@ function handleFile(file) {
     };
     r.readAsArrayBuffer(file);
 }
-
-// ==========================================
-// 10. MODO EXCEL (RAW DATA INSPECTOR)
-// ==========================================
-window.renderExcelView = async () => {
-    const area = $('#excel-grid-container');
-    if (!area) return;
-    
-    area.innerHTML = `<div style="padding:4rem; text-align:center; opacity:0.5;">Cargando Base de Datos Maestra...</div>`;
-    
-    // Filtros
-    const monthEl = $('#excelMonth');
-    const hotelEl = $('#excelHotel');
-    
-    if (monthEl && !monthEl.value) {
-        const now = new Date();
-        monthEl.value = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
-    }
-    
-    const monthStr = monthEl ? monthEl.value : window.isoDate(new Date()).substring(0,7);
-    const selHotel = hotelEl ? hotelEl.value : 'all';
-
-    const dt = new Date(monthStr + "-01");
-    const inicio = window.isoDate(dt);
-    const lastDay = new Date(dt.getFullYear(), dt.getMonth() + 1, 0);
-    const fin = window.isoDate(lastDay);
-    
-    try {
-        let data = await window.TurnosDB.fetchRango(inicio, fin);
-        if (selHotel !== 'all') {
-            data = data.filter(t => t.hotel_id === selHotel);
-        }
-        
-        // Columnas para todo el mes
-        const columns = [];
-        let cur = new Date(inicio);
-        while (cur <= lastDay) {
-            const iso = window.isoDate(cur);
-            columns.push({
-                dbFecha: iso,
-                title: ['dom','lun','mar','mié','jue','vie','sáb'][cur.getDay()],
-                subtitle: cur.getDate(),
-                isWeekend: cur.getDay() === 0 || cur.getDay() === 6
-            });
-            cur.setDate(cur.getDate() + 1);
-        }
-        
-        const table = new window.VirtualTable(area, {
-            columns: columns,
-            rowHeight: 35,
-            compact: true
-        });
-        
-        const empNames = Array.from(new Set(data.map(t => t.empleado_id))).sort();
-        const rows = empNames.map(name => {
-            const empShifts = data.filter(t => t.empleado_id === name);
-            const cells = columns.map(c => {
-                const shift = empShifts.find(s => s.fecha === c.dbFecha);
-                return shift ? { turno: shift.turno, tipo: shift.tipo, sustituto: shift.sustituto } : { turno: '', tipo: 'NORMAL' };
-            });
-            return { empName: name, cells: cells };
-        });
-        
-        table.setData(rows);
-        
-        // El editor de celdas es el mismo que en la vista previa
-        area.addEventListener('cellEdit', (e) => {
-            window.abrirEditorRapido(e.detail.empleado, e.detail.fecha, e.detail.cellElement);
-        });
-
-    } catch (e) {
-        area.innerHTML = `<div style="padding:2rem; color:var(--danger);">Error cargando datos: ${e.message}</div>`;
-    }
-};

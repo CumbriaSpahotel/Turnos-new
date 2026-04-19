@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TurnosWeb — Panel Principal</title>
+    <title>TurnosWeb — Panel de Administración</title>
+    <link rel="icon" type="image/png" href="favicon.png">
     <link rel="stylesheet" href="admin.css">
     <script src="xlsx.full.min.js"></script>
 </head>
@@ -21,16 +22,16 @@
         <nav class="sidebar-nav">
             <div class="nav-group-label">CUADRANTE</div>
             <button class="nav-item active" onclick="switchSection('home')" id="nav-home">
-                <span class="nav-icon">🏠</span>
-                <span class="nav-label">Inicio</span>
-            </button>
-            <button class="nav-item" onclick="switchSection('dashboard')" id="nav-dashboard">
-                <span class="nav-icon">📁</span>
-                <span class="nav-label">Cargar Excel</span>
+                <span class="nav-icon">📊</span>
+                <span class="nav-label">Panel Total</span>
             </button>
             <button class="nav-item" onclick="switchSection('preview')" id="nav-preview">
                 <span class="nav-icon">📅</span>
                 <span class="nav-label">Vista Previa</span>
+            </button>
+            <button class="nav-item" onclick="switchSection('excel')" id="nav-excel">
+                <span class="nav-icon">📊</span>
+                <span class="nav-label">Modo Excel (Raw)</span>
             </button>
             <button class="nav-item" onclick="switchSection('employees')" id="nav-employees">
                 <span class="nav-icon">👥</span>
@@ -97,10 +98,7 @@
                     <div class="sc-label">Empleados en Turno</div>
                     <div class="sc-value" id="stat-active-emp">0</div>
                 </div>
-                <div class="status-card ok">
-                    <div class="sc-label">Estado de la Red</div>
-                    <div class="sc-value" id="stat-sync">Sincronizado</div>
-                </div>
+
                 <div class="status-card">
                     <div class="sc-label">Permutas Pendientes</div>
                     <div class="sc-value" id="stat-pending-swaps">0</div>
@@ -109,52 +107,53 @@
                     <div class="sc-label">Próximas Vacaciones</div>
                     <div class="sc-value" id="stat-next-vac">0</div>
                 </div>
+                <div class="status-card highlight">
+                    <div class="sc-label">Plantilla</div>
+                    <div class="sc-value">v7.0 <small style="font-size:0.6rem; opacity:0.5;">(Supabase)</small></div>
+                </div>
             </div>
 
             <div class="dashboard-grid" style="display:grid; grid-template-columns: 1fr 1fr; gap:1.5rem; margin-top:1.5rem;">
                 <div class="log-panel" style="margin-top:0;">
-                    <div class="log-header">ALERTAS RECIENTES</div>
-                    <div id="home-alerts" class="log-body" style="height:250px;">
-                        <div style="padding:1rem; opacity:0.5; text-align:center;">No hay alertas pendientes.</div>
+                    <div class="log-header">IMPORTACIÓN RÁPIDA (EXCEL)</div>
+                    <div id="drop-zone" class="drop-zone" style="height:250px; border:2px dashed var(--accent-dim); display:flex; flex-direction:column; align-items:center; justify-content:center; border-radius:15px; background:rgba(0,0,0,0.02); cursor:pointer;">
+                        <input type="file" id="fileInput" hidden accept=".xlsx, .xls">
+                        <span style="font-size:2rem; margin-bottom:10px;">📄</span>
+                        <div style="font-size:0.8rem; font-weight:700;">Arrastra o pulsa aquí</div>
+                        <div style="font-size:0.6rem; opacity:0.6;">Plantilla Cuadrante v6.0</div>
                     </div>
                 </div>
                 <div class="log-panel" style="margin-top:0;">
-                    <div class="log-header">SINCRONIZACIÓN NUBE</div>
+                    <div class="log-header">CENTRO DE SINCRONIZACIÓN NUBE</div>
                     <div id="homeLogBody" class="log-body" style="height:250px;"></div>
                 </div>
             </div>
+
+            <!-- REGISTRO DE ACTIVIDAD EXTENDIDO -->
+            <div class="log-panel" style="margin-top:1.5rem;">
+                <div class="log-header">REGISTRO DE ACTIVIDAD DETALLADO</div>
+                <div id="logBody" class="log-body" style="height:200px;"></div>
+            </div>
         </section>
 
-        <!-- CARGAR EXCEL -->
-        <section id="section-dashboard" class="section">
+
+
+        <!-- MODO EXCEL (RAW INSPECTOR) -->
+        <section id="section-excel" class="section">
             <header class="page-header">
                 <div>
-                    <h1 class="page-title">Carga de Datos</h1>
-                    <p class="page-subtitle">Importación de cuadrantes desde Excel</p>
+                    <h1 class="page-title">Modo Excel (Base de Datos)</h1>
+                    <p class="page-subtitle">Visualización directa de registros en Supabase</p>
+                </div>
+                <div style="display:flex; gap:10px; margin-left:auto; align-items:center;">
+                    <select id="excelHotel" class="btn-premium" style="background:var(--bg3); border:1px solid var(--border); padding:8px 15px; border-radius:12px;" onchange="window.renderExcelView()">
+                        <option value="all">Filtro por Hotel: Ver Todos</option>
+                    </select>
+                    <input type="month" id="excelMonth" class="btn-premium" style="background:var(--bg3); border:1px solid var(--border); padding:8px 15px; border-radius:12px;" onchange="window.renderExcelView()">
                 </div>
             </header>
-
-            <div id="drop-zone" class="drop-zone">
-                <input type="file" id="fileInput" hidden accept=".xlsx, .xls">
-                <span class="drop-icon">📤</span>
-                <div class="drop-text">Arrastra el Cuadrante Excel aquí</div>
-                <div class="drop-sub">o selecciónalo manualmente</div>
-            </div>
-
-            <div class="status-grid">
-                <div class="status-card" id="card-status-excel">
-                    <div class="sc-label">Estado</div>
-                    <div class="sc-value" id="status-text">Listo</div>
-                </div>
-                <div class="status-card ok">
-                    <div class="sc-label">Plantilla</div>
-                    <div class="sc-value">v6.0</div>
-                </div>
-            </div>
-
-            <div class="log-panel">
-                <div class="log-header">REGISTRO DE ACTIVIDAD</div>
-                <div id="logBody" class="log-body"></div>
+            <div id="excel-grid-container" style="background:var(--surface); border-radius:20px; border:1px solid var(--border); overflow:hidden; min-height:70vh;">
+                <!-- Dinámico -->
             </div>
         </section>
 
@@ -222,12 +221,31 @@
         </div>
     </div>
 
-    <!-- FIREBASE INTEGRATION -->
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
-    <script src="firebase-config.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="supabase-config.js?v=7.1"></script>
+    
+    <!-- AUTHENTICATION PROTECTOR (OBLIGATORIO) -->
+    <script>
+        (async function checkAuth() {
+            if (!window.supabase) return;
+            const { data: { session } } = await window.supabase.auth.getSession();
+            if (!session) {
+                console.warn("Sesión no encontrada. Redirigiendo a login...");
+                window.location.replace('login.html');
+                return;
+            }
+            // Suscribirse a cambios de estado (logout en otros tabs, etc)
+            window.supabase.auth.onAuthStateChange((event, session) => {
+                if (!session) window.location.href = 'login.html';
+            });
+        })();
+    </script>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/localforage/1.10.0/localforage.min.js"></script>
+    <script src="supabase-dao.js?v=7.1"></script>
+    <script src="virtualizer.js?v=7.1"></script>
 
-    <script src="admin.js?v=99"></script>
-    <script src="sync-status.js"></script>
+    <script src="admin.js?v=7.1"></script>
+    <script src="sync-status.js?v=7.1"></script>
 </body>
 </html>

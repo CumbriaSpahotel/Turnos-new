@@ -1,0 +1,483 @@
+div id="cambio-turno-wrap">
+    <!-- Estilos de alta fidelidad encapsulados -->
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+        #cambio-turno-wrap {
+            --brand-red: #b22222;
+            --brand-dark: #1a1a1a;
+            --brand-gray: #64748b;
+            --bg-soft: #fcfcfc;
+            --border-soft: #e5e7eb;
+            
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            width: 100%;
+            margin: 0;
+            background: #ffffff;
+            color: var(--brand-dark);
+            line-height: 1.5;
+            text-align: left;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        #cambio-turno-wrap * { box-sizing: border-box; transition: all 0.2s ease; }
+
+        /* Cabecera Premium */
+        #cambio-turno-wrap .header-ct {
+            padding: 60px 8%;
+            background: white;
+            border-bottom: 1px solid var(--border-soft);
+            display: flex;
+            align-items: center;
+            gap: 40px;
+        }
+
+        #cambio-turno-wrap .brand-mark {
+            width: 70px;
+            height: 70px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: white;
+            border: 2px solid var(--brand-red);
+            border-radius: 50%;
+            flex-shrink: 0;
+            position: relative;
+        }
+
+        #cambio-turno-wrap .brand-mark::before {
+            content: "";
+            width: 35px;
+            height: 35px;
+            border: 6px solid var(--brand-red);
+            border-right-color: transparent;
+            border-radius: 50%;
+            transform: rotate(45deg);
+        }
+
+        #cambio-turno-wrap .header-content h1 {
+            font-size: 2rem;
+            font-weight: 300;
+            letter-spacing: -0.03em;
+            margin: 0;
+            color: var(--brand-dark);
+        }
+
+        #cambio-turno-wrap .header-content p {
+            font-size: 1.1rem;
+            color: var(--brand-gray);
+            margin: 8px 0 0 0;
+            font-weight: 400;
+        }
+
+        #cambio-turno-wrap .hotel-tag {
+            display: inline-block;
+            margin-top: 15px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.2em;
+            color: var(--brand-red);
+            border-bottom: 2px solid var(--brand-red);
+            padding-bottom: 2px;
+        }
+
+        /* Cuerpo */
+        #cambio-turno-wrap .container-ct {
+            padding: 60px 8%;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        #cambio-turno-wrap .intro-section {
+            margin-bottom: 50px;
+        }
+
+        #cambio-turno-wrap .intro-section h2 {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+
+        #cambio-turno-wrap .info-banner {
+            background: var(--bg-soft);
+            padding: 25px;
+            border-radius: 12px;
+            border: 1px solid var(--border-soft);
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            font-size: 0.95rem;
+            color: var(--brand-gray);
+        }
+
+        /* Campos de Entrada */
+        #cambio-turno-wrap fieldset {
+            border: none;
+            padding: 0;
+            margin-bottom: 60px;
+        }
+
+        #cambio-turno-wrap legend {
+            font-size: 0.8rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--brand-gray);
+            margin-bottom: 30px;
+            display: block;
+            width: 100%;
+            border-bottom: 1px solid var(--border-soft);
+            padding-bottom: 10px;
+        }
+
+        #cambio-turno-wrap .input-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+        }
+
+        #cambio-turno-wrap .field {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        #cambio-turno-wrap label {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: #334155;
+        }
+
+        #cambio-turno-wrap input[type="text"], 
+        #cambio-turno-wrap input[type="date"], 
+        #cambio-turno-wrap select, 
+        #cambio-turno-wrap textarea {
+            border: 1px solid #d1d5db;
+            padding: 14px 16px;
+            border-radius: 8px;
+            font-size: 1rem;
+            background: #fff;
+            width: 100%;
+        }
+
+        #cambio-turno-wrap input:focus {
+            border-color: var(--brand-red);
+            outline: none;
+            box-shadow: 0 0 0 4px rgba(178, 34, 34, 0.05);
+        }
+
+        /* Tarjetas de Turnos */
+        #cambio-turno-wrap .shift-card {
+            background: white;
+            border: 1px solid var(--border-soft);
+            border-radius: 16px;
+            padding: 30px;
+            margin-bottom: 25px;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.02);
+            position: relative;
+        }
+
+        #cambio-turno-wrap .shift-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr 1.5fr auto;
+            gap: 20px;
+            align-items: flex-end;
+        }
+
+        #cambio-turno-wrap .btn-delete {
+            background: #fff;
+            color: #94a3b8;
+            border: 1px solid #e2e8f0;
+            width: 45px;
+            height: 45px;
+            border-radius: 10px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+        }
+
+        #cambio-turno-wrap .btn-delete:hover {
+            color: var(--brand-red);
+            border-color: #fecaca;
+            background: #fef2f2;
+        }
+
+        #cambio-turno-wrap .btn-add-shift {
+            background: transparent;
+            color: var(--brand-red);
+            border: 2px dashed #e2e8f0;
+            padding: 20px;
+            width: 100%;
+            border-radius: 12px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 0.95rem;
+            margin-bottom: 40px;
+        }
+
+        #cambio-turno-wrap .btn-add-shift:hover {
+            background: var(--bg-soft);
+            border-color: var(--brand-red);
+        }
+
+        /* Acuerdo y Envío */
+        #cambio-turno-wrap .agreement {
+            display: flex;
+            align-items: flex-start;
+            gap: 15px;
+            padding: 25px;
+            background: var(--bg-soft);
+            border-radius: 12px;
+            margin-top: 20px;
+            cursor: pointer;
+        }
+
+        #cambio-turno-wrap .agreement input {
+            width: 20px;
+            height: 20px;
+            accent-color: var(--brand-red);
+            margin-top: 2px;
+        }
+
+        #cambio-turno-wrap .btn-submit-main {
+            background: var(--brand-dark);
+            color: white;
+            border: none;
+            padding: 22px 40px;
+            font-size: 1rem;
+            font-weight: 700;
+            width: 100%;
+            border-radius: 12px;
+            cursor: pointer;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            margin-top: 40px;
+        }
+
+        #cambio-turno-wrap .btn-submit-main:hover {
+            background: var(--brand-red);
+            transform: translateY(-2px);
+            box-shadow: 0 20px 25px -5px rgba(178, 34, 34, 0.2);
+        }
+
+        #cambio-turno-wrap #success-notice {
+            display: none;
+            margin-top: 30px;
+            padding: 30px;
+            background: #ecfdf5;
+            border: 1px solid #34d399;
+            color: #065f46;
+            text-align: center;
+            border-radius: 12px;
+            font-weight: 600;
+        }
+
+        @media (max-width: 1024px) {
+            #cambio-turno-wrap .shift-grid { grid-template-columns: 1fr 1fr; }
+            #cambio-turno-wrap .shift-grid div:nth-child(4) { grid-column: span 2; }
+            #cambio-turno-wrap .btn-delete { width: 100%; grid-column: span 2; }
+            #cambio-turno-wrap .input-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+
+    <header class="header-ct">
+        <div class="brand-mark"></div>
+        <div class="header-content">
+            <h1>El relevo es una transición de la excelencia</h1>
+            <p>Sercotel Guadiana & Cumbria Spa&Hotel</p>
+            <div class="hotel-tag">Juntos sumamos</div>
+        </div>
+    </header>
+
+    <div class="container-ct">
+        <div class="intro-section">
+            <h2>Gestión de Turnos</h2>
+            <div class="info-banner">
+                <span>🏨</span>
+                <p>La coordinación entre compañeros permite conciliar mejor la vida personal y mantener un servicio impecable.</p>
+            </div>
+        </div>
+
+        <form id="form-cambio-v3" action="https://formspree.io/f/xvgawqya" method="POST">
+            
+            <fieldset>
+                <legend>01. Identificación</legend>
+                <div class="input-grid">
+                    <div class="field">
+                        <label>Empleado Solicitante</label>
+                        <input type="text" id="v3_solicitante" name="solicitante" required placeholder="Nombre completo">
+                    </div>
+                    <div class="field">
+                        <label>Compañero que acepta</label>
+                        <input type="text" id="v3_companero" name="companero" required placeholder="Nombre completo">
+                    </div>
+                </div>
+
+                <label class="agreement" for="v3_check">
+                    <input type="checkbox" id="v3_check" name="acuerdo_confirmado" required>
+                    <span>Declaro que ambos empleados están informados y han aceptado este cambio de mutuo acuerdo bajo las políticas del hotel.</span>
+                </label>
+            </fieldset>
+
+            <fieldset>
+                <legend>02. Detalles del Intercambio</legend>
+                <div id="v3_items_container">
+                    <!-- Fila de Cambio -->
+                    <div class="shift-card-wrapper">
+                        <div class="shift-card">
+                            <div class="shift-grid">
+                                <div class="field">
+                                    <label>Fecha</label>
+                                    <input type="date" class="v3-fecha" required>
+                                </div>
+                                <div class="field">
+                                    <label>Turno Actual</label>
+                                    <select class="v3-origen">
+                                        <option>Mañana</option>
+                                        <option>Tarde</option>
+                                        <option>Noche</option>
+                                        <option>Descanso</option>
+                                    </select>
+                                </div>
+                                <div class="field">
+                                    <label>Turno Solicitado</label>
+                                    <select class="v3-destino">
+                                        <option>Mañana</option>
+                                        <option>Tarde</option>
+                                        <option>Noche</option>
+                                        <option>Descanso</option>
+                                    </select>
+                                </div>
+                                <div class="field">
+                                    <label>Notas / Ajuste</label>
+                                    <input type="text" class="v3-nota" placeholder="Ej: Cambio por jornada familiar...">
+                                </div>
+                                <button type="button" class="btn-delete" onclick="quitarFilaV3(this)">×</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <button type="button" class="btn-add-shift" onclick="nuevaFilaV3()">
+                    + Añadir otra fecha al intercambio
+                </button>
+
+                <div class="field">
+                    <label>Observaciones Generales</label>
+                    <textarea id="v3_obs" name="observaciones" rows="3" placeholder="Información adicional relevante..."></textarea>
+                </div>
+            </fieldset>
+
+            <div style="font-size: 0.8rem; color: #94a3b8; margin-bottom: 20px;">
+                * La aprobación definitiva depende de las necesidades operativas de Dirección.
+            </div>
+
+            <button type="submit" id="v3_btn_submit" class="btn-submit-main">
+                Enviar Solicitud Oficial
+            </button>
+
+            <div id="success-notice">
+                <div style="font-size: 2rem; margin-bottom: 10px;">✨</div>
+                Solicitud enviada con éxito. Administración revisará los detalles a la brevedad.
+            </div>
+        </form>
+    </div>
+
+    <script>
+        const limitDay = new Date().toISOString().split("T")[0];
+        document.querySelectorAll(".v3-fecha").forEach(el => el.min = limitDay);
+
+        function nuevaFilaV3() {
+            const container = document.getElementById("v3_items_container");
+            const base = document.querySelector(".shift-card-wrapper");
+            const clone = base.cloneNode(true);
+            clone.querySelectorAll('input').forEach(i => i.value = '');
+            clone.querySelector('.v3-fecha').min = limitDay;
+            container.appendChild(clone);
+        }
+
+        function quitarFilaV3(btn) {
+            const total = document.querySelectorAll(".shift-card-wrapper").length;
+            if (total > 1) {
+                btn.closest(".shift-card-wrapper").remove();
+            }
+        }
+
+        document.getElementById("form-cambio-v3").addEventListener("submit", async function(e) {
+            e.preventDefault();
+            const btn = document.getElementById("v3_btn_submit");
+            
+            const sol = document.getElementById("v3_solicitante").value;
+            const comp = document.getElementById("v3_companero").value;
+            const obs = document.getElementById("v3_obs").value;
+            
+            const f = document.querySelectorAll(".v3-fecha");
+            const o = document.querySelectorAll(".v3-origen");
+            const d = document.querySelectorAll(".v3-destino");
+            const n = document.querySelectorAll(".v3-nota");
+
+            let log = `NUEVA SOLICITUD DE CAMBIO\n`;
+            log += `--------------------------\n`;
+            log += `DE: ${sol}\n`;
+            log += `CON: ${comp}\n\n`;
+            log += `DÍAS SOLICITADOS:\n`;
+            
+            f.forEach((v, i) => {
+                log += `- ${v.value}: De ${o[i].value} a ${d[i].value} (${n[i].value || 'Sin notas'})\n`;
+            });
+
+            log += `\nOBSERVACIONES:\n${obs || 'Ninguna'}`;
+
+            // Ajuste CRÍTICO: Formateamos los datos como un objeto plano para enviarlo como JSON
+            const data = {
+                "Solicitante": sol,
+                "Companero": comp,
+                "Detalle_Intercambio": log,
+                "Observaciones": obs,
+                "_subject": `Solicitud Turno: ${sol} / ${comp}`
+            };
+
+            btn.disabled = true;
+            btn.textContent = "ENVIANDO SOLICITUD...";
+
+            try {
+                const response = await fetch(e.target.action, {
+                    method: "POST",
+                    body: JSON.stringify(data), // Convertimos a JSON string
+                    headers: { 
+                        'Content-Type': 'application/json', // Informamos que es JSON
+                        'Accept': 'application/json' 
+                    }
+                });
+
+                if (response.ok) {
+                    document.getElementById("success-notice").style.display = "block";
+                    btn.textContent = "✓ ENVIADO CORRECTAMENTE";
+                    btn.style.background = "#065f46";
+                    window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+                } else { 
+                    const errorResult = await response.json();
+                    throw new Error(errorResult.error || "Error desconocido");
+                }
+            } catch (err) {
+                alert("Error al enviar: " + err.message);
+                btn.disabled = false;
+                btn.textContent = "Enviar Solicitud Oficial";
+            }
+        });
+
+        /* SOPORTE FORMBUTTON */
+        window.formbutton = window.formbutton || function() { (formbutton.q = formbutton.q || []).push(arguments) };
+        formbutton("create", {
+            action: "https://formspree.io/f/xvgawqya",
+            title: "¿Ayuda?",
+            styles: {
+                title: { backgroundColor: "#b22222" },
+                button: { backgroundColor: "#b22222" }
+            }
+        });
+    </script>
+</div>

@@ -100,19 +100,18 @@
   const hotelLogo   = $("#hotelLogo");
 
   function getData() {
-    // Prioridad: Firebase (window.FULL_DATA) -> localStorage -> Fallback (window.FULL_DATA inicial)
-    let data = (window.FULL_DATA && Array.isArray(window.FULL_DATA.schedule)) ? window.FULL_DATA : { schedule: [] };
+    // Ya no usamos Firebase. Usamos los datos cargados por el DAO (Supabase)
+    const data = window.FULL_DATA || { schedule: [], flat: [] };
     
-    try {
-      const local = localStorage.getItem('turnosweb_admin_data');
-      if (local) {
-        const parsed = JSON.parse(local);
-        if (parsed && Array.isArray(parsed.schedule)) {
-          // Si el local es más reciente que el actual (comparando por fecha de generación si existiera, o simplemente si el actual está vacío)
-          if (data.schedule.length === 0) data = parsed;
-        }
-      }
-    } catch(e) {}
+    // Si no hay datos en memoria, intentamos recuperar del caché local (persistente)
+    if ((!data.schedule || data.schedule.length === 0) && (!data.flat || data.flat.length === 0)) {
+        try {
+            const local = localStorage.getItem('turnosweb_admin_data_flat');
+            if (local) {
+                return { schedule: [], flat: JSON.parse(local) };
+            }
+        } catch(e) {}
+    }
     return data;
   }
 
@@ -176,9 +175,22 @@
           pill.className = "pill";
 
           let label = getLabel(item.turno);
+          const tipo = item.tipo || '';
           const low = label.toLowerCase();
 
-          if (low.includes("descanso")) {
+          if (tipo === 'VAC' || low.includes("vacac")) {
+            pill.classList.add("vac");
+            label = "Vacaciones 🏖️";
+          } else if (tipo === 'BAJA' || low.includes("baja")) {
+            pill.classList.add("vac"); // Reutilizamos estilo o creamos uno
+            label = "Baja Médica 🏥";
+          } else if (tipo === 'PERM' || low.includes("perm")) {
+            pill.classList.add("tarde");
+            label = "Permiso 📄";
+          } else if (tipo === 'CT' || low.includes("sustit") || low.includes("cambio")) {
+            pill.classList.add("noche");
+            label = `${item.sustituto || 'C/T'} 🔄`;
+          } else if (low.includes("descanso")) {
             pill.classList.add("descanso");
             label = "Descanso";
           } else if (low.includes("noche")) {
@@ -190,9 +202,6 @@
           } else if (low.includes("tarde")) {
             pill.classList.add("tarde");
             label = "Tarde";
-          } else if (low.includes("vacaciones")) {
-            pill.classList.add("vac");
-            label = "Vacaciones 🏖️";
           } else {
             pill.classList.add("vac");
           }
