@@ -7,7 +7,7 @@
     <link rel="stylesheet" href="admin.css">
     <script src="xlsx.full.min.js"></script>
 </head>
-<body class="dark-mode">
+<body class="light-mode">
     <!-- NAVEGACIÓN LATERAL -->
     <aside class="sidebar">
         <div class="sidebar-brand">
@@ -84,6 +84,12 @@
                     <h1 class="page-title">Panel de Control</h1>
                     <p class="page-subtitle">Resumen operativo hoy: <span id="current-date-header"></span></p>
                 </div>
+            
+                <div id="syncStatus" class="status-badge-premium" style="margin-left:auto; display:flex; align-items:center; gap:8px; padding:6px 12px; border-radius:30px; font-size:0.75rem; font-weight:600; background:var(--bg3); border:1px solid var(--border);">
+                    <span id="syncDot" style="width:8px; height:8px; border-radius:50%; background:#ff9800;"></span>
+                    <span id="syncText" style="color:var(--text-dim);">Conectando...</span>
+                    <button onclick="alert('SOLUCIÓN AL BLOQUEO DE DATOS:\\n1. Haz clic en el candado 🔒 junto a la URL.\\n2. Desactiva la \\'Protección de rastreo\\' o \\'Prevención de seguimiento\\'.\\n3. Recarga la página.\\n\\nEsto permitirá ver las Vacaciones y guardar cambios.');" style="background:none; border:none; cursor:pointer; font-size:1rem; padding:0; margin-left:5px; line-height:1;" title="Ayuda con bloqueo">❓</button>
+                </div>
             </header>
 
             <div class="status-grid">
@@ -158,7 +164,12 @@
                 <div><h1 class="page-title">Vista Previa</h1></div>
                 <div class="header-controls">
                     <select id="prevHotel" class="btn" onchange="renderPreview()" style="background:var(--bg3); color:var(--text); border:1px solid var(--border); border-radius:10px; padding:7px 15px;"></select>
-                    <input type="date" id="prevWeekDate" class="btn" onchange="renderPreview()" style="background:var(--bg3); color:var(--text); border:1px solid var(--border); border-radius:10px; padding:7px 15px;">
+                    <div id="prevDateContainer">
+                        <input type="text" id="prevWeekDate" class="btn" style="background:var(--bg3); color:var(--text); border:1px solid var(--border); border-radius:10px; padding:7px 15px; width:130px;">
+                    </div>
+                    <div id="prevMonthContainer" style="display:none;">
+                        <input type="text" id="prevMonth" class="btn" style="background:var(--bg3); color:var(--text); border:1px solid var(--border); border-radius:10px; padding:7px 15px; width:130px;">
+                    </div>
                     <div class="btn-group">
                         <button class="btn active" id="btnViewWeekly" onclick="switchPreviewMode('weekly')">Semanal</button>
                         <button class="btn" id="btnViewMonthly" onclick="switchPreviewMode('monthly')">Mensual</button>
@@ -217,5 +228,6 @@
     <script src="firebase-config.js"></script>
 
     <script src="admin.js?v=99"></script>
+    <script src="sync-status.js"></script>
 </body>
 </html>

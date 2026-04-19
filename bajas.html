@@ -6,15 +6,27 @@
     <title>TurnosWeb — Bajas y Permisos</title>
     <link rel="stylesheet" href="admin.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/themes/dark.css">
-    <style>
+        <style>
         .nav-item.active { background: var(--accent-dim); color: var(--accent); border-right: 3px solid var(--accent); }
-        .flatpickr-calendar { background: var(--bg2) !important; border: 1px solid var(--border) !important; box-shadow: var(--shadow-lg) !important; }
-        .flatpickr-day.selected { background: var(--accent) !important; border-color: var(--accent) !important; }
-        .flatpickr-months .flatpickr-month { background: var(--bg2) !important; color: white !important; }
+        /* Personalización Flatpickr Premium */
+        .flatpickr-calendar { background: var(--bg2) !important; border: 1px solid var(--border) !important; box-shadow: var(--shadow-lg) !important; border-radius: 14px !important; padding: 10px !important; }
+        .flatpickr-months { margin-bottom: 10px; }
+        .flatpickr-months .flatpickr-month { background: transparent !important; color: var(--text) !important; fill: var(--text) !important; }
+        .flatpickr-months .flatpickr-prev-month, .flatpickr-months .flatpickr-next-month { fill: var(--text) !important; color: var(--text) !important; }
+        .flatpickr-months .flatpickr-prev-month:hover, .flatpickr-months .flatpickr-next-month:hover { background: var(--surface) !important; border-radius: 8px; }
+        .flatpickr-weekdays { background: transparent !important; }
+        span.flatpickr-weekday { color: var(--text-muted) !important; font-weight: 700; }
+        .flatpickr-day { color: var(--text) !important; border-radius: 8px !important; transition: all 0.2s; font-weight: 500; }
+        .flatpickr-day:hover { background: var(--surface) !important; color: var(--accent) !important; }
+        .flatpickr-day.selected, .flatpickr-day.startRange, .flatpickr-day.endRange { background: var(--accent) !important; border-color: var(--accent) !important; color: white !important; font-weight: bold; }
+        .flatpickr-day.inRange { background: var(--accent-dim) !important; border-color: transparent !important; box-shadow: none !important; color: var(--text) !important; border-radius: 0 !important; }
+        .flatpickr-day.startRange.endRange { border-radius: 8px !important; }
+        .flatpickr-day.startRange { border-top-right-radius: 0 !important; border-bottom-right-radius: 0 !important; }
+        .flatpickr-day.endRange { border-top-left-radius: 0 !important; border-bottom-left-radius: 0 !important; }
+        .flatpickr-day.today { border-color: var(--accent-dim) !important; background: rgba(79,134,247,0.05); }
     </style>
 </head>
-<body class="dark-mode">
+<body class="light-mode">
     <aside class="sidebar">
         <div class="sidebar-brand">
             <img src="Logo.png" alt="Logo" class="sidebar-logo">
@@ -87,6 +99,12 @@
                         <option value="Sercotel Guadiana">Sercotel Guadiana</option>
                         <option value="Cumbria Spa&Hotel">Cumbria Spa&Hotel</option>
                     </select>
+                    <button class="btn" style="background:var(--accent); color:white; font-weight:bold; border-radius:10px; padding:8px 18px;" onclick="document.getElementById('modalBaja').style.display='flex'">+ Nueva Baja/Permiso</button>
+                </div>
+            
+                <div id="syncStatus" class="status-badge-premium" style="margin-left:auto; display:flex; align-items:center; gap:8px; padding:6px 12px; border-radius:30px; font-size:0.75rem; font-weight:600; background:var(--bg3); border:1px solid var(--border);">
+                    <span id="syncDot" style="width:8px; height:8px; border-radius:50%; background:#ff9800;"></span>
+                    <span id="syncText" style="color:var(--text-dim);">Conectando...</span>
                 </div>
             </header>
 
@@ -95,6 +113,47 @@
             </div>
         </section>
     </main>
+
+    <!-- MODAL NUEVA BAJA -->
+    <div id="modalBaja" class="drawer-overlay" style="display:none; align-items:center; justify-content:center; padding:1rem;" onclick="this.style.display='none'">
+        <div class="glass" style="width:100%; max-width:450px; padding:2rem; border-radius:20px; position:relative; background:var(--bg2);" onclick="event.stopPropagation()">
+            <h2 style="margin-bottom:1.5rem; font-size:1.4rem; color:var(--text);">Añadir Registro</h2>
+            
+            <div style="display:flex; flex-direction:column; gap:15px;">
+                <div>
+                    <label style="font-size:0.75rem; color:var(--text-dim); font-weight:bold; display:block; margin-bottom:5px;">TIPO</label>
+                    <select id="mbTipo" style="width:100%; padding:10px; border-radius:10px; background:var(--bg); border:1px solid var(--border); color:var(--text);">
+                        <option value="baja">Baja Médica</option>
+                        <option value="permiso">Permiso Retribuido</option>
+                    </select>
+                </div>
+                <div>
+                    <label style="font-size:0.75rem; color:var(--text-dim); font-weight:bold; display:block; margin-bottom:5px;">HOTEL</label>
+                    <select id="mbHotel" style="width:100%; padding:10px; border-radius:10px; background:var(--bg); border:1px solid var(--border); color:var(--text);">
+                        <option value="Cumbria Spa&Hotel">Cumbria Spa&Hotel</option>
+                        <option value="Sercotel Guadiana">Sercotel Guadiana</option>
+                    </select>
+                </div>
+                <div>
+                    <label style="font-size:0.75rem; color:var(--text-dim); font-weight:bold; display:block; margin-bottom:5px;">EMPLEADO</label>
+                    <input type="text" id="mbEmp" placeholder="Nombre completo" style="width:100%; padding:10px; border-radius:10px; background:var(--bg); border:1px solid var(--border); color:var(--text);">
+                </div>
+                <div>
+                    <label style="font-size:0.75rem; color:var(--text-dim); font-weight:bold; display:block; margin-bottom:5px;">FECHA</label>
+                    <input type="date" id="mbFecha" style="width:100%; padding:10px; border-radius:10px; background:var(--bg); border:1px solid var(--border); color:var(--text);">
+                </div>
+                <div>
+                    <label style="font-size:0.75rem; color:var(--text-dim); font-weight:bold; display:block; margin-bottom:5px;">OBSERVACIONES / MOTIVO</label>
+                    <input type="text" id="mbObs" placeholder="Ej: Cita médica, Enfermedad..." style="width:100%; padding:10px; border-radius:10px; background:var(--bg); border:1px solid var(--border); color:var(--text);">
+                </div>
+                
+                <div style="display:flex; gap:10px; margin-top:10px;">
+                    <button class="btn" onclick="document.getElementById('modalBaja').style.display='none'" style="flex:1; background:var(--surface); border:1px solid var(--border); padding:10px;">Cancelar</button>
+                    <button class="btn active" onclick="saveManualBaja()" style="flex:1; background:var(--accent); color:white; border:none; padding:10px; font-weight:bold;">Guardar</button>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
@@ -109,6 +168,36 @@
         const $ = (s) => document.querySelector(s);
         let FULL_DATA = null;
         let CURRENT_RANGE = { start: '', end: '' };
+
+        function saveManualBaja() {
+            if (!FULL_DATA) { alert("Esperando conexión con servidor..."); return; }
+            if (!$('#mbEmp').value || !$('#mbFecha').value) return alert("Completa al menos Empleado y Fecha");
+            
+            if (!FULL_DATA.manual_bajas) FULL_DATA.manual_bajas = [];
+            const isPermiso = $('#mbTipo').value === 'permiso';
+            
+            FULL_DATA.manual_bajas.push({
+                hotel: $('#mbHotel').value,
+                empleado: $('#mbEmp').value,
+                fecha: $('#mbFecha').value,
+                obs: $('#mbObs').value,
+                tipo: isPermiso ? '📝 PERMISO' : '🏥 BAJA MÉDICA',
+                color: isPermiso ? '#8b5cf6' : '#ef4444',
+                isManual: true
+            });
+            
+            localStorage.setItem('turnosweb_admin_data', JSON.stringify(FULL_DATA));
+            if (window.firebase && window.firebaseConfig) {
+                firebase.database().ref('turnosweb/data/manual_bajas').set(FULL_DATA.manual_bajas).then(() => {
+                    $('#modalBaja').style.display = 'none';
+                    $('#mbEmp').value = ''; $('#mbObs').value = '';
+                    renderBajas();
+                });
+            } else {
+                $('#modalBaja').style.display = 'none';
+                renderBajas();
+            }
+        }
 
         function checkStorage() {
             try {
@@ -183,9 +272,10 @@
                     }
 
                     const l = turnLabel.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
-                    // Detectar Bajas (B, Baja, Baja Médica) o Permisos (P, Per, Permiso)
                     const isBaja = l.startsWith('b') || l.includes('baja');
                     const isPermiso = l.startsWith('p') || l.includes('permis');
+                    let obs = '';
+                    if (typeof t.turno === 'object' && t.turno.Observaciones) obs = t.turno.Observaciones;
 
                     if (isBaja || isPermiso) {
                         if (empFilter && !t.empleado.toLowerCase().includes(empFilter)) return;
@@ -194,11 +284,22 @@
                             fecha: t.fecha, 
                             empleado: t.empleado,
                             tipo: isPermiso ? '📝 PERMISO' : '🏥 BAJA MÉDICA',
-                            color: isPermiso ? '#8b5cf6' : '#ef4444'
+                            color: isPermiso ? '#8b5cf6' : '#ef4444',
+                            obs: obs
                         });
                     }
                 });
             });
+
+            if (data.manual_bajas) {
+                data.manual_bajas.forEach(mb => {
+                    if (hotelFilter && mb.hotel !== hotelFilter) return;
+                    if (dStart && mb.fecha < dStart) return;
+                    if (dEnd && mb.fecha > dEnd) return;
+                    if (empFilter && !mb.empleado.toLowerCase().includes(empFilter)) return;
+                    bajas.push(mb);
+                });
+            }
 
             if (bajas.length === 0) {
                 container.innerHTML = `<div style="padding:5rem; text-align:center; opacity:0.5;">No hay bajas o permisos registrados en este periodo.</div>`;
@@ -208,11 +309,12 @@
             bajas.sort((a,b) => b.fecha.localeCompare(a.fecha));
 
             const rows = bajas.map(b => `
-                <tr>
-                    <td style="padding:1rem;"><span class="status-badge" style="background:${b.color}22; color:${b.color}; border:none;">${b.tipo}</span></td>
+                <tr ${b.isManual ? 'style="background:rgba(255,255,255,0.01);"' : ''}>
+                    <td style="padding:1rem;"><span class="status-badge" style="background:${b.color}22; color:${b.color}; border:none;">${b.tipo}</span> ${b.isManual ? '<span style="font-size:0.6rem; opacity:0.5; margin-left:5px;">(Manual)</span>' : ''}</td>
                     <td style="padding:1rem;"><b>${new Date(b.fecha).toLocaleDateString('es-ES', { day:'2-digit', month:'short', year:'numeric'})}</b></td>
                     <td style="padding:1rem; color:var(--text-muted);">${b.hotel}</td>
                     <td style="padding:1rem;"><b>${b.empleado}</b></td>
+                    <td style="padding:1rem; color:var(--text-muted); font-size:0.85rem;">${b.obs || '—'}</td>
                 </tr>
             `).join('');
 
@@ -225,6 +327,7 @@
                                 <th style="text-align:left;">Fecha</th>
                                 <th style="text-align:left;">Hotel</th>
                                 <th style="text-align:left;">Empleado</th>
+                                <th style="text-align:left;">Motivo / Observaciones</th>
                             </tr>
                         </thead>
                         <tbody>${rows}</tbody>
@@ -260,23 +363,22 @@
             localStorage.setItem('turnosweb_theme', mode);
         }
         window.addEventListener('DOMContentLoaded', () => {
-            const savedTheme = localStorage.getItem('turnosweb_theme') || 'dark';
+            const savedTheme = localStorage.getItem('turnosweb_theme') || 'light';
             setTheme(savedTheme);
 
             const today = new Date();
-            const startOfYear = new Date(today.getFullYear(), 0, 1);
-            const endOfYear = new Date(today.getFullYear(), 11, 31);
+                        const endOfYear = new Date(today.getFullYear(), 11, 31);
 
             flatpickr("#rangeTrigger", {
                 wrap: true,
                 mode: "range",
                 locale: "es",
                 dateFormat: "Y-m-d",
-                defaultDate: [startOfYear, endOfYear],
+                defaultDate: [today, endOfYear],
                 onChange: (selectedDates) => {
                     if (selectedDates.length === 2) {
-                        const s = selectedDates[0].toISOString().split('T')[0];
-                        const e = selectedDates[1].toISOString().split('T')[0];
+                        const d1 = selectedDates[0]; const s = `${d1.getFullYear()}-${String(d1.getMonth()+1).padStart(2,'0')}-${String(d1.getDate()).padStart(2,'0')}`;
+                        const d2 = selectedDates[1]; const e = `${d2.getFullYear()}-${String(d2.getMonth()+1).padStart(2,'0')}-${String(d2.getDate()).padStart(2,'0')}`;
                         CURRENT_RANGE = { start: s, end: e };
                         $('#rangeLabel').textContent = `${selectedDates[0].toLocaleDateString('es-ES')} — ${selectedDates[1].toLocaleDateString('es-ES')}`;
                         renderBajas();
@@ -284,8 +386,8 @@
                 },
                 onReady: (selectedDates) => {
                     if (selectedDates.length === 2) {
-                        const s = selectedDates[0].toISOString().split('T')[0];
-                        const e = selectedDates[1].toISOString().split('T')[0];
+                        const d1 = selectedDates[0]; const s = `${d1.getFullYear()}-${String(d1.getMonth()+1).padStart(2,'0')}-${String(d1.getDate()).padStart(2,'0')}`;
+                        const d2 = selectedDates[1]; const e = `${d2.getFullYear()}-${String(d2.getMonth()+1).padStart(2,'0')}-${String(d2.getDate()).padStart(2,'0')}`;
                         CURRENT_RANGE = { start: s, end: e };
                         $('#rangeLabel').textContent = `${selectedDates[0].toLocaleDateString('es-ES')} — ${selectedDates[1].toLocaleDateString('es-ES')}`;
                         renderBajas();
@@ -299,5 +401,6 @@
             }
         });
     </script>
+    <script src="sync-status.js"></script>
 </body>
 </html>

@@ -435,7 +435,7 @@
         if (themeBtn) themeBtn.textContent = mode === 'light' ? '☀️' : '🌙';
         localStorage.setItem('turnosweb_theme', mode);
     };
-    setTheme(localStorage.getItem('turnosweb_theme') || 'dark');
+    setTheme(localStorage.getItem('turnosweb_theme') || 'light');
     if (themeBtn) themeBtn.onclick = () => setTheme(document.body.classList.contains('light-mode') ? 'dark' : 'light');
 
     if ('serviceWorker' in navigator) {

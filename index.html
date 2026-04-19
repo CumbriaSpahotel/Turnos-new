@@ -58,7 +58,7 @@
       if (toggle) toggle.textContent = mode === 'dark' ? '☀️' : '🌙';
     };
     
-    const savedTheme = localStorage.getItem('turnosweb_theme') || 'dark';
+    const savedTheme = localStorage.getItem('turnosweb_theme') || 'light';
     setTheme(savedTheme);
 
     if (toggle) {

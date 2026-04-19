@@ -7,18 +7,25 @@
     <link rel="stylesheet" href="admin.css">
     <style>
         .nav-item.active { background: var(--accent-dim); color: var(--accent); border-right: 3px solid var(--accent); }
-        .msg-card {
-            background: var(--surface);
-            border: 1px solid var(--border);
-            border-radius: 12px;
-            padding: 1.2rem;
-            margin-bottom: 0.8rem;
-            position: relative;
-        }
-        .msg-date { position: absolute; top: 1.2rem; right: 1.2rem; font-size: 0.75rem; color: var(--text-dim); }
+        /* Personalización Flatpickr Premium */
+        .flatpickr-calendar { background: var(--bg2) !important; border: 1px solid var(--border) !important; box-shadow: var(--shadow-lg) !important; border-radius: 14px !important; padding: 10px !important; }
+        .flatpickr-months { margin-bottom: 10px; }
+        .flatpickr-months .flatpickr-month { background: transparent !important; color: var(--text) !important; fill: var(--text) !important; }
+        .flatpickr-months .flatpickr-prev-month, .flatpickr-months .flatpickr-next-month { fill: var(--text) !important; color: var(--text) !important; }
+        .flatpickr-months .flatpickr-prev-month:hover, .flatpickr-months .flatpickr-next-month:hover { background: var(--surface) !important; border-radius: 8px; }
+        .flatpickr-weekdays { background: transparent !important; }
+        span.flatpickr-weekday { color: var(--text-muted) !important; font-weight: 700; }
+        .flatpickr-day { color: var(--text) !important; border-radius: 8px !important; transition: all 0.2s; font-weight: 500; }
+        .flatpickr-day:hover { background: var(--surface) !important; color: var(--accent) !important; }
+        .flatpickr-day.selected, .flatpickr-day.startRange, .flatpickr-day.endRange { background: var(--accent) !important; border-color: var(--accent) !important; color: white !important; font-weight: bold; }
+        .flatpickr-day.inRange { background: var(--accent-dim) !important; border-color: transparent !important; box-shadow: none !important; color: var(--text) !important; border-radius: 0 !important; }
+        .flatpickr-day.startRange.endRange { border-radius: 8px !important; }
+        .flatpickr-day.startRange { border-top-right-radius: 0 !important; border-bottom-right-radius: 0 !important; }
+        .flatpickr-day.endRange { border-top-left-radius: 0 !important; border-bottom-left-radius: 0 !important; }
+        .flatpickr-day.today { border-color: var(--accent-dim) !important; background: rgba(79,134,247,0.05); }
     </style>
 </head>
-<body class="dark-mode">
+<body class="light-mode">
     <aside class="sidebar">
         <div class="sidebar-brand">
             <img src="Logo.png" alt="Logo" class="sidebar-logo">
@@ -86,6 +93,11 @@
                     <h1 class="page-title">Bandeja de Mensajes</h1>
                     <p class="page-subtitle">Historial de notificaciones y avisos del sistema</p>
                 </div>
+            
+                <div id="syncStatus" class="status-badge-premium" style="margin-left:auto; display:flex; align-items:center; gap:8px; padding:6px 12px; border-radius:30px; font-size:0.75rem; font-weight:600; background:var(--bg3); border:1px solid var(--border);">
+                    <span id="syncDot" style="width:8px; height:8px; border-radius:50%; background:#ff9800;"></span>
+                    <span id="syncText" style="color:var(--text-dim);">Conectando...</span>
+                </div>
             </header>
 
             <div id="messagesList" class="glass-panel" style="min-height:500px; padding:2rem;">
@@ -142,8 +154,9 @@
             localStorage.setItem('turnosweb_theme', mode);
         }
         document.addEventListener('DOMContentLoaded', () => {
-            setTheme(localStorage.getItem('turnosweb_theme') || 'dark');
+            setTheme(localStorage.getItem('turnosweb_theme') || 'light');
         });
     </script>
+    <script src="sync-status.js"></script>
 </body>
 </html>

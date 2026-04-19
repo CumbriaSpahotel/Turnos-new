@@ -6,15 +6,27 @@
     <title>TurnosWeb — Historial de Cambios</title>
     <link rel="stylesheet" href="admin.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/themes/dark.css">
-    <style>
+        <style>
         .nav-item.active { background: var(--accent-dim); color: var(--accent); border-right: 3px solid var(--accent); }
-        .flatpickr-calendar { background: var(--bg2) !important; border: 1px solid var(--border) !important; box-shadow: var(--shadow-lg) !important; }
-        .flatpickr-day.selected { background: var(--accent) !important; border-color: var(--accent) !important; }
-        .flatpickr-months .flatpickr-month { background: var(--bg2) !important; color: white !important; }
+        /* Personalización Flatpickr Premium */
+        .flatpickr-calendar { background: var(--bg2) !important; border: 1px solid var(--border) !important; box-shadow: var(--shadow-lg) !important; border-radius: 14px !important; padding: 10px !important; }
+        .flatpickr-months { margin-bottom: 10px; }
+        .flatpickr-months .flatpickr-month { background: transparent !important; color: var(--text) !important; fill: var(--text) !important; }
+        .flatpickr-months .flatpickr-prev-month, .flatpickr-months .flatpickr-next-month { fill: var(--text) !important; color: var(--text) !important; }
+        .flatpickr-months .flatpickr-prev-month:hover, .flatpickr-months .flatpickr-next-month:hover { background: var(--surface) !important; border-radius: 8px; }
+        .flatpickr-weekdays { background: transparent !important; }
+        span.flatpickr-weekday { color: var(--text-muted) !important; font-weight: 700; }
+        .flatpickr-day { color: var(--text) !important; border-radius: 8px !important; transition: all 0.2s; font-weight: 500; }
+        .flatpickr-day:hover { background: var(--surface) !important; color: var(--accent) !important; }
+        .flatpickr-day.selected, .flatpickr-day.startRange, .flatpickr-day.endRange { background: var(--accent) !important; border-color: var(--accent) !important; color: white !important; font-weight: bold; }
+        .flatpickr-day.inRange { background: var(--accent-dim) !important; border-color: transparent !important; box-shadow: none !important; color: var(--text) !important; border-radius: 0 !important; }
+        .flatpickr-day.startRange.endRange { border-radius: 8px !important; }
+        .flatpickr-day.startRange { border-top-right-radius: 0 !important; border-bottom-right-radius: 0 !important; }
+        .flatpickr-day.endRange { border-top-left-radius: 0 !important; border-bottom-left-radius: 0 !important; }
+        .flatpickr-day.today { border-color: var(--accent-dim) !important; background: rgba(79,134,247,0.05); }
     </style>
 </head>
-<body class="dark-mode">
+<body class="light-mode">
     <!-- NAVEGACIÓN LATERAL (CLONADA DE ADMIN.HTML) -->
     <aside class="sidebar">
         <div class="sidebar-brand">
@@ -100,6 +112,11 @@
                         <option value="Cumbria Spa&Hotel">Cumbria Spa&Hotel</option>
                     </select>
                 </div>
+            
+                <div id="syncStatus" class="status-badge-premium" style="margin-left:auto; display:flex; align-items:center; gap:8px; padding:6px 12px; border-radius:30px; font-size:0.75rem; font-weight:600; background:var(--bg3); border:1px solid var(--border);">
+                    <span id="syncDot" style="width:8px; height:8px; border-radius:50%; background:#ff9800;"></span>
+                    <span id="syncText" style="color:var(--text-dim);">Conectando...</span>
+                </div>
             </header>
 
             <div id="swapsList" class="glass-panel" style="padding:0; min-height:400px;">
@@ -164,10 +181,12 @@
                         if (turnLabel.includes('C/T') || turnLabel.toLowerCase().includes('cambio')) {
                             const emp1 = t.empleado;
                             const emp2 = (t.turno && t.turno.Sustituto) ? t.turno.Sustituto : '—';
+                            let obs = '';
+                            if (typeof t.turno === 'object' && t.turno.Observaciones) obs = t.turno.Observaciones;
                             const key = [g.hotel, t.fecha, emp1, emp2].sort().join('|');
                             if (!seenPairs.has(key)) {
                                 seenPairs.add(key);
-                                extracted.push({ hotel: g.hotel, fecha: t.fecha, emp1, emp2 });
+                                extracted.push({ hotel: g.hotel, fecha: t.fecha, emp1, emp2, obs: obs });
                             }
                         }
                     });
@@ -211,6 +230,7 @@
                             <span style="font-weight:600; color:var(--text);">${s.emp2}</span>
                         </div>
                     </td>
+                    <td style="padding:1.2rem; color:var(--text-muted); font-size:0.85rem;">${s.obs || '—'}</td>
                 </tr>
             `).join('');
 
@@ -223,6 +243,7 @@
                                 <th style="text-align:left;">Fecha</th>
                                 <th style="text-align:left;">Hotel</th>
                                 <th style="text-align:left;">Participantes</th>
+                                <th style="text-align:left;">Motivo / Observaciones</th>
                             </tr>
                         </thead>
                         <tbody>${rows}</tbody>
@@ -287,23 +308,22 @@
         });
 
         window.addEventListener('DOMContentLoaded', () => {
-            const savedTheme = localStorage.getItem('turnosweb_theme') || 'dark';
+            const savedTheme = localStorage.getItem('turnosweb_theme') || 'light';
             setTheme(savedTheme);
 
             const today = new Date();
-            const startOfYear = new Date(today.getFullYear(), 0, 1);
-            const endOfYear = new Date(today.getFullYear(), 11, 31);
+                        const endOfYear = new Date(today.getFullYear(), 11, 31);
 
             flatpickr("#rangeTrigger", {
                 wrap: true,
                 mode: "range",
                 locale: "es",
                 dateFormat: "Y-m-d",
-                defaultDate: [startOfYear, endOfYear],
+                defaultDate: [today, endOfYear],
                 onChange: (selectedDates) => {
                     if (selectedDates.length === 2) {
-                        const s = selectedDates[0].toISOString().split('T')[0];
-                        const e = selectedDates[1].toISOString().split('T')[0];
+                        const d1 = selectedDates[0]; const s = `${d1.getFullYear()}-${String(d1.getMonth()+1).padStart(2,'0')}-${String(d1.getDate()).padStart(2,'0')}`;
+                        const d2 = selectedDates[1]; const e = `${d2.getFullYear()}-${String(d2.getMonth()+1).padStart(2,'0')}-${String(d2.getDate()).padStart(2,'0')}`;
                         CURRENT_RANGE = { start: s, end: e };
                         $('#rangeLabel').textContent = `${selectedDates[0].toLocaleDateString('es-ES')} — ${selectedDates[1].toLocaleDateString('es-ES')}`;
                         renderSwaps();
@@ -311,8 +331,8 @@
                 },
                 onReady: (selectedDates) => {
                     if (selectedDates.length === 2) {
-                        const s = selectedDates[0].toISOString().split('T')[0];
-                        const e = selectedDates[1].toISOString().split('T')[0];
+                        const d1 = selectedDates[0]; const s = `${d1.getFullYear()}-${String(d1.getMonth()+1).padStart(2,'0')}-${String(d1.getDate()).padStart(2,'0')}`;
+                        const d2 = selectedDates[1]; const e = `${d2.getFullYear()}-${String(d2.getMonth()+1).padStart(2,'0')}-${String(d2.getDate()).padStart(2,'0')}`;
                         CURRENT_RANGE = { start: s, end: e };
                         $('#rangeLabel').textContent = `${selectedDates[0].toLocaleDateString('es-ES')} — ${selectedDates[1].toLocaleDateString('es-ES')}`;
                         renderSwaps();
@@ -326,5 +346,6 @@
             }
         });
     </script>
+    <script src="sync-status.js"></script>
 </body>
 </html>

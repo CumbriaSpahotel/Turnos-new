@@ -34,8 +34,11 @@ window.switchSection = (id) => {
 
 window.toggleTheme = () => {
     document.body.classList.toggle('light-mode');
+    const isLight = document.body.classList.contains('light-mode');
+    localStorage.setItem('turnosweb_theme', isLight ? 'light' : 'dark');
     window.addLog(`Cambiando modo de color`);
 };
+
 
 window.fmtDate = (d) => {
     if (!d || d.length < 10) return d || '—';
@@ -58,25 +61,47 @@ window.syncToFirebase = async (data) => {
         window.addLog('ERROR: Conexión a Firebase no disponible.', 'error');
         return;
     }
+
     try {
+        // --- OPTIMIZACIÓN DE TAMAÑO (Firebase Limit 16MB) ---
+        const jsonStr = JSON.stringify(data);
+        const sizeMB = (jsonStr.length / (1024 * 1024)).toFixed(2);
+        
+        if (sizeMB > 15) {
+            window.addLog(`⚠️ ADVERTENCIA: Datos muy grandes (${sizeMB}MB). Pruebo a optimizar...`, 'warn');
+            // Mantener solo datos desde 2025 para reducir peso
+            data.schedule.forEach(h => {
+                h.turnos = h.turnos.filter(t => t.fecha >= '2025-01-01');
+            });
+            window.addLog(`✅ Datos podados para caber en la nube.`);
+        }
+
         const lastUpdate = new Date().toISOString();
         data.updated_at = lastUpdate;
         
-        // Incluimos los perfiles en el paquete de sincronización
-        const profiles = JSON.parse(localStorage.getItem('turnosweb_emp_profiles') || '{}');
+        // Intentar incluir perfiles, pero no fallar si el storage está bloqueado
+        let profiles = {};
+        try {
+            profiles = JSON.parse(localStorage.getItem('turnosweb_emp_profiles') || '{}');
+        } catch(e) { console.warn("Usando perfiles vacíos por bloqueo de storage."); }
         data.profiles = profiles;
         
         await db.ref('turnosweb/data').set(data);
         window.parsedData = data; 
         window.saveData();
         
-        window.addLog(`NUBE: Fuente de Verdad actualizada (${new Date().toLocaleTimeString()}) ✅`, 'ok');
+        window.addLog(`NUBE: Fuente de Verdad actualizada (${new Date().toLocaleTimeString()} | ${sizeMB}MB) ✅`, 'ok');
         window.updateDashboardStats();
         $('#stat-sync').textContent = 'Sincronizado';
         $('#stat-sync').parentElement.classList.add('ok');
     } catch (e) {
         console.error("Error sincronizando:", e);
-        window.addLog('ERROR NUBE: Fallo al escribir en la fuente de verdad ❌', 'error');
+        if (e.message.includes('too large')) {
+             window.addLog('⚠️ ERROR CRÍTICO: El Excel es demasiado grande para la nube (>16MB). Reduce el número de semanas/años en el archivo.', 'error');
+             alert("EL ARCHIVO ES DEMASIADO GRANDE: Firebase solo permite 16MB. Por favor, elimina años antiguos del Excel (2023, 2024) y vuelve a intentarlo.");
+        } else {
+             window.addLog('ERROR NUBE: Fallo al escribir en la fuente de verdad ❌', 'error');
+        }
     }
 };
 
@@ -155,9 +180,10 @@ window.getMonday = (date) => {
 window.classify = (raw) => {
     if (!raw) return '';
     const s = String(raw).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
-    if (s.startsWith('v')) return 'v';
-    if (s.startsWith('b') || s.includes('baja') || s.includes('permis') || s === 'p') return 'b';
-    if (s === 'd' || s.startsWith('desc')) return 'd';
+    // Detección mejorada de vacaciones (incluyendo emojis y prefijos)
+    if (s.startsWith('v') || s.includes('vac') || s.includes('🏖️')) return 'v';
+    if (s.startsWith('b') || s.includes('baja') || s.includes('permis') || s === 'p' || s.includes('🏥') || s.includes('📝')) return 'b';
+    if (s === 'd' || s.startsWith('desc') || s.includes('🗓️')) return 'd';
     if (s.startsWith('m')) return 'm';
     if (s.startsWith('t')) return 't';
     if (s.startsWith('n')) return 'n';
@@ -213,6 +239,7 @@ window.processWorkbook = (wb) => {
             
             const sustit = String(r['Sustituto'] || '').trim();
             const cambio = String(r['Cambio de Turno'] || r['Permuta'] || '').trim();
+            const motivo = String(r['Motivo'] || r['Observaciones'] || '').trim();
             
             if (cambio) {
                 const key = `${hotel}|${fecha}`;
@@ -220,7 +247,25 @@ window.processWorkbook = (wb) => {
                 swaps[key].push([emp, cambio].sort());
                 allSwapsRaw.push({ hotel, fecha, emp1: emp, emp2: cambio });
             }
-            if (sustit || tipo) subs[`${hotel}|${fecha}|${emp}`] = { Sustituto: sustit, TipoAusencia: tipo };
+            
+            // Determinar tipo interpretado de forma inteligente
+            let interpretado = tipo || '';
+            if (!interpretado && motivo) {
+                const m = motivo.toLowerCase();
+                if (m.includes('vac')) interpretado = 'Vacaciones';
+                else if (m.includes('baja') || m.includes('medic')) interpretado = 'Baja Médica';
+                else if (m.includes('permis') || m.includes('asu')) interpretado = 'Permiso';
+            }
+            if (!interpretado) interpretado = 'Ausencia';
+
+            if (sustit || tipo || motivo) {
+                subs[`${hotel}|${fecha}|${emp}`] = { 
+                    Sustituto: sustit, 
+                    TipoAusencia: tipo, // Mantener original
+                    TipoInterpretado: interpretado, // Guardar normalizado
+                    Observaciones: motivo 
+                };
+            }
         });
     }
 
@@ -288,21 +333,41 @@ window.processWorkbook = (wb) => {
                 });
             });
 
-            // Aplicar Sustituciones y Bajas
+            // Aplicar Sustituciones y Bajas (Incluso si no hay turno previo en el cuadrante)
+            const allEmpFechas = new Set([
+                ...Object.keys(turnos),
+                ...Object.keys(subs).filter(k => k.startsWith(sheetName)).map(k => {
+                    const parts = k.split('|');
+                    return `${parts[2]}|${parts[1]}`; // emp|fecha
+                })
+            ]);
+
             const subsInWeek = new Set();
-            Object.entries(turnos).forEach(([key, val]) => {
-                const [emp, fecha] = key.split('|');
+            allEmpFechas.forEach(comb => {
+                const [emp, fecha] = comb.split('|');
                 const subKey = `${sheetName}|${fecha}|${emp}`;
+                const val = turnos[comb] || '';
+                
                 if (subs[subKey]) {
                     const s = subs[subKey];
                     const originalStr = typeof val === 'object' ? (val.TurnoOriginal || '') : val;
-                    turnos[key] = { TurnoOriginal: originalStr, Sustituto: s.Sustituto, TipoInterpretado: s.TipoAusencia || 'Ausencia' };
+                    turnos[comb] = { 
+                        TurnoOriginal: originalStr || '—', 
+                        Sustituto: s.Sustituto, 
+                        TipoInterpretado: s.TipoInterpretado || s.TipoAusencia || 'Ausencia', 
+                        Observaciones: s.Observaciones 
+                    };
                     if (s.Sustituto) subsInWeek.add(s.Sustituto);
                 }
             });
 
             const orden = [...weekData.order];
             subsInWeek.forEach(s => { if (!orden.includes(s)) orden.push(s); });
+            // Asegurar que personas con baja pero sin turno inicial entren en el orden
+            allEmpFechas.forEach(comb => {
+                const [emp, _] = comb.split('|');
+                if (!orden.includes(emp) && !excluded.has(emp)) orden.push(emp);
+            });
             const turnosArr = Object.entries(turnos).map(([k, v]) => {
                 const [empleado, fecha] = k.split('|');
                 return { empleado, fecha, turno: v };
@@ -359,8 +424,14 @@ window._previewMode = 'weekly';
 window.switchPreviewMode = (mode) => {
     window._previewMode = mode;
     const btnW = $('#btnViewWeekly'), btnM = $('#btnViewMonthly');
+    const dateC = $('#prevDateContainer'), monthC = $('#prevMonthContainer');
+    
     if (btnW) btnW.classList.toggle('active', mode === 'weekly');
     if (btnM) btnM.classList.toggle('active', mode === 'monthly');
+    
+    if (dateC) dateC.style.display = mode === 'weekly' ? 'block' : 'none';
+    if (monthC) monthC.style.display = mode === 'monthly' ? 'block' : 'none';
+    
     window.renderPreview();
 };
 
@@ -377,8 +448,23 @@ window.populatePreview = () => {
     if (prevHotel) {
         prevHotel.innerHTML = '<option value="">— Todo —</option>' + hotels.map(h => `<option value="${h}">${h}</option>`).join('');
     }
-    const weekInp = $('#prevWeekDate');
-    if (weekInp && !weekInp.value) weekInp.value = window.isoDate(new Date());
+    
+    // Inicializar Flatpickrs
+    if (window.flatpickr) {
+        flatpickr("#prevWeekDate", {
+            dateFormat: "Y-m-d",
+            defaultDate: "today",
+            locale: "es",
+            onChange: () => window.renderPreview()
+        });
+        flatpickr("#prevMonth", {
+            dateFormat: "Y-m",
+            defaultDate: new Date(),
+            locale: "es",
+            plugins: [new monthSelectPlugin({ shothand: true, dateFormat: "Y-m", altFormat: "F Y" })],
+            onChange: () => window.renderPreview()
+        });
+    }
     window.renderPreview();
 };
 
@@ -425,16 +511,32 @@ window.renderWeeklyPreview = (filterHotel, filterDate) => {
         const rows = g.orden_empleados.map(emp => {
             const cells = weekDays.map((day, i) => {
                 const val = grid[emp]?.[day] || '';
-                let label = typeof val === 'object' ? (val.TurnoOriginal || '—') : val;
-                if (!label) label = '—';
-                
-                const shiftCls = window.getShiftClass(window.classify(label));
+                let label = '';
+                let shiftCls = 'x';
+                let isSwap = false;
+
+                if (typeof val === 'object') {
+                    // Si es una ausencia/sustitución, mostramos el tipo interpretado o el motivo corto
+                    if (val.TipoInterpretado && val.TipoInterpretado !== 'C/T') {
+                        label = val.TipoInterpretado;
+                    } else {
+                        label = val.TurnoOriginal || '—';
+                    }
+                    isSwap = val.TipoInterpretado === 'C/T';
+                } else {
+                    label = val || '—';
+                }
+
+                shiftCls = window.getShiftClass(window.classify(label));
                 const isWeekend = i >= 5; // S, D are indices 5, 6
-                const isSwap = typeof val === 'object' && val.TipoInterpretado === 'C/T';
                 
+                // Limpiar label para mostrar solo iniciales o códigos cortos si es muy largo
+                let displayLabel = String(label).replace(/[🔄]/g, '').trim();
+                if (displayLabel.length > 12) displayLabel = displayLabel.substring(0, 10) + '...';
+
                 return `<td class="${isWeekend ? 'weekend' : ''}">
                     <span class="turno-pill turno-${shiftCls}">
-                        ${String(label).replace(/[🔄]/g, '').trim()} ${isSwap ? '🔄' : ''}
+                        ${displayLabel} ${isSwap ? '🔄' : ''}
                     </span>
                 </td>`;
             }).join('');
@@ -467,7 +569,7 @@ window.renderMonthlyCalendar = (filterHotel, monthStr) => {
     const area = $('#previewContent'); if (!window.parsedData || !area) return;
     area.innerHTML = '';
     
-    const now = monthStr ? new Date(monthStr) : new Date();
+    const now = monthStr ? new Date(monthStr + "-02") : new Date(); // Use 02 to avoid timezone shifts
     const year = now.getFullYear();
     const month = now.getMonth();
     const totalDays = new Date(year, month + 1, 0).getDate();
@@ -503,9 +605,9 @@ window.renderMonthlyCalendar = (filterHotel, monthStr) => {
             const isToday = dateISO === todayStr;
 
             headers += `
-                <th class="${isWeekend ? 'weekend' : ''} ${isToday ? 'today' : ''}" style="padding:4px; min-width:32px; ${isToday ? 'border:2px solid var(--accent);' : ''}">
-                    <div style="font-size:0.65rem; color:var(--text-dim);">${dayName}</div>
-                    <div style="font-size:0.85rem; font-weight:800;">${d}</div>
+                <th class="${isWeekend ? 'weekend' : ''} ${isToday ? 'today' : ''}" style="padding:1px; min-width:18px; ${isToday ? 'border:1px solid var(--accent);' : ''}">
+                    <div style="font-size:0.5rem; color:var(--text-dim); line-height:1;">${dayName}</div>
+                    <div style="font-size:0.7rem; font-weight:800; line-height:1;">${d}</div>
                 </th>`;
         }
 
@@ -520,10 +622,18 @@ window.renderMonthlyCalendar = (filterHotel, monthStr) => {
                     if (g.hotel === hotel) {
                         g.turnos.forEach(t => {
                             if (t.empleado === emp && t.fecha === dayStr) {
-                                const raw = typeof t.turno === 'string' ? t.turno : (t.turno.TipoInterpretado || t.turno.TurnoOriginal || '');
-                                const cls = window.classify(raw);
-                                const label = cls ? cls.toUpperCase() : (raw ? raw[0].toUpperCase() : '-');
-                                shiftHtml = `<span class="turno-pill-mini ${cls}">${label}</span>`;
+                                let label = '';
+                                if (typeof t.turno === 'object') {
+                                    label = (t.turno.TipoInterpretado && t.turno.TipoInterpretado !== 'C/T') 
+                                        ? t.turno.TipoInterpretado 
+                                        : (t.turno.TurnoOriginal || '—');
+                                } else {
+                                    label = t.turno || '—';
+                                }
+                                
+                                const cls = window.classify(label);
+                                const displayLabel = cls ? cls.toUpperCase() : (label ? label[0].toUpperCase() : '-');
+                                shiftHtml = `<span class="turno-pill-mini ${cls}" style="font-size:0.6rem; padding:1px 3px; min-width:18px;">${displayLabel}</span>`;
                             }
                         });
                     }
@@ -533,21 +643,24 @@ window.renderMonthlyCalendar = (filterHotel, monthStr) => {
                 const isWeekend = date.getDay() === 0 || date.getDay() === 6;
                 const isToday = dayStr === todayStr;
 
-                cells += `<td class="${isWeekend ? 'weekend' : ''} ${isToday ? 'today' : ''}" style="padding:4px; text-align:center; height:45px;">${shiftHtml}</td>`;
+                cells += `<td class="${isWeekend ? 'weekend' : ''} ${isToday ? 'today' : ''}" style="padding:1px; text-align:center; height:26px;">${shiftHtml}</td>`;
             }
-            return `<tr><td style="text-align:left; padding-left:1rem; font-weight:700; background:var(--surface); position:sticky; left:0; z-index:10; white-space:nowrap; border-right:1px solid var(--border);">${emp}</td>${cells}</tr>`;
+            return `<tr><td style="text-align:left; padding-left:0.5rem; font-size:0.65rem; font-weight:700; background:var(--surface); position:sticky; left:0; z-index:10; white-space:nowrap; border-right:1px solid var(--border); min-width:100px;">${emp}</td>${cells}</tr>`;
         });
 
         return `
-            <div class="monthly-sheet-wrap" style="margin-bottom:3rem;">
-                <div class="week-head" style="display:flex; justify-content:space-between; align-items:center; padding:1rem 1.5rem; background:linear-gradient(90deg, var(--bg2), var(--bg3)); border-radius:15px 15px 0 0; border:1px solid var(--border); border-bottom:none;">
-                    <h3 style="margin:0; font-size:1.1rem; color:var(--accent);">${hotel} <span style="color:var(--text-muted); font-weight:400; font-size:0.9rem;">— ${now.toLocaleDateString('es-ES', {month:'long', year:'numeric'}).toUpperCase()}</span></h3>
+            <div class="monthly-sheet-wrap" style="margin-bottom:3rem; animation: slideUp 0.4s ease-out;">
+                <div class="week-head" style="display:flex; justify-content:space-between; align-items:center; padding:1.2rem 1.8rem; background:linear-gradient(90deg, var(--bg2), var(--bg3)); border-radius:18px 18px 0 0; border:1px solid var(--border); border-bottom:none;">
+                    <div style="display:flex; align-items:center; gap:15px;">
+                        <div style="width:12px; height:12px; border-radius:50%; background:var(--accent); box-shadow: 0 0 10px var(--accent);"></div>
+                        <h3 style="margin:0; font-size:1.2rem; font-weight:900; color:var(--text); letter-spacing:-0.03em;">${hotel} <span style="color:var(--text-muted); font-weight:500; font-size:0.95rem; margin-left:10px;">• ${now.toLocaleDateString('es-ES', {month:'long', year:'numeric'}).toUpperCase()}</span></h3>
+                    </div>
                 </div>
-                <div class="table-container" style="overflow-x:auto; border-radius:0 0 15px 15px; border:1px solid var(--border); background:var(--surface);">
-                    <table class="preview-table monthly" style="width:100%; border-collapse:collapse; font-size:0.75rem;">
+                <div class="table-container" style="overflow-x:auto; border-radius:0 0 18px 18px; border:1px solid var(--border); background:var(--surface); box-shadow:var(--shadow);">
+                    <table class="preview-table monthly" style="width:100%; border-collapse:collapse; min-width:max-content;">
                         <thead>
                             <tr>
-                                <th style="position:sticky; left:0; z-index:11; min-width:150px; background:var(--bg3);">Empleado</th>
+                                <th style="position:sticky; left:0; z-index:11; min-width:200px; background:var(--bg3); padding:0.8rem 1.5rem; text-align:left; border-right:2px solid var(--border);">PERSONAL</th>
                                 ${headers}
                             </tr>
                         </thead>
@@ -612,27 +725,41 @@ window.populateEmployees = () => {
             const p = profiles[s.emp] || {};
             const initials = s.emp.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
             const totalWork = s.m + s.t + s.n;
+            const hue = Math.abs(s.emp.length * 137.5) % 360; // Gerenar color único determinista
             
-            return `<div class="emp-card" onclick="window.openEmpDrawer('${s.emp.replace(/'/g, "\\'")}')">
-                <div class="emp-card-top">
-                    <div class="emp-avatar" style="--emp-hue:${Math.abs(s.emp.length * 17) % 360}">${initials}</div>
-                    <div class="emp-card-info">
-                        <div class="emp-card-name">${s.emp}</div>
-                        <div class="emp-card-hotel">${p.puesto || 'Personal'}</div>
+            return `
+            <div class="emp-card-premium" onclick="window.openEmpDrawer('${s.emp.replace(/'/g, "\\'")}')">
+                <div class="ep-gradient" style="background: linear-gradient(135deg, hsl(${hue}, 70%, 65%), hsl(${hue}, 70%, 45%))"></div>
+                <div class="ep-body">
+                    <div class="ep-avatar-wrap">
+                        <div class="ep-avatar" style="background: hsl(${hue}, 70%, 95%); color: hsl(${hue}, 70%, 30%)">${initials}</div>
                     </div>
-                </div>
-                <div class="emp-card-stats">
-                    <div class="ecs-item"><span>M</span><b>${s.m}</b></div>
-                    <div class="ecs-item"><span>T</span><b>${s.t}</b></div>
-                    <div class="ecs-item"><span>N</span><b>${s.n}</b></div>
-                    <div class="ecs-item"><span>V</span><b>${s.v}</b></div>
-                </div>
-                <div class="emp-card-footer">
-                    <span>${totalWork} turnos trabajados</span>
+                    <div class="ep-info">
+                        <h3 class="ep-name">${s.emp}</h3>
+                        <p class="ep-role">${p.puesto || 'Cargo no asignado'}</p>
+                    </div>
+                    <div class="ep-stats">
+                        <div class="ep-stat"><span class="ep-label">M</span><span class="ep-val">${s.m}</span></div>
+                        <div class="ep-stat"><span class="ep-label">T</span><span class="ep-val">${s.t}</span></div>
+                        <div class="ep-stat"><span class="ep-label">N</span><span class="ep-val">${s.n}</span></div>
+                        <div class="ep-stat highlight"><span class="ep-label">V</span><span class="ep-val">${s.v}</span></div>
+                    </div>
+                    <div class="ep-footer">
+                         <div class="ep-progress-label">Actividad Turnos</div>
+                         <div class="ep-progress-bar"><div class="ep-progress-fill" style="width:${Math.min(100, (totalWork/300)*100)}%; background:hsl(${hue}, 70%, 50%)"></div></div>
+                         <div class="ep-total">${totalWork} servicios</div>
+                    </div>
                 </div>
             </div>`;
         }).join('');
-        return `<div class="emp-hotel-section"><h2>${hotel}</h2><div class="employees-grid-inner">${cards}</div></div>`;
+        return `<div class="emp-hotel-section">
+            <div class="section-title-premium">
+                <span class="stp-icon">🏨</span>
+                <h2>${hotel}</h2>
+                <span class="stp-count">${emps.length} empleados</span>
+            </div>
+            <div class="employees-grid-inner">${cards}</div>
+        </div>`;
     }).join('');
 };
 
@@ -743,7 +870,6 @@ window.openEmpDrawer = (name) => {
             `).join('')}
             ${s.history.length === 0 ? '<div style="padding:2rem; text-align:center; opacity:0.3; font-size:0.8rem;">No hay historial disponible</div>' : ''}
         </div>
-
         <div style="margin-top:2rem; display:flex; gap:10px; padding-bottom:2rem;">
             <button class="btn active" style="flex:1;" onclick="alert('Generando informe detallado...')">📊 Informe PDF</button>
             <button class="btn" style="flex:1;" onclick="alert('Funcionalidad de edición avanzada en desarrollo')">⚙️ Ajustes</button>
@@ -777,6 +903,15 @@ window.closeEmpDrawer = () => { $('#empDrawer').classList.remove('open'); };
 // ==========================================
 document.addEventListener('DOMContentLoaded', () => {
     window.addLog('Iniciando TurnosWeb Admin...');
+    
+    // Theme initialization
+    const savedTheme = localStorage.getItem('turnosweb_theme') || 'light';
+    if (savedTheme === 'light') {
+        document.body.classList.add('light-mode');
+    } else {
+        document.body.classList.remove('light-mode');
+    }
+
     const saved = localStorage.getItem('turnosweb_admin_data');
     // --- SISTEMA DE FUENTE DE VERDAD (FIREBASE FIRST) ---
     if (window.firebase && window.firebaseConfig) {
@@ -787,12 +922,20 @@ document.addEventListener('DOMContentLoaded', () => {
         fbDb.ref('turnosweb/data').on('value', (snapshot) => {
             const cloudData = snapshot.val();
             if (cloudData) {
-                // Solo sobreescribimos si es la carga inicial o si NO estamos procesando un Excel actulamente
                 if (!window.isProcessingExcel) {
                     window.parsedData = cloudData;
-                    if (cloudData.profiles) {
-                        localStorage.setItem('turnosweb_emp_profiles', JSON.stringify(cloudData.profiles));
+                    try {
+                        if (cloudData.profiles) {
+                            localStorage.setItem('turnosweb_emp_profiles', JSON.stringify(cloudData.profiles));
+                        }
+                    } catch(e) { console.warn("Storage bloqueado."); }
+                    
+                    // Asegurar que el selector de mes tiene un valor inicial si está en el DOM
+                    if ($('#prevMonth') && !$('#prevMonth').value) {
+                         const now = new Date();
+                         $('#prevMonth').value = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
                     }
+
                     window.populatePreview();
                     window.populateEmployees();
                     window.updateDashboardStats();

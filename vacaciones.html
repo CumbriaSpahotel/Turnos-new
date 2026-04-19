@@ -6,16 +6,27 @@
     <title>TurnosWeb — Gestión de Vacaciones</title>
     <link rel="stylesheet" href="admin.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/themes/dark.css">
-    <style>
+        <style>
         .nav-item.active { background: var(--accent-dim); color: var(--accent); border-right: 3px solid var(--accent); }
-        /* Personalización Flatpickr */
-        .flatpickr-calendar { background: var(--bg2) !important; border: 1px solid var(--border) !important; box-shadow: var(--shadow-lg) !important; }
-        .flatpickr-day.selected { background: var(--accent) !important; border-color: var(--accent) !important; }
-        .flatpickr-months .flatpickr-month { background: var(--bg2) !important; color: white !important; }
+        /* Personalización Flatpickr Premium */
+        .flatpickr-calendar { background: var(--bg2) !important; border: 1px solid var(--border) !important; box-shadow: var(--shadow-lg) !important; border-radius: 14px !important; padding: 10px !important; }
+        .flatpickr-months { margin-bottom: 10px; }
+        .flatpickr-months .flatpickr-month { background: transparent !important; color: var(--text) !important; fill: var(--text) !important; }
+        .flatpickr-months .flatpickr-prev-month, .flatpickr-months .flatpickr-next-month { fill: var(--text) !important; color: var(--text) !important; }
+        .flatpickr-months .flatpickr-prev-month:hover, .flatpickr-months .flatpickr-next-month:hover { background: var(--surface) !important; border-radius: 8px; }
+        .flatpickr-weekdays { background: transparent !important; }
+        span.flatpickr-weekday { color: var(--text-muted) !important; font-weight: 700; }
+        .flatpickr-day { color: var(--text) !important; border-radius: 8px !important; transition: all 0.2s; font-weight: 500; }
+        .flatpickr-day:hover { background: var(--surface) !important; color: var(--accent) !important; }
+        .flatpickr-day.selected, .flatpickr-day.startRange, .flatpickr-day.endRange { background: var(--accent) !important; border-color: var(--accent) !important; color: white !important; font-weight: bold; }
+        .flatpickr-day.inRange { background: var(--accent-dim) !important; border-color: transparent !important; box-shadow: none !important; color: var(--text) !important; border-radius: 0 !important; }
+        .flatpickr-day.startRange.endRange { border-radius: 8px !important; }
+        .flatpickr-day.startRange { border-top-right-radius: 0 !important; border-bottom-right-radius: 0 !important; }
+        .flatpickr-day.endRange { border-top-left-radius: 0 !important; border-bottom-left-radius: 0 !important; }
+        .flatpickr-day.today { border-color: var(--accent-dim) !important; background: rgba(79,134,247,0.05); }
     </style>
 </head>
-<body class="dark-mode">
+<body class="light-mode">
     <aside class="sidebar">
         <div class="sidebar-brand">
             <img src="Logo.png" alt="Logo" class="sidebar-logo">
@@ -88,6 +99,14 @@
                         <option value="Sercotel Guadiana">Sercotel Guadiana</option>
                         <option value="Cumbria Spa&Hotel">Cumbria Spa&Hotel</option>
                     </select>
+                    <button onclick="forceSync()" class="btn" style="background:var(--accent-dim); color:var(--accent); border:1px solid var(--accent); padding:8px 15px; border-radius:12px; font-weight:800;">🔄 Sincronizar</button>
+                    <button class="btn" style="background:var(--accent); color:white; font-weight:bold; border-radius:10px; padding:8px 18px;" onclick="document.getElementById('modalVac').style.display='flex'">+ Añadir Vacaciones</button>
+                </div>
+                
+            
+                <div id="syncStatus" class="status-badge-premium" style="margin-left:auto; display:flex; align-items:center; gap:8px; padding:6px 12px; border-radius:30px; font-size:0.75rem; font-weight:600; background:var(--bg3); border:1px solid var(--border);">
+                    <span id="syncDot" style="width:8px; height:8px; border-radius:50%; background:#ff9800;"></span>
+                    <span id="syncText" style="color:var(--text-dim);">Conectando...</span>
                 </div>
             </header>
 
@@ -96,6 +115,40 @@
             </div>
         </section>
     </main>
+
+    <!-- MODAL NUEVA VACACIÓN -->
+    <div id="modalVac" class="drawer-overlay" style="display:none; align-items:center; justify-content:center; padding:1rem;" onclick="this.style.display='none'">
+        <div class="glass" style="width:100%; max-width:450px; padding:2rem; border-radius:20px; position:relative; background:var(--bg2);" onclick="event.stopPropagation()">
+            <h2 style="margin-bottom:1.5rem; font-size:1.4rem; color:var(--text);">Añadir Vacaciones</h2>
+            
+            <div style="display:flex; flex-direction:column; gap:15px;">
+                <div>
+                    <label style="font-size:0.75rem; color:var(--text-dim); font-weight:bold; display:block; margin-bottom:5px;">HOTEL</label>
+                    <select id="mvHotel" style="width:100%; padding:10px; border-radius:10px; background:var(--bg); border:1px solid var(--border); color:var(--text);">
+                        <option value="Cumbria Spa&Hotel">Cumbria Spa&Hotel</option>
+                        <option value="Sercotel Guadiana">Sercotel Guadiana</option>
+                    </select>
+                </div>
+                <div>
+                    <label style="font-size:0.75rem; color:var(--text-dim); font-weight:bold; display:block; margin-bottom:5px;">EMPLEADO</label>
+                    <input type="text" id="mvEmp" placeholder="Nombre completo" style="width:100%; padding:10px; border-radius:10px; background:var(--bg); border:1px solid var(--border); color:var(--text);">
+                </div>
+                <div>
+                    <label style="font-size:0.75rem; color:var(--text-dim); font-weight:bold; display:block; margin-bottom:5px;">FECHA</label>
+                    <input type="date" id="mvFecha" style="width:100%; padding:10px; border-radius:10px; background:var(--bg); border:1px solid var(--border); color:var(--text);">
+                </div>
+                <div>
+                    <label style="font-size:0.75rem; color:var(--text-dim); font-weight:bold; display:block; margin-bottom:5px;">OBSERVACIONES / MOTIVO</label>
+                    <input type="text" id="mvObs" placeholder="Ej: Vacaciones de verano..." style="width:100%; padding:10px; border-radius:10px; background:var(--bg); border:1px solid var(--border); color:var(--text);">
+                </div>
+                
+                <div style="display:flex; gap:10px; margin-top:10px;">
+                    <button class="btn" onclick="document.getElementById('modalVac').style.display='none'" style="flex:1; background:var(--surface); border:1px solid var(--border); padding:10px;">Cancelar</button>
+                    <button class="btn active" onclick="saveManualVacation()" style="flex:1; background:var(--accent); color:white; border:none; padding:10px; font-weight:bold;">Guardar</button>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
@@ -111,14 +164,46 @@
         let FULL_DATA = null;
         let CURRENT_RANGE = { start: '', end: '' };
 
+        function saveManualVacation() {
+            if (!FULL_DATA) { alert("Esperando conexión con servidor..."); return; }
+            if (!$('#mvEmp').value || !$('#mvFecha').value) return alert("Completa al menos Empleado y Fecha");
+            
+            if (!FULL_DATA.manual_vacaciones) FULL_DATA.manual_vacaciones = [];
+            
+            FULL_DATA.manual_vacaciones.push({
+                hotel: $('#mvHotel').value,
+                empleado: $('#mvEmp').value,
+                fecha: $('#mvFecha').value,
+                obs: $('#mvObs').value,
+                label: 'Vacaciones',
+                isManual: true
+            });
+            
+            localStorage.setItem('turnosweb_admin_data', JSON.stringify(FULL_DATA));
+            if (window.firebase && window.firebaseConfig) {
+                firebase.database().ref('turnosweb/data/manual_vacaciones').set(FULL_DATA.manual_vacaciones).then(() => {
+                    $('#modalVac').style.display = 'none';
+                    $('#mvEmp').value = ''; $('#mvObs').value = '';
+                    renderVacations();
+                });
+            } else {
+                $('#modalVac').style.display = 'none';
+                renderVacations();
+            }
+        }
+
         // DETECTOR DE BLOQUEO DE NAVEGADOR
         function checkStorage() {
             try {
-                localStorage.setItem('test', '1');
-                localStorage.removeItem('test');
+                localStorage.setItem('local_sync_test', '1');
+                localStorage.removeItem('local_sync_test');
                 return true;
             } catch(e) {
                 console.error("Almacenamiento bloqueado:", e);
+                const syncText = $('#syncText');
+                const syncDot = $('#syncDot');
+                if (syncText) syncText.innerText = "BLOQUEO NAVEGADOR";
+                if (syncDot) syncDot.style.background = "#ff4444";
                 return false;
             }
         }
@@ -130,6 +215,19 @@
                 const current = select.value;
                 select.innerHTML = '<option value="">— Hotel —</option>' + 
                     hotels.map(h => `<option value="${h}" ${h === current ? 'selected' : ''}>${h}</option>`).join('');
+            }
+        }
+
+        function forceSync() {
+            if (window.firebase) {
+                $('#syncText').innerText = "Forzando Sinc...";
+                firebase.database().ref('turnosweb/data').once('value').then(snapshot => {
+                    const data = snapshot.val();
+                    if (data) {
+                        localStorage.setItem('turnosweb_admin_data', JSON.stringify(data));
+                        location.reload();
+                    }
+                });
             }
         }
 
@@ -152,12 +250,15 @@
             if (!data.schedule || data.schedule.length === 0) {
                 const isBlocked = !checkStorage();
                 container.innerHTML = `
-                    <div style="padding:5rem; text-align:center; opacity:0.5;">
-                        <div style="font-size:3rem; margin-bottom:1rem;">${isBlocked ? '🚫' : '⌛'}</div>
-                        <p>${isBlocked ? 
-                            '<b style="color:var(--danger);">El navegador está bloqueando el acceso a los datos.</b><br>Desactiva la "Prevención de Seguimiento Estrícta" o el bloqueo de terceros en la configuración del navegador.' : 
-                            'Esperando datos (Nube o Local)...'}</p>
-                        ${isBlocked ? '<button onclick="location.reload()" class="btn" style="margin-top:10px;">Reintentar</button>' : ''}
+                    <div style="padding:4rem; text-align:center;">
+                        <div style="font-size:3.5rem; margin-bottom:1.5rem;">${isBlocked ? '🔐' : '📂'}</div>
+                        <h2 style="color:var(--text);">${isBlocked ? 'Acceso Bloqueado por el Navegador' : 'No hay datos de vacaciones'}</h2>
+                        <p style="max-width:500px; margin:1rem auto; color:var(--text-muted); line-height:1.6;">
+                            ${isBlocked ? 
+                            'Tu navegador (Edge/Chrome) tiene activada la <b>Prevención de Seguimiento Estricta</b>. Esto impide que la aplicación cargue los datos de la base de datos.<br><br><b>SOLUCIÓN:</b> Haz clic en el icono del <b>candado 🔒 o escudo 🛡️</b> junto a la barra de direcciones y desactiva la protección contra rastreo o permite el uso de cookies para este sitio.' : 
+                            'No se han encontrado registros de vacaciones para el periodo seleccionado. Asegúrate de haber cargado el Excel correctamente en el Panel de Control y que los registros tengan la fecha correcta (2026).'}
+                        </p>
+                        ${isBlocked ? '<button onclick="location.reload()" class="btn active" style="margin-top:15px; background:var(--accent); color:white; border:none; padding:12px 25px; border-radius:12px;">🔄 Reintentar tras permitir acceso</button>' : ''}
                     </div>`;
                 return;
             }
@@ -194,14 +295,27 @@
                     // Detectar Vacaciones (V, Vac, Vacaciones, etc. o etiquetas explícitas)
                     const isVac = l.startsWith('v') || 
                                  l.includes('vac') || 
-                                 (t.turno && typeof t.turno === 'object' && String(t.turno.TipoAusencia || '').toLowerCase().includes('vac'));
+                                 (t.turno && typeof t.turno === 'object' && String(t.turno.TipoInterpretado || t.turno.TipoAusencia || '').toLowerCase().includes('vac'));
+
+                    let obs = '';
+                    if (typeof t.turno === 'object' && t.turno.Observaciones) obs = t.turno.Observaciones;
 
                     if (isVac) {
                         if (empFilter && !t.empleado.toLowerCase().includes(empFilter)) return;
-                        vacations.push({ hotel: g.hotel, fecha: t.fecha, empleado: t.empleado, label: turnLabel });
+                        vacations.push({ hotel: g.hotel, fecha: t.fecha, empleado: t.empleado, label: turnLabel, obs: obs });
                     }
                 });
             });
+
+            if (data.manual_vacaciones) {
+                data.manual_vacaciones.forEach(mb => {
+                    if (hotelFilter && mb.hotel !== hotelFilter) return;
+                    if (dStart && mb.fecha < dStart) return;
+                    if (dEnd && mb.fecha > dEnd) return;
+                    if (empFilter && !mb.empleado.toLowerCase().includes(empFilter)) return;
+                    vacations.push(mb);
+                });
+            }
 
             if (vacations.length === 0) {
                 container.innerHTML = `<div style="padding:5rem; text-align:center; opacity:0.5;">No hay vacaciones registradas en este periodo el cuadrante está vacío.</div>`;
@@ -211,11 +325,12 @@
             vacations.sort((a,b) => b.fecha.localeCompare(a.fecha));
 
             const rows = vacations.map(v => `
-                <tr>
-                    <td style="padding:1rem;">🏖️ <span style="font-weight:600; color:var(--accent);">VACACIONES</span></td>
+                <tr ${v.isManual ? 'style="background:rgba(255,255,255,0.01);"' : ''}>
+                    <td style="padding:1rem;">🏖️ <span style="font-weight:600; color:var(--accent);">VACACIONES</span> ${v.isManual ? '<span style="font-size:0.6rem; opacity:0.5; margin-left:5px;">(Manual)</span>' : ''}</td>
                     <td style="padding:1rem;"><b>${new Date(v.fecha).toLocaleDateString('es-ES', { day:'2-digit', month:'short', year:'numeric'})}</b></td>
                     <td style="padding:1rem; color:var(--text-muted);">${v.hotel}</td>
                     <td style="padding:1rem;"><b>${v.empleado}</b></td>
+                    <td style="padding:1rem; color:var(--text-muted); font-size:0.85rem;">${v.obs || '—'}</td>
                 </tr>
             `).join('');
 
@@ -228,6 +343,7 @@
                                 <th style="text-align:left;">Fecha</th>
                                 <th style="text-align:left;">Hotel</th>
                                 <th style="text-align:left;">Empleado</th>
+                                <th style="text-align:left;">Motivo / Observaciones</th>
                             </tr>
                         </thead>
                         <tbody>${rows}</tbody>
@@ -238,15 +354,30 @@
 
         // FIREBASE SYNC
         if (window.firebase && window.firebaseConfig) {
-            firebase.initializeApp(window.firebaseConfig);
-            firebase.database().ref('turnosweb/data').on('value', (s) => {
-                const d = s.val();
-                if (d) {
-                    FULL_DATA = d;
-                    localStorage.setItem('turnosweb_admin_data', JSON.stringify(d));
-                    renderVacations();
-                }
-            });
+            try {
+                firebase.initializeApp(window.firebaseConfig);
+                const syncText = $('#syncText');
+                const syncDot = $('#syncDot');
+                
+                firebase.database().ref('turnosweb/data').on('value', (s) => {
+                    const d = s.val();
+                    if (d) {
+                        FULL_DATA = d;
+                        try {
+                            localStorage.setItem('turnosweb_admin_data', JSON.stringify(d));
+                        } catch(e) {}
+                        if (syncText) syncText.innerText = "Nube Conectada";
+                        if (syncDot) syncDot.style.background = "#a3ff12";
+                        renderVacations();
+                    }
+                }, (err) => {
+                    console.error("Error Firebase:", err);
+                    if (syncText) syncText.innerText = "Error Conexión";
+                    if (syncDot) syncDot.style.background = "#ff4444";
+                });
+            } catch(e) {
+                console.error("Fallo inicialización Firebase:", e);
+            }
         }
 
         function toggleTheme() {
@@ -264,12 +395,11 @@
             localStorage.setItem('turnosweb_theme', mode);
         }
         window.addEventListener('DOMContentLoaded', () => {
-            const savedTheme = localStorage.getItem('turnosweb_theme') || 'dark';
+            const savedTheme = localStorage.getItem('turnosweb_theme') || 'light';
             setTheme(savedTheme);
             
             const today = new Date();
-            const startOfYear = new Date(today.getFullYear(), 0, 1);
-            const endOfYear = new Date(today.getFullYear(), 11, 31);
+                        const endOfYear = new Date(today.getFullYear(), 11, 31);
 
             // Inicializar Flatpickr con modo wrap para que todo el div sea clickeable
             flatpickr("#rangeTrigger", {
@@ -277,11 +407,11 @@
                 mode: "range",
                 locale: "es",
                 dateFormat: "Y-m-d",
-                defaultDate: [startOfYear, endOfYear],
+                defaultDate: [today, endOfYear],
                 onChange: (selectedDates) => {
                     if (selectedDates.length === 2) {
-                        const s = selectedDates[0].toISOString().split('T')[0];
-                        const e = selectedDates[1].toISOString().split('T')[0];
+                        const d1 = selectedDates[0]; const s = `${d1.getFullYear()}-${String(d1.getMonth()+1).padStart(2,'0')}-${String(d1.getDate()).padStart(2,'0')}`;
+                        const d2 = selectedDates[1]; const e = `${d2.getFullYear()}-${String(d2.getMonth()+1).padStart(2,'0')}-${String(d2.getDate()).padStart(2,'0')}`;
                         CURRENT_RANGE = { start: s, end: e };
                         $('#rangeLabel').textContent = `${selectedDates[0].toLocaleDateString('es-ES')} — ${selectedDates[1].toLocaleDateString('es-ES')}`;
                         renderVacations();
@@ -289,8 +419,8 @@
                 },
                 onReady: (selectedDates) => {
                     if (selectedDates.length === 2) {
-                        const s = selectedDates[0].toISOString().split('T')[0];
-                        const e = selectedDates[1].toISOString().split('T')[0];
+                        const d1 = selectedDates[0]; const s = `${d1.getFullYear()}-${String(d1.getMonth()+1).padStart(2,'0')}-${String(d1.getDate()).padStart(2,'0')}`;
+                        const d2 = selectedDates[1]; const e = `${d2.getFullYear()}-${String(d2.getMonth()+1).padStart(2,'0')}-${String(d2.getDate()).padStart(2,'0')}`;
                         CURRENT_RANGE = { start: s, end: e };
                         $('#rangeLabel').textContent = `${selectedDates[0].toLocaleDateString('es-ES')} — ${selectedDates[1].toLocaleDateString('es-ES')}`;
                         renderVacations();
@@ -304,5 +434,6 @@
             }
         });
     </script>
+    <script src="sync-status.js"></script>
 </body>
 </html>
