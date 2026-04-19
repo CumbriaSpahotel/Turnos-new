@@ -352,9 +352,9 @@
   </style>
 </head>
 <body>
-  <!-- Datos: mismo FULL_DATA que index/live -->
-  <script src="data.js?v=TS"></script>
-  <script src="data.ausencias.js?v=TS"></script>
+  <div id="protocolWarning" style="display:none; background:#ff5252; color:white; padding:12px; font-size:12px; text-align:center; font-weight:700;">
+    ⚠️ Protocolo 'file://' detectado. Algunas funciones (PWA, Actualización en vivo) están desactivadas. Usa un servidor local.
+  </div>
 
   <header>
     <div class="bar">
@@ -398,40 +398,43 @@
 
   <!-- Supabase Integration -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="supabase-config.js?v=7.5"></script>
-  <script src="supabase-dao.js?v=7.5"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/localforage/1.10.0/localforage.min.js"></script>
+  <script src="supabase-config.js?v=8.2"></script>
+  <script src="supabase-dao.js?v=8.2"></script>
 
   <!-- Adaptador de semana, normalizador y lógica móvil -->
-  <script src="plantilla_mobile_adapter.js?v=7.5"></script>
-  <script src="mobile.app.js?v=7.5"></script>
+  <script src="plantilla_mobile_adapter.js?v=8.2"></script>
+  <script src="mobile.app.js?v=8.2"></script>
   
   <script>
+    // Sincronización Realtime para Móvil
     // Sincronización Realtime para Móvil
     window.initMobileSunc = async () => {
         if (!window.TurnosDB) return;
         
         const now = new Date();
-        const start = new Date(now.getFullYear(), now.getMonth(), 1);
-        const end = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+        const monday = new Date(now.getFullYear(), now.getMonth(), now.getDate() - (now.getDay() === 0 ? 6 : now.getDay() - 1));
+        const sunday = new Date(monday); sunday.setDate(monday.getDate() + 14); // Cargar 2 semanas para buffer
         
-        const inicio = start.toISOString().split('T')[0];
-        const fin = end.toISOString().split('T')[0];
+        const inicio = monday.toISOString().split('T')[0];
+        const fin = sunday.toISOString().split('T')[0];
 
-        // Carga inicial
-        const data = await window.TurnosDB.fetchRango(inicio, fin);
-        window.FULL_DATA = { schedule: [], flat: data }; // Proveemos ambos para compatibilidad
-        if (typeof window.refreshMobileView === 'function') window.refreshMobileView();
-
-        // Escuchar cambios
-        window.TurnosDB.initRealtime(inicio, fin);
+        try {
+            const data = await window.TurnosDB.fetchRango(inicio, fin);
+            window.FULL_DATA = { schedule: [], flat: data };
+            if (typeof window.refreshMobileView === 'function') window.refreshMobileView();
+            
+            // Escuchar cambios
+            window.TurnosDB.initRealtime(inicio, fin);
+        } catch(e) {
+            console.error("Error cargando datos móviles:", e);
+        }
     };
 
-    // Callback para el DAO cuando hay cambios en tiempo real
-    window.aplicarCambioLocal = async (payload) => {
-        console.log("Cambio en tiempo real detectado:", payload);
-        // Recargar todo el rango para simplificar la lógica móvil existente
-        await window.initMobileSunc();
-    };
+    if (window.location.protocol === 'file:') {
+        const warn = document.getElementById('protocolWarning');
+        if (warn) warn.style.display = 'block';
+    }
 
     document.addEventListener('DOMContentLoaded', window.initMobileSunc);
   </script>

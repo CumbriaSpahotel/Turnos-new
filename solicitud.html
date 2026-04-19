@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Solicitud de Cambio de Turno — TurnosWeb</title>
+    <link rel="icon" type="image/png" href="favicon.png">
+    <link rel="stylesheet" href="admin.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <style>
+        /* Estilos heredados y adaptados del documento proporcionado */
+        .ct-form-container {
+            max-width: 900px;
+            margin: 2rem auto;
+            background: var(--surface);
+            border-radius: 20px;
+            border: 1px solid var(--border);
+            overflow: hidden;
+            box-shadow: var(--shadow-lg);
+        }
+        
+        .ct-header {
+            background: #1a1d21;
+            color: white;
+            padding: 3rem 2rem;
+            text-align: center;
+            border-bottom: 3px solid var(--accent);
+        }
+        
+        .ct-header h1 { font-size: 1.8rem; font-weight: 800; margin-bottom: 0.5rem; }
+        .ct-header p { opacity: 0.7; font-size: 0.9rem; }
+
+        .ct-body { padding: 2rem; }
+        
+        fieldset {
+            border: none;
+            padding: 0;
+            margin-bottom: 2.5rem;
+        }
+        
+        legend {
+            font-size: 0.75rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--accent);
+            margin-bottom: 1.5rem;
+            display: block;
+            width: 100%;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 8px;
+        }
+
+        .input-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .field { display: flex; flex-direction: column; gap: 8px; margin-bottom: 1rem; }
+        .field label { font-size: 0.85rem; font-weight: 700; color: var(--text); }
+        
+        input[type="text"], input[type="date"], select, textarea {
+            background: var(--bg3);
+            border: 1px solid var(--border);
+            color: var(--text);
+            padding: 12px 15px;
+            border-radius: 10px;
+            font-size: 0.95rem;
+        }
+
+        .shift-card {
+            background: var(--bg2);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+            position: relative;
+        }
+
+        .shift-grid {
+            display: grid;
+            grid-template-columns: 1.5fr 1fr 1fr 2fr auto;
+            gap: 1rem;
+            align-items: flex-end;
+        }
+
+        .btn-delete {
+            background: var(--bg3);
+            color: var(--text-dim);
+            border: 1px solid var(--border);
+            width: 40px; height: 40px;
+            border-radius: 8px;
+            cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+        }
+
+        .btn-add-shift {
+            background: transparent;
+            color: var(--accent);
+            border: 2px dashed var(--border);
+            padding: 1rem;
+            width: 100%;
+            border-radius: 12px;
+            cursor: pointer;
+            font-weight: 700;
+            margin-bottom: 2rem;
+        }
+
+        .agreement {
+            display: flex;
+            gap: 12px;
+            background: var(--bg3);
+            padding: 1.2rem;
+            border-radius: 10px;
+            font-size: 0.85rem;
+            line-height: 1.4;
+            cursor: pointer;
+        }
+
+        .btn-submit-main {
+            background: var(--accent);
+            color: white;
+            border: none;
+            padding: 1.2rem;
+            width: 100%;
+            border-radius: 12px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            cursor: pointer;
+            font-size: 1rem;
+        }
+
+        #success-notice {
+            display: none;
+            text-align: center;
+            background: #d4edda;
+            color: #155724;
+            padding: 2rem;
+            border-radius: 15px;
+            margin-top: 1rem;
+        }
+    </style>
+</head>
+<body class="light-mode">
+    <div class="ct-form-container">
+        <header class="ct-header">
+            <h1>Solicitud de Cambio de Turno</h1>
+            <p>Sercotel Guadiana & Cumbria Spa&Hotel</p>
+        </header>
+
+        <div class="ct-body">
+            <form id="form-cambio-v3" action="https://formspree.io/f/xvgawqya" method="POST">
+                
+                <fieldset>
+                    <legend>01. Identificación</legend>
+                    <div class="field" style="margin-bottom:1.5rem;">
+                        <label>Seleccionar Hotel</label>
+                        <select id="v3_hotel" required>
+                            <option value="">— Seleccione Hotel —</option>
+                            <option value="Sercotel Guadiana">Sercotel Guadiana</option>
+                            <option value="Cumbria Spa&Hotel">Cumbria Spa&Hotel</option>
+                        </select>
+                    </div>
+
+                    <div class="input-grid">
+                        <div class="field">
+                            <label>Empleado Solicitante</label>
+                            <select id="v3_solicitante" name="solicitante" required>
+                                <option value="">— Seleccione —</option>
+                            </select>
+                        </div>
+                        <div class="field">
+                            <label>Compañero que acepta</label>
+                            <select id="v3_companero" name="companero" required>
+                                <option value="">— Seleccione —</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <label class="agreement">
+                        <input type="checkbox" name="acuerdo_confirmado" required style="width:18px; height:18px;">
+                        <span>Declaro que ambos empleados están informados y aceptan este cambio bajo las políticas del hotel.</span>
+                    </label>
+                </fieldset>
+
+                <fieldset>
+                    <legend>02. Detalles del Intercambio</legend>
+                    <div id="v3_items_container">
+                        <div class="shift-card-wrapper">
+                            <div class="shift-card">
+                                <div class="shift-grid">
+                                    <div class="field">
+                                        <label>Fecha</label>
+                                        <input type="date" class="v3-fecha" required>
+                                    </div>
+                                    <div class="field">
+                                        <label>Turno Actual</label>
+                                        <select class="v3-origen">
+                                            <option>Mañana</option>
+                                            <option>Tarde</option>
+                                            <option>Noche</option>
+                                            <option>Descanso</option>
+                                        </select>
+                                    </div>
+                                    <div class="field">
+                                        <label>Nuevo Turno</label>
+                                        <select class="v3-destino">
+                                            <option>Mañana</option>
+                                            <option>Tarde</option>
+                                            <option>Noche</option>
+                                            <option>Descanso</option>
+                                        </select>
+                                    </div>
+                                    <div class="field">
+                                        <label>Notas</label>
+                                        <input type="text" class="v3-nota" placeholder="Motivo o detalle...">
+                                    </div>
+                                    <button type="button" class="btn-delete" onclick="quitarFilaV3(this)">✕</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <button type="button" class="btn-add-shift" onclick="nuevaFilaV3()">
+                        + Añadir otra fecha
+                    </button>
+
+                    <div class="field">
+                        <label>Observaciones Adicionales</label>
+                        <textarea name="observaciones" rows="3" placeholder="Opcional..."></textarea>
+                    </div>
+                </fieldset>
+
+                <button type="submit" id="v3_btn_submit" class="btn-submit-main">
+                    Enviar Solicitud Oficial
+                </button>
+
+                <div id="success-notice">
+                    <div style="font-size: 2rem; margin-bottom: 10px;">✨</div>
+                    Solicitud enviada con éxito. Administración la revisará pronto.
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/localforage/1.10.0/localforage.min.js"></script>
+    <script src="supabase-config.js?v=8.2"></script>
+    <script src="supabase-dao.js?v=8.2"></script>
+
+    <script>
+        let _allEmployees = [];
+
+        async function init() {
+            _allEmployees = await window.TurnosDB.getEmpleados();
+            
+            document.getElementById("v3_hotel").addEventListener("change", updateEmpDrop);
+            document.getElementById("v3_solicitante").addEventListener("change", syncShifts);
+            document.getElementById("v3_companero").addEventListener("change", syncShifts);
+        }
+
+        function updateEmpDrop() {
+            const h = document.getElementById("v3_hotel").value;
+            const s1 = document.getElementById("v3_solicitante");
+            const s2 = document.getElementById("v3_companero");
+            
+            if (!h) {
+                s1.innerHTML = '<option value="">— Seleccione Hotel Primero —</option>';
+                s2.innerHTML = '<option value="">— Seleccione Hotel Primero —</option>';
+                return;
+            }
+
+            const hotelKey = h.toLowerCase().split(' ')[0]; // "sercotel" o "cumbria"
+            const filtered = _allEmployees.filter(e => {
+                const isActive = e.activo !== false;
+                const empHotel = (e.hotel_id || "").toLowerCase();
+                const matchesHotel = empHotel.includes(hotelKey);
+                // Si la migración es nueva y no tiene hotel_id, dejamos ver (fallback preventivo)
+                if (isActive && (!e.hotel_id || matchesHotel)) return true;
+                return false;
+            });
+
+            const html = '<option value="">— Seleccione Empleado —</option>' + 
+                         filtered.sort((a,b) => a.nombre.localeCompare(b.nombre))
+                                 .map(e => `<option value="${e.id}">${e.nombre}</option>`).join('');
+            
+            s1.innerHTML = html;
+            s2.innerHTML = html;
+        }
+
+        async function syncShifts() {
+            const sol = document.getElementById("v3_solicitante").value;
+            const comp = document.getElementById("v3_companero").value;
+            const hotel = document.getElementById("v3_hotel").value;
+            const rows = document.querySelectorAll(".shift-card-wrapper");
+
+            const mapTurno = (t) => {
+                const s = String(t || "").toUpperCase();
+                if (s.startsWith('M')) return 'Mañana';
+                if (s.startsWith('T')) return 'Tarde';
+                if (s.startsWith('N')) return 'Noche';
+                if (s.startsWith('D')) return 'Descanso';
+                return t;
+            };
+
+            rows.forEach(async (row) => {
+                const fInput = row.querySelector(".v3-fecha");
+                const sOrig = row.querySelector(".v3-origen");
+                const sDest = row.querySelector(".v3-destino");
+                
+                if (fInput.value && sol && comp) {
+            if (!t) return "Descanso";
+            const low = t.toLowerCase();
+            if (low.startsWith('m')) return "Mañana";
+            if (low.startsWith('t')) return "Tarde";
+            if (low.startsWith('n')) return "Noche";
+            return "Descanso";
+        }
+
+        function nuevaFilaV3() {
+            const container = document.getElementById("v3_items_container");
+            const base = document.querySelector(".shift-card-wrapper");
+            const clone = base.cloneNode(true);
+            clone.querySelectorAll('input').forEach(i => i.value = '');
+            const fInput = clone.querySelector(".v3-fecha");
+            fInput.addEventListener("change", syncShifts);
+            container.appendChild(clone);
+        }
+
+        function quitarFilaV3(btn) {
+            const total = document.querySelectorAll(".shift-card-wrapper").length;
+            if (total > 1) btn.closest(".shift-card-wrapper").remove();
+        }
+
+        document.querySelectorAll(".v3-fecha").forEach(el => el.addEventListener("change", syncShifts));
+
+        document.getElementById("form-cambio-v3").addEventListener("submit", async function(e) {
+            e.preventDefault();
+            const btn = document.getElementById("v3_btn_submit");
+            const form = e.target;
+            const sol = document.getElementById("v3_solicitante").value;
+            const comp = document.getElementById("v3_companero").value;
+            const hotel = document.getElementById("v3_hotel").value;
+            
+            btn.disabled = true;
+            btn.textContent = "ENVIANDO...";
+
+            const f = document.querySelectorAll(".v3-fecha");
+            const o = document.querySelectorAll(".v3-origen");
+            const d = document.querySelectorAll(".v3-destino");
+            const n = document.querySelectorAll(".v3-nota");
+
+            const fechasPermuta = [];
+            f.forEach((val, i) => {
+                fechasPermuta.push({
+                    fecha: val.value,
+                    origen: o[i].value,
+                    destino: d[i].value,
+                    nota: n[i].value
+                });
+            });
+
+            const payload = {
+                hotel: hotel,
+                solicitante: sol,
+                companero: comp,
+                fechas: fechasPermuta,
+                observaciones: form.observaciones.value,
+                _subject: `Solicitud Turno [${hotel}]: ${sol} / ${comp}`
+            };
+
+            try {
+                if (window.supabase) {
+                    const { error } = await window.supabase.from('peticiones_cambio').insert([payload]);
+                    if (error) {
+                        console.warn("Error insertando en Supabase (intentando compatibilidad):", error);
+                        if (error.code === '42703' || error.status === 400) {
+                             const { hotel, ...compatPayload } = payload;
+                             await window.supabase.from('peticiones_cambio').insert([compatPayload]);
+                        }
+                    }
+                }
+                const response = await fetch(form.action, {
+                    method: "POST",
+                    body: JSON.stringify(payload),
+                    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' }
+                });
+                if (response.ok) {
+                    document.getElementById("success-notice").style.display = "block";
+                    btn.textContent = "ENVIADO";
+                    form.reset();
+                }
+            } catch (err) {
+                console.error(err);
+                alert("Error al enviar solicitud: " + err.message);
+                btn.disabled = false;
+                btn.textContent = "Enviar Solicitud Oficial";
+            }
+        });
+
+        document.addEventListener("DOMContentLoaded", init);
+    </script>
+</body>
+</html>

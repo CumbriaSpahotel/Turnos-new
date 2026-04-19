@@ -179,31 +179,31 @@
           const low = label.toLowerCase();
 
           if (tipo === 'VAC' || low.includes("vacac")) {
-            pill.classList.add("vac");
+            pill.classList.add("pill--vacaciones");
             label = "Vacaciones 🏖️";
           } else if (tipo === 'BAJA' || low.includes("baja")) {
-            pill.classList.add("vac"); // Reutilizamos estilo o creamos uno
+            pill.classList.add("pill--descanso"); 
             label = "Baja Médica 🏥";
           } else if (tipo === 'PERM' || low.includes("perm")) {
-            pill.classList.add("tarde");
+            pill.classList.add("pill--tarde");
             label = "Permiso 📄";
           } else if (tipo === 'CT' || low.includes("sustit") || low.includes("cambio")) {
-            pill.classList.add("noche");
+            pill.classList.add("pill--noche");
             label = `${item.sustituto || 'C/T'} 🔄`;
           } else if (low.includes("descanso")) {
-            pill.classList.add("descanso");
+            pill.classList.add("pill--descanso");
             label = "Descanso";
           } else if (low.includes("noche")) {
-            pill.classList.add("noche");
+            pill.classList.add("pill--noche");
             label = "🌙 Noche";
           } else if (low.includes("mañana")) {
-            pill.classList.add("manana");
+            pill.classList.add("pill--manana");
             label = "Mañana";
           } else if (low.includes("tarde")) {
-            pill.classList.add("tarde");
+            pill.classList.add("pill--tarde");
             label = "Tarde";
           } else {
-            pill.classList.add("vac");
+            pill.classList.add("pill--noche");
           }
 
           pill.textContent = label;

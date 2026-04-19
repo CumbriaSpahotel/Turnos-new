@@ -7,9 +7,6 @@
     <link rel="icon" type="image/png" href="favicon.png">
     <link rel="stylesheet" href="admin.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
-    <style>
-        .nav-item.active { background: var(--accent-dim); color: var(--accent); border-right: 3px solid var(--accent); }
-    </style>
 </head>
 <body class="light-mode">
     <aside class="sidebar">
@@ -49,68 +46,42 @@
                     <span id="syncText">Conectando...</span>
                 </div>
             </header>
-            <div id="swapsBody" class="glass-panel" style="min-height:400px; padding:1.5rem;">
-                <!-- Dinámico -->
-            </div>
+            <div id="swapsBody" class="glass-panel" style="min-height:400px; padding:1.5rem;"></div>
         </section>
     </main>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="supabase-config.js?v=7.5"></script>
-    <script src="supabase-dao.js?v=7.5"></script>
+    <script src="supabase-config.js?v=8.2"></script>
+    <script src="supabase-dao.js?v=8.2"></script>
     <script>
         const $ = (s) => document.querySelector(s);
-        
-        function fmtDate(d) {
-            if (!d) return '—';
-            const parts = d.split('-');
-            return `${parts[2]}/${parts[1]}/${parts[0]}`;
-        }
-
         async function renderSwaps() {
             if (!window.TurnosDB) return;
             const container = $('#swapsBody');
-            
             try {
+                // Solo pedimos CT (Cambios de Turno reales). 
+                // Las VACACIONES ya no deberían venir con este tipo tras el fix en admin.js
                 const data = await window.TurnosDB.fetchTipo('CT');
+                
                 if (data.length === 0) {
-                    container.innerHTML = `<div style="padding:5rem; text-align:center; opacity:0.5;">No hay cambios de turno registrados.</div>`;
+                    container.innerHTML = `<div style="padding:5rem; text-align:center; opacity:0.5;">No hay permutas o cambios de turno registrados.</div>`;
                     return;
                 }
-
-                data.sort((a,b) => b.fecha.localeCompare(a.fecha));
-
                 const rows = data.map(s => `
                     <tr>
-                        <td style="padding:1rem;"><span class="status-badge" style="background:rgba(16,232,152,0.1); color:#10e898; border:none; padding:4px 10px; border-radius:20px; font-size:0.7rem;">PROCESADO</span></td>
-                        <td style="padding:1rem;"><b>${fmtDate(s.fecha)}</b></td>
+                        <td style="padding:1rem;"><b>${window.TurnosDB.fmtDateLegacy(s.fecha)}</b></td>
                         <td style="padding:1rem;">${s.hotel_id}</td>
                         <td style="padding:1rem;">
-                            <b>${s.empleado_id}</b> <span style="color:var(--accent);">↔</span> <b>${s.sustituto || '—'}</b>
+                           <div style="display:flex; align-items:center; gap:10px;">
+                             <span>${s.empleado_id}</span>
+                             <span style="color:var(--accent); font-weight:bold;">↔</span>
+                             <span>${s.sustituto || '<i style="opacity:0.5;">Sin asignar</i>'}</span>
+                           </div>
                         </td>
-                        <td style="padding:1rem; color:var(--text-muted); font-size:0.85rem;">${s.turno || 'Sin observaciones'}</td>
-                    </tr>
-                `).join('');
-
-                container.innerHTML = `
-                    <div class="table-container">
-                        <table class="preview-table" style="width:100%;">
-                            <thead>
-                                <tr>
-                                    <th style="text-align:left;">Estado</th>
-                                    <th style="text-align:left;">Fecha</th>
-                                    <th style="text-align:left;">Hotel</th>
-                                    <th style="text-align:left;">Participantes</th>
-                                    <th style="text-align:left;">Motivo / Observaciones</th>
-                                </tr>
-                            </thead>
-                            <tbody>${rows}</tbody>
-                        </table>
-                    </div>
-                `;
-            } catch (err) {
-                container.innerHTML = `<div style="padding:2rem; color:red;">Error: ${err.message}</div>`;
-            }
+                        <td style="padding:1rem;">${s.turno || '—'}</td>
+                    </tr>`).join('');
+                container.innerHTML = `<div class="table-container"><table class="preview-table" style="width:100%;"><thead><tr><th>Fecha</th><th>Hotel</th><th>Participantes</th><th>Observaciones (Turno)</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+            } catch (err) { container.innerHTML = `Error: ${err.message}`; }
         }
 
         window.initSupabaseSync = async () => {
@@ -120,9 +91,8 @@
                 await renderSwaps();
                 if (syncText) syncText.innerText = "Supabase Conectado";
                 if (syncDot) syncDot.style.background = "#10e898";
-            } catch (e) {
-                if (syncText) syncText.innerText = "Error Conexión";
-            }
+                window.aplicarCambioLocal = renderSwaps;
+            } catch (e) { if (syncText) syncText.innerText = "Error"; }
         };
 
         function toggleTheme() {
@@ -135,5 +105,6 @@
             window.initSupabaseSync();
         });
     </script>
+    <script src="sync-status.js"></script>
 </body>
 </html>

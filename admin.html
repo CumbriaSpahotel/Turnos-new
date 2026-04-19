@@ -3,10 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TurnosWeb — Panel de Administración</title>
-    <link rel="icon" type="image/png" href="favicon.png">
+    <title>TurnosWeb — Panel de Control Administrativo</title>
+    <link rel="icon" type="image/png" href="admin_icon_premium.png">
     <link rel="stylesheet" href="admin.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/plugins/monthSelect/style.css">
     <script src="xlsx.full.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/es.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/plugins/monthSelect/index.js"></script>
 </head>
 <body class="light-mode">
     <!-- NAVEGACIÓN LATERAL -->
@@ -222,7 +227,7 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="supabase-config.js?v=7.1"></script>
+    <script src="supabase-config.js?v=8.1"></script>
     
     <!-- AUTHENTICATION PROTECTOR (OBLIGATORIO) -->
     <script>
@@ -242,10 +247,10 @@
     </script>
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/localforage/1.10.0/localforage.min.js"></script>
-    <script src="supabase-dao.js?v=7.1"></script>
-    <script src="virtualizer.js?v=7.1"></script>
+    <script src="supabase-dao.js?v=8.2"></script>
+    <script src="virtualizer.js?v=8.2"></script>
 
-    <script src="admin.js?v=7.1"></script>
-    <script src="sync-status.js?v=7.1"></script>
+    <script src="admin.js?v=8.2"></script>
+    <script src="sync-status.js?v=8.2"></script>
 </body>
 </html>

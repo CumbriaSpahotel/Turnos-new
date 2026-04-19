@@ -8,33 +8,40 @@
   <link rel="stylesheet" href="styles.css">
   <link rel="icon" type="image/png" href="favicon.png">
   <style>
-      :root { --accent: #4f86f7; --accent-dim: rgba(79, 134, 247, 0.1); }
-      body.dark-mode { --bg: #060910; --surface: #141929; --text: #dde4f8; --border: #1e2740; }
+      :root { --accent: #1677ff; --accent-hover: #4096ff; --border: #e8e8e8; --bg: #f5f5f5; }
+      body { background: var(--bg); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+      .nav-btn { background: var(--accent); color: white; border: none; padding: 10px 20px; border-radius: 8px; font-weight: 700; cursor: pointer; transition: 0.2s; font-size: 0.85rem; }
+      .nav-btn:hover { background: var(--accent-hover); box-shadow: 0 4px 12px rgba(22,119,255,0.2); }
+      .hotel-block { border-radius: 12px !important; border: 1px solid var(--border) !important; box-shadow: 0 2px 8px rgba(0,0,0,0.05) !important; margin-bottom: 30px !important; }
+      .header-title { font-weight: 800; color: white; letter-spacing: -0.5px; }
   </style>
 </head>
 <body>
-  <header>
-    <div class="header-brand">
-      <img src="Logo.png" alt="Logo">
+  <header style="background:#1a1d21; color:white; padding:15px 30px; display:flex; justify-content:space-between; align-items:center; border-bottom:3px solid var(--accent);">
+    <div class="header-brand" style="display:flex; align-items:center; gap:20px;">
+      <img src="Logo.png" alt="Logo" style="height:45px; filter:brightness(0) invert(1);">
       <div class="title-block">
-        <div class="title">TurnosWeb</div>
-        <div class="subtitle">Cuadrante Público</div>
+        <div class="title" style="font-size:1.4rem; font-weight:800; letter-spacing:-0.5px;">Cuadrantes de turnos</div>
+        <div class="subtitle" style="font-size:0.8rem; opacity:0.7;">Sercotel Guadiana / Cumbria Spa&Hotel</div>
       </div>
     </div>
     
-    <div class="controls-container">
-      <div id="syncStatus" class="live-indicator">
-        <div id="syncDot" class="live-dot" style="background:#ff9800;"></div>
-        <span id="syncText">Conectando...</span>
+    <div class="controls-container" style="display:flex; gap:12px; align-items:center;">
+       <div class="nav-weeks" style="display:flex; gap:8px;">
+          <button class="nav-btn" onclick="changeWeek(-1)">← Semana</button>
+          <button class="nav-btn" onclick="goToday()">Hoy</button>
+          <button class="nav-btn" onclick="changeWeek(1)">Semana →</button>
+       </div>
+       <div style="height: 30px; width: 1px; background: rgba(255,255,255,0.2); margin: 0 10px;"></div>
+       <div class="field">
+        <select id="hotelSelect" onchange="renderPublicView()" style="background:#2a2e35; color:white; border:1px solid #444; border-radius:8px; padding:10px 15px; cursor:pointer; font-weight:600;">
+            <option value="">— Hotel —</option>
+        </select>
       </div>
-      
-      <div class="field">
-        <select id="hotelSelect" onchange="renderPublicView()"><option value="">— Hotel —</option></select>
+      <div class="field" style="width:240px;">
+        <input type="text" id="dateRange" style="background:#2a2e35; color:white; border:1px solid #444; border-radius:8px; padding:10px 15px; width:100%; font-weight:600;">
       </div>
-      <div class="field" style="max-width: 140px;">
-        <input type="text" id="dateRange" placeholder="Rango de fechas...">
-      </div>
-      <button class="btn theme-toggle" id="themeToggle">🌙</button>
+      <a href="solicitud.html" class="nav-btn" style="text-decoration:none; display:flex; align-items:center; gap:8px;">🔄 Solicitar Cambio</a>
     </div>
   </header>
 
@@ -42,12 +49,32 @@
 
   <!-- Scripts -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/localforage/1.10.0/localforage.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
-  <script src="https://npmcdn.com/flatpickr/dist/l10ns/es.js"></script>
+  <script>
+    // Localización Española Fallback (Evita bloqueos de CDN)
+    (function(global, factory) {
+      typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports) :
+      typeof define === 'function' && define.amd ? define(['exports'], factory) :
+      (factory((global.es = {})));
+    }(this, (function(exports) { 'use strict';
+      var Spanish = {
+        weekdays: { shorthand: ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'], longhand: ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'] },
+        months: { shorthand: ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'], longhand: ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'] },
+        rangeSeparator: ' a ', firstDayOfWeek: 1
+      };
+      if (typeof window !== 'undefined' && window.flatpickr) { 
+        window.flatpickr.l10ns.es = Spanish; 
+        window.flatpickr.localize(Spanish);
+      }
+      exports.Spanish = Spanish;
+      Object.defineProperty(exports, '__esModule', { value: true });
+    })));
+  </script>
   
-  <script src="supabase-config.js?v=7.5"></script>
-  <script src="supabase-dao.js?v=7.5"></script>
-  <script src="plantilla_mobile_adapter.js?v=7.5"></script>
+  <script src="supabase-config.js?v=8.2"></script>
+  <script src="supabase-dao.js?v=8.2"></script>
+  <script src="plantilla_mobile_adapter.js?v=8.2"></script>
 
   <script>
     const $ = (s) => document.querySelector(s);
@@ -64,97 +91,237 @@
 
     async function renderPublicView() {
         const container = $('#app');
-        const selHotel = $('#hotelSelect').value;
-        const rangeStr = $('#dateRange').value; 
+        const rangeStr = $('#dateRange')?.value; 
+
+        function getMonday(d) {
+            const dt = new Date(d);
+            const day = dt.getDay();
+            const diff = dt.getDate() - day + (day === 0 ? -6 : 1);
+            return new Date(dt.setDate(diff));
+        }
+        const iso = (d) => d.toISOString().split('T')[0];
         
         let start, end;
         if (rangeStr && rangeStr.includes(' a ')) {
-            [start, end] = rangeStr.split(' a ');
+            const parts = rangeStr.split(' a ');
+            const baseStart = new Date(parts[0] + 'T12:00:00');
+            const mon = getMonday(baseStart);
+            start = iso(mon);
+            
+            const baseEnd = new Date(parts[1] + 'T12:00:00');
+            const diffDays = (baseEnd - baseStart) / (1000 * 60 * 60 * 24);
+            if (diffDays <= 7) {
+                const sun = new Date(mon); sun.setDate(mon.getDate() + 6);
+                end = iso(sun);
+            } else {
+                end = parts[1];
+            }
         } else {
-            const today = new Date();
-            start = today.toISOString().split('T')[0];
-            const nextWeek = new Date(); nextWeek.setDate(today.getDate() + 7);
-            end = nextWeek.toISOString().split('T')[0];
+            const mon = getMonday(new Date());
+            const sun = new Date(mon); sun.setDate(mon.getDate() + 6);
+            start = iso(mon);
+            end = iso(sun);
         }
 
         try {
             const data = await window.TurnosDB.fetchRango(start, end);
-            
-            // Usar el MobileAdapter para dar el look "Correcto" que pidió el usuario
-            const hotelsFound = [...new Set(data.map(t => t.hotel_id))].sort();
+            const profiles = await window.TurnosDB.getEmpleados(); 
+            const hotels = [...new Set(data.map(t => t.hotel_id))].sort();
             
             if ($('#hotelSelect').options.length <= 1) {
                 $('#hotelSelect').innerHTML = '<option value="">— Hotel —</option>' + 
-                    hotelsFound.map(h => `<option value="${h}">${h}</option>`).join('');
+                    hotels.map(h => `<option value="${h}">${h}</option>`).join('');
             }
 
-            let filtered = data;
-            if (selHotel) filtered = data.filter(t => t.hotel_id === selHotel);
+            const selHotel = $('#hotelSelect').value;
 
-            if (filtered.length === 0) {
-                container.innerHTML = '<div style="text-align:center; padding:100px; opacity:0.5;">No hay turnos publicados para este periodo.</div>';
-                return;
-            }
+            container.innerHTML = '';
 
-            // Renderizado estilo "Cards por Hotel" similar al móvil
-            const html = hotelsFound.filter(h => !selHotel || h === selHotel).map(hName => {
-                const hData = filtered.filter(t => t.hotel_id === hName);
-                if (hData.length === 0) return '';
+                hotels.filter(h => !selHotel || h === selHotel).forEach(hName => {
+                    let weekAnchor = new Date(start + 'T12:00:00');
+                    const limit = new Date(end + 'T12:00:00');
+
+                    while (weekAnchor <= limit) {
+                        const weekStart = iso(weekAnchor);
+                        const dates = [];
+                        let dTemp = new Date(weekAnchor); 
+                        for(let i=0; i<7; i++) {
+                            dates.push(iso(dTemp));
+                            dTemp.setDate(dTemp.getDate() + 1);
+                        }
+
+                        const hData = data.filter(t => t.hotel_id === hName && dates.includes(t.fecha));
+                        if (hData.length > 0) {
+                            // Extraer empleados para ESTA semana
+                            const empSet = new Set(hData.map(t => t.empleado_id));
+                            hData.forEach(t => {
+                                if (t.sustituto) empSet.add(t.sustituto);
+                                else if (t.tipo !== 'NORMAL' && !t.tipo.includes('CT')) empSet.add('¿?');
+                            });
+
+                            const empInHotel = Array.from(empSet).sort((a, b) => {
+                                // 1. Placeholder "¿?" arriba
+                                if (a === '¿?') return -1;
+                                if (b === '¿?') return 1;
+
+                                // 2. Lógica de Ausencia Total (Vacaciones/Bajas)
+                                const aAway = hData.filter(t => t.empleado_id === a && t.tipo !== 'NORMAL' && !t.tipo.includes('CT')).length === 7;
+                                const bAway = hData.filter(t => t.empleado_id === b && t.tipo !== 'NORMAL' && !t.tipo.includes('CT')).length === 7;
+                                
+                                if (aAway !== bAway) return aAway ? 1 : -1; // Los "fuera" al fondo
+
+                                // 3. Orden por base de datos
+                                const pa = profiles.find(p => p.id === a), pb = profiles.find(p => p.id === b);
+                                const ordA = pa?.orden ?? 999, ordB = pb?.orden ?? 999;
+                                if (ordA !== ordB) return ordA - ordB;
+                                return a.localeCompare(b);
+                            });
+
+                            const tableHtml = `
+                                <div class="glass-panel" style="margin-bottom:3rem; padding:0; overflow:hidden; border:1px solid #ddd; background:white; border-radius:12px; box-shadow:0 2px 15px rgba(0,0,0,0.03);">
+                                    <div style="padding:15px 25px; border-bottom:1px solid #eee; display:flex; align-items:center; gap:15px;">
+                                        <div style="background:white; padding:4px; border:1px solid #eee; border-radius:8px; display:flex; align-items:center; justify-content:center; width:45px; height:45px; min-width:45px;">
+                                            <img src="${hName.toLowerCase().includes('guadiana') ? 'guadiana logo.jpg' : 'cumbria logo.jpg'}" style="width:100%; height:100%; object-fit:contain;">
+                                        </div>
+                                        <h2 style="margin:0; font-size:1.1rem; color:#444; font-weight:700;">${hName} - <span style="color:#888; font-weight:500;">Semana ${window.TurnosDB.fmtDateLegacy(weekStart)}</span></h2>
+                                    </div>
+                                    <div style="overflow-x:auto;">
+                                        <table class="preview-table" style="width:100%; border-collapse:collapse; margin:0;">
+                                            <thead>
+                                                <tr style="background: #f8f9fa;">
+                                                    <th style="padding:15px 25px; text-align:center; border-bottom:1px solid #eee; width:220px; color:#888; font-size:0.75rem; text-transform:uppercase; letter-spacing:0.02em;">Empleado</th>
+                                                    ${dates.map(f => {
+                                                        const d = new Date(f + 'T12:00:00');
+                                                        const dayNames = ['DOMINGO','LUNES','MARTES','MIÉRCOLES','JUEVES','VIERNES','SÁBADO'];
+                                                        const isWeekend = d.getDay() === 0 || d.getDay() === 6;
+                                                        return `<th style="padding:12px; border-bottom:1px solid #eee; text-align:center; min-width:115px; border-left:1px solid #eee;">
+                                                            <div style="font-size:0.65rem; color:#999; text-transform:uppercase; font-weight:700; margin-bottom:2px;">${dayNames[d.getDay()]}</div>
+                                                            <div style="font-size:0.75rem; font-weight:600; color:#555;">${window.TurnosDB.fmtDateLegacy(f).toLowerCase()}</div>
+                                                        </th>`;
+                                                    }).join('')}
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                ${empInHotel.map(emp => {
+                                                    const empShiftsForStats = hData.filter(t => t.empleado_id === emp || t.sustituto === emp);
+                                                    const pShiftsCount = (emp === '¿?') ? hData.filter(t => t.tipo !== 'NORMAL' && !t.sustituto && !t.tipo.includes('CT')) : [];
+                                                    const nights = [...empShiftsForStats, ...pShiftsCount].filter(t => (t.turno || '').toLowerCase().startsWith('n')).length;
+                                                    const rests = [...empShiftsForStats, ...pShiftsCount].filter(t => (t.turno || '').toLowerCase().startsWith('d')).length;
+
+                                                    return `
+                                                        <tr style="border-bottom:1px solid #eee;">
+                                                            <td style="padding:12px 25px; vertical-align:middle;">
+                                                                <div style="display:flex; align-items:center; justify-content:space-between;">
+                                                                    <span style="font-weight:600; color:#444; font-size:0.85rem;">${emp}</span>
+                                                                    <div style="display:flex; gap:6px;">
+                                                                        <div style="font-size:0.65rem; color:#f0ad4e; font-weight:700;">🌙 ${nights}</div>
+                                                                        <div style="font-size:0.65rem; color:#5bc0de; font-weight:700;">D ${rests}</div>
+                                                                    </div>
+                                                                </div>
+                                                            </td>
+                                                            ${dates.map(f => {
+                                                                let shift = hData.find(t => t.empleado_id === emp && t.fecha === f);
+                                                                if (!shift) shift = hData.find(t => t.sustituto === emp && t.fecha === f);
+                                                                if (!shift && emp === '¿?') shift = hData.find(t => t.fecha === f && t.tipo !== 'NORMAL' && !t.sustituto && !t.tipo.includes('CT'));
+
+                                                                if (!shift) return '<td style="background:#fdfdfd; border-left:1px solid #eee;"></td>';
+                                                                const t = (shift.turno || '').toLowerCase();
+                                                                let cls = 'x', label = shift.turno, extra = '';
+
+                                                                if (shift.empleado_id === emp && shift.tipo !== 'NORMAL' && !shift.tipo.includes('CT')) {
+                                                                    if (shift.tipo.includes('VAC')) { cls = 'vacaciones'; label = 'Vacaciones 🏖️'; }
+                                                                    else { cls = 'baja'; label = 'Baja 🏥'; }
+                                                                } else {
+                                                                    if (t.startsWith('m')) { cls = 'mañana'; label = 'Mañana'; }
+                                                                    else if (t.startsWith('t')) { cls = 'tarde'; label = 'Tarde'; }
+                                                                    else if (t.startsWith('n')) { cls = 'noche'; label = 'Noche 🌙'; }
+                                                                    else if (t.startsWith('d')) { cls = 'descanso'; label = 'Descanso'; }
+                                                                    if (shift.tipo.includes('CT')) { label += ' ~~'; }
+                                                                }
+                                                                return `<td style="padding:8px; text-align:center; border-left:1px solid #eee;">
+                                                                    <div class="turno-pill-legacy turno-${cls}" style="display:inline-flex; align-items:center; justify-content:center; padding:8px 5px; width:100%; border-radius:15px; font-size:0.8rem; font-weight:500;">
+                                                                        ${label}
+                                                                    </div>
+                                                                </td>`;
+                                                            }).join('')}
+                                                        </tr>`;
+                                                }).join('')}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            `;
+                            container.insertAdjacentHTML('beforeend', tableHtml);
+                        }
+                        weekAnchor.setDate(weekAnchor.getDate() + 7);
+                    }
+                });
+
+            // --- NUEVO: RESUMEN DE NOCHES AL FINAL DEL PERIODO ---
+            const sumNoches = {}; // { "Mes Año": { "Hotel": { "Emp": total } } }
+            data.filter(t => (t.turno || '').toLowerCase().startsWith('n')).forEach(t => {
+                const d = new Date(t.fecha);
+                const monthStr = d.toLocaleString('es-ES', { month: 'long', year: 'numeric' });
+                const hKey = t.hotel_id;
+                const eKey = t.sustituto || t.empleado_id;
+
+                if (!sumNoches[monthStr]) sumNoches[monthStr] = {};
+                if (!sumNoches[monthStr][hKey]) sumNoches[monthStr][hKey] = {};
+                sumNoches[monthStr][hKey][eKey] = (sumNoches[monthStr][hKey][eKey] || 0) + 1;
+            });
+
+            Object.keys(sumNoches).forEach(month => {
+                let summaryHtml = `<div style="margin-top:60px; max-width:800px;">
+                    <h3 style="margin-bottom:15px; font-size:1.4rem; font-weight:800; letter-spacing:-0.02em; color:var(--text); text-transform:lowercase;">${month}</h3>`;
                 
-                return `
-                    <div class="hotel-card" style="background:var(--surface); border-radius:15px; margin-bottom:20px; border:1px solid var(--border); overflow:hidden;">
-                        <div style="padding:15px; background:var(--bg3); font-weight:800; text-transform:uppercase; color:var(--accent);">${hName}</div>
-                        <div style="padding:10px; overflow-x:auto;">
+                Object.keys(sumNoches[month]).sort().forEach(hotel => {
+                    summaryHtml += `
+                        <div class="glass-panel" style="margin-bottom:25px; padding:0; background:white; border:1px solid #dfdfdf;">
                             <table style="width:100%; border-collapse:collapse;">
-                                <!-- El renderizado aquí puede ser simplificado o usar una tabla estándar -->
                                 <thead>
-                                    <tr>
-                                        <th style="text-align:left; padding:8px;">Empleado</th>
-                                        ${[...new Set(hData.map(t=>t.fecha))].sort().map(f => `
-                                            <th style="padding:8px; font-size:0.7rem;">${f.split('-')[2]}/${f.split('-')[1]}</th>
-                                        `).join('')}
+                                    <tr style="background:#fcfcfc; border-bottom:1px solid #eee;">
+                                        <th style="padding:15px 25px; text-align:center; color:#888; font-size:0.8rem; border-right:1px solid #eee;">${hotel}</th>
+                                        <th style="padding:15px 25px; text-align:center; color:#888; font-size:0.8rem; width:150px;">Noches</th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    ${[...new Set(hData.map(t=>t.empleado_id))].sort().map(emp => `
-                                        <tr>
-                                            <td style="padding:8px; font-weight:700;">${emp}</td>
-                                            ${[...new Set(hData.map(t=>t.fecha))].sort().map(f => {
-                                                const shift = hData.find(t => t.empleado_id === emp && t.fecha === f);
-                                                if (!shift) return '<td></td>';
-                                                let cls = 'v-normal';
-                                                let label = shift.turno || '·';
-                                                if (shift.tipo === 'VAC' || label.toLowerCase().includes('vacac')) { label = '🏖️'; }
-                                                else if (shift.tipo === 'BAJA') { label = '🏥'; }
-                                                else if (shift.tipo === 'CT') { label = '🔄'; }
-                                                
-                                                return `<td style="padding:4px; text-align:center;"><div class="v-pill" style="min-height:30px; padding:4px;">${label}</div></td>`;
-                                            }).join('')}
+                                    ${Object.keys(sumNoches[month][hotel]).sort().map(emp => `
+                                        <tr style="border-bottom:1px solid #eee;">
+                                            <td style="padding:12px 25px; font-weight:700; color:#444; border-right:1px solid #eee;">${emp}</td>
+                                            <td style="padding:12px 25px; text-align:center; font-weight:800; color:#333;">${sumNoches[month][hotel][emp]}</td>
                                         </tr>
                                     `).join('')}
                                 </tbody>
                             </table>
                         </div>
-                    </div>
-                `;
-            }).join('');
-            
-            container.innerHTML = html;
-
-        } catch (e) {
-            container.innerHTML = `<div style="color:red;">Error: ${e.message}</div>`;
+                    `;
+                });
+                summaryHtml += `</div>`;
+                container.insertAdjacentHTML('beforeend', summaryHtml);
+            });
+        } catch (err) {
+            console.error(err);
+            container.innerHTML = `<div style="text-align:center; padding:100px; color:red;">${err.message}</div>`;
         }
     }
 
+    let _picker;
     async function init() {
         const syncText = $('#syncText');
         const syncDot = $('#syncDot');
         
-        flatpickr("#dateRange", {
+        const today = new Date();
+        const mon = new Date(today.getFullYear(), today.getMonth(), today.getDate() - (today.getDay() === 0 ? 6 : today.getDay() - 1));
+        const sun = new Date(mon); sun.setDate(mon.getDate() + 6);
+
+        _picker = flatpickr("#dateRange", {
             mode: "range",
             locale: "es",
             dateFormat: "Y-m-d",
-            defaultDate: [new Date(), new Date(Date.now() + 7*24*60*60*1000)],
+            altInput: true,
+            altFormat: "d/m/Y",
+            firstDayOfWeek: 1,
+            defaultDate: [mon, sun],
             onChange: renderPublicView
         });
 
@@ -163,6 +330,25 @@
         
         if (syncText) syncText.innerText = "Sincronizado";
         if (syncDot) syncDot.style.background = "#10e898";
+    }
+
+    function changeWeek(delta) {
+        if (!_picker) return;
+        const current = _picker.selectedDates;
+        if (current.length < 1) return;
+        const start = new Date(current[0]);
+        start.setDate(start.getDate() + (delta * 7));
+        const end = new Date(start);
+        end.setDate(end.getDate() + 6);
+        _picker.setDate([start, end], true);
+    }
+
+    function goToday() {
+        if (!_picker) return;
+        const today = new Date();
+        const mon = new Date(today.getFullYear(), today.getMonth(), today.getDate() - (today.getDay() === 0 ? 6 : today.getDay() - 1));
+        const sun = new Date(mon); sun.setDate(mon.getDate() + 6);
+        _picker.setDate([mon, sun], true);
     }
 
     document.addEventListener('DOMContentLoaded', init);

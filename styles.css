@@ -234,28 +234,21 @@ th:first-child, td:first-child {
 }
 .turno-pill:hover { transform: scale(1.05); }
 
-/* Colores de turnos Premium */
-.turno-mañana { background: rgba(16, 185, 129, 0.12); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.2); }
-.turno-tarde { background: rgba(245, 158, 11, 0.12); color: #f59e0b; border: 1px solid rgba(245, 158, 11, 0.2); }
-.turno-noche { background: rgba(100, 116, 139, 0.12); color: #64748b; border: 1px solid rgba(100, 116, 139, 0.2); }
-.turno-descanso { background: rgba(239, 68, 68, 0.12); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.2); }
-.turno-vacaciones { background: rgba(14, 165, 233, 0.12); color: #0ea5e9; border: 1px solid rgba(14, 165, 233, 0.2); }
-.turno-baja { background: rgba(239, 68, 68, 0.05); color: #ef4444; border: 1px dashed rgba(239, 68, 68, 0.4); }
-.turno-permiso { background: rgba(139, 92, 246, 0.12); color: #8b5cf6; border: 1px solid rgba(139, 92, 246, 0.2); }
-.turno-x { background: transparent; color: var(--text-dim); opacity: 0.3; }
+/* Colores de turnos Premium (Alineados con Imagen 2) */
+.turno-mañana { background: #ebfbee; color: #2f9e44; border: 1px solid #d3f9d8; }
+.turno-tarde { background: #fff9db; color: #f08c00; border: 1px solid #fff3bf; }
+.turno-noche { background: #edf2ff; color: #364fc7; border: 1px solid #dbe4ff; }
+.turno-descanso { background: #fff5f5; color: #fa5252; border: 1px solid #ffe3e3; }
+.turno-vacaciones { background: #e3fafc; color: #0b7285; border: 1px solid #c5f6fa; }
+.turno-baja { background: #fff5f5; color: #fa5252; border: 1px dashed #ffa8a8; }
+.turno-permiso { background: #f3f0ff; color: #7048e8; border: 1px solid #e5dbff; }
+.turno-x { background: transparent; color: var(--text-dim); opacity: 0.1; }
 
 body.dark-mode .turno-noche { color: #94a3b8; }
 
-.emp-badges { display: inline-flex; gap: 6px; margin-left: 10px; vertical-align: middle; }
-.emp-badges .b {
-  font-size: 0.6rem;
-  background: var(--bg2);
-  padding: 2px 6px;
-  border-radius: 6px;
-  color: var(--text-dim);
-  font-weight: 700;
-  border: 1px solid var(--border);
-}
+.emp-badges { display: inline-flex; gap: 4px; align-items: center; }
+.b-night { background: #fffde7; color: #f9a825; border: 1px solid #fff59d; padding: 2px 8px; border-radius: 12px; font-size: 0.65rem; font-weight: 800; display: flex; align-items: center; gap: 2px; }
+.b-rest { background: #e3f2fd; color: #1e88e5; border: 1px solid #bbdefb; padding: 2px 8px; border-radius: 12px; font-size: 0.65rem; font-weight: 800; display: flex; align-items: center; gap: 2px; }
 
 /* Indicador en tiempo real */
 .live-indicator {

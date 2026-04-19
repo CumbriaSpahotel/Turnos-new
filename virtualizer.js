@@ -149,7 +149,30 @@ class VirtualTable {
         tr.classList.remove('header-row');
         tds[0].colSpan = 1;
         tds[0].style.display = '';
-        tds[0].textContent = rowData.empName; 
+        
+        // Logo + Nombre + Badges (V8.2 Premium)
+        const hotel = rowData.hotel_id || 'GENERAL';
+        const logoUrl = hotel.includes('Guadiana') ? 'guadiana logo.jpg' : 'cumbria logo.jpg';
+        
+        // Calcular estadísticas de la fila (noches y descansos)
+        let nights = 0, rests = 0;
+        rowData.cells.forEach(c => {
+            const t = String(c.turno || '').toLowerCase();
+            const tp = String(c.tipo || '').toLowerCase();
+            if (t.includes('noche') || t === 'n') nights++;
+            if (t.includes('descanso') || t === 'd') rests++;
+        });
+
+        tds[0].innerHTML = `
+            <img src="${logoUrl}" class="emp-logo" onerror="this.style.display='none'">
+            <div style="display:flex; flex-direction:column; cursor:pointer;" onclick="window.openEmpDrawer('${rowData.empName}')">
+                <span style="font-weight:700; color:var(--accent);">${rowData.empName}</span>
+            </div>
+            <div class="emp-badges">
+                <span class="emp-badge">🌙 ${nights}</span>
+                <span class="emp-badge">D ${rests}</span>
+            </div>
+        `;
 
         for (let i = 0; i < this.columns.length; i++) {
             const td = tds[i+1];
@@ -163,20 +186,17 @@ class VirtualTable {
         cell.dataset.fecha = fecha;
         
         const typeMapping = { 
-            'VAC': { cls: 'v-vac', label: 'Vacaciones', icon: '🏖️' }, 
-            'BAJA': { cls: 'v-baja', label: 'Baja Médica', icon: '🏥' }, 
-            'PERM': { cls: 'v-perm', label: 'Permiso', icon: '📄' }, 
-            'CT': { cls: 'v-cambio', label: 'C/T', icon: '🔄' }, 
-            'NORMAL': { cls: 'v-normal', label: '', icon: '' } 
+            'VAC 🏖️': { cls: 'v-vac', label: 'Vacaciones 🏖️', icon: '' }, 
+            'BAJA 🏥': { cls: 'v-baja', label: 'Baja Médica 🏥', icon: '' }, 
+            'PERM 🗓️': { cls: 'v-perm', label: 'Permiso 🗓️', icon: '' }, 
+            'CT 🔄': { cls: 'v-cambio', label: 'C/T 🔄', icon: '' }, 
+            'NORMAL': { cls: 'v-normal', label: '', icon: '' },
+            'VAC': { cls: 'v-vac', label: 'Vacaciones 🏖️', icon: '' }, 
+            'BAJA': { cls: 'v-baja', label: 'Baja Médica 🏥', icon: '' }, 
+            'PERM': { cls: 'v-perm', label: 'Permiso 🗓️', icon: '' }, 
+            'CT': { cls: 'v-cambio', label: 'C/T 🔄', icon: '' }
         };
 
-        const shiftIcons = {
-            'mañana': '☀️',
-            'tarde': '⛅',
-            'noche': '🌙',
-            'descanso': '💤'
-        };
-        
         const config = typeMapping[cellData.tipo] || typeMapping['NORMAL'];
         let shiftColorCls = config.cls;
         let icon = config.icon;
@@ -184,15 +204,17 @@ class VirtualTable {
 
         if (cellData.tipo === 'NORMAL' || !cellData.tipo) {
             const t = String(label).toLowerCase();
-            if (t.includes('mañana')) { shiftColorCls = 'v-mañana'; icon = '☀️'; label = 'Mañana'; }
-            else if (t.includes('tarde')) { shiftColorCls = 'v-tarde'; icon = '⛅'; label = 'Tarde'; }
-            else if (t.includes('noche')) { shiftColorCls = 'v-noche'; icon = '🌙'; label = 'Noche'; }
-            else if (t.includes('descanso')) { shiftColorCls = 'v-descanso'; icon = ''; label = 'Descanso'; }
-            else if (!t || t === '·') { shiftColorCls = 'v-empty'; label = '·'; icon = ''; }
+            if (t.includes('mañana') || t === 'm') { shiftColorCls = 'v-mañana'; icon = '☀️'; label = 'Mañana'; }
+            else if (t.includes('tarde') || t === 't') { shiftColorCls = 'v-tarde'; icon = '⛅'; label = 'Tarde'; }
+            else if (t.includes('noche') || t === 'n') { shiftColorCls = 'v-noche'; icon = '🌙'; label = 'Noche'; }
+            else if (t.includes('descanso') || t === 'd') { shiftColorCls = 'v-descanso'; icon = ''; label = 'Descanso'; }
+            else if (!t || t === '·' || t === '') { shiftColorCls = 'v-empty'; label = '·'; icon = ''; }
         }
 
-        if (cellData.tipo === 'CT') {
-            label = cellData.sustituto || 'C/T';
+        // Si es un sustituto cubriendo a alguien
+        if (cellData.isSub) {
+            icon = '↔︎';
+            cell.title = `Sustituyendo a ${cellData.subFor}`;
         }
 
         const clsString = `v-cell ${shiftColorCls}`;
@@ -200,6 +222,19 @@ class VirtualTable {
         
         const displayHTML = `<div class="v-pill">${label} ${icon ? `<small>${icon}</small>` : ''}</div>`;
         if (cell.innerHTML !== displayHTML) cell.innerHTML = displayHTML;
+    }
+
+    updateRowOptimistic(payload) {
+        this.updateRow(payload);
+    }
+
+    rollbackRow(empleado_id, fecha, oldData) {
+        const empRow = this.data.find(r => r.empName === empleado_id);
+        if(!empRow) return;
+        const cellIdx = this.columns.findIndex(c => c.dbFecha === fecha);
+        if(cellIdx === -1) return;
+        empRow.cells[cellIdx] = { ...oldData };
+        this.onScroll();
     }
 
     updateRow(payloadRow) {

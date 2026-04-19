@@ -6,25 +6,6 @@
     <title>TurnosWeb — Configuración</title>
     <link rel="icon" type="image/png" href="favicon.png">
     <link rel="stylesheet" href="admin.css">
-    <style>
-        .nav-item.active { background: var(--accent-dim); color: var(--accent); border-right: 3px solid var(--accent); }
-        /* Personalización Flatpickr Premium */
-        .flatpickr-calendar { background: var(--bg2) !important; border: 1px solid var(--border) !important; box-shadow: var(--shadow-lg) !important; border-radius: 14px !important; padding: 10px !important; }
-        .flatpickr-months { margin-bottom: 10px; }
-        .flatpickr-months .flatpickr-month { background: transparent !important; color: var(--text) !important; fill: var(--text) !important; }
-        .flatpickr-months .flatpickr-prev-month, .flatpickr-months .flatpickr-next-month { fill: var(--text) !important; color: var(--text) !important; }
-        .flatpickr-months .flatpickr-prev-month:hover, .flatpickr-months .flatpickr-next-month:hover { background: var(--surface) !important; border-radius: 8px; }
-        .flatpickr-weekdays { background: transparent !important; }
-        span.flatpickr-weekday { color: var(--text-muted) !important; font-weight: 700; }
-        .flatpickr-day { color: var(--text) !important; border-radius: 8px !important; transition: all 0.2s; font-weight: 500; }
-        .flatpickr-day:hover { background: var(--surface) !important; color: var(--accent) !important; }
-        .flatpickr-day.selected, .flatpickr-day.startRange, .flatpickr-day.endRange { background: var(--accent) !important; border-color: var(--accent) !important; color: white !important; font-weight: bold; }
-        .flatpickr-day.inRange { background: var(--accent-dim) !important; border-color: transparent !important; box-shadow: none !important; color: var(--text) !important; border-radius: 0 !important; }
-        .flatpickr-day.startRange.endRange { border-radius: 8px !important; }
-        .flatpickr-day.startRange { border-top-right-radius: 0 !important; border-bottom-right-radius: 0 !important; }
-        .flatpickr-day.endRange { border-top-left-radius: 0 !important; border-bottom-left-radius: 0 !important; }
-        .flatpickr-day.today { border-color: var(--accent-dim) !important; background: rgba(79,134,247,0.05); }
-    </style>
 </head>
 <body class="light-mode">
     <aside class="sidebar">
@@ -35,53 +16,21 @@
                 <div class="sidebar-subtitle">PANEL ADMIN</div>
             </div>
         </div>
-
         <nav class="sidebar-nav">
             <div class="nav-group-label">CUADRANTE</div>
-            <a href="admin.html" class="nav-item">
-                <span class="nav-icon">🏠</span>
-                <span class="nav-label">Inicio / Cargar</span>
-            </a>
-            <a href="admin.html#preview" class="nav-item">
-                <span class="nav-icon">📅</span>
-                <span class="nav-label">Vista Previa</span>
-            </a>
-            <a href="admin.html#employees" class="nav-item">
-                <span class="nav-icon">👥</span>
-                <span class="nav-label">Empleados</span>
-            </a>
-            
+            <a href="admin.html" class="nav-item">🏠 <span class="nav-label">Inicio / Cargar</span></a>
+            <a href="admin.html#preview" class="nav-item">📅 <span class="nav-label">Vista Previa</span></a>
+            <a href="admin.html#employees" class="nav-item">👥 <span class="nav-label">Empleados</span></a>
             <div class="nav-group-label">AUSENCIAS</div>
-            <a href="vacaciones.html" class="nav-item">
-                <span class="nav-icon">🏖️</span>
-                <span class="nav-label">Vacaciones</span>
-            </a>
-            <a href="bajas.html" class="nav-item">
-                <span class="nav-icon">🏥</span>
-                <span class="nav-label">Bajas y Permisos</span>
-            </a>
-            <a href="cambios.html" class="nav-item">
-                <span class="nav-icon">🔄</span>
-                <span class="nav-label">Cambios de Turno</span>
-            </a>
-
+            <a href="vacaciones.html" class="nav-item">🏖️ <span class="nav-label">Vacaciones</span></a>
+            <a href="bajas.html" class="nav-item">🏥 <span class="nav-label">Bajas y Permisos</span></a>
+            <a href="cambios.html" class="nav-item">🔄 <span class="nav-label">Cambios de Turno</span></a>
             <div class="nav-group-label">COMUNICACIÓN</div>
-            <a href="solicitudes.html" class="nav-item">
-                <span class="nav-icon">📩</span>
-                <span class="nav-label">Solicitudes</span>
-            </a>
-            <a href="bandeja.html" class="nav-item">
-                <span class="nav-icon">📫</span>
-                <span class="nav-label">Bandeja</span>
-            </a>
-
+            <a href="solicitudes.html" class="nav-item">📩 <span class="nav-label">Solicitudes</span></a>
+            <a href="bandeja.html" class="nav-item">📫 <span class="nav-label">Bandeja</span></a>
             <div class="nav-group-label">SISTEMA</div>
-            <a href="configuracion.html" class="nav-item active">
-                <span class="nav-icon">📦</span>
-                <span class="nav-label">Configuración</span>
-            </a>
+            <a href="configuracion.html" class="nav-item active">📦 <span class="nav-label">Configuración</span></a>
         </nav>
-
         <div class="sidebar-footer">
             <button class="theme-toggle" id="themeToggle" onclick="toggleTheme()">🌙</button>
         </div>
@@ -94,95 +43,49 @@
                     <h1 class="page-title">Configuración y Backup</h1>
                     <p class="page-subtitle">Gestión de base de datos y copias de seguridad locales</p>
                 </div>
-            
-                <div id="syncStatus" class="status-badge-premium" style="margin-left:auto; display:flex; align-items:center; gap:8px; padding:6px 12px; border-radius:30px; font-size:0.75rem; font-weight:600; background:var(--bg3); border:1px solid var(--border);">
+                <div id="syncStatus" class="status-badge-premium" style="margin-left:auto; display:flex; align-items:center; gap:8px;">
                     <span id="syncDot" style="width:8px; height:8px; border-radius:50%; background:#ff9800;"></span>
-                    <span id="syncText" style="color:var(--text-dim);">Conectando...</span>
+                    <span id="syncText">Conectando...</span>
                 </div>
             </header>
-
             <div class="glass-panel" style="padding:2.5rem;">
-                <div class="config-block">
-                    <h3>📦 Copia de Seguridad</h3>
-                    <p style="color:var(--text-dim); margin-bottom:1.5rem;">Descarga una copia completa de la base de datos actual (Formato JSON).</p>
-                    <button class="btn ok" onclick="downloadBackup()">Descargar Backup</button>
-                </div>
-
-                <div class="config-block">
-                    <h3>📥 Restaurar Datos</h3>
-                    <p style="color:var(--text-dim); margin-bottom:1.5rem;">Importa un archivo de backup previo. Cuidado: sobrescribirá los datos actuales.</p>
-                    <input type="file" id="restoreFile" style="display:none;" onchange="importBackup(this)">
-                    <button class="btn" onclick="document.getElementById('restoreFile').click()">Elegir Archivo</button>
-                </div>
-
-                <div class="config-block" style="border-top:1px solid var(--border); padding-top:2rem; margin-top:2rem;">
-                    <h3 style="color:var(--error);">⚠️ Zona de Peligro</h3>
-                    <p style="color:var(--text-dim); margin-bottom:1.5rem;">Elimina todos los datos locales y de la nube. Esta acción es irreversible.</p>
-                    <button class="btn" style="border-color:var(--error); color:var(--error);" onclick="wipeAllData()">Borrar Todo</button>
+                <button class="btn ok" onclick="downloadBackup()">Descargar Backup JSON</button>
+                <div style="margin-top:2rem; border-top:1px solid var(--border); padding-top:2rem;">
+                    <h3 style="color:var(--error);">Zona de Peligro</h3>
+                    <button class="btn" style="color:var(--error); border-color:var(--error);" onclick="wipeAllData()">BORRAR TODO (REINICIAR DB)</button>
                 </div>
             </div>
         </section>
     </main>
 
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
-    <script src="firebase-config.js"></script>
-
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/localforage/1.10.0/localforage.min.js"></script>
+    <script src="supabase-config.js?v=8.2"></script>
+    <script src="supabase-dao.js?v=8.2"></script>
     <script>
         const $ = (s) => document.querySelector(s);
-        
-        function downloadBackup() {
-            const data = localStorage.getItem('turnosweb_admin_data');
-            if (!data) return alert('No hay datos para exportar.');
-            const blob = new Blob([data], { type: 'application/json' });
+        async function downloadBackup() {
+            const data = await window.TurnosDB.fetchRango('2024-01-01','2026-12-31');
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = `backup_turnosweb_${new Date().toISOString().split('T')[0]}.json`;
+            a.download = `backup_turnos_${new Date().toISOString().split('T')[0]}.json`;
             a.click();
         }
-
-        function importBackup(input) {
-            const file = input.files[0];
-            if (!file) return;
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                try {
-                    const data = JSON.parse(e.target.result);
-                    localStorage.setItem('turnosweb_admin_data', JSON.stringify(data));
-                    if (window.firebase) {
-                        firebase.database().ref('turnosweb/data').set(data)
-                            .then(() => alert('Datos restaurados correctamente.'));
-                    }
-                } catch(err) { alert('Error al leer el archivo de backup.'); }
-            };
-            reader.readAsText(file);
+        async function wipeAllData() {
+            if (!confirm('¿ESTÁS SEGURO?')) return;
+            await window.TurnosDB.clearAll();
+            localStorage.clear();
+            await localforage.clear();
+            location.reload();
         }
-
-        function wipeAllData() {
-            if (!confirm('¿ESTÁS ABSOLUTAMENTE SEGURO? Se borrarán todos los datos permanentemente.')) return;
-            localStorage.removeItem('turnosweb_admin_data');
-            if (window.firebase) {
-                firebase.database().ref('turnosweb').remove()
-                    .then(() => location.reload());
-            }
-        }
-
-        if (window.firebase && window.firebaseConfig) {
-            firebase.initializeApp(window.firebaseConfig);
-        }
-
         function toggleTheme() {
-            const isLight = document.body.classList.contains('light-mode');
-            setTheme(isLight ? 'dark' : 'light');
-        }
-        function setTheme(mode) {
-            document.body.classList.toggle('light-mode', mode === 'light');
-            $('#themeToggle').textContent = mode === 'light' ? '☀️' : '🌙';
-            localStorage.setItem('turnosweb_theme', mode);
+            document.body.classList.toggle('light-mode');
+            localStorage.setItem('turnosweb_theme', document.body.classList.contains('light-mode') ? 'light' : 'dark');
         }
         document.addEventListener('DOMContentLoaded', () => {
-            setTheme(localStorage.getItem('turnosweb_theme') || 'light');
+            if (localStorage.getItem('turnosweb_theme') === 'light') document.body.classList.add('light-mode');
         });
     </script>
     <script src="sync-status.js"></script>

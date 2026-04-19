@@ -7,22 +7,6 @@
     <link rel="stylesheet" href="admin.css">
     <style>
         .nav-item.active { background: var(--accent-dim); color: var(--accent); border-right: 3px solid var(--accent); }
-        /* Personalización Flatpickr Premium */
-        .flatpickr-calendar { background: var(--bg2) !important; border: 1px solid var(--border) !important; box-shadow: var(--shadow-lg) !important; border-radius: 14px !important; padding: 10px !important; }
-        .flatpickr-months { margin-bottom: 10px; }
-        .flatpickr-months .flatpickr-month { background: transparent !important; color: var(--text) !important; fill: var(--text) !important; }
-        .flatpickr-months .flatpickr-prev-month, .flatpickr-months .flatpickr-next-month { fill: var(--text) !important; color: var(--text) !important; }
-        .flatpickr-months .flatpickr-prev-month:hover, .flatpickr-months .flatpickr-next-month:hover { background: var(--surface) !important; border-radius: 8px; }
-        .flatpickr-weekdays { background: transparent !important; }
-        span.flatpickr-weekday { color: var(--text-muted) !important; font-weight: 700; }
-        .flatpickr-day { color: var(--text) !important; border-radius: 8px !important; transition: all 0.2s; font-weight: 500; }
-        .flatpickr-day:hover { background: var(--surface) !important; color: var(--accent) !important; }
-        .flatpickr-day.selected, .flatpickr-day.startRange, .flatpickr-day.endRange { background: var(--accent) !important; border-color: var(--accent) !important; color: white !important; font-weight: bold; }
-        .flatpickr-day.inRange { background: var(--accent-dim) !important; border-color: transparent !important; box-shadow: none !important; color: var(--text) !important; border-radius: 0 !important; }
-        .flatpickr-day.startRange.endRange { border-radius: 8px !important; }
-        .flatpickr-day.startRange { border-top-right-radius: 0 !important; border-bottom-right-radius: 0 !important; }
-        .flatpickr-day.endRange { border-top-left-radius: 0 !important; border-bottom-left-radius: 0 !important; }
-        .flatpickr-day.today { border-color: var(--accent-dim) !important; background: rgba(79,134,247,0.05); }
     </style>
 </head>
 <body class="light-mode">
@@ -34,53 +18,21 @@
                 <div class="sidebar-subtitle">PANEL ADMIN</div>
             </div>
         </div>
-
         <nav class="sidebar-nav">
             <div class="nav-group-label">CUADRANTE</div>
-            <a href="admin.html" class="nav-item">
-                <span class="nav-icon">🏠</span>
-                <span class="nav-label">Inicio / Cargar</span>
-            </a>
-            <a href="admin.html#preview" class="nav-item">
-                <span class="nav-icon">📅</span>
-                <span class="nav-label">Vista Previa</span>
-            </a>
-            <a href="admin.html#employees" class="nav-item">
-                <span class="nav-icon">👥</span>
-                <span class="nav-label">Empleados</span>
-            </a>
-            
+            <a href="admin.html" class="nav-item">🏠 <span class="nav-label">Inicio / Cargar</span></a>
+            <a href="admin.html#preview" class="nav-item">📅 <span class="nav-label">Vista Previa</span></a>
+            <a href="admin.html#employees" class="nav-item">👥 <span class="nav-label">Empleados</span></a>
             <div class="nav-group-label">AUSENCIAS</div>
-            <a href="vacaciones.html" class="nav-item">
-                <span class="nav-icon">🏖️</span>
-                <span class="nav-label">Vacaciones</span>
-            </a>
-            <a href="bajas.html" class="nav-item">
-                <span class="nav-icon">🏥</span>
-                <span class="nav-label">Bajas y Permisos</span>
-            </a>
-            <a href="cambios.html" class="nav-item">
-                <span class="nav-icon">🔄</span>
-                <span class="nav-label">Cambios de Turno</span>
-            </a>
-
+            <a href="vacaciones.html" class="nav-item">🏖️ <span class="nav-label">Vacaciones</span></a>
+            <a href="bajas.html" class="nav-item">🏥 <span class="nav-label">Bajas y Permisos</span></a>
+            <a href="cambios.html" class="nav-item">🔄 <span class="nav-label">Cambios de Turno</span></a>
             <div class="nav-group-label">COMUNICACIÓN</div>
-            <a href="solicitudes.html" class="nav-item active">
-                <span class="nav-icon">📩</span>
-                <span class="nav-label">Solicitudes</span>
-            </a>
-            <a href="bandeja.html" class="nav-item">
-                <span class="nav-icon">📫</span>
-                <span class="nav-label">Bandeja</span>
-            </a>
-
+            <a href="solicitudes.html" class="nav-item active">📩 <span class="nav-label">Solicitudes</span></a>
+            <a href="bandeja.html" class="nav-item">📫 <span class="nav-label">Bandeja</span></a>
             <div class="nav-group-label">SISTEMA</div>
-            <a href="configuracion.html" class="nav-item">
-                <span class="nav-icon">📦</span>
-                <span class="nav-label">Configuración</span>
-            </a>
+            <a href="configuracion.html" class="nav-item">📦 <span class="nav-label">Configuración</span></a>
         </nav>
-
         <div class="sidebar-footer">
             <button class="theme-toggle" id="themeToggle" onclick="toggleTheme()">🌙</button>
         </div>
@@ -93,75 +45,84 @@
                     <h1 class="page-title">Solicitudes Pendientes</h1>
                     <p class="page-subtitle">Peticiones de cambios de turno y permisos de empleados</p>
                 </div>
-            
-                <div id="syncStatus" class="status-badge-premium" style="margin-left:auto; display:flex; align-items:center; gap:8px; padding:6px 12px; border-radius:30px; font-size:0.75rem; font-weight:600; background:var(--bg3); border:1px solid var(--border);">
+                <div id="syncStatus" class="status-badge-premium" style="margin-left:auto; display:flex; align-items:center; gap:8px;">
                     <span id="syncDot" style="width:8px; height:8px; border-radius:50%; background:#ff9800;"></span>
-                    <span id="syncText" style="color:var(--text-dim);">Conectando...</span>
+                    <span id="syncText">Conectando...</span>
                 </div>
             </header>
-
             <div id="requestsList" class="glass-panel" style="min-height:500px; padding:2rem;">
-                <!-- Contenido generado por JS -->
                 <div style="text-align:center; opacity:0.5; padding:5rem;">
-                    ⌛ Conectando con el buzón de solicitudes...
+                    📭 Módulo de solicitudes en migración a Supabase.
                 </div>
             </div>
         </section>
     </main>
 
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
-    <script src="firebase-config.js"></script>
-
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="supabase-config.js?v=8.2"></script>
+    <script src="supabase-dao.js?v=8.2"></script>
     <script>
         const $ = (s) => document.querySelector(s);
         
-        function renderRequests(reqData) {
-            const container = $('#requestsList');
-            if (!reqData || Object.keys(reqData).length === 0) {
-                container.innerHTML = `<div style="padding:5rem; text-align:center; opacity:0.5;">📭 No hay solicitudes pendientes actualmente.</div>`;
-                return;
+        async function fetchRequests() {
+            const list = $('#requestsList');
+            try {
+                const { data, error } = await window.supabase
+                    .from('peticiones_cambio')
+                    .select('*')
+                    .order('created_at', { ascending: false });
+
+                if (error) throw error;
+
+                if (!data || data.length === 0) {
+                    list.innerHTML = `
+                        <div style="text-align:center; opacity:0.5; padding:5rem;">
+                            📭 No hay solicitudes pendientes.
+                        </div>`;
+                    return;
+                }
+
+                list.innerHTML = data.map(req => `
+                    <div class="glass-card" style="margin-bottom:1.5rem; padding:1.5rem; border:1px solid var(--border); border-radius:15px; background:var(--bg2);">
+                        <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:1rem; border-bottom:1px solid var(--border); padding-bottom:10px;">
+                            <div>
+                                <div style="font-size:0.7rem; font-weight:800; color:var(--accent); text-transform:uppercase;">${req.hotel || 'General'}</div>
+                                <h3 style="margin:4px 0; font-size:1.1rem;">${req.solicitante} ↔ ${req.companero}</h3>
+                                <div style="font-size:0.8rem; color:var(--text-dim);">Recibida el ${new Date(req.created_at).toLocaleString('es-ES')}</div>
+                            </div>
+                            <div class="status-badge" style="background:${req.estado === 'pendiente' ? '#ff980033' : '#4caf5033'}; color:${req.estado === 'pendiente' ? '#ff9800' : '#4caf50'}; padding:4px 12px; border-radius:20px; font-size:0.75rem; font-weight:700;">
+                                ${req.estado.toUpperCase()}
+                            </div>
+                        </div>
+                        <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:1rem;">
+                            ${req.fechas.map(f => `
+                                <div style="background:var(--bg3); padding:10px; border-radius:10px; border:1px solid var(--border);">
+                                    <div style="font-weight:700; font-size:0.85rem; margin-bottom:5px;">📅 ${f.fecha}</div>
+                                    <div style="font-size:0.8rem; color:var(--text-dim);">
+                                        <span style="color:#ff5252;">${f.origen}</span> → <span style="color:#4caf50;">${f.destino}</span>
+                                    </div>
+                                    ${f.nota ? `<div style="font-size:0.75rem; margin-top:5px; font-style:italic;">"${f.nota}"</div>` : ''}
+                                </div>
+                            `).join('')}
+                        </div>
+                        ${req.observaciones ? `<div style="margin-top:1rem; padding:10px; background:rgba(0,0,0,0.03); border-radius:8px; font-size:0.85rem;"><b>Observaciones adicionales:</b> ${req.observaciones}</div>` : ''}
+                    </div>
+                `).join('');
+
+            } catch (err) {
+                console.error(err);
+                list.innerHTML = `<div style="color:#ff5252; padding:2rem; text-align:center;">Error al cargar solicitudes: ${err.message}. Asegúrate de haber ejecutado la migración SQL.</div>`;
             }
-
-            container.innerHTML = Object.entries(reqData).map(([id, req]) => `
-                <div class="request-card">
-                    <div>
-                        <div style="font-size:0.75rem; color:var(--accent); font-weight:700;">${req.tipo || 'PETICIÓN'}</div>
-                        <h3 style="margin:5px 0;">${req.empleado || 'Empleado Desconocido'}</h3>
-                        <div style="font-size:0.85rem; color:var(--text-dim);">${req.mensaje || 'Sin mensaje adicional'}</div>
-                    </div>
-                    <div style="display:flex; gap:10px;">
-                        <button class="btn ok" onclick="manageRequest('${id}', 'approve')">Aprobar</button>
-                        <button class="btn" style="border-color:var(--error); color:var(--error);" onclick="manageRequest('${id}', 'reject')">Rechazar</button>
-                    </div>
-                </div>
-            `).join('');
-        }
-
-        if (window.firebase && window.firebaseConfig) {
-            firebase.initializeApp(window.firebaseConfig);
-            firebase.database().ref('turnosweb/solicitudes').on('value', (s) => {
-                renderRequests(s.val());
-            });
-        }
-
-        function manageRequest(id, action) {
-            if (!confirm(`¿Estás seguro de que quieres ${action === 'approve' ? 'APROBAR' : 'RECHAZAR'} esta solicitud?`)) return;
-            firebase.database().ref(`turnosweb/solicitudes/${id}`).remove()
-                .then(() => alert('Solicitud procesada con éxito.'));
         }
 
         function toggleTheme() {
-            const isLight = document.body.classList.contains('light-mode');
-            setTheme(isLight ? 'dark' : 'light');
+            document.body.classList.toggle('light-mode');
+            localStorage.setItem('turnosweb_theme', document.body.classList.contains('light-mode') ? 'light' : 'dark');
         }
-        function setTheme(mode) {
-            document.body.classList.toggle('light-mode', mode === 'light');
-            $('#themeToggle').textContent = mode === 'light' ? '☀️' : '🌙';
-            localStorage.setItem('turnosweb_theme', mode);
-        }
+
         document.addEventListener('DOMContentLoaded', () => {
-            setTheme(localStorage.getItem('turnosweb_theme') || 'light');
+            if (localStorage.getItem('turnosweb_theme') === 'light') document.body.classList.add('light-mode');
+            fetchRequests();
         });
     </script>
     <script src="sync-status.js"></script>

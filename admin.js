@@ -63,6 +63,17 @@ window.fmtDate = (d) => {
     return `${parseInt(parts[2])}/${parseInt(parts[1])}/${parts[0]}`;
 };
 
+window.fmtDateLegacy = (date) => {
+    if (!date) return '—';
+    const d = new Date(date);
+    if (isNaN(d.getTime())) return date;
+    const day = String(d.getDate()).padStart(2, '0');
+    const months = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"];
+    const month = months[d.getMonth()];
+    const year = String(d.getFullYear()).slice(-2);
+    return `${day}/${month}/${year}`;
+};
+
 // ==========================================
 // 0. SUPABASE SYNC LOGIC
 // ==========================================
@@ -179,6 +190,26 @@ window.classify = (raw) => {
     return '';
 };
 
+// --- HELPERS DE MAPEADO (ESTRICTOS V8.2) ---
+function extraerTurno(txt) {
+    const t = String(txt || '').toLowerCase();
+    if (t.includes('mañana')) return 'M';
+    if (t.includes('tarde')) return 'T';
+    if (t.includes('noche')) return 'N';
+    if (t.includes('descanso')) return 'D';
+    return '';
+}
+
+function detectarTipo(txt) {
+    const t = String(txt || '').toLowerCase();
+    if (t.includes('vac')) return 'VAC 🏖️';
+    if (t.includes('baja')) return 'BAJA 🏥';
+    if (t.includes('perm')) return 'PERM 🗓️';
+    // Solo CT si es expresamente un cambio/permuta entre dos personas
+    if (t.includes('c/t') || t.includes('cambio')) return 'CT 🔄';
+    return 'NORMAL';
+}
+
 window.getShiftClass = (key) => ({ 'm': 'mañana', 't': 'tarde', 'n': 'noche', 'v': 'vacaciones', 'd': 'descanso', 'b': 'baja' }[key] || 'x');
 
 window.saveData = () => {
@@ -218,34 +249,38 @@ window.processWorkbook = async (wb) => {
     // 1. Procesar Hoja de Sustituciones (Normalización y Limpieza)
     const subsSheetName = wb.SheetNames.find(n => SUBS_SHEETS.some(s => n.toLowerCase().includes(s.toLowerCase())));
     if (subsSheetName) {
-        window.addLog(`Analizando ausencias en: ${subsSheetName}`);
+        window.addLog(`Analizando ausencias y cambios en: ${subsSheetName}`);
         const rows = XLSX.utils.sheet_to_json(wb.Sheets[subsSheetName], { defval: '' });
+        
+        const subs = {}; // key: hotel_fecha_emp -> {sustituto, tipo}
+        const swaps = {}; // key: hotel_fecha -> Set of [a, b] groups
+
         rows.forEach(r => {
-            const rawDate = r['Fecha'] || r['Día'];
+            const rawDate = r['Fecha'] || r['Día'] || r['fecha'];
             const fecha = window.isoDate(rawDate);
+            const emp = String(r['Empleado'] || r['Nombre'] || '').trim();
             const hotel = String(r['Hotel'] || '').trim();
-            const emp = String(r['Empleado'] || '').trim();
-            if (!fecha || !emp) return;
+            if (!fecha || !emp || !hotel) return;
 
-            const tipoRaw = String(r['Tipo Ausencia'] || r['Tipo'] || '').trim();
-            const motivo = String(r['Motivo'] || r['Observaciones'] || '').trim();
-            
-            // Mapeo estricto a ENUMS compatibles con la DB
-            let tipo = 'NORMAL';
-            const m = motivo.toLowerCase();
-            const t = tipoRaw.toLowerCase();
-            
-            if (m.includes('vac') || t.includes('vac') || t === 'v') tipo = 'VAC';
-            else if (m.includes('baja') || m.includes('medico') || m.includes(' it') || t.includes('baja') || t.includes(' it')) tipo = 'BAJA';
-            else if (m.includes('permiso') || m.includes('asunto') || t.includes('per')) tipo = 'PERM';
-            else if (m.includes('cambio') || m.includes('c/t') || t.includes('cambio') || t === 'c/t') tipo = 'CT';
+            const cambio = String(r['Cambio de Turno'] || r['Cambio de turno'] || '').trim();
+            const sustituto = String(r['Sustituto'] || '').trim();
+            const tipo = String(r['TipoAusencia'] || r['Tipo Ausencia'] || r['Tipo'] || '');
 
-            subs[`${hotel}|${fecha}|${emp}`] = { 
-                sustituto: String(r['Sustituto'] || '').trim(), 
-                tipo: tipo, 
-                motivo: motivo 
-            };
+            if (cambio) {
+                const dayKey = `${hotel}_${fecha}`;
+                if (!swaps[dayKey]) swaps[dayKey] = [];
+                // Para evitar duplicados en swaps de doble dirección (A->B y B->A)
+                const pair = [emp, cambio].sort();
+                if (!swaps[dayKey].some(p => p[0] === pair[0] && p[1] === pair[1])) {
+                    swaps[dayKey].push(pair);
+                }
+            } else if (sustituto || tipo) {
+                const subKey = `${hotel}_${fecha}_${emp}`;
+                subs[subKey] = { sustituto, tipo: detectarTipo(tipo) };
+            }
         });
+        window._tempSubs = subs;
+        window._tempSwaps = swaps;
     }
 
     // 2. Procesar Hojas de Hoteles (Extracción y Normalización)
@@ -274,6 +309,11 @@ window.processWorkbook = async (wb) => {
             const empCol = Object.keys(row).find(k => k.toLowerCase().includes('empleado') || k.toLowerCase().includes('nombre'));
             const emp = String(row[empCol] || '').trim();
             
+            // CAPTURAR ORDEN (PROYECTO ANTERIOR)
+            if (!window.hotelOrders) window.hotelOrders = {};
+            if (!window.hotelOrders[sheetName]) window.hotelOrders[sheetName] = [];
+            if (!window.hotelOrders[sheetName].includes(emp)) window.hotelOrders[sheetName].push(emp);
+
             if (!lunes || !emp) { stats.skipped++; return; }
             
             DIAS.forEach((dia, i) => {
@@ -284,50 +324,48 @@ window.processWorkbook = async (wb) => {
                 );
                 
                 if (diaCol) {
-                    const fecha = window.addDays(lunes, i);
+                    const fechaISO = window.addDays(lunes, i);
                     const rawTurno = String(row[diaCol] || '').trim();
-                    const subKey = `${sheetName}|${fecha}|${emp}`;
+                    const sustKey = `${emp}_${fechaISO}`;
                     
-                    let finalTurno = rawTurno;
+                    let finalTurno = extraerTurno(rawTurno);
                     let finalTipo = 'NORMAL';
+                    let sustituto = null;
 
-                    // Sobrescribir con ausencias si existen
-                    if (subs[subKey]) {
-                        const s = subs[subKey];
-                        finalTipo = s.tipo;
-                        finalTurno = s.sustituto ? `${s.sustituto} (Sust)` : (rawTurno || s.tipo);
-                    } else if (rawTurno) {
-                        const quickClass = window.classify(rawTurno);
-                        const clsMapping = { 
-                            'v': 'VAC', 
-                            'b': 'BAJA', 
-                            'p': 'PERM', 
-                            'c/t': 'CT', 
-                            'ct': 'CT',
-                            'd': 'NORMAL', // Descanso es NORMAL en DB, pero Virtualizer detectará la 'D'
-                            'm': 'NORMAL',
-                            't': 'NORMAL',
-                            'n': 'NORMAL'
-                        };
-                        finalTipo = clsMapping[quickClass] || 'NORMAL';
+                    // FUSIÓN OBLIGATORIA CON SUSTITUCIONES (V8.2 - Persistencia Estricta)
+                    if (subs[sustKey]) {
+                        const s = subs[sustKey];
+                        // Prioridad: 1. Tipo en hoja de sustituciones, 2. Tipo en celda de cuadrante, 3. Por defecto VAC (si hay sust)
+                        const tipoEnCelda = detectarTipo(rawTurno);
+                        if (s.tipo && s.tipo !== 'NORMAL') {
+                            finalTipo = s.tipo;
+                        } else if (tipoEnCelda !== 'NORMAL') {
+                            finalTipo = tipoEnCelda;
+                        } else {
+                            // SI HAY SUSTITUTO Y NO SE DICE NADA, SON VACACIONES (según requerimiento user)
+                            finalTipo = 'VAC 🏖️'; 
+                        }
+                        sustituto = s.sustituto;
+                    } else {
+                        finalTipo = detectarTipo(rawTurno);
                     }
 
-                    // Validación de Identidad y Deduplicación Interna
-                    const uniqKey = `${emp}|${fecha}`;
+                    const uniqKey = `${emp}|${fechaISO}`;
                     if (seen.has(uniqKey)) {
                         stats.duplicates++;
                         return;
                     }
                     seen.add(uniqKey);
 
-                    if (!finalTurno) return; // No insertar días vacíos sin turno ni ausencia
+                    if (!finalTurno && finalTipo === 'NORMAL') return; 
 
                     toInsert.push({
                         empleado_id: emp,
-                        fecha: fecha,
+                        fecha: fechaISO,
                         turno: finalTurno,
                         hotel_id: sheetName,
-                        tipo: VALID_TYPES.includes(finalTipo) ? finalTipo : 'NORMAL'
+                        tipo: finalTipo,
+                        sustituto: sustituto
                     });
                     stats.inserted++;
                 }
@@ -338,15 +376,102 @@ window.processWorkbook = async (wb) => {
     // 3. Ejecutar Inserción por Batch en Supabase
     if (toInsert.length > 0) {
         window.addLog(`Cargando ${toInsert.length} registros válidos...`);
-        try {
-            await window.TurnosDB.migrateBatch(toInsert);
-            window.addLog(`✅ MIGRACIÓN COMPLETADA CON ÉXITO`, 'ok');
-            window.addLog(`Resumen: ${stats.inserted} insertados, ${stats.duplicates} duplicados omitidos.`);
-            
-            // Limpiar cache y refrescar UI
-            await localforage.clear();
-            window.renderPreview();
-        } catch (err) {
+      // 3. SEGUNDA PASADA: Aplicar Cambios de Turno (SWAPS) y Sustituciones
+    const subs = window._tempSubs || {};
+    const swaps = window._tempSwaps || {};
+    
+    // Agrupar por dia/hotel para facilitar swaps
+    const hotelDayMap = {}; // key: hotel_fecha -> { emp: turnoInfo }
+    toInsert.forEach(t => {
+        const key = `${t.hotel_id}_${t.fecha}`;
+        if (!hotelDayMap[key]) hotelDayMap[key] = {};
+        hotelDayMap[key][t.empleado_id] = t;
+    });
+
+    // --- APLICAR SWAPS ---
+    Object.keys(swaps).forEach(dayKey => {
+        const [hotel, fecha] = dayKey.split('_');
+        const dayShifts = hotelDayMap[dayKey];
+        if (!dayShifts) return;
+
+        swaps[dayKey].forEach(([empA, empB]) => {
+            if (dayShifts[empA] && dayShifts[empB]) {
+                const turnA = dayShifts[empA].turno;
+                const turnB = dayShifts[empB].turno;
+                
+                // Intercambio
+                dayShifts[empA].turno = turnB;
+                dayShifts[empA].tipo = 'CT 🔄';
+                
+                dayShifts[empB].turno = turnA;
+                dayShifts[empB].tipo = 'CT 🔄';
+                
+                window.addLog(`🔄 Swap aplicado entre ${empA} y ${empB} (${fecha})`, 'ok');
+            }
+        });
+    });
+
+    // --- APLICAR SUSTITUCIONES ---
+    toInsert.forEach(t => {
+        const subKey = `${t.hotel_id}_${t.fecha}_${t.empleado_id}`;
+        if (subs[subKey]) {
+            const s = subs[subKey];
+            // Si hay sustitución, el empleado original se queda con la ausencia 
+            const tipoEnCelda = detectarTipo(t.turno); // Por si en el cuadrante ponía "Vacaciones"
+            if (s.tipo && s.tipo !== 'NORMAL') {
+                t.tipo = s.tipo;
+            } else if (tipoEnCelda !== 'NORMAL') {
+                t.tipo = tipoEnCelda;
+            } else {
+                t.tipo = 'VAC 🏖️'; // Default legacy
+            }
+            t.sustituto = s.sustituto;
+            window.addLog(`🏖️ Sustitución: ${t.empleado_id} -> ${s.sustituto} (${t.tipo})`, 'ok');
+        }
+    });
+
+    // 4. PERSISTENCIA FINAL DE TURNOS
+    try {
+        await window.TurnosDB.bulkUpsert(toInsert);
+        window.addLog(`🚀 Migración exitosa: ${toInsert.length} registros`, 'ok');
+        
+        // --- 5. SINCRONIZAR FICHAS DE EMPLEADO (BULK UPSERT V8.2) ---
+        const empObjects = [];
+        const uniqueEmpMap = {}; // key: name -> hotel_id
+
+        toInsert.forEach(t => {
+            if (!uniqueEmpMap[t.empleado_id]) uniqueEmpMap[t.empleado_id] = t.hotel_id;
+            if (t.sustituto && !uniqueEmpMap[t.sustituto]) uniqueEmpMap[t.sustituto] = t.hotel_id;
+        });
+
+        for (const [name, hotel] of Object.entries(uniqueEmpMap)) {
+            let ordenFinal = 999;
+            Object.values(window.hotelOrders || {}).forEach(list => {
+                const idx = list.indexOf(name);
+                if (idx !== -1 && idx < ordenFinal) ordenFinal = idx;
+            });
+
+            empObjects.push({
+                id: name,
+                nombre: name,
+                hotel_id: hotel,
+                orden: ordenFinal,
+                activo: true,
+                updated_at: new Date().toISOString()
+            });
+        }
+
+        if (empObjects.length > 0) {
+            window.addLog(`Sincronizando ${empObjects.length} fichas de empleados...`);
+            const { error: empError } = await window.supabase.from('empleados').upsert(empObjects);
+            if (empError) throw empError;
+            window.addLog(`✅ Fichas sincronizadas con éxito.`, 'ok');
+        }
+
+        // Limpiar cache y refrescar UI
+        await localforage.clear();
+        window.renderPreview();
+    } catch (err) {
             console.error("Error en migración batch:", err);
             window.addLog(`❌ FALLO EN MIGRACIÓN: ${err.message}`, 'error');
             alert("Error crítico durante la carga de datos. Revisa la consola.");
@@ -456,7 +581,7 @@ window.renderSemanaEnContenedor = async (container, inicio, fin, hotelData) => {
         columns.push({
             dbFecha: iso,
             title: dayName,
-            subtitle: `${curr.getDate()}/${curr.getMonth()+1}`,
+            subtitle: window.fmtDateLegacy(iso),
             isWeekend: curr.getDay() === 0 || curr.getDay() === 6,
             isToday: iso === window.isoDate(new Date())
         });
@@ -469,13 +594,47 @@ window.renderSemanaEnContenedor = async (container, inicio, fin, hotelData) => {
         compact: isMonthly
     });
     
-    // Transformar datos para la tabla
-    const empNames = Array.from(new Set(hotelData.map(t => t.empleado_id))).sort();
+    // --- LÓGICA DE FUSIÓN DE SUSTITUTOS (V8.2) ---
+    // 1. Obtener lista de empleados base + sustitutos mencionados
+    const empBase = new Set(hotelData.map(t => t.empleado_id));
+    hotelData.forEach(t => { if (t.sustituto) empBase.add(t.sustituto); });
+    
+    // 2. Ordenar según el orden persistido (V8.2 Premium)
+    // Intentamos obtener el perfil de cada empleado para ver su orden
+    const profiles = window._cachedProfiles || [];
+    const getOrder = (n) => {
+        const p = profiles.find(pr => pr.id === n);
+        return p ? (p.orden ?? 999) : 999;
+    };
+
+    const empNames = Array.from(empBase).sort((a, b) => {
+        const oA = getOrder(a);
+        const oB = getOrder(b);
+        if (oA !== oB) return oA - oB;
+        return a.localeCompare(b);
+    });
+
+    // 2. Construir filas
     const rows = empNames.map(name => {
-        const empShifts = hotelData.filter(t => t.empleado_id === name);
         const cells = columns.map(c => {
-            const shift = empShifts.find(s => s.fecha === c.dbFecha);
-            return shift ? { turno: shift.turno, tipo: shift.tipo, sustituto: shift.sustituto } : { turno: '', tipo: 'NORMAL' };
+            // Buscamos si este empleado tiene un registro directo
+            const direct = hotelData.find(s => s.empleado_id === name && s.fecha === c.dbFecha);
+            if (direct) {
+                return { turno: direct.turno, tipo: direct.tipo, sustituto: direct.sustituto };
+            }
+            
+            // Si no tiene registro directo, ¿está sustituyendo a alguien?
+            const beingSubstituted = hotelData.find(s => s.sustituto === name && s.fecha === c.dbFecha);
+            if (beingSubstituted) {
+                return { 
+                    turno: beingSubstituted.turno, 
+                    tipo: 'NORMAL', 
+                    isSub: true, 
+                    subFor: beingSubstituted.empleado_id 
+                };
+            }
+
+            return { turno: '', tipo: 'NORMAL' };
         });
         return { empName: name, cells: cells };
     });
@@ -493,13 +652,13 @@ window.populatePreview = () => {
         flatpickr("#prevWeekDate", {
             dateFormat: "Y-m-d",
             defaultDate: "today",
-            locale: "es",
+            locale: { ...flatpickr.l10ns.es, firstDayOfWeek: 1 },
             onChange: () => window.renderPreview()
         });
         flatpickr("#prevMonth", {
             dateFormat: "Y-m",
             defaultDate: new Date(),
-            locale: "es",
+            locale: { ...flatpickr.l10ns.es, firstDayOfWeek: 1 },
             plugins: [new monthSelectPlugin({ shothand: true, dateFormat: "Y-m", altFormat: "F Y" })],
             onChange: () => window.renderPreview()
         });
@@ -551,68 +710,112 @@ window.renderSemana = async (inicio, fin) => {
         
         window.currentSemana = { inicio, fin, data };
 
-        // 2. Definir Columnas
-        const columns = [];
-        let currentDate = new Date(inicio);
-        const endDate = new Date(fin);
-        while (currentDate <= endDate) {
-            const iso = window.isoDate(currentDate);
-            const dayName = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'][currentDate.getDay()];
-            columns.push({
-                dbFecha: iso,
-                title: dayName,
-                subtitle: `${currentDate.getDate()}/${currentDate.getMonth()+1}`,
-                isWeekend: currentDate.getDay() === 0 || currentDate.getDay() === 6,
-                isToday: window.isoDate(new Date()) === iso
-            });
-            currentDate.setDate(currentDate.getDate() + 1);
-        }
-
-        // 3. Agrupación por Hotel (Vista Multi-Hotel)
+        // 3. Renderizado Multi-Hotel (V8.2 Premium)
+        area.innerHTML = '';
         const hotelsFound = [...new Set(data.map(t => t.hotel_id))].sort();
-        const vData = [];
 
-        hotelsFound.forEach(hName => {
-            // Cabecera por hotel
-            vData.push({ isHeader: true, title: hName });
-
+        for (const hName of hotelsFound) {
             const hShifts = data.filter(t => t.hotel_id === hName);
-            const empMap = {};
-            hShifts.forEach(t => {
-                if (!empMap[t.empleado_id]) empMap[t.empleado_id] = {};
-                empMap[t.empleado_id][t.fecha] = t;
-            });
+            if (hShifts.length === 0) continue;
 
-            // Empleados ordenados
-            Object.keys(empMap).sort().forEach(emp => {
-                vData.push({
-                    empName: emp,
-                    cells: columns.map(col => {
-                        const shift = empMap[emp][col.dbFecha] || { tipo: 'NORMAL', turno: '' };
-                        return { tipo: shift.tipo, turno: shift.turno, sustituto: shift.sustituto };
-                    })
-                });
-            });
-        });
-
-        // 4. Inicializar Virtual Table
-        const isMonthly = (new Date(fin) - new Date(inicio)) > (8 * 24 * 60 * 60 * 1000);
-        
-        if (!window.virtualTable || window.virtualTable.columns.length !== columns.length || window.virtualTable.columns[0]?.dbFecha !== columns[0]?.dbFecha) {
-            window.virtualTable = new window.VirtualTable(area, {
-                columns: columns,
-                rowHeight: isMonthly ? 36 : 56,
-                compact: isMonthly
-            });
-            area.addEventListener('cellEdit', (e) => window.abrirEditorRapido(e.detail.empleado, e.detail.fecha, e.detail.cellElement));
+            const card = document.createElement('div');
+            card.className = 'preview-week week';
+            card.style.marginBottom = '2rem';
+            card.innerHTML = `
+                <div class="preview-week-header week-head">
+                    <img src="${hName.includes('Guadiana') ? 'guadiana logo.jpg' : 'cumbria logo.jpg'}" 
+                         style="width:38px; height:38px; border-radius:8px; object-fit:cover; border:1px solid rgba(0,0,0,0.1);">
+                    <h3 style="color:var(--accent); font-weight:900; margin:0; font-size:1.1rem;">${hName.toUpperCase()}</h3>
+                </div>
+                <div id="grid-container-${hName.replace(/\s/g,'-')}" style="min-height:300px; padding:12px;"></div>
+            `;
+            area.appendChild(card);
+            
+            const gridContainer = card.querySelector(`#grid-container-${hName.replace(/\s/g,'-')}`);
+            await window.renderSemanaEnContenedorV2(gridContainer, inicio, fin, hShifts, hName);
         }
-
-        window.virtualTable.setData(vData);
 
     } catch (err) {
         console.error("Fallo renderizando semana:", err);
         area.innerHTML = `<div style="padding:2rem; color:red; text-align:center;">Error de Datos: ${err.message}</div>`;
     }
+};
+
+window.renderSemanaEnContenedorV2 = async (container, inicio, fin, hotelData, hotelName) => {
+    const isMonthly = (new Date(fin) - new Date(inicio)) > (8 * 24 * 60 * 60 * 1000);
+    
+    // Construir columnas (Encabezados estilo Premium)
+    const columns = [];
+    let curr = new Date(inicio);
+    const end = new Date(fin);
+    while (curr <= end) {
+        const iso = window.isoDate(curr);
+        const dayNames = ['DOM','LUN','MAR','MIÉ','JUE','VIE','SÁB'];
+        columns.push({
+            dbFecha: iso,
+            title: dayNames[curr.getDay()],
+            subtitle: `${curr.getDate()}/${curr.getMonth()+1}`,
+            isWeekend: curr.getDay() === 0 || curr.getDay() === 6,
+            isToday: iso === window.isoDate(new Date())
+        });
+        curr.setDate(curr.getDate() + 1);
+    }
+    
+    const virtualTable = new window.VirtualTable(container, {
+        columns: columns,
+        rowHeight: isMonthly ? 34 : 52,
+        compact: isMonthly
+    });
+    
+    // --- LÓGICA DE FUSIÓN Y ORDENACIÓN (ESTILO V8.2 PREMIUM) ---
+    const profiles = await window.TurnosDB.getEmpleados();
+    const empBaseSet = new Set(hotelData.map(t => t.empleado_id));
+    hotelData.forEach(t => { if (t.sustituto) empBaseSet.add(t.sustituto); });
+    const allEmp = Array.from(empBaseSet);
+
+    // Contar ausencias para mover al fondo
+    const absenceCount = {};
+    allEmp.forEach(name => {
+        absenceCount[name] = 0;
+        columns.forEach(c => {
+            const d = hotelData.find(s => s.empleado_id === name && s.fecha === c.dbFecha);
+            if (d && d.tipo !== 'NORMAL' && !d.tipo.includes('CT')) absenceCount[name]++;
+        });
+    });
+
+    const isTotalAbsent = (name) => absenceCount[name] >= columns.length;
+
+    const getOrder = (name) => {
+        if (name === '¿?') return -1;
+        const p = profiles.find(pr => pr.id === name || pr.nombre === name);
+        return p?.orden ?? 999;
+    };
+
+    const empNamesOrdered = allEmp.sort((a, b) => {
+        // 1. Ausentes totales al final
+        const aAb = isTotalAbsent(a), bAb = isTotalAbsent(b);
+        if (aAb !== bAb) return aAb ? 1 : -1;
+        // 2. Orden de base de datos
+        return getOrder(a) - getOrder(b);
+    });
+
+    const rows = empNamesOrdered.map(name => {
+        const cells = columns.map(c => {
+            const direct = hotelData.find(s => s.empleado_id === name && s.fecha === c.dbFecha);
+            if (direct) return { turno: direct.turno, tipo: direct.tipo, sustituto: direct.sustituto };
+            
+            const substituted = hotelData.find(s => s.sustituto === name && s.fecha === c.dbFecha);
+            if (substituted) return { turno: substituted.turno, tipo: 'NORMAL', isSub: true, subFor: substituted.empleado_id };
+            
+            return { turno: '', tipo: 'NORMAL' };
+        });
+        return { empName: name, cells: cells, hotel_id: hotelName };
+    });
+    
+    virtualTable.setData(rows);
+    container.addEventListener('cellEdit', (e) => {
+        window.abrirEditorRapido(e.detail.empleado, e.detail.fecha, e.detail.cellElement);
+    });
 };
 
 window.aplicarCambioLocal = (payload) => {
@@ -641,10 +844,10 @@ window.abrirEditorRapido = (empleadoId, fecha, cellEl) => {
         <input type="text" id="quickTurno" placeholder="Ej: M, T, N" class="search-input" style="text-align:center; margin-bottom:15px; font-size:1.2rem; font-weight:bold;" autocomplete="off" value="${cellEl.textContent.trim() === '·' ? '' : cellEl.textContent.trim()}">
         
         <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
-            <button class="btn" style="background:rgba(255, 152, 0, 0.2); color:#ff9800;" onclick="window.seleccionarTipo('${empleadoId}','${fecha}','VAC')">🏖️ VAC</button>
-            <button class="btn" style="background:rgba(233, 30, 99, 0.2); color:#e91e63;" onclick="window.seleccionarTipo('${empleadoId}','${fecha}','BAJA')">🤒 BAJA</button>
-            <button class="btn" style="background:rgba(33, 150, 243, 0.2); color:#2196f3;" onclick="window.seleccionarTipo('${empleadoId}','${fecha}','PERM')">📄 PERM</button>
-            <button class="btn" style="background:rgba(156, 39, 176, 0.2); color:#9c27b0;" onclick="window.seleccionarTipo('${empleadoId}','${fecha}','CT')">🔄 CT</button>
+            <button class="btn" style="background:rgba(255, 152, 0, 0.2); color:#ff9800;" onclick="window.seleccionarTipo('${empleadoId}','${fecha}','VAC 🏖️')">🏖️ VAC</button>
+            <button class="btn" style="background:rgba(233, 30, 99, 0.2); color:#e91e63;" onclick="window.seleccionarTipo('${empleadoId}','${fecha}','BAJA 🏥')">🏥 BAJA</button>
+            <button class="btn" style="background:rgba(33, 150, 243, 0.2); color:#2196f3;" onclick="window.seleccionarTipo('${empleadoId}','${fecha}','PERM 🗓️')">🗓️ PERM</button>
+            <button class="btn" style="background:rgba(156, 39, 176, 0.2); color:#9c27b0;" onclick="window.seleccionarTipo('${empleadoId}','${fecha}','CT 🔄')">🔄 CT</button>
             <button class="btn active" style="grid-column: span 2; background:var(--accent); color:white;" onclick="window.seleccionarTipo('${empleadoId}','${fecha}','NORMAL')">✅ GUARDAR (NORMAL)</button>
         </div>
         <button class="btn" style="background:transparent; color:var(--text-dim); margin-top:10px;" onclick="document.getElementById('quickEditModal').remove()">Cancelar</button>
@@ -661,7 +864,7 @@ window.validarTurno = (fecha, tipo) => {
         throw new Error("No se pueden modificar turnos en fechas pasadas.");
     }
     
-    const VALID_TYPES = ['VAC', 'BAJA', 'PERM', 'NORMAL', 'CT'];
+    const VALID_TYPES = ['VAC 🏖️', 'BAJA 🏥', 'PERM 🗓️', 'CT 🔄', 'NORMAL', 'VAC', 'BAJA', 'PERM', 'CT'];
     if (!VALID_TYPES.includes(tipo)) {
         throw new Error(`Tipo de turno inválido: ${tipo}`);
     }
@@ -763,30 +966,50 @@ window.calculateStats = () => {
     return stats;
 };
 
-window.populateEmployees = () => {
-    const area = $('#employeesContent'); if (!area || !window.parsedData) return;
-    const profiles = JSON.parse(localStorage.getItem('turnosweb_emp_profiles') || '{}');
-    const stats = window.calculateStats();
-    const hotels = [...new Set(Object.values(stats).map(s => s.hotel))].sort();
+window.populateEmployees = async () => {
+    const area = $('#employeesContent'); if (!area) return;
+    
+    // 1. CARGA DESDE NUBE (FUERZA DE VERDAD)
+    const profilesList = await window.TurnosDB.getEmpleados();
+    const stats = window.calculateStats() || {};
+    
+    // Identificar todos los hoteles disponibles (de stats o de fichas)
+    const hotelSet = new Set(Object.values(stats).map(s => s.hotel));
+    profilesList.forEach(p => { if(p.hotel_id) hotelSet.add(p.hotel_id); });
+    const hotels = Array.from(hotelSet).filter(Boolean).sort();
+
+    if (profilesList.length === 0 && hotels.length === 0) {
+        area.innerHTML = '<div style="padding:100px; text-align:center; opacity:0.5;">No hay empleados registrados. Importa un Excel para crearlos automáticamente.</div>';
+        return;
+    }
     
     area.innerHTML = hotels.map(hotel => {
-        const emps = Object.values(stats).filter(s => s.hotel === hotel).sort((a, b) => a.emp.localeCompare(b.emp));
-        const cards = emps.map(s => {
-            const p = profiles[s.emp] || {};
-            const initials = s.emp.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
+        // Combinar datos: Buscamos empleados que pertenezcan a este hotel (en ficha o en stats)
+        const empsInHotel = profilesList.filter(p => p.hotel_id === hotel);
+        
+        // Si hay gente en stats que no está en profilesList (raro), los añadimos
+        Object.values(stats).forEach(s => {
+            if (s.hotel === hotel && !empsInHotel.find(p => p.id === s.emp)) {
+                empsInHotel.push({ id: s.emp, nombre: s.emp, hotel_id: hotel, orden: 999 });
+            }
+        });
+
+        const cards = empsInHotel.sort((a,b) => (a.orden || 999) - (b.orden || 999)).map(p => {
+            const s = stats[p.id] || { m:0, t:0, n:0, v:0, b:0, hotel: hotel };
+            const initials = p.nombre.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
             const totalWork = s.m + s.t + s.n;
-            const hue = Math.abs(s.emp.length * 137.5) % 360; // Gerenar color único determinista
+            const hue = Math.abs(p.nombre.length * 137.5) % 360;
             
             return `
-            <div class="emp-card-premium" onclick="window.openEmpDrawer('${s.emp.replace(/'/g, "\\'")}')">
+            <div class="emp-card-premium" onclick="window.openEmpDrawer('${p.id.replace(/'/g, "\\'")}')">
                 <div class="ep-gradient" style="background: linear-gradient(135deg, hsl(${hue}, 70%, 65%), hsl(${hue}, 70%, 45%))"></div>
                 <div class="ep-body">
                     <div class="ep-avatar-wrap">
                         <div class="ep-avatar" style="background: hsl(${hue}, 70%, 95%); color: hsl(${hue}, 70%, 30%)">${initials}</div>
                     </div>
                     <div class="ep-info">
-                        <h3 class="ep-name">${s.emp}</h3>
-                        <p class="ep-role">${p.puesto || 'Cargo no asignado'}</p>
+                        <h3 class="ep-name">${p.nombre}</h3>
+                        <p class="ep-role">${p.puesto || 'Ficha de Personal'}</p>
                     </div>
                     <div class="ep-stats">
                         <div class="ep-stat"><span class="ep-label">M</span><span class="ep-val">${s.m}</span></div>
@@ -795,34 +1018,40 @@ window.populateEmployees = () => {
                         <div class="ep-stat highlight"><span class="ep-label">V</span><span class="ep-val">${s.v}</span></div>
                     </div>
                     <div class="ep-footer">
-                         <div class="ep-progress-label">Actividad Turnos</div>
-                         <div class="ep-progress-bar"><div class="ep-progress-fill" style="width:${Math.min(100, (totalWork/300)*100)}%; background:hsl(${hue}, 70%, 50%)"></div></div>
-                         <div class="ep-total">${totalWork} servicios</div>
+                         <div class="ep-progress-label">Ficha Supabase Cloud</div>
+                         <div class="ep-progress-bar"><div class="ep-progress-fill" style="width:100%; background:hsl(${hue}, 70%, 50%)"></div></div>
+                         <div class="ep-total">ID: ${p.id}</div>
                     </div>
                 </div>
             </div>`;
         }).join('');
-        return `<div class="emp-hotel-section">
-            <div class="section-title-premium">
+
+        return `
+        <div class="emp-hotel-section">
+            <div class="section-title-premium" style="margin-top:2rem;">
                 <span class="stp-icon">🏨</span>
                 <h2>${hotel}</h2>
-                <span class="stp-count">${emps.length} empleados</span>
+                <span class="stp-count">${empsInHotel.length} fichas</span>
             </div>
             <div class="employees-grid-inner">${cards}</div>
         </div>`;
     }).join('');
 };
 
-window.openEmpDrawer = (name) => {
+window.openEmpDrawer = async (name) => {
     const drawer = $('#empDrawer');
     const body = $('#drawerBody');
     if (!drawer || !body) return;
     
     drawer.classList.add('open');
+    body.innerHTML = `<div style="padding:4rem; text-align:center; opacity:0.5;">Cargando ficha...</div>`;
+
     const allStats = window.calculateStats();
-    const s = allStats[name] || { m:0, t:0, n:0, v:0, b:0, d:0, hotel: 'N/A', history: [] };
-    const profiles = JSON.parse(localStorage.getItem('turnosweb_emp_profiles') || '{}');
-    const p = profiles[name] || {};
+    const s = allStats[name] || { m:0, t:0, n:0, v:0, b:0, d:0, hotel: 'GENERAL', history: [] };
+    
+    // FETCH DESDE NUBE
+    const employees = await window.TurnosDB.getEmpleados();
+    const p = employees.find(e => e.id === name) || { id: name };
     
     const initials = name.split(' ').map(n=>n[0]).join('').slice(0,2).toUpperCase();
     const totalWorking = s.m + s.t + s.n;
@@ -839,7 +1068,7 @@ window.openEmpDrawer = (name) => {
             </div>
         </div>
         
-        <div class="drawer-section-title">RESUMEN DE ACTIVIDAD</div>
+        <div class="drawer-section-title">RESUMEN DE ACTIVIDAD (MES ACTUAL)</div>
         <div class="drawer-stats-grid-premium">
             <div class="stat-premium">
                 <span class="sp-label">Mañanas</span>
@@ -873,23 +1102,23 @@ window.openEmpDrawer = (name) => {
             </div>
         </div>
 
-        <div class="glass" style="padding:1.2rem; margin-top:1.5rem; border-color:rgba(255,255,255,0.05);">
+        <div class="glass" style="padding:1.2rem; margin-top:1.5rem; border-color:rgba(0,0,0,0.05); background:#fff;">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; border-bottom:1px solid var(--border); padding-bottom:8px;">
-                <h4 style="margin:0; color:var(--accent); font-size:0.8rem; text-transform:uppercase; letter-spacing:0.05em;">Ficha Técnica</h4>
+                <h4 style="margin:0; color:var(--accent); font-size:0.8rem; text-transform:uppercase; letter-spacing:0.05em;">Ficha Técnica (Cloud)</h4>
                 <span style="font-size:0.75rem; color:var(--text-dim);">${totalWorking} servicios totales</span>
             </div>
             <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px; font-size:0.85rem;">
                 <div>
                     <span style="color:var(--text-dim); font-size:0.75rem;">Antigüedad</span><br>
-                    <input type="text" class="edit-input" id="edit-antiguedad" value="${p.antiguedad || ''}" placeholder="Ej: 2021" onchange="window.saveEmpField('${name}', 'antiguedad', this.value)">
+                    <input type="text" class="edit-input" value="${p.antiguedad || ''}" placeholder="Ej: 2021" onchange="window.saveEmpField('${name}', 'antiguedad', this.value)">
                 </div>
                 <div>
                     <span style="color:var(--text-dim); font-size:0.75rem;">Categoría</span><br>
-                    <input type="text" class="edit-input" id="edit-categoria" value="${p.categoria || ''}" placeholder="Ej: Operativo" onchange="window.saveEmpField('${name}', 'categoria', this.value)">
+                    <input type="text" class="edit-input" value="${p.categoria || ''}" placeholder="Ej: Recepcionista" onchange="window.saveEmpField('${name}', 'categoria', this.value)">
                 </div>
                 <div>
                     <span style="color:var(--text-dim); font-size:0.75rem;">Puesto</span><br>
-                    <input type="text" class="edit-input" id="edit-puesto" value="${p.puesto || ''}" placeholder="Ej: Recepcionista" onchange="window.saveEmpField('${name}', 'puesto', this.value)">
+                    <input type="text" class="edit-input" value="${p.puesto || ''}" placeholder="Ej: Correturnos" onchange="window.saveEmpField('${name}', 'puesto', this.value)">
                 </div>
                 <div>
                     <span style="color:var(--text-dim); font-size:0.75rem;">Contrato</span><br>
@@ -900,50 +1129,43 @@ window.openEmpDrawer = (name) => {
                     </select>
                 </div>
             </div>
-            <div style="margin-top:10px; font-size:0.7rem; color:var(--success); display:none;" id="save-indicator">✓ Cambios guardados y sincronizados</div>
+            <div style="margin-top:10px; font-size:0.7rem; color:var(--success); display:none;" id="save-indicator">✓ Guardado en Supabase</div>
         </div>
 
-        <div class="drawer-section-title" style="margin-top:2rem;">HISTORIAL DE TURNOS RECIENTES</div>
+        <div class="drawer-section-title" style="margin-top:2rem;">HISTORIAL DE TURNOS</div>
         <div class="history-list">
             ${s.history.slice(0, 15).map(h => `
                 <div class="history-item">
                     <div class="hi-date">
-                        <span class="hi-day">${new Date(h.fecha).toLocaleDateString('es-ES', {day:'2-digit'})}</span>
-                        <span class="hi-month">${new Date(h.fecha).toLocaleDateString('es-ES', {month:'short'}).replace('.','').toUpperCase()}</span>
+                        <span class="hi-day">${h.fecha.split('-')[2]}</span>
+                        <span class="hi-month">${h.fecha.split('-')[1]}</span>
                     </div>
                     <div class="hi-info">
-                        <div class="sc-label">Estado de la Nube</div>
-                    <div class="sc-value" style="font-size:0.9rem;" id="stat-sync">Conectando...</div>
-                    <button onclick="window.clearAllData()" style="background:rgba(255,0,0,0.1); color:red; border:none; padding:4px 8px; border-radius:5px; font-size:0.6rem; cursor:pointer; margin-top:5px;">Borrar Todo</button>
-                </div>
+                        <div style="font-weight:600; font-size:0.9rem;">${h.turno}</div>
+                        <div style="font-size:0.7rem; opacity:0.5;">${h.hotel}</div>
+                    </div>
                     <div class="hi-type"><span class="type-dot ${h.cls}"></span></div>
                 </div>
             `).join('')}
-            ${s.history.length === 0 ? '<div style="padding:2rem; text-align:center; opacity:0.3; font-size:0.8rem;">No hay historial disponible</div>' : ''}
-        </div>
-        <div style="margin-top:2rem; display:flex; gap:10px; padding-bottom:2rem;">
-            <button class="btn active" style="flex:1;" onclick="alert('Generando informe detallado...')">📊 Informe PDF</button>
-            <button class="btn" style="flex:1;" onclick="alert('Funcionalidad de edición avanzada en desarrollo')">⚙️ Ajustes</button>
         </div>
     `;
 };
 
-window.saveEmpField = (name, field, value) => {
-    const profiles = JSON.parse(localStorage.getItem('turnosweb_emp_profiles') || '{}');
-    if (!profiles[name]) profiles[name] = {};
-    profiles[name][field] = value;
-    localStorage.setItem('turnosweb_emp_profiles', JSON.stringify(profiles));
+window.saveEmpField = async (name, field, value) => {
+    try {
+        const payload = { id: name };
+        payload[field] = value;
+        await window.TurnosDB.upsertEmpleado(payload);
 
-    // Mostrar feedback visual
-    const indicator = $('#save-indicator');
-    if (indicator) {
-        indicator.style.display = 'block';
-        setTimeout(() => { if (indicator) indicator.style.display = 'none'; }, 2000);
-    }
-
-    // Sincronizar inmediatamente a la nube
-    if (window.parsedData) {
-        window.syncToFirebase(window.parsedData);
+        // Mostrar feedback visual
+        const indicator = $('#save-indicator');
+        if (indicator) {
+            indicator.style.display = 'block';
+            setTimeout(() => { if (indicator) indicator.style.display = 'none'; }, 2000);
+        }
+    } catch (e) {
+        console.error("Error guardando ficha:", e);
+        alert("Error al guardar en la nube.");
     }
 };
 
@@ -968,6 +1190,12 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Inicialización de UI y Datos
     (async function init() {
+        // Forzar lunes como primer día de la semana globalmente
+        if (window.flatpickr && flatpickr.l10ns.es) {
+            flatpickr.localize(flatpickr.l10ns.es);
+            flatpickr.l10ns.es.firstDayOfWeek = 1;
+        }
+
         // Asegurar valores iniciales en los selectores de fecha
         if ($('#prevMonth') && !$('#prevMonth').value) {
             const now = new Date();
@@ -982,6 +1210,7 @@ document.addEventListener('DOMContentLoaded', () => {
         window.populatePreview();
         window.populateEmployees();
         window.updateDashboardStats();
+        if (window.refreshBadges) window.refreshBadges();
         
         window.addLog(`Sistema listo y sincronizado.`, 'ok');
         
@@ -1014,6 +1243,9 @@ document.addEventListener('DOMContentLoaded', () => {
             handleFile(e.dataTransfer.files[0]);
         };
     }
+
+    // Refresh badges every 60 seconds
+    setInterval(() => { if (window.refreshBadges) window.refreshBadges(); }, 60000);
 
 // ==========================================
 // 5. BACKUP Y CONFIGURACIÓN (RESTAURACIÓN)
@@ -1115,30 +1347,65 @@ window.renderExcelView = async () => {
             cur.setDate(cur.getDate() + 1);
         }
         
-        const table = new window.VirtualTable(area, {
-            columns: columns,
-            rowHeight: 35,
-            compact: true
-        });
-        
-        const empNames = Array.from(new Set(data.map(t => t.empleado_id))).sort();
+        // 4. Preparar datos (Lógica de Fusión V8.2)
+        const empBase = new Set(data.map(t => t.empleado_id));
+        data.forEach(t => { if(t.sustituto) empBase.add(t.sustituto); });
+        const empNames = Array.from(empBase).sort();
+
         const rows = empNames.map(name => {
-            const empShifts = data.filter(t => t.empleado_id === name);
             const cells = columns.map(c => {
-                const shift = empShifts.find(s => s.fecha === c.dbFecha);
-                return shift ? { turno: shift.turno, tipo: shift.tipo, sustituto: shift.sustituto } : { turno: '', tipo: 'NORMAL' };
+                const direct = data.find(s => s.empleado_id === name && s.fecha === c.dbFecha);
+                if (direct) {
+                    return { turno: direct.turno, tipo: direct.tipo, sustituto: direct.sustituto };
+                }
+                const beingSubstituted = data.find(s => s.sustituto === name && s.fecha === c.dbFecha);
+                if (beingSubstituted) {
+                    return { 
+                        turno: beingSubstituted.turno, 
+                        tipo: 'NORMAL', 
+                        isSub: true, 
+                        subFor: beingSubstituted.empleado_id 
+                    };
+                }
+                return { turno: '', tipo: 'NORMAL' };
             });
             return { empName: name, cells: cells };
         });
+
+        if (!window.virtualTable) {
+            window.virtualTable = new window.VirtualTable(area, {
+                columns: columns,
+                rowHeight: 55
+            });
+            area.addEventListener('cellEdit', (e) => {
+                window.abrirEditorRapido(e.detail.empleado, e.detail.fecha, e.detail.cellElement);
+            });
+        }
         
-        table.setData(rows);
-        
-        // El editor de celdas es el mismo que en la vista previa
-        area.addEventListener('cellEdit', (e) => {
-            window.abrirEditorRapido(e.detail.empleado, e.detail.fecha, e.detail.cellElement);
-        });
+        window.virtualTable.setData(rows);
 
     } catch (e) {
         area.innerHTML = `<div style="padding:2rem; color:var(--danger);">Error cargando datos: ${e.message}</div>`;
+    }
+};
+
+window.refreshBadges = async () => {
+    try {
+        if (!window.supabase) return;
+        const { count, error } = await window.supabase
+            .from('peticiones_cambio')
+            .select('*', { count: 'exact', head: true })
+            .eq('estado', 'pendiente');
+            
+        if (error) throw error;
+
+        const badge = document.getElementById('badge-requests');
+        if (badge) {
+            badge.textContent = count || 0;
+            badge.style.display = count > 0 ? 'flex' : 'none';
+        }
+        
+    } catch (e) {
+        console.warn("Fallo cargando badges de solicitudes:", e.message);
     }
 };

@@ -7,7 +7,7 @@
     <link rel="stylesheet" href="admin.css">
     <!-- Supabase SDK (OBLIGATORIO PRIMERO) -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="supabase-config.js"></script>
+    <script src="supabase-config.js?v=8.2"></script>
 </head>
 <body class="light-mode" style="display:flex; justify-content:center; align-items:center; height:100vh; background:var(--bg);">
     <div class="glass" style="padding: 2.5rem; border-radius: 20px; width: 100%; max-width: 400px; text-align: center;">
@@ -32,13 +32,10 @@
 
         // 2. LOGICA DE LOGIN REAL A SUPABASE
         async function handleLogin() {
-            // CAPTURA ESTRICTA DE INPUTS
             const email = document.getElementById('email').value.trim();
             const password = document.getElementById('password').value.trim();
             const btn = document.getElementById('btnSubmit');
             const errorEl = document.getElementById('error');
-            
-            console.log("LOGIN DATA:", email, " (password masked)"); 
             
             btn.textContent = 'Verificando...';
             btn.disabled = true;
@@ -46,20 +43,12 @@
             errorEl.textContent = '';
 
             try {
-                // LLAMADA A SUPABASE
                 const { data, error } = await window.supabase.auth.signInWithPassword({
                     email: email,
                     password: password
                 });
 
-                if (error) {
-                    console.error("AUTH ERROR:", error);
-                    throw error;
-                }
-
-                console.log("LOGIN OK:", data);
-
-                // REDIRECCIÓN SI HAY SUCESO
+                if (error) throw error;
                 window.location.href = 'admin.html';
 
             } catch (err) {
@@ -70,7 +59,6 @@
             }
         }
 
-        // Si ya está logueado, rebotarlo al admin
         window.addEventListener('DOMContentLoaded', async () => {
             if (window.supabase) {
                 const { data: { session } } = await window.supabase.auth.getSession();
