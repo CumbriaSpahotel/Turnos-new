@@ -45,10 +45,12 @@
 body.light-mode {
   --bg:       #f8fafc;
   --bg2:      #ffffff;
+  --bg3:      #f1f5f9; /* Light gray for headers in light mode */
   --surface:  rgba(255, 255, 255, 0.85);
+  --surface2: #ffffff;
   --text:     #0f172a;
   --text-dim: #475569;
-  --border:   rgba(15, 23, 42, 0.06);
+  --border:   rgba(15, 23, 42, 0.08);
   --accent:   #2563eb;
   /* Badges suavizados para modo claro */
   --success-dim: rgba(22, 163, 74, 0.1);
@@ -142,15 +144,14 @@ input, select, textarea { color: var(--text); }
 }
 
 .sidebar-logo {
-  width: 40px;
-  height: 40px;
-  border-radius: 11px;
+  width: 64px;
+  height: 64px;
+  border-radius: 12px;
   object-fit: contain;
-  background: linear-gradient(135deg, rgba(79,134,247,0.25), rgba(139,92,246,0.25));
-  border: 1px solid rgba(79,134,247,0.35);
+  background: transparent;
+  filter: brightness(0) invert(1); /* Convierte el logo a blanco puro para fondo oscuro */
   padding: 2px;
-  box-shadow: 0 4px 16px rgba(79,134,247,0.3), inset 0 1px 0 rgba(255,255,255,0.1);
-  transition: box-shadow var(--transition), transform var(--transition);
+  transition: all var(--transition);
 }
 
 .sidebar-brand:hover .sidebar-logo {
@@ -750,12 +751,14 @@ input, select, textarea { color: var(--text); }
   text-align: center; 
   border: 1px solid var(--border); 
   white-space: nowrap; 
+  min-width: 130px; /* Increased to fit full day/month names */
 }
 .preview-table th { 
   background: var(--bg3); 
   font-weight: 600; 
   font-size: .72rem; 
   color: var(--text-muted); 
+  transition: background 0.3s;
 }
 .preview-table th .day-name { 
   display: block; 

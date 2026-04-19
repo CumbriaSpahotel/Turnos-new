@@ -99,25 +99,28 @@
   const hotelTitle  = $("#hotelTitle");
   const hotelLogo   = $("#hotelLogo");
 
-  // ---- Datos desde FULL_DATA o localStorage (Sync con Admin) ----
-  let FULL_DATA = (window.FULL_DATA && Array.isArray(window.FULL_DATA.schedule))
-    ? window.FULL_DATA
-    : { schedule: [] };
-
-  try {
-    const local = localStorage.getItem('turnosweb_admin_data');
-    if (local) {
-      const parsed = JSON.parse(local);
-      if (parsed && Array.isArray(parsed.schedule)) {
-        FULL_DATA = parsed;
-        console.log('Móvil: Utilizando datos administrados localmente');
+  function getData() {
+    // Prioridad: Firebase (window.FULL_DATA) -> localStorage -> Fallback (window.FULL_DATA inicial)
+    let data = (window.FULL_DATA && Array.isArray(window.FULL_DATA.schedule)) ? window.FULL_DATA : { schedule: [] };
+    
+    try {
+      const local = localStorage.getItem('turnosweb_admin_data');
+      if (local) {
+        const parsed = JSON.parse(local);
+        if (parsed && Array.isArray(parsed.schedule)) {
+          // Si el local es más reciente que el actual (comparando por fecha de generación si existiera, o simplemente si el actual está vacío)
+          if (data.schedule.length === 0) data = parsed;
+        }
       }
-    }
-  } catch(e) {}
+    } catch(e) {}
+    return data;
+  }
 
-  const HOTELS = Array.from(
-    new Set((FULL_DATA.schedule || []).map(s => s.hotel))
-  ).filter(Boolean).sort();
+
+  function getHotels(data) {
+    return Array.from(new Set((data.schedule || []).map(s => s.hotel))).filter(Boolean).sort();
+  }
+
 
   // ---- Render cabecera días ----
   function renderHeader(thead, monday) {
@@ -216,8 +219,9 @@
   }
 
   // ---- Vista 1 hotel ----
-  function renderSingleHotel(hotel, monday) {
-    const weekData   = window.MobileAdapter.buildWeekData(FULL_DATA, hotel, monday);
+  function renderSingleHotel(hotel, monday, data) {
+    const weekData   = window.MobileAdapter.buildWeekData(data, hotel, monday);
+
     const baseMonday = weekData.monday || monday;
     renderHeader(theadEl, baseMonday);
     renderBody(tbodyEl, weekData);
@@ -228,11 +232,12 @@
   }
 
   // ---- Vista todos los hoteles ----
-  function renderAllHotels(monday) {
+  function renderAllHotels(monday, data) {
     multi.innerHTML = "";
+    const hotels = getHotels(data);
 
-    HOTELS.forEach(hotel => {
-      const weekData   = window.MobileAdapter.buildWeekData(FULL_DATA, hotel, monday);
+    hotels.forEach(hotel => {
+      const weekData   = window.MobileAdapter.buildWeekData(data, hotel, monday);
       const baseMonday = weekData.monday || monday;
 
       const section = document.createElement("section");
@@ -284,7 +289,15 @@
   }
 
   // ---- Refresh global ----
-  function refresh() {
+  window.refreshMobileView = function() {
+    const data = getData();
+    const hotels = getHotels(data);
+    
+    // Actualizar selector de hoteles si es necesario
+    const currentHotel = hotelSelect.value;
+    hotelSelect.innerHTML = `<option value="__ALL__">Todos</option>` +
+      hotels.map(h => `<option value="${h}" ${h === currentHotel ? 'selected' : ''}>${h}</option>`).join("");
+
     if (!weekPicker.value) {
       const mondayToday = mondayOf(new Date());
       weekPicker.value  = toISODateUTC(mondayToday);
@@ -296,15 +309,18 @@
     if (hotelVal === "__ALL__") {
       singleCard.style.display = "none";
       multi.style.display      = "block";
-      renderAllHotels(monday);
+      renderAllHotels(monday, data);
       hotelLogo.src   = "img/turnos_icon.png";
       hotelTitle.textContent = "Todos los hoteles";
     } else {
       multi.style.display      = "none";
       singleCard.style.display = "block";
-      renderSingleHotel(hotelVal, monday);
+      renderSingleHotel(hotelVal, monday, data);
     }
-  }
+  };
+
+  function refresh() { window.refreshMobileView(); }
+
 
   // ---- Eventos ----
   hotelSelect.addEventListener("change", refresh);
@@ -329,14 +345,18 @@
 
   // ---- Init ----
   (function init() {
+    const data = getData();
+    const hotels = getHotels(data);
+
     hotelSelect.innerHTML = [
       `<option value="__ALL__">Todos</option>`,
-      ...HOTELS.map(h => `<option value="${h}">${h}</option>`)
+      ...hotels.map(h => `<option value="${h}">${h}</option>`)
     ].join("");
 
     const mondayToday = mondayOf(new Date());
     weekPicker.value  = toISODateUTC(mondayToday);
 
-    refresh();
+    window.refreshMobileView();
   })();
+
 })();

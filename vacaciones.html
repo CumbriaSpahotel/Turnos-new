@@ -102,19 +102,68 @@
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
     <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/es.js"></script>
     <script src="firebase-config.js"></script>
+    <script src="data.js"></script>
+    <script src="data.ausencias.js"></script>
+
 
     <script>
         const $ = (s) => document.querySelector(s);
         let FULL_DATA = null;
         let CURRENT_RANGE = { start: '', end: '' };
 
+        // DETECTOR DE BLOQUEO DE NAVEGADOR
+        function checkStorage() {
+            try {
+                localStorage.setItem('test', '1');
+                localStorage.removeItem('test');
+                return true;
+            } catch(e) {
+                console.error("Almacenamiento bloqueado:", e);
+                return false;
+            }
+        }
+
+        function populateHotels(data) {
+            const hotels = [...new Set(data.schedule.map(g => g.hotel))].sort();
+            const select = $('#filterHotel');
+            if (select) {
+                const current = select.value;
+                select.innerHTML = '<option value="">— Hotel —</option>' + 
+                    hotels.map(h => `<option value="${h}" ${h === current ? 'selected' : ''}>${h}</option>`).join('');
+            }
+        }
+
         function renderVacations() {
             const container = $('#vacationsList');
-            const data = FULL_DATA || JSON.parse(localStorage.getItem('turnosweb_admin_data') || '{"schedule":[]}');
-            if (!FULL_DATA && (!data.schedule || data.schedule.length === 0)) {
-                container.innerHTML = `<div style="padding:5rem; text-align:center; opacity:0.5;">⌛ Cargando base de datos desde la nube...</div>`;
+            // Prioridad: Firebase (FULL_DATA) -> localStorage -> Fallback data.js -> data.ausencias.js -> Vacío
+            let data = FULL_DATA;
+            
+            if (!data || !data.schedule) {
+                try {
+                    const local = localStorage.getItem('turnosweb_admin_data');
+                    if (local) data = JSON.parse(local);
+                } catch(e) {}
+            }
+
+            if (!data || !data.schedule) data = window.FULL_DATA;
+            if (!data || !data.schedule) data = window.AUSENCIAS_DATA; // Fallback extremo
+            if (!data) data = { schedule: [] };
+            
+            if (!data.schedule || data.schedule.length === 0) {
+                const isBlocked = !checkStorage();
+                container.innerHTML = `
+                    <div style="padding:5rem; text-align:center; opacity:0.5;">
+                        <div style="font-size:3rem; margin-bottom:1rem;">${isBlocked ? '🚫' : '⌛'}</div>
+                        <p>${isBlocked ? 
+                            '<b style="color:var(--danger);">El navegador está bloqueando el acceso a los datos.</b><br>Desactiva la "Prevención de Seguimiento Estrícta" o el bloqueo de terceros en la configuración del navegador.' : 
+                            'Esperando datos (Nube o Local)...'}</p>
+                        ${isBlocked ? '<button onclick="location.reload()" class="btn" style="margin-top:10px;">Reintentar</button>' : ''}
+                    </div>`;
                 return;
             }
+
+            populateHotels(data);
+
 
             const hotelFilter = $('#filterHotel')?.value || '';
             const empFilter = $('#filterEmp')?.value.toLowerCase() || '';
@@ -142,8 +191,12 @@
                     }
 
                     const l = turnLabel.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
-                    // Detectar Vacaciones (V, Vac, Vacaciones, etc.)
-                    if (l.startsWith('v')) {
+                    // Detectar Vacaciones (V, Vac, Vacaciones, etc. o etiquetas explícitas)
+                    const isVac = l.startsWith('v') || 
+                                 l.includes('vac') || 
+                                 (t.turno && typeof t.turno === 'object' && String(t.turno.TipoAusencia || '').toLowerCase().includes('vac'));
+
+                    if (isVac) {
                         if (empFilter && !t.empleado.toLowerCase().includes(empFilter)) return;
                         vacations.push({ hotel: g.hotel, fecha: t.fecha, empleado: t.empleado, label: turnLabel });
                     }
@@ -215,6 +268,7 @@
             setTheme(savedTheme);
             
             const today = new Date();
+            const startOfYear = new Date(today.getFullYear(), 0, 1);
             const endOfYear = new Date(today.getFullYear(), 11, 31);
 
             // Inicializar Flatpickr con modo wrap para que todo el div sea clickeable
@@ -223,7 +277,7 @@
                 mode: "range",
                 locale: "es",
                 dateFormat: "Y-m-d",
-                defaultDate: [today, endOfYear],
+                defaultDate: [startOfYear, endOfYear],
                 onChange: (selectedDates) => {
                     if (selectedDates.length === 2) {
                         const s = selectedDates[0].toISOString().split('T')[0];

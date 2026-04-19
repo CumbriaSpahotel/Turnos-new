@@ -120,27 +120,50 @@
             return `${parts[2]}/${parts[1]}/${parts[0]}`;
         }
 
+        function populateHotels(data) {
+            const hotels = [...new Set(data.schedule.map(g => g.hotel))].sort();
+            const select = $('#filterHotel');
+            if (select) {
+                const current = select.value;
+                select.innerHTML = '<option value="">— Hotel —</option>' + 
+                    hotels.map(h => `<option value="${h}" ${h === current ? 'selected' : ''}>${h}</option>`).join('');
+            }
+        }
+
         function renderSwaps() {
             const container = $('#swapsList');
+            // Prioridad: Firebase (FULL_DATA) -> localStorage -> Fallback data.js -> Vacío
+            const data = FULL_DATA || JSON.parse(localStorage.getItem('turnosweb_admin_data') || 'null') || window.FULL_DATA || {"schedule":[], "swaps":[]};
             
-            let data = { swaps: [] };
-            try {
-                const saved = localStorage.getItem('turnosweb_admin_data');
-                if (saved) data = JSON.parse(saved);
-            } catch(e) { console.error(e); }
+            if (!data.schedule || data.schedule.length === 0) {
+                container.innerHTML = `<div style="padding:5rem; text-align:center; opacity:0.5;">
+                    <div style="font-size:3rem; margin-bottom:1rem;">⌛</div>
+                    <p>Sincronizando con la nube...</p>
+                </div>`;
+                return;
+            }
 
-            let swaps = (data && data.swaps) ? data.swaps : [];
+            populateHotels(data);
+
+
+            let swaps = data.swaps || [];
             
             // Si data.swaps está vacío, intentamos extraer de data.schedule (retrocompatibilidad)
             if (swaps.length === 0 && data.schedule) {
-                console.log('Intentando extraer cambios desde el cuadrante existente...');
                 const extracted = [];
                 const seenPairs = new Set();
                 data.schedule.forEach(g => {
                     (g.turnos || []).forEach(t => {
-                        if (t.turno && typeof t.turno === 'object' && t.turno.TipoInterpretado === 'C/T') {
+                        let turnLabel = '';
+                        if (typeof t.turno === 'string') turnLabel = t.turno;
+                        else if (t.turno && typeof t.turno === 'object') {
+                            turnLabel = t.turno.TipoInterpretado || t.turno.TurnoOriginal || '';
+                        }
+                        
+                        // Detectar etiqueta C/T o Cambio
+                        if (turnLabel.includes('C/T') || turnLabel.toLowerCase().includes('cambio')) {
                             const emp1 = t.empleado;
-                            const emp2 = t.turno.Sustituto;
+                            const emp2 = (t.turno && t.turno.Sustituto) ? t.turno.Sustituto : '—';
                             const key = [g.hotel, t.fecha, emp1, emp2].sort().join('|');
                             if (!seenPairs.has(key)) {
                                 seenPairs.add(key);
@@ -152,57 +175,33 @@
                 swaps = extracted;
             }
 
-        let CURRENT_RANGE = { start: '', end: '' };
-
-        function renderSwaps() {
-            const container = $('#swapsList');
-            const data = FULL_DATA || JSON.parse(localStorage.getItem('turnosweb_admin_data') || '{"schedule":[]}');
-            
-            // --- FILTRO TEMPORAL Y ORDENACIÓN ---
             const hotelFilter = $('#filterHotel')?.value || '';
             const dStart = CURRENT_RANGE.start;
             const dEnd = CURRENT_RANGE.end;
             const empFilter = $('#filterEmp')?.value.toLowerCase() || '';
-            const todayStr = new Date().toISOString().split('T')[0];
 
-            if (hotelFilter) {
-                swaps = swaps.filter(s => s.hotel === hotelFilter);
-            }
+            let filtered = swaps.filter(s => {
+                if (hotelFilter && s.hotel !== hotelFilter) return false;
+                if (dStart && s.fecha < dStart) return false;
+                if (dEnd && s.fecha > dEnd) return false;
+                if (empFilter && !(s.emp1.toLowerCase().includes(empFilter) || s.emp2.toLowerCase().includes(empFilter))) return false;
+                return true;
+            });
 
-            if (dStart) {
-                swaps = swaps.filter(s => s.fecha >= dStart);
-            }
-            if (dEnd) {
-                swaps = swaps.filter(s => s.fecha <= dEnd);
-            }
-            swaps.sort((a, b) => b.fecha.localeCompare(a.fecha)); // Por defecto descendente (más recientes arriba)
+            filtered.sort((a, b) => b.fecha.localeCompare(a.fecha));
 
-            if (swaps.length === 0) {
+            if (filtered.length === 0) {
                 container.innerHTML = `
                 <div style="padding:8rem 2rem; text-align:center;">
                     <div style="font-size:4rem; margin-bottom:1.5rem; opacity:0.1;">🔄</div>
                     <p style="color:var(--text-muted); font-size:1.1rem;">No se han detectado cambios en el periodo seleccionado.</p>
-                    <p style="color:var(--text-dim); font-size:0.9rem; margin-top:10px;">Ajusta los filtros de fecha o carga un nuevo Excel.</p>
                 </div>`;
                 return;
             }
-            
-            // Deduplicar (ya hecho arriba en la extracción si era necesario, pero por seguridad)
-            const seen = new Set();
-            swaps = swaps.filter(s => {
-                const key = [s.hotel, s.fecha, s.emp1, s.emp2].sort().join('|');
-                if (seen.has(key)) return false;
-                seen.add(key);
-                return true;
-            });
 
-            if (hotelFilter) {
-                swaps = swaps.filter(s => s.hotel === hotelFilter);
-            }
-
-            const rows = swaps.map(s => `
+            const rows = filtered.map(s => `
                 <tr>
-                    <td style="padding:1.2rem;"><span class="status-badge" style="background:rgba(16, 232, 152, 0.1); color:#10e898;">✅ Confirmado</span></td>
+                    <td style="padding:1.2rem;"><span class="status-badge" style="background:rgba(16, 232, 152, 0.1); color:#10e898;">✅ Procesado</span></td>
                     <td style="padding:1.2rem;"><b>${fmtDate(s.fecha)}</b></td>
                     <td style="padding:1.2rem; color:var(--text-muted);">${s.hotel}</td>
                     <td style="padding:1.2rem;">
@@ -226,9 +225,7 @@
                                 <th style="text-align:left;">Participantes</th>
                             </tr>
                         </thead>
-                        <tbody>
-                            ${rows}
-                        </tbody>
+                        <tbody>${rows}</tbody>
                     </table>
                 </div>
             `;
@@ -239,7 +236,11 @@
     <!-- FIREBASE INTEGRATION -->
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/es.js"></script>
     <script src="firebase-config.js"></script>
+    <script src="data.js"></script>
+
 
     <script>
         // Sincronización con la nube para Cambios de Turno
@@ -290,6 +291,7 @@
             setTheme(savedTheme);
 
             const today = new Date();
+            const startOfYear = new Date(today.getFullYear(), 0, 1);
             const endOfYear = new Date(today.getFullYear(), 11, 31);
 
             flatpickr("#rangeTrigger", {
@@ -297,7 +299,7 @@
                 mode: "range",
                 locale: "es",
                 dateFormat: "Y-m-d",
-                defaultDate: [today, endOfYear],
+                defaultDate: [startOfYear, endOfYear],
                 onChange: (selectedDates) => {
                     if (selectedDates.length === 2) {
                         const s = selectedDates[0].toISOString().split('T')[0];

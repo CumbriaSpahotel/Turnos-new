@@ -167,7 +167,19 @@ window.classify = (raw) => {
 window.getShiftClass = (key) => ({ 'm': 'mañana', 't': 'tarde', 'n': 'noche', 'v': 'vacaciones', 'd': 'descanso', 'b': 'baja' }[key] || 'x');
 
 window.saveData = () => {
-    if (window.parsedData) localStorage.setItem('turnosweb_admin_data', JSON.stringify(window.parsedData));
+    if (!window.parsedData) return;
+    try {
+        localStorage.setItem('turnosweb_admin_data', JSON.stringify(window.parsedData));
+        window.addLog('✅ Guardado en memoria local (LocalStorage)');
+    } catch(e) {
+        console.error("Error al guardar en LocalStorage:", e);
+        window.addLog('❌ ERROR: El navegador bloqueó el guardado local.', 'error');
+        // Mostrar alerta visual solo una vez si falla
+        if (!window._storageWarningShown) {
+            alert("⚠️ ATENCIÓN: Tu navegador está bloqueando el almacenamiento de datos. Esto suele ocurrir por la 'Prevención de Seguimiento Estricta' o por el bloqueo de cookies de terceros. Para que la App funcione, debes permitir el acceso a datos locales (haz clic en el candado junto a la URL y desactiva la protección contra rastreo para este sitio).");
+            window._storageWarningShown = true;
+        }
+    }
 };
 
 // ==========================================
@@ -300,19 +312,35 @@ window.processWorkbook = (wb) => {
     });
 
     // --- LÓGICA DE FUSIÓN (MERGE) ---
-    if (window.parsedData && window.parsedData.schedule) {
+    if (window.parsedData) {
         window.addLog('Comparando con base de datos en tiempo real...');
-        let changes = 0;
-        // Mantenemos swaps y otros metadatos que ya estuvieran en la nube
-        const newSchedule = scheduleRows;
         
-        // Aquí podríamos comparar newSchedule con window.parsedData.schedule para loguear diferencias exactas
-        window.parsedData.schedule = newSchedule;
+        // Actualizar cuadrante
+        window.parsedData.schedule = scheduleRows;
+        
+        // Actualizar Cambios de Turno (Swaps): Fusionar existentes de la nube con nuevos del Excel
+        const existingSwaps = window.parsedData.swaps || [];
+        const newSwaps = allSwapsRaw;
+        
+        // Evitar duplicados al fusionar
+        const seenSwaps = new Set();
+        const mergedSwaps = [];
+        
+        [...existingSwaps, ...newSwaps].forEach(s => {
+            const key = [s.hotel, s.fecha, s.emp1, s.emp2].sort().join('|');
+            if (!seenSwaps.has(key)) {
+                seenSwaps.add(key);
+                mergedSwaps.push(s);
+            }
+        });
+
+        window.parsedData.swaps = mergedSwaps;
         window.parsedData.generated_at = new Date().toISOString();
-        window.addLog(`Base de datos actualizada con datos del Excel.`);
+        window.addLog(`Base de datos actualizada (Cuadrante + Cambios).`);
     } else {
         window.parsedData = { schedule: scheduleRows, swaps: allSwapsRaw, generated_at: new Date().toISOString() };
     }
+
     
     window.saveData();
     window.updateDashboardStats();
@@ -378,11 +406,13 @@ window.renderWeeklyPreview = (filterHotel, filterDate) => {
         // Cabeceras de tabla
         const headers = weekDays.map(dayIso => {
             const d = new Date(dayIso);
-            const name = ['D','L','M','X','J','V','S'][d.getDay()];
+            const name = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'][d.getDay()];
+            const monthName = d.toLocaleDateString('es-ES', { month: 'long' });
+            const capitalizedMonth = monthName.charAt(0).toUpperCase() + monthName.slice(1);
             const isWeekend = d.getDay() === 0 || d.getDay() === 6;
             return `<th class="${isWeekend ? 'weekend' : ''}">
                 <span class="day-name">${name}</span>
-                <span class="day-number">${window.fmtDate(dayIso).split('/').slice(0,2).join('/')}</span>
+                <span class="day-number">${d.getDate()}/${capitalizedMonth}</span>
             </th>`;
         }).join('');
 

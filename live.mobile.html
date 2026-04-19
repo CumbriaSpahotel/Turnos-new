@@ -418,12 +418,10 @@
             if (cloudData) {
                 console.log("MÓVIL NUBE: Datos actualizados.");
                 window.FULL_DATA = cloudData;
-                // Intentar refrescar la vista móvil si el objeto App existe
-                if (window.MobileApp && typeof window.MobileApp.init === 'function') {
-                    window.MobileApp.init();
-                } else if (typeof window.render === 'function') {
-                    window.render();
+                if (typeof window.refreshMobileView === 'function') {
+                    window.refreshMobileView();
                 }
+
             }
         });
     }
