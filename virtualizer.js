@@ -233,10 +233,17 @@ class VirtualTable {
             cleanLabel = 'Descanso';
         }
 
-        if (cellData.isSub && !cleanIcon) {
+        if (cellData.sustituto || cellData.isSub) {
             cleanIcon = '\u{1F504}';
-            cell.title = `Sustituyendo a ${cellData.subFor}`;
-        } else if (!cellData.isSub) {
+            if (cellData.sustituto) {
+                cell.title = `Sustituido por: ${cellData.sustituto}`;
+                cleanLabel += ` (${cellData.sustituto.charAt(0).toUpperCase()})`;
+            }
+            if (cellData.isSub) {
+                cell.title = `Sustituyendo a ${cellData.subFor}`;
+                cleanLabel += ` (C)`;
+            }
+        } else {
             cell.title = '';
         }
 

@@ -141,8 +141,11 @@
             <div class="nav-group-label">SISTEMA</div>
             <a href="configuracion.html" class="nav-item"><span class="nav-label">Configuracion</span></a>
         </nav>
-        <div class="sidebar-footer">
-            <button class="theme-toggle" id="themeToggle" onclick="toggleTheme()">Tema</button>
+        <div class="sidebar-footer" style="display:flex; flex-direction:column; gap:10px; padding:20px 14px;">
+            <button class="btn-premium pulse-animation" id="btnSyncGaps" onclick="window.syncGapsFromExcel()" style="background:#ff9800; color:white; border:none; border-radius:12px; padding:12px; font-weight:800; cursor:pointer; box-shadow:0 4px 15px rgba(255,152,0,0.3); width:100%; font-size:0.75rem; display:flex; align-items:center; justify-content:center; gap:8px;">
+                <span style="font-size:1.1rem;">☁️</span> Completar Supabase
+            </button>
+            <button class="theme-toggle" onclick="toggleTheme()" style="width:100%;">🌙 Cambiar Modo</button>
         </div>
     </aside>
 
@@ -481,7 +484,7 @@
                         <td style="padding:15px;">${escapeHtml(event.observaciones || event.turno_nuevo || '')}</td>
                         <td style="padding:15px;">
                             <div class="change-actions">
-                                ${isAnulado ? '<span style="font-weight:800; color:#c62828;">Anulado</span>' : `<button class="mini-btn" onclick="openEditCambio('${escapeHtml(event.id)}')">Editar</button><button class="mini-btn danger" onclick="anularCambio('${escapeHtml(event.id)}')">Anular</button>`}
+                                ${isAnulado ? '<span style="font-weight:800; color:#c62828;">Anulado</span>' : `<button class="mini-btn" onclick="openEditCambio('${escapeHtml(event.id)}')">Gestionar</button><button class="mini-btn danger" onclick="anularCambio('${escapeHtml(event.id)}')">Anular</button>`}
                             </div>
                         </td>
                     </tr>

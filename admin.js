@@ -584,74 +584,44 @@ window.renderPreview = async () => {
             if (isWeekly) {
                 // ── MODO SEMANAL: TABLA HORIZONTAL (EXISTENTE) ─────────────────
                 
-                // Recopilar IDs y perfiles específicos
-                const allIds = new Map();
-                hData.forEach(t => {
-                    if (t.empleado_id) allIds.set(normalizeEmployeeKey(t.empleado_id), String(t.empleado_id).trim());
-                    if (t.sustituto)   allIds.set(normalizeEmployeeKey(t.sustituto), String(t.sustituto).trim());
-                });
-
-                const isAbsent = new Set();
-                hData.forEach(t => {
-                    const tipo = (t.tipo || '').toUpperCase();
-                    if (tipo.startsWith('VAC') || tipo.startsWith('BAJA') || tipo.startsWith('PERM')) isAbsent.add(normalizeEmployeeKey(t.empleado_id));
-                });
-
-                const replacedBy = {};
-                hData.forEach(t => {
-                    if (t.sustituto && isAbsent.has(normalizeEmployeeKey(t.empleado_id))) {
-                        replacedBy[normalizeEmployeeKey(t.empleado_id)] = String(t.sustituto).trim();
-                    }
-                });
-
+                // ── MODO SEMANAL: TABLA HORIZONTAL (OPTIMIZADO V8.3) ───────────────
+                
+                // 1. Determinar quién debe aparecer en este hotel (Anclaje por Perfil)
                 const rendered = new Set();
                 const empList  = [];
-                const sourceRows = excelSource[hName] || [];
-                const currentWeekRows = sourceRows.filter(r => r.weekStart === startISO);
-                const displayByKey = new Map();
-                const excelOrder = [];
-                currentWeekRows.forEach(r => {
-                    const key = normalizeEmployeeKey(r.empleadoId);
-                    if (!key || displayByKey.has(key)) return;
-                    displayByKey.set(key, String(r.displayName || r.empleadoId || '').trim());
-                    excelOrder.push(key);
+                
+                // Prioridad 1: Empleados cuyo hotel principal (según perfil) es este
+                profiles.forEach(p => {
+                    const h = p.hotel_id || 'GENERAL';
+                    if (h === hName) {
+                        const key = normalizeEmployeeKey(p.id);
+                        empList.push({ id: p.nombre || p.id, key: key, displayAs: p.nombre || p.id, isAbsent: false, substituteFor: null });
+                        rendered.add(key);
+                    }
                 });
 
-                excelOrder.forEach(empKey => {
-                    if (rendered.has(empKey)) return;
-                    if (isAbsent.has(empKey)) {
-                        const sub = replacedBy[empKey];
-                        const subKey = normalizeEmployeeKey(sub);
-                        if (subKey && !rendered.has(subKey)) {
-                            empList.push({ id: allIds.get(subKey) || sub, displayAs: allIds.get(subKey) || sub, isAbsent: false, substituteFor: allIds.get(empKey) || displayByKey.get(empKey) || empKey });
-                            rendered.add(subKey);
+                // Prioridad 2: Empleados que tienen turnos aquí y no están en otro hotel anclados
+                hData.forEach(t => {
+                    const key = normalizeEmployeeKey(t.empleado_id);
+                    if (!rendered.has(key)) {
+                        // Solo añadir si NO tienen un hotel principal distinto asignado
+                        const p = profiles.find(pr => normalizeEmployeeKey(pr.id) === key);
+                        if (!p || !p.hotel_id || p.hotel_id === hName || p.hotel_id === 'GENERAL') {
+                            empList.push({ id: t.empleado_id, key: key, displayAs: t.empleado_id, isAbsent: false, substituteFor: null });
+                            rendered.add(key);
                         }
-                    } else {
-                        const display = allIds.get(empKey) || displayByKey.get(empKey) || empKey;
-                        empList.push({ id: display, displayAs: display, isAbsent: false, substituteFor: null });
-                        rendered.add(empKey);
                     }
                 });
 
-                allIds.forEach((display, empKey) => {
-                    if (!rendered.has(empKey) && !isAbsent.has(empKey)) {
-                        // Solo añadir si el empleado tiene al menos un turno propio en este hotel
-                        // (evita que sustitutos de otros hoteles aparezcan aquí)
-                        const hasOwnRecord = hData.some(t => normalizeEmployeeKey(t.empleado_id) === empKey);
-                        if (!hasOwnRecord) return;
-                        empList.push({ id: display, displayAs: display, isAbsent: false, substituteFor: null });
-                        rendered.add(empKey);
-                    }
-                });
-
-                isAbsent.forEach(empKey => {
-                    if (!rendered.has(empKey)) {
-                        empList.push({ id: allIds.get(empKey) || empKey, displayAs: allIds.get(empKey) || empKey, isAbsent: true, substituteFor: null });
-                        rendered.add(empKey);
-                    }
+                // Ordenar por el campo 'orden' del perfil
+                empList.sort((a, b) => {
+                    const pA = profiles.find(p => normalizeEmployeeKey(p.id) === a.key);
+                    const pB = profiles.find(p => normalizeEmployeeKey(p.id) === b.key);
+                    return (pA?.orden ?? 999) - (pB?.orden ?? 999);
                 });
 
                 if (empList.length === 0) continue;
+                const logoUrl = h.includes('Guadiana') ? 'guadiana logo.jpg' : 'cumbria logo.jpg';
 
                 const hotelSection = document.createElement('div');
                 hotelSection.innerHTML = `
@@ -677,30 +647,26 @@ window.renderPreview = async () => {
                             </thead>
                             <tbody>
                                 ${empList.map(entry => {
-                                    const { id: emp, displayAs, isAbsent: empIsAbsent, substituteFor } = entry;
-                                    let activeShifts = [];
-                                    if (substituteFor) {
-                                        const absenteeRow = (excelSource[hName] || []).find(r => normalizeEmployeeKey(r.empleadoId) === normalizeEmployeeKey(substituteFor) && r.weekStart === startISO);
-                                        columns.forEach((col, idx) => activeShifts.push({ fecha: col.date, turno: absenteeRow ? absenteeRow.values[idx] : '', tipo: 'NORMAL' }));
-                                    } else {
-                                        activeShifts = hData.filter(t => normalizeEmployeeKey(t.empleado_id) === normalizeEmployeeKey(emp));
-                                    }
-                                    const nights = activeShifts.filter(t => (t.turno||'').toLowerCase().startsWith('n')).length;
-                                    const rests  = activeShifts.filter(t => (t.turno||'').toLowerCase().startsWith('d')).length;
+                                    const { id: emp, displayAs } = entry;
+                                    const empsData = data.filter(t => normalizeEmployeeKey(t.empleado_id) === entry.key);
+                                    const nights = empsData.filter(t => (t.turno||'').toLowerCase().startsWith('n')).length;
+                                    const rests  = empsData.filter(t => (t.turno||'').toLowerCase().startsWith('d')).length;
 
                                     return `
-                                        <tr style="border-bottom:1px solid #f1f5f9; ${empIsAbsent ? 'background:#fafafa;' : ''}">
+                                        <tr style="border-bottom:1px solid #f1f5f9;">
                                             <td style="padding:12px 25px; vertical-align:middle; background:white; position:sticky; left:0; z-index:5; border-right:1px solid #f1f5f9;">
                                                 <div style="display:flex; align-items:center; justify-content:space-between; gap:12px;">
-                                                    <span style="${empIsAbsent ? 'font-weight:600; color:#cbd5e1; text-decoration:line-through;' : 'font-weight:700; color:#334155;'} font-size:0.85rem;">${escapeHtml(displayAs)}</span>
+                                                    <div style="display:flex; flex-direction:column;">
+                                                        <span style="font-weight:700; color:var(--accent); font-size:0.85rem;">${escapeHtml(displayAs)}</span>
+                                                    </div>
                                                     <div style="display:flex; gap:8px;">
-                                                        <div title="Noches" style="display:flex; align-items:center; gap:3px; background:#f1f5f9; padding:2px 8px; border-radius:8px; font-size:0.65rem; font-weight:800; color:#64748b; border:1px solid #e2e8f0;">🌙 ${nights}</div>
-                                                        <div title="Descansos" style="display:flex; align-items:center; gap:3px; background:#fff1f2; padding:2px 8px; border-radius:8px; font-size:0.65rem; font-weight:800; color:#be123c; border:1px solid #fecdd3;">D ${rests}</div>
+                                                        <div title="Noches" style="display:flex; align-items:center; gap:3px; background:#fff7ed; padding:2px 8px; border-radius:50%; width:24px; height:24px; display:flex; justify-content:center; font-size:0.65rem; font-weight:800; color:#ea580c; border:1px solid #ffedd5;">${nights}</div>
+                                                        <div title="Descansos" style="display:flex; align-items:center; gap:3px; background:#eff6ff; padding:2px 8px; border-radius:50%; width:24px; height:24px; display:flex; justify-content:center; font-size:0.65rem; font-weight:800; color:#2563eb; border:1px solid #dbe4ff;">${rests}</div>
                                                     </div>
                                                 </div>
                                             </td>
                                             ${columns.map((c, colIdx) => {
-                                                const s = activeShifts.find(t => t.fecha === c.date);
+                                                const s = data.find(t => normalizeEmployeeKey(t.empleado_id) === entry.key && t.fecha === c.date);
                                                 if (!s || !s.turno) return `<td style="background:#fafbfc; border-left:1px solid #f1f5f9; opacity:0.3;"><div style="width:100%; height:12px; background:#e2e8f0; border-radius:6px; max-width:60px; margin:0 auto;"></div></td>`;
                                                 
                                                 const t = (s.tipo||'').toUpperCase(); 
@@ -712,15 +678,22 @@ window.renderPreview = async () => {
                                                 else if (t.startsWith('PERM')) { style = 'background:#f3e8ff; color:#7e22ce; border:1px solid #e9d5ff;'; lbl = 'Permiso'; icon = '📋'; }
                                                 else if (l.startsWith('m')) { style = 'background:#ebfbee; color:#2f9e44; border:1px solid #d3f9d8;'; lbl = 'Mañana'; }
                                                 else if (l.startsWith('t')) { style = 'background:#fff9db; color:#f08c00; border:1px solid #fff3bf;'; lbl = 'Tarde'; }
-                                                else if (l.startsWith('n')) { style = 'background:#edf2ff; color:#364fc7; border:1px solid #dbe4ff;'; lbl = 'Noche'; icon = '🌙'; }
+                                                else if (l.startsWith('n')) { style = 'background:#edf2ff; color:#364fc7; border:1px solid #dbe4ff;'; lbl = 'Noche'; icon = '<span style="font-size:1.1rem; margin-left:4px;">🌙</span>'; }
                                                 else if (l.startsWith('d')) { style = 'background:#fff5f5; color:#fa5252; border:1px solid #ffc9c9;'; lbl = 'Descanso'; }
                                                 
-                                                if (t.includes('CT')) { icon = '🔄'; style += ' box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);'; }
+                                                if (t.includes('CT') || s.sustituto) { 
+                                                    icon = `<span style="font-size:0.9rem; margin-left:4px;" title="Sust.: ${s.sustituto || ''}">🔄</span>`; 
+                                                    style += ' box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);'; 
+                                                }
+                                                
+                                                if (s.hotel_id && s.hotel_id !== hName) {
+                                                    lbl = `${lbl} (${s.hotel_id.split(' ')[0]})`;
+                                                }
 
                                                 return `
                                                     <td style="padding:8px; text-align:center; border-left:1px solid #f1f5f9;">
-                                                        <div style="display:inline-flex; align-items:center; justify-content:center; gap:6px; padding:10px 4px; width:100%; border-radius:12px; font-size:0.75rem; font-weight:800; ${style}">
-                                                            ${lbl} ${icon}
+                                                        <div style="display:inline-flex; align-items:center; justify-content:center; gap:2px; padding:10px 4px; width:100%; border-radius:12px; font-size:0.75rem; font-weight:800; ${style}">
+                                                            ${lbl}${icon}
                                                         </div>
                                                     </td>`;
                                             }).join('')}
@@ -768,24 +741,28 @@ window.renderPreview = async () => {
                     diaData.forEach(t => {
                         const shift = (t.turno || '').toLowerCase();
                         const tipo  = (t.tipo  || '').toUpperCase();
-                        const name  = String(t.empleado_id || '').split(' ')[0]; // primer nombre
+                        const empName = String(t.empleado_id || '').split(' ')[0];
+                        const subName = t.sustituto ? String(t.sustituto).split(' ')[0] : null;
                         
+                        // Lógica de visualización: si hay sustituto, mostrarlo
+                        const displayName = subName ? `${empName} (👤 ${subName})` : empName;
+
                         if (tipo.includes('CT')) {
-                            groups.CT.push({ name, shift: shift.charAt(0).toUpperCase() });
+                            groups.CT.push({ name: displayName, shift: shift.charAt(0).toUpperCase() });
                         } else if (tipo.startsWith('VAC')) {
-                            groups.ABS.push({ name: t.empleado_id, icon: '🏖️', cls: 'vac' });
+                            groups.ABS.push({ name: displayName, icon: '🏖️', cls: 'vac' });
                         } else if (tipo.startsWith('BAJA')) {
-                            groups.ABS.push({ name: t.empleado_id, icon: '🏥', cls: 'baja' });
+                            groups.ABS.push({ name: displayName, icon: '🏥', cls: 'baja' });
                         } else if (tipo.startsWith('PERM')) {
-                            groups.ABS.push({ name: t.empleado_id, icon: '📋', cls: 'perm' });
+                            groups.ABS.push({ name: displayName, icon: '📋', cls: 'perm' });
                         } else if (shift.startsWith('m')) {
-                            groups.M.push(name);
+                            groups.M.push(displayName);
                         } else if (shift.startsWith('t')) {
-                            groups.T.push(name);
+                            groups.T.push(displayName);
                         } else if (shift.startsWith('n')) {
-                            groups.N.push(name);
+                            groups.N.push(displayName);
                         } else if (shift.startsWith('d')) {
-                            groups.D.push(name);
+                            groups.D.push(displayName);
                         }
                     });
 
@@ -1047,8 +1024,8 @@ window.renderSemana = async (inicio, fin) => {
     }
 
     try {
-        // 1. Fetch via DAO
         let data = await window.TurnosDB.fetchRango(inicio, fin);
+        const profiles = await window.TurnosDB.getEmpleados();
         
         const selHotel = $('#prevHotel')?.value;
         if (selHotel && selHotel !== 'all' && selHotel !== '') {
@@ -1059,11 +1036,28 @@ window.renderSemana = async (inicio, fin) => {
 
         // 3. Renderizado Multi-Hotel (V8.2 Premium)
         area.innerHTML = '';
-        const hotelsFound = [...new Set(data.map(t => t.hotel_id))].sort();
+        // Agrupar por el hotel primario del empleado (como en index.html)
+        const hotelGroups = {};
+        profiles.forEach(p => {
+            const h = p.hotel_id || 'SIN HOTEL';
+            if (!hotelGroups[h]) hotelGroups[h] = [];
+            hotelGroups[h].push(window.TurnosDB.normalizeString(p.id));
+        });
 
-        for (const hName of hotelsFound) {
-            const hShifts = data.filter(t => t.hotel_id === hName);
-            if (hShifts.length === 0) continue;
+        const hotelsToRender = [...new Set([
+            ...Object.keys(hotelGroups),
+            ...data.map(t => t.hotel_id)
+        ])].sort();
+
+        for (const hName of hotelsToRender) {
+            const empsInThisHotel = hotelGroups[hName] || [];
+            const hShifts = data.filter(t => 
+                t.hotel_id === hName || 
+                empsInThisHotel.includes(window.TurnosDB.normalizeString(t.empleado_id)) ||
+                empsInThisHotel.includes(window.TurnosDB.normalizeString(t.sustituto))
+            );
+            
+            if (hShifts.length === 0 && !Object.keys(hotelGroups).includes(hName)) continue;
 
             const card = document.createElement('div');
             card.className = 'preview-week week';
@@ -1152,10 +1146,7 @@ window.renderSemanaEnContenedorV2 = async (container, inicio, fin, hotelData, ho
     };
 
     const sortedNormNames = allUniqueNorm.sort((a, b) => {
-        // 1. Ausentes totales al final
-        const aAb = isTotalAbsent(a), bAb = isTotalAbsent(b);
-        if (aAb !== bAb) return aAb ? 1 : -1;
-        // 2. Orden de base de datos
+        // Orden ESTRICTO por base de datos (sin mover ausencias al final)
         return getOrder(a) - getOrder(b);
     });
 
@@ -1860,7 +1851,7 @@ window.populateEmployees = async () => {
             }
         });
 
-        const rows = empsInHotel.sort((a, b) => (a.orden || 999) - (b.orden || 999)).map(p => renderEmployeeRow(p, hotel)).join('');
+        const rows = empsInHotel.sort((a, b) => (a.orden ?? 999) - (b.orden ?? 999)).map(p => renderEmployeeRow(p, hotel)).join('');
 
         return `
         <div class="emp-hotel-section" data-hotel-section="${escapeHtml(hotel)}">
@@ -2131,6 +2122,10 @@ window.openEmpDrawer = async (name) => {
                 <div>
                     <span>Fecha baja</span><br>
                     <input type="date" class="edit-input" value="${escapeHtml(p.fecha_baja || '')}" onchange="window.setEmpDraftField('${safeId}', 'fecha_baja', this.value)">
+                </div>
+                <div>
+                    <span>Orden en cuadrante</span><br>
+                    <input type="number" class="edit-input" value="${p.orden ?? 999}" placeholder="Ej: 1" onchange="window.setEmpDraftField('${safeId}', 'orden', (this.value !== '' ? parseInt(this.value) : 999))">
                 </div>
                 <div>
                     <span>Motivo baja</span><br>

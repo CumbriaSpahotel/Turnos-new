@@ -13,16 +13,17 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
   <style>
       :root { 
-          --accent: #1677ff; 
-          --accent-hover: #4096ff; 
+          --accent: #2563eb; 
+          --accent-hover: #1d4ed8; 
           --border: #e2e8f0; 
-          --bg: #f4f7fb; 
+          --bg: #f4f7fa; 
           --bg2: #ffffff;
-          --bg3: #f8fafc;
+          --bg3: #f1f5f9;
           --surface: #ffffff;
-          --text: #1e2a3a; 
+          --text: #0f172a; 
           --text-dim: #64748b;
-          --shadow-sm: 0 2px 8px rgba(0,0,0,0.05);
+          --shadow-sm: 0 4px 12px rgba(0,0,0,0.03);
+          --shadow-lg: 0 10px 40px rgba(0,0,0,0.06);
       }
       
       body { 
@@ -66,55 +67,55 @@
       .preview-week.week { 
           background: var(--surface); 
           border: 1px solid var(--border); 
-          border-radius: 20px; 
-          margin-bottom: 2rem; 
+          border-radius: 24px; 
+          margin-bottom: 2.5rem; 
           overflow: hidden; 
-          box-shadow: var(--shadow-sm);
+          box-shadow: var(--shadow-lg);
       }
 
       .preview-week-header.week-head { 
           display: flex; 
           align-items: center; 
-          gap: 12px; 
-          padding: 1.2rem 1.5rem; 
+          gap: 16px; 
+          padding: 1.5rem 2rem; 
           border-bottom: 1px solid var(--border); 
-          background: linear-gradient(135deg, #f8fafc, #ffffff);
+          background: #ffffff;
       }
       .preview-week-header.week-head img {
-          width: 40px; height: 40px; border-radius: 10px; object-fit: cover; border: 1px solid rgba(0,0,0,0.05);
+          width: 50px; height: 50px; border-radius: 12px; object-fit: contain; border: 1px solid var(--border); padding: 4px; background: white;
       }
       .preview-week-header.week-head h3 { 
           margin: 0; 
-          font-size: 1.1rem; 
+          font-size: 1.25rem; 
           font-weight: 800; 
           color: var(--text); 
           font-family: 'Outfit', sans-serif;
-          letter-spacing: -0.01em;
+          letter-spacing: -0.02em;
+          text-transform: uppercase;
       }
 
       .viewport { border-radius: 0 !important; border: none !important; box-shadow: none !important; min-height: unset !important; height: auto !important; overflow: visible !important; }
-      .preview-table-v2 { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 0.85rem; }
-      .preview-table-v2 th { background: var(--bg3); padding: 12px 8px; border-bottom: 1px solid var(--border); font-weight: 700; position: sticky; top: -1px; z-index: 100; }
-      .preview-table-v2 td { padding: 4px; border-bottom: 1px solid #f1f5f9; vertical-align: middle; }
-      
-      .emp-cell { padding-left: 20px !important; min-width: 180px; z-index: 50; }
-      .emp-logo { width: 24px; height: 24px; border-radius: 4px; margin-right: 10px; vertical-align: middle; display: none; }
-      .emp-badges { display: flex; gap: 4px; margin-top: 2px; }
-      .emp-badge { font-size: 0.65rem; font-weight: 800; padding: 1px 6px; border-radius: 10px; background: var(--bg3); color: var(--text-dim); border: 1px solid var(--border); }
+      .preview-table-v2 { width: 100%; border-collapse: separate; border-spacing: 0; }
+      .preview-table-v2 th { background: var(--bg3); padding: 14px 8px; border-bottom: 1px solid var(--border); font-weight: 700; color: #64748b; font-size: 0.75rem; }
+      .preview-table-v2 td { padding: 6px 4px; border-bottom: 1px solid #f1f5f9; vertical-align: middle; }
       
       .v-pill { 
-          padding: 8px 4px; border-radius: 12px; font-weight: 700; font-size: 0.75rem; text-align: center; 
-          transition: all 0.2s; cursor: default; width: 95%; margin: 0 auto;
+          display: flex; align-items: center; justify-content: center; gap: 6px;
+          padding: 10px 8px; border-radius: 14px; font-weight: 700; font-size: 0.8rem;
+          box-shadow: 0 2px 4px rgba(0,0,0,0.02);
       }
-      .v-mañana .v-pill   { background: #ebfbee; color: #2f9e44; border: 1px solid rgba(47,158,68,0.1); }
-      .v-tarde .v-pill    { background: #fff9db; color: #f08c00; border: 1px solid rgba(240,140,0,0.1); }
-      .v-noche .v-pill    { background: #edf2ff; color: #364fc7; border: 1px solid rgba(54,79,199,0.1); }
-      .v-descanso .v-pill { background: #fff5f5; color: #fa5252; border: 1px solid rgba(250,82,82,0.1); }
-      .v-vac .v-pill      { background: #e3fafc; color: #0b7285; border: 1px solid rgba(11,114,133,0.1); }
-      .v-baja .v-pill     { background: #fff5f5; color: #fa5252; border: 1px dashed #fa5252; }
-      .v-perm .v-pill     { background: #f3f0ff; color: #7048e8; border: 1px solid rgba(112,72,232,0.1); }
-      .v-cambio .v-pill   { background: #e7f1ff; color: #0d6efd; border: 1px solid #0d6efd; }
-      .v-empty .v-pill    { opacity: 0.2; background: #eee; height: 10px; border-radius: 4px; }
+      .v-mañana .v-pill   { background: #ebfbee; color: #2f9e44; border: 1px solid #d3f9d8; }
+      .v-tarde .v-pill    { background: #fff9db; color: #f08c00; border: 1px solid #fff3bf; }
+      .v-noche .v-pill    { background: #edf2ff; color: #364fc7; border: 1px solid #dbe4ff; }
+      .v-descanso .v-pill { background: #fff5f5; color: #fa5252; border: 1px solid #ffc9c9; }
+      .v-vac .v-pill      { background: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd; }
+      .v-baja .v-pill     { background: #fef2f2; color: #b91c1c; border: 1px dashed #fecdd3; }
+      .v-perm .v-pill     { background: #f3e8ff; color: #7e22ce; border: 1px solid #e9d5ff; }
+
+      .emp-badge-n { background: #fff7ed; color: #ea580c; border: 1px solid #ffedd5; border-radius: 50%; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; font-size: 0.7rem; font-weight: 800; box-shadow: 0 2px 4px rgba(234, 88, 12, 0.1); }
+      .emp-badge-d { background: #eff6ff; color: #2563eb; border: 1px solid #dbe4ff; border-radius: 50%; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; font-size: 0.7rem; font-weight: 800; box-shadow: 0 2px 4px rgba(37, 99, 235, 0.1); }
+      
+      .v-pill { letter-spacing: -0.01em; }
   </style>
 </head>
 <body>
@@ -122,8 +123,8 @@
     <div style="display:flex; align-items:center; gap:20px;">
       <img src="Logo.png" alt="Logo" style="height:40px; filter:brightness(0) invert(1);">
       <div>
-        <div style="font-size:1.2rem; font-weight:800; font-family:'Outfit', sans-serif; letter-spacing:-0.02em;">Cuadrante Público</div>
-        <div style="font-size:0.7rem; opacity:0.6; text-transform:uppercase; letter-spacing:0.05em; font-weight:700;">Disponibilidad en tiempo real</div>
+        <div style="font-size:1.2rem; font-weight:800; font-family:'Outfit', sans-serif; letter-spacing:-0.02em;">Cuadrantes de turnos Recepción</div>
+        <div style="font-size:0.7rem; opacity:0.6; letter-spacing:0.05em; font-weight:700;">Sercotel Guadiana / Cumbria Spa&Hotel</div>
       </div>
     </div>
     <div style="display:flex; gap:10px; align-items:center;">
@@ -176,20 +177,50 @@
 
         try {
             let data = await window.TurnosDB.fetchRangoCalculado(startIso, endIso);
-            if (selHotel) data = data.filter(t => t.hotel_id === selHotel);
             const profiles = await window.TurnosDB.getEmpleados();
-
-            area.innerHTML = '';
-            const hotelsFound = [...new Set(data.map(t => t.hotel_id))].sort();
-            if (selHotel && !hotelsFound.includes(selHotel)) hotelsFound.push(selHotel);
+            const hotels = await window.TurnosDB.getHotels();
             
-            if (hotelsFound.length === 0) {
-                area.innerHTML = `<div style="padding:4rem; text-align:center; opacity:0.5;">No hay turnos registrados para este periodo en la nube.</div>`;
+            area.innerHTML = '';
+
+            // 1. Determinar el hotel principal de cada empleado en este set de datos
+            const empPrimaryHotel = {};
+            data.forEach(t => {
+                const normName = window.TurnosDB.normalizeString(t.empleado_id);
+                if (!empPrimaryHotel[normName]) {
+                    const p = profiles.find(pr => window.TurnosDB.normalizeString(pr.id) === normName || window.TurnosDB.normalizeString(pr.nombre) === normName);
+                    empPrimaryHotel[normName] = p?.hotel_id || t.hotel_id || 'GENERAL';
+                }
+            });
+
+            // 2. Agrupar nombres por su hotel principal
+            const hotelGroups = {};
+            const allEmpNames = [...new Set(data.map(t => t.empleado_id))];
+            
+            allEmpNames.forEach(name => {
+                const normName = window.TurnosDB.normalizeString(name);
+                const h = empPrimaryHotel[normName] || 'GENERAL';
+                if (!hotelGroups[h]) hotelGroups[h] = [];
+                hotelGroups[h].push(name);
+            });
+
+            const sortedHotels = Object.keys(hotelGroups).sort();
+            if (selHotel && !sortedHotels.includes(selHotel)) sortedHotels.push(selHotel);
+            
+            const hotelsToRender = selHotel ? [selHotel] : sortedHotels;
+
+            if (hotelsToRender.length === 0) {
+                area.innerHTML = `<div style="padding:4rem; text-align:center; opacity:0.5;">No hay turnos registrados para este periodo.</div>`;
                 return;
             }
 
-            for (const hName of hotelsFound) {
-                const hShifts = data.filter(t => t.hotel_id === hName);
+            for (const hName of hotelsToRender) {
+                const empNamesInHotel = hotelGroups[hName] || [];
+                // Incluir turnos donde el empleado es el titular O donde es el sustituto
+                const hShifts = data.filter(t => 
+                    empNamesInHotel.includes(t.empleado_id) || 
+                    empNamesInHotel.includes(t.sustituto)
+                );
+                
                 const safeId = hName.replace(/[^a-z0-9]/gi, '-');
                 const card = document.createElement('div');
                 card.className = 'preview-week week';
@@ -202,7 +233,7 @@
                 `;
                 area.appendChild(card);
                 const container = card.querySelector(`#grid-container-${safeId}`);
-                await renderEnContenedor(container, startIso, endIso, hShifts, hName, profiles);
+                await renderEnContenedor(container, startIso, endIso, hShifts, hName, profiles, empNamesInHotel);
             }
         } catch (e) {
             console.error(e);
@@ -210,74 +241,111 @@
         }
     };
 
-    async function renderEnContenedor(container, inicio, fin, hotelData, hotelName, profiles) {
+    async function renderEnContenedor(container, inicio, fin, hotelData, hotelName, profiles, empNamesInHotel) {
         const columns = [];
         let curr = new Date(inicio + "T12:00:00");
-        const end = new Date(fin + "T12:00:00");
-        while (curr <= end) {
-            const iso = curr.toISOString().split('T')[0];
-            const dayNames = ['DOMINGO','LUNES','MARTES','MIERCOLES','JUEVES','VIERNES','SABADO'];
-            const monthNames = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+        const dayNames = ['DOM','LUN','MAR','MIE','JUE','VIE','SAB'];
+        const monthNames = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+
+        while (curr <= new Date(fin + "T12:00:00")) {
+            const iso = window.TurnosDB.normalizeDate(curr);
             columns.push({
                 dbFecha: iso,
                 title: dayNames[curr.getDay()],
-                subtitle: `${curr.getDate()}/${monthNames[curr.getMonth()]}/${curr.getFullYear().toString().slice(-2)}`,
+                subtitle: `${curr.getDate()}/${monthNames[curr.getMonth()]}`,
                 isWeekend: curr.getDay() === 0 || curr.getDay() === 6,
                 isToday: iso === new Date().toISOString().split('T')[0]
             });
             curr.setDate(curr.getDate() + 1);
         }
 
-        const table = new window.VirtualTable(container, { columns, rowHeight: 56 });
-        // --- LÓGICA DE FUSIÓN Y ORDENACIÓN (IGUAL QUE ADMIN) ---
-        const empMap = new Map();
-        hotelData.forEach(t => {
-            if (t.empleado_id) {
-                const norm = window.TurnosDB.normalizeString(t.empleado_id);
-                if (!empMap.has(norm)) empMap.set(norm, t.empleado_id);
-            }
-            if (t.sustituto) {
-                const normS = window.TurnosDB.normalizeString(t.sustituto);
-                if (!empMap.has(normS)) empMap.set(normS, t.sustituto);
-            }
-        });
+        const table = new window.VirtualTable(container, { columns, rowHeight: 68 });
         
-        const allUniqueNorm = Array.from(empMap.keys());
+        // --- OVERRIDE RENDERER FOR PREMIUM LOOK ---
+        table.renderCellContent = (cell, cellData, empName, fecha) => {
+            const type = String(cellData.tipo || 'NORMAL').toUpperCase();
+            const rawTurno = String(cellData.turno || '').toLowerCase();
+            let cls = 'v-empty', lbl = cellData.turno || '', icon = '';
 
-        // Contar ausencias para mover al fondo (como en Admin)
-        const absenceCount = {};
-        allUniqueNorm.forEach(normName => {
-            absenceCount[normName] = 0;
-            columns.forEach(c => {
-                const d = hotelData.find(s => window.TurnosDB.normalizeString(s.empleado_id) === normName && s.fecha === c.dbFecha);
-                if (d && d.tipo !== 'NORMAL' && !d.tipo.includes('CT')) absenceCount[normName]++;
-            });
-        });
-
-        const isTotalAbsent = (norm) => absenceCount[norm] >= columns.length;
-
-        const sortedNorm = allUniqueNorm.sort((a,b) => {
-            // 1. Ausentes totales al final
-            const aAb = isTotalAbsent(a), bAb = isTotalAbsent(b);
-            if (aAb !== bAb) return aAb ? 1 : -1;
+            if (type.startsWith('VAC')) { cls = 'v-vac'; lbl = 'Vacaciones'; icon = '🏖️'; }
+            else if (type.startsWith('BAJA')) { cls = 'v-baja'; lbl = 'Baja'; icon = '🏥'; }
+            else if (type.startsWith('PERM')) { cls = 'v-perm'; lbl = 'Permiso'; icon = '📋'; }
+            else if (rawTurno.startsWith('m')) { cls = 'v-mañana'; lbl = 'Mañana'; icon = '☀️'; }
+            else if (rawTurno.startsWith('t')) { cls = 'v-tarde'; lbl = 'Tarde'; icon = '🌅'; }
+            else if (rawTurno.startsWith('n')) { cls = 'v-noche'; lbl = 'Noche'; icon = '🌙'; }
+            else if (rawTurno.startsWith('d')) { cls = 'v-descanso'; lbl = 'Descanso'; }
             
-            // 2. Orden de base de datos
-            const pA = profiles.find(p => window.TurnosDB.normalizeString(p.id) === a || window.TurnosDB.normalizeString(p.nombre) === a);
-            const pB = profiles.find(p => window.TurnosDB.normalizeString(p.id) === b || window.TurnosDB.normalizeString(p.nombre) === b);
+            if (type.includes('CT') || cellData.sustituto || cellData.isSub) {
+                icon = '🔄';
+                if (cellData.sustituto) {
+                    cell.title = `Sustituido por: ${cellData.sustituto}`;
+                    lbl += ` (${cellData.sustituto.charAt(0).toUpperCase()})`;
+                }
+                if (cellData.isSub) {
+                    cell.title = `Cubriendo a: ${cellData.subFor}`;
+                    lbl += ` (C)`;
+                }
+            }
+
+            if (cellData.hotel_id && cellData.hotel_id !== hotelName) {
+                lbl = `${lbl} (${cellData.hotel_id.split(' ')[0]})`;
+            }
+
+            cell.className = `v-cell ${cls}`;
+            cell.innerHTML = `<div class="v-pill">${lbl} ${icon}</div>`;
+        };
+
+        // Custom row renderer to match Admin stats EXACTLY
+        table.renderRow = function(tr, rowData) {
+            const tds = tr.children;
+            tds[0].colSpan = 1; tds[0].style.display = '';
+            
+            const empsData = hotelData.filter(t => 
+                window.TurnosDB.normalizeString(t.empleado_id) === window.TurnosDB.normalizeString(rowData.empName) ||
+                window.TurnosDB.normalizeString(t.sustituto) === window.TurnosDB.normalizeString(rowData.empName)
+            );
+            const nights = empsData.filter(t => (t.turno||'').toLowerCase().startsWith('n')).length;
+            const rests  = empsData.filter(t => (t.turno||'').toLowerCase().startsWith('d')).length;
+
+            tds[0].innerHTML = `
+                <div style="display:flex; align-items:center; justify-content:space-between; width:100%; padding:0 10px;">
+                    <span style="font-weight:700; color:#2563eb; font-size:0.9rem; font-family:'Inter', sans-serif;">${rowData.empName}</span>
+                    <div style="display:flex; gap:8px;">
+                        <span class="emp-badge-n" title="Noches: ${nights}">${nights} <small style="font-size:0.5rem; opacity:0.6; margin-left:1px;">🌙</small></span>
+                        <span class="emp-badge-d" title="Descansos: ${rests}">${rests} <small style="font-size:0.5rem; opacity:0.6; margin-left:1px;">D</small></span>
+                    </div>
+                </div>
+            `;
+
+            for (let i = 0; i < this.columns.length; i++) {
+                const td = tds[i+1];
+                td.style.display = '';
+                this.renderCellContent(td, rowData.cells[i], rowData.empName, this.columns[i].dbFecha);
+            }
+        };
+
+        // --- LÓGICA DE FUSIÓN Y ORDENACIÓN (IGUAL QUE VISTA PREVIA) ---
+        const sortedEmps = empNamesInHotel.sort((a,b) => {
+            const pA = profiles.find(p => window.TurnosDB.normalizeString(p.id) === window.TurnosDB.normalizeString(a));
+            const pB = profiles.find(p => window.TurnosDB.normalizeString(p.id) === window.TurnosDB.normalizeString(b));
             return (pA?.orden ?? 999) - (pB?.orden ?? 999);
         });
 
-        const rows = sortedNorm.map(normName => {
-            const originalName = empMap.get(normName);
+        const rows = [];
+        sortedEmps.forEach(name => {
+            const normName = window.TurnosDB.normalizeString(name);
             const cells = columns.map(c => {
                 const direct = hotelData.find(s => window.TurnosDB.normalizeString(s.empleado_id) === normName && s.fecha === c.dbFecha);
                 if (direct) return { turno: direct.turno, tipo: direct.tipo, sustituto: direct.sustituto };
+                
                 const substituted = hotelData.find(s => window.TurnosDB.normalizeString(s.sustituto) === normName && s.fecha === c.dbFecha);
                 if (substituted) return { turno: substituted.turno, tipo: 'NORMAL', isSub: true, subFor: substituted.empleado_id };
+
                 return { turno: '', tipo: 'NORMAL' };
             });
-            return { empName: originalName, cells, hotel_id: hotelName };
+            rows.push({ empName: name, cells });
         });
+
         table.setData(rows);
     }
 

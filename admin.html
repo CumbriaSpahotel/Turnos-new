@@ -71,8 +71,11 @@
             </button>
         </nav>
 
-        <div class="sidebar-footer">
-            <button class="theme-toggle" onclick="toggleTheme()" title="Cambiar Tema">Tema</button>
+        <div class="sidebar-footer" style="display:flex; flex-direction:column; gap:10px; padding:20px 14px;">
+            <button class="btn-premium pulse-animation" id="btnSyncGaps" onclick="window.syncGapsFromExcel()" style="background:#ff9800; color:white; border:none; border-radius:12px; padding:12px; font-weight:800; cursor:pointer; box-shadow:0 4px 15px rgba(255,152,0,0.3); width:100%; font-size:0.75rem; display:flex; align-items:center; justify-content:center; gap:8px;">
+                <span style="font-size:1.1rem;">☁️</span> Completar Supabase
+            </button>
+            <button class="theme-toggle" onclick="toggleTheme()" style="width:100%;">🌙 Cambiar Modo</button>
         </div>
     </aside>
 
@@ -178,9 +181,6 @@
                         <button class="btn active" id="btnViewWeekly" onclick="switchPreviewMode('weekly')">Semanal</button>
                         <button class="btn" id="btnViewMonthly" onclick="switchPreviewMode('monthly')">Mensual</button>
                     </div>
-                    <button class="btn-premium pulse-animation" id="btnSyncGaps" onclick="window.syncGapsFromExcel()" style="background:#ff9800; color:white; border:none; border-radius:12px; padding:10px 20px; font-weight:800; cursor:pointer; box-shadow:0 4px 15px rgba(255,152,0,0.3); display:flex; align-items:center; gap:8px;" title="Sincronizar turnos faltantes desde el Excel">
-                        <span style="font-size:1.2rem;">☁️</span> Completar Supabase
-                    </button>
                 </div>
             </header>
             <div id="previewContent"></div>

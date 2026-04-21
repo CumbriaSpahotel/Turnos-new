@@ -139,10 +139,19 @@
             const filter = $('#statusFilter').value;
             
             try {
+                const today = new Date().toISOString().split('T')[0];
                 const data = await window.TurnosDB.fetchPeticiones();
-                _allRequests = data;
                 
-                const filtered = filter === 'all' ? data : data.filter(r => r.estado === filter);
+                // Filtrar para mostrar solo solicitudes recientes/pendientes
+                const filtered = (filter === 'all' ? data : data.filter(r => r.estado === filter))
+                    .filter(r => {
+                        // Requisito: Si es pendiente, mostrar solo desde hoy en adelante
+                        if (filter === 'pendiente' && r.created_at.split('T')[0] < today) return false;
+                        return true;
+                    })
+                    .sort((a,b) => b.created_at.localeCompare(a.created_at));
+
+                _allRequests = filtered;
 
                 if (filtered.length === 0) {
                     list.innerHTML = `

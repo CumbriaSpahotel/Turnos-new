@@ -8,6 +8,18 @@
     <link rel="stylesheet" href="admin.css">
     <link rel="stylesheet" href="flatpickr.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/all.min.css">
+    <style>
+        .drawer-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.4);
+            backdrop-filter: blur(4px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+        }
+    </style>
 </head>
 <body class="light-mode">
     <aside class="sidebar">
@@ -32,8 +44,11 @@
             <div class="nav-group-label">SISTEMA</div>
             <a href="configuracion.html" class="nav-item">📦 <span class="nav-label">Configuración</span></a>
         </nav>
-        <div class="sidebar-footer">
-            <button class="theme-toggle" onclick="toggleTheme()">🌙</button>
+        <div class="sidebar-footer" style="display:flex; flex-direction:column; gap:10px; padding:20px 14px;">
+            <button class="btn-premium pulse-animation" id="btnSyncGaps" onclick="window.syncGapsFromExcel()" style="background:#ff9800; color:white; border:none; border-radius:12px; padding:12px; font-weight:800; cursor:pointer; box-shadow:0 4px 15px rgba(255,152,0,0.3); width:100%; font-size:0.75rem; display:flex; align-items:center; justify-content:center; gap:8px;">
+                <span style="font-size:1.1rem;">☁️</span> Completar Supabase
+            </button>
+            <button class="theme-toggle" onclick="toggleTheme()" style="width:100%;">🌙 Cambiar Modo</button>
         </div>
     </aside>
 
@@ -53,7 +68,12 @@
                 <div style="position:relative;">
                     <input type="text" id="bjRange" class="btn" placeholder="📅 Rango de fechas..." style="background:var(--bg3); color:var(--text); border:1px solid var(--border); border-radius:10px; padding:7px 15px; width:220px;">
                 </div>
-                <button class="btn" style="background:var(--accent); color:white; font-weight:700; border-radius:10px; padding:8px 18px;" onclick="document.getElementById('modalBaja').style.display='flex'">+ Nueva Baja/Permiso</button>
+                <select id="bjStatus" class="btn" style="background:var(--bg3); color:var(--text); border:1px solid var(--border); border-radius:10px; padding:7px 15px;" onchange="renderBajas()">
+                    <option value="pending">Solo Pendientes</option>
+                    <option value="past">Solo Pasados</option>
+                    <option value="all">Todos los registros</option>
+                </select>
+                <button class="btn" style="background:var(--accent); color:white; font-weight:700; border-radius:10px; padding:8px 18px;" onclick="openModal()">+ Nueva Baja/Permiso</button>
             </div>
             <div id="syncStatus" class="status-badge-premium" style="margin-left:20px; display:flex; align-items:center; gap:8px;">
                 <span id="syncDot" style="width:8px; height:8px; border-radius:50%; background:#ff9800;"></span>
@@ -70,9 +90,9 @@
     </main>
 
     <!-- MODAL NUEVA BAJA -->
-    <div id="modalBaja" class="drawer-overlay" style="display:none; align-items:center; justify-content:center; padding:1rem; z-index:9999;" onclick="this.style.display='none'">
+    <div id="modalBaja" class="drawer-overlay" style="display:none; align-items:center; justify-content:center; padding:1rem; z-index:9999;" onclick="closeModal()">
         <div class="glass" style="width:100%; max-width:480px; padding:2rem; border-radius:24px; position:relative; background:var(--bg2); border:1px solid var(--border); box-shadow:var(--shadow-lg);" onclick="event.stopPropagation()">
-            <h2 style="margin-bottom:1.5rem; font-size:1.4rem; color:var(--text); font-weight:800;">Añadir Baja o Permiso</h2>
+            <h2 id="modalTitle" style="margin-bottom:1.5rem; font-size:1.4rem; color:var(--text); font-weight:800;">Añadir Baja o Permiso</h2>
             <div style="display:grid; grid-template-columns: 1fr 1fr; gap:15px;">
                 <div style="grid-column: span 2;">
                     <label style="font-size:0.65rem; font-weight:800; color:var(--text-dim); text-transform:uppercase; display:block; margin-bottom:5px;">Tipo de Ausencia</label>
@@ -105,9 +125,12 @@
                     <input type="text" id="mbObs" placeholder="Ej: Mañana (Cita Hospital)" style="width:100%; padding:12px; border-radius:12px; background:var(--bg3); border:1px solid var(--border); color:var(--text);">
                 </div>
             </div>
-            <div style="display:flex; gap:12px; margin-top:25px;">
-                <button class="btn" style="flex:1;" onclick="document.getElementById('modalBaja').style.display='none'">Cancelar</button>
-                <button class="btn" style="flex:1; background:var(--accent); color:white; font-weight:700;" onclick="saveManualBaja()">Guardar Registro</button>
+            <div style="display:flex; flex-direction:column; gap:10px; margin-top:25px;">
+                <button id="btnDeleteBaja" class="btn" style="background:#fee2e2; color:#b91c1c; font-weight:700; border-radius:12px; display:none;" onclick="deleteCurrentPeriod()">Eliminar este registro</button>
+                <div style="display:flex; gap:12px;">
+                    <button class="btn" style="flex:1;" onclick="closeModal()">Cancelar</button>
+                    <button class="btn" style="flex:1; background:var(--accent); color:white; font-weight:700;" onclick="saveManualBaja()">Guardar Registro</button>
+                </div>
             </div>
         </div>
     </div>
@@ -115,8 +138,8 @@
     <script src="supabase.js"></script>
     <script src="flatpickr.js"></script>
     <script src="flatpickr_es.js"></script>
-    <script src="supabase-config.js?v=8.2"></script>
-    <script src="supabase-dao.js?v=8.2"></script>
+    <script src="supabase-config.js?v=10.1"></script>
+    <script src="supabase-dao.js?v=10.1"></script>
     <script>
         const $ = (s) => document.querySelector(s);
         
@@ -127,6 +150,7 @@
             try {
                 const hotel = $('#bjHotel')?.value || 'all';
                 const emp = $('#bjEmp')?.value || 'all';
+                const status = $('#bjStatus')?.value || 'pending';
                 const rangeStr = $('#bjRange')?.value || '';
                 
                 let start = null, end = null;
@@ -134,18 +158,33 @@
                     [start, end] = rangeStr.split(" a ");
                 }
 
-                // Por defecto los últimos 30 días para bajas más recientes
-                const d = new Date(); d.setDate(d.getDate() - 30);
-                const defaultStart = d.toISOString().split('T')[0];
+                const today = new Date().toISOString().split('T')[0];
                 
-                const dataBaja = await window.TurnosDB.fetchTipo('BAJA', start || defaultStart, end);
-                const dataPerm = await window.TurnosDB.fetchTipo('PERM', start || defaultStart, end);
+                // Si no hay rango manual, filtramos según el selector de estado
+                let queryStart = start;
+                let queryEnd = end;
+                
+                if (!start) {
+                    if (status === 'pending') queryStart = today;
+                    else if (status === 'past') queryEnd = today;
+                }
+
+                const dataBaja = await window.TurnosDB.fetchTipo('BAJA', queryStart, queryEnd);
+                const dataPerm = await window.TurnosDB.fetchTipo('PERM', queryStart, queryEnd);
                 let data = [...dataBaja, ...dataPerm];
 
                 if (hotel !== 'all') data = data.filter(t => t.hotel_id === hotel);
                 if (emp !== 'all') {
                     const normTarget = window.TurnosDB.normalizeString(emp);
                     data = data.filter(t => window.TurnosDB.normalizeString(t.empleado_id) === normTarget);
+                }
+
+                // Si es modo 'past', filtramos manualmente los que terminan después de hoy
+                // Si es modo 'pending', filtramos los que terminaron antes de hoy
+                if (!start && status === 'past') {
+                    data = data.filter(t => t.fecha < today);
+                } else if (!start && status === 'pending') {
+                    data = data.filter(t => t.fecha >= today);
                 }
 
                 // Agrupación por periodos
@@ -251,9 +290,8 @@
             const hotel = $('#mbHotel').value;
             const obs = $('#mbObs').value;
 
-            if (!emp || !dateStart) return alert("Empleado y Fecha Inicio obligatorios.");
+            if (!emp || !dateStart || !tipo || !hotel) return alert("Tipo, Hotel, Empleado y Fecha Inicio son obligatorios.");
 
-            // Loop si hay rango
             let current = new Date(dateStart + 'T12:00:00');
             const end = dateEnd ? new Date(dateEnd + 'T12:00:00') : current;
             const toInsert = [];
@@ -273,38 +311,106 @@
             try {
                 await window.TurnosDB.bulkUpsert(toInsert);
                 await window.TurnosDB.upsertEmpleado({ id: emp, nombre: emp, hotel_id: hotel, activo: true });
-                $('#modalBaja').style.display = 'none';
+                closeModal();
                 await renderBajas();
             } catch (err) { alert("Error: " + err.message); }
         }
 
+        let _editingData = null;
+
+        async function editPeriod(empId, startDate) {
+            _editingData = { empId, startDate };
+            $('#modalTitle').innerText = 'Gestionar Ausencia';
+            $('#btnDeleteBaja').style.display = 'block';
+            
+            // Buscar datos para pre-rellenar (aproximado)
+            const today = new Date().toISOString().split('T')[0];
+            const data = await window.TurnosDB.fetchTipo('BAJA', startDate, startDate);
+            const dataP = await window.TurnosDB.fetchTipo('PERM', startDate, startDate);
+            const match = [...data, ...dataP].find(t => t.empleado_id === empId && t.fecha === startDate);
+
+            if (match) {
+                $('#mbEmp').value = match.empleado_id;
+                $('#mbDateStart').value = match.fecha;
+                $('#mbHotel').value = match.hotel_id;
+                $('#mbTipo').value = match.tipo.startsWith('BAJA') ? 'BAJA 🏥' : 'PERM 🗓️';
+                $('#mbObs').value = match.turno !== 'M' ? match.turno : '';
+            }
+
+            openModal();
+        }
+
+        async function deleteCurrentPeriod() {
+            if (!_editingData) return;
+            if (confirm(`¿Eliminar este registro de ${_editingData.empId} del ${_editingData.startDate}?`)) {
+                try {
+                    await window.TurnosDB.deleteTurno(_editingData.empId, _editingData.startDate);
+                    closeModal();
+                    await renderBajas();
+                } catch (e) { alert("Error: " + e.message); }
+            }
+        }
+
+        function openModal() {
+            console.log("Opening modal...", _editingData);
+            if (!_editingData) {
+                $('#modalTitle').innerText = 'Añadir Baja o Permiso';
+                $('#btnDeleteBaja').style.display = 'none';
+                $('#mbEmp').value = '';
+                $('#mbDateStart').value = '';
+                $('#mbDateEnd').value = '';
+                $('#mbTipo').value = '';
+                $('#mbObs').value = '';
+            }
+            $('#modalBaja').style.display = 'flex';
+        }
+
+        function closeModal() {
+            console.log("Closing modal...");
+            _editingData = null;
+            $('#modalBaja').style.display = 'none';
+        }
+
         async function initPage() {
-            if (localStorage.getItem('turnosweb_theme') === 'light') document.body.classList.add('light-mode');
-            
-            const [hotels, emps] = await Promise.all([window.TurnosDB.getHotels(), window.TurnosDB.getEmpleados()]);
-            
-            // Deduplicar visualmente por ID limpio
-            const uniqueEmps = [];
-            const seen = new Set();
-            emps.forEach(e => {
-                const cleanId = window.TurnosDB.cleanName(e.id);
-                if (!seen.has(cleanId)) {
-                    seen.add(cleanId);
-                    uniqueEmps.push({ ...e, id: cleanId });
+            try {
+                if (localStorage.getItem('turnosweb_theme') === 'light') document.body.classList.add('light-mode');
+                
+                // Esperar a que TurnosDB esté listo si es necesario
+                let retry = 0;
+                while (!window.TurnosDB && retry < 10) {
+                    await new Promise(r => setTimeout(r, 500));
+                    retry++;
                 }
-            });
 
-            $('#bjHotel').innerHTML = `<option value="all">Todos los Hoteles</option>` + hotels.map(h => `<option value="${h}">${h}</option>`).join('');
-            $('#mbHotel').innerHTML = `<option value="" disabled selected>Seleccionar hotel...</option>` + hotels.map(h => `<option value="${h}">${h}</option>`).join('');
-            $('#bjEmp').innerHTML = `<option value="all">Todos los Empleados</option>` + uniqueEmps.map(e => `<option value="${e.id}">${e.nombre}</option>`).join('');
+                if (!window.TurnosDB) throw new Error("Base de datos no disponible. Recarga la página.");
 
-            flatpickr("#bjRange", {
-                mode: "range", dateFormat: "Y-m-d",
-                locale: { ...flatpickr.l10ns.es, firstDayOfWeek: 1 },
-                onChange: () => renderBajas()
-            });
+                const [hotels, emps] = await Promise.all([window.TurnosDB.getHotels(), window.TurnosDB.getEmpleados()]);
+                
+                const uniqueEmps = [];
+                const seen = new Set();
+                emps.forEach(e => {
+                    const cleanId = window.TurnosDB.cleanName(e.id);
+                    if (!seen.has(cleanId)) {
+                        seen.add(cleanId);
+                        uniqueEmps.push({ ...e, id: cleanId });
+                    }
+                });
 
-            await renderBajas();
+                $('#bjHotel').innerHTML = `<option value="all">Todos los Hoteles</option>` + hotels.map(h => `<option value="${h}">${h}</option>`).join('');
+                $('#mbHotel').innerHTML = `<option value="" disabled selected>Seleccionar hotel...</option>` + hotels.map(h => `<option value="${h}">${h}</option>`).join('');
+                $('#bjEmp').innerHTML = `<option value="all">Todos los Empleados</option>` + uniqueEmps.map(e => `<option value="${e.id}">${e.nombre}</option>`).join('');
+
+                flatpickr("#bjRange", {
+                    mode: "range", dateFormat: "Y-m-d",
+                    locale: { ...flatpickr.l10ns.es, firstDayOfWeek: 1 },
+                    onChange: () => renderBajas()
+                });
+
+                await renderBajas();
+            } catch (err) {
+                console.error("Init Error:", err);
+                alert("Error al cargar la página: " + err.message);
+            }
         }
 
         function toggleTheme() {

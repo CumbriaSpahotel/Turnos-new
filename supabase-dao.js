@@ -389,6 +389,19 @@ window.TurnosDB = {
             return row;
         };
 
+        // Pre-procesar: Eliminar duplicados en baseRows (a veces el Excel trae basura)
+        const uniqueBase = [];
+        const seenBase = new Set();
+        (baseRows || []).forEach(b => {
+            const k = `${norm(b.empleado_id)}|${b.fecha}`;
+            if (!seenBase.has(k)) {
+                seenBase.add(k);
+                uniqueBase.push(b);
+            }
+        });
+        rows.length = 0;
+        rows.push(...uniqueBase.map(row => ({ ...row, base_empleado_id: row.base_empleado_id || row.empleado_id })));
+
         (eventos || [])
             .filter(event => (event.estado || 'activo') !== 'anulado')
             .sort((a, b) => {
@@ -415,18 +428,31 @@ window.TurnosDB = {
 
                 eventDates(event).forEach(date => {
                     if (['VAC', 'BAJA', 'PERM'].includes(type)) {
-                        const affected = byEmpDate(emp, date);
-                        const targetRows = affected.length ? affected : [ensureRow(emp, date, event)];
-                        targetRows.forEach(row => {
-                            row.tipo = type;
-                            row.sustituto = dest || row.sustituto || null;
-                            row.evento_id = event.id;
-                        });
+                        const row = ensureRow(emp, date, event);
+                        const originalTurno = row.turno || 'M';
+                        row.tipo = type;
+                        row.sustituto = dest || row.sustituto || null;
+                        row.evento_id = event.id;
+
+                        // Si hay sustituto, el sustituto recibe el turno original
+                        if (dest) {
+                            const subRow = ensureRow(dest, date, { ...row, tipo: 'NORMAL', turno: originalTurno });
+                            subRow.turno = originalTurno;
+                            subRow.tipo = 'NORMAL';
+                            subRow.sustituto = emp;
+                            subRow.evento_id = event.id;
+                        }
                     } else if (type === 'COBERTURA') {
-                        byEmpDate(emp, date).forEach(row => {
-                            row.sustituto = dest || row.sustituto || null;
-                            row.evento_id = event.id;
-                        });
+                        const row = ensureRow(emp, date, event);
+                        row.sustituto = dest || row.sustituto || null;
+                        row.evento_id = event.id;
+                        if (dest) {
+                            const subRow = ensureRow(dest, date, { ...row, tipo: 'NORMAL' });
+                            subRow.turno = row.turno;
+                            subRow.tipo = 'NORMAL';
+                            subRow.sustituto = emp;
+                            subRow.evento_id = event.id;
+                        }
                     } else if (['CAMBIO_HOTEL', 'CAMBIO_POSICION', 'INTERCAMBIO_HOTEL', 'INTERCAMBIO_POSICION'].includes(type)) {
                         const rowA = firstByEmpDate(emp, date);
                         const rowB = firstByEmpDate(dest, date);
