@@ -1,7 +1,12 @@
-const CACHE_NAME = "turnosweb-app-v20251102_0034";
+const CACHE_NAME = "turnosweb-app-v20251102_0035";
 const PRECACHE = [
   "styles.css",
   "styles.mobile.css",
+  "supabase.js",
+  "localforage.js",
+  "flatpickr.js",
+  "flatpickr_es.js",
+  "flatpickr.min.css",
   "mobile.patch.js",
   "plantilla_adapter_semana.js",
   "manifest.json",

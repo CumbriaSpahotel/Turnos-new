@@ -3,14 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TurnosWeb — Bajas y Permisos</title>
+    <title>TurnosWeb — Bajas y Permisos Premium</title>
     <link rel="icon" type="image/png" href="favicon.png">
     <link rel="stylesheet" href="admin.css">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
-    <style>
-        .nav-item.active { background: var(--accent-dim); color: var(--accent); border-right: 3px solid var(--accent); }
-        .flatpickr-calendar { background: var(--bg2) !important; border: 1px solid var(--border) !important; box-shadow: var(--shadow-lg) !important; border-radius: 14px !important; padding: 10px !important; }
-    </style>
+    <link rel="stylesheet" href="flatpickr.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/all.min.css">
 </head>
 <body class="light-mode">
     <aside class="sidebar">
@@ -24,235 +21,299 @@
         <nav class="sidebar-nav">
             <div class="nav-group-label">CUADRANTE</div>
             <a href="admin.html" class="nav-item">🏠 <span class="nav-label">Inicio / Cargar</span></a>
-            <a href="admin.html#preview" class="nav-item">📅 <span class="nav-label">Vista Previa</span></a>
-            <a href="admin.html#employees" class="nav-item">👥 <span class="nav-label">Empleados</span></a>
+            <a href="admin.html#section-preview" class="nav-item">📅 <span class="nav-label">Vista Previa</span></a>
+            <a href="admin.html#section-employees" class="nav-item">👥 <span class="nav-label">Empleados</span></a>
             <div class="nav-group-label">AUSENCIAS</div>
             <a href="vacaciones.html" class="nav-item">🏖️ <span class="nav-label">Vacaciones</span></a>
             <a href="bajas.html" class="nav-item active">🏥 <span class="nav-label">Bajas y Permisos</span></a>
             <a href="cambios.html" class="nav-item">🔄 <span class="nav-label">Cambios de Turno</span></a>
+            <div class="nav-group-label">COMUNICACIÓN</div>
+            <a href="solicitudes.html" class="nav-item">📩 <span class="nav-label">Solicitudes</span></a>
+            <a href="bandeja.html" class="nav-item">📫 <span class="nav-label">Bandeja</span></a>
             <div class="nav-group-label">SISTEMA</div>
-            <a href="admin.html#export" class="nav-item">📦 <span class="nav-label">Configuración</span></a>
+            <a href="configuracion.html" class="nav-item">📦 <span class="nav-label">Configuración</span></a>
         </nav>
         <div class="sidebar-footer">
-            <button class="theme-toggle" id="themeToggle" onclick="toggleTheme()">🌙</button>
+            <button class="theme-toggle" onclick="toggleTheme()">🌙</button>
         </div>
     </aside>
 
     <main class="main-wrap">
-        <section class="section active">
-            <header class="page-header">
-                <div>
-                    <h1 class="page-title">Bajas Médicas y Permisos</h1>
-                    <p class="page-subtitle">Registro de ausencias justificadas y permisos retribuidos</p>
+        <header class="page-header">
+            <div>
+                <h1 class="page-title">Gestión de Bajas y Permisos</h1>
+                <p class="page-subtitle">Control de ausencias médicas y permisos retribuidos</p>
+            </div>
+            <div class="header-controls" style="display:flex; gap:12px; flex-wrap:wrap; margin-left:auto;">
+                <select id="bjHotel" class="btn" style="background:var(--bg3); color:var(--text); border:1px solid var(--border); border-radius:10px; padding:7px 15px;" onchange="renderBajas()">
+                    <option value="all">Todos los Hoteles</option>
+                </select>
+                <select id="bjEmp" class="btn" style="background:var(--bg3); color:var(--text); border:1px solid var(--border); border-radius:10px; padding:7px 15px;" onchange="renderBajas()">
+                    <option value="all">Todos los Empleados</option>
+                </select>
+                <div style="position:relative;">
+                    <input type="text" id="bjRange" class="btn" placeholder="📅 Rango de fechas..." style="background:var(--bg3); color:var(--text); border:1px solid var(--border); border-radius:10px; padding:7px 15px; width:220px;">
                 </div>
-                <div class="header-controls" style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
-                    <div id="rangeTrigger" class="date-range-picker-premium" style="display:flex; align-items:center; gap:10px; background:var(--bg3); border:1px solid var(--border); padding:8px 15px; border-radius:12px; cursor:pointer; min-width:260px;">
-                        <span style="font-size:1.1rem;" data-toggle>📅</span>
-                        <div style="display:flex; flex-direction:column;" data-toggle>
-                            <span style="font-size:0.6rem; color:var(--text-dim); font-weight:800; text-transform:uppercase; letter-spacing:0.05em;">Periodo Seleccionado</span>
-                            <span id="rangeLabel" style="font-size:0.85rem; font-weight:700; color:var(--accent);">Seleccionar Rango...</span>
-                        </div>
-                        <input type="text" id="filterDateRange" data-input style="display:none;">
-                    </div>
-                    <input type="text" id="filterEmp" class="btn" oninput="renderBajas()" placeholder="Buscar empleado..." style="flex:1; min-width:150px;">
-                    <select id="filterHotel" class="btn" onchange="renderBajas()" style="min-width:140px;">
-                        <option value="">— Hotel —</option>
-                        <option value="Sercotel Guadiana">Sercotel Guadiana</option>
-                        <option value="Cumbria Spa&Hotel">Cumbria Spa&Hotel</option>
-                    </select>
-                    <button class="btn" style="background:var(--accent); color:white; font-weight:bold; border-radius:10px; padding:8px 18px;" onclick="document.getElementById('modalBaja').style.display='flex'">+ Nueva Baja/Permiso</button>
-                </div>
-                <div id="syncStatus" class="status-badge-premium" style="margin-left:auto; display:flex; align-items:center; gap:8px;">
-                    <span id="syncDot" style="width:8px; height:8px; border-radius:50%; background:#ff9800;"></span>
-                    <span id="syncText">Conectando...</span>
-                </div>
-            </header>
-            <div id="bajasBody" class="glass-panel" style="min-height:500px;"></div>
+                <button class="btn" style="background:var(--accent); color:white; font-weight:700; border-radius:10px; padding:8px 18px;" onclick="document.getElementById('modalBaja').style.display='flex'">+ Nueva Baja/Permiso</button>
+            </div>
+            <div id="syncStatus" class="status-badge-premium" style="margin-left:20px; display:flex; align-items:center; gap:8px;">
+                <span id="syncDot" style="width:8px; height:8px; border-radius:50%; background:#10e898;"></span>
+                <span id="syncText">Supabase Conectado</span>
+            </div>
+        </header>
+
+        <section id="bjContent">
+            <div style="padding:4rem; text-align:center; opacity:0.3;">
+                <i class="fas fa-spinner fa-spin fa-2x" style="margin-bottom:1rem; display:block;"></i>
+                Cargando ausencias...
+            </div>
         </section>
     </main>
 
     <!-- MODAL NUEVA BAJA -->
-    <div id="modalBaja" class="drawer-overlay" style="display:none; align-items:center; justify-content:center; padding:1rem;" onclick="this.style.display='none'">
-        <div class="glass" style="width:100%; max-width:450px; padding:2rem; border-radius:20px; position:relative; background:var(--bg2);" onclick="event.stopPropagation()">
-            <h2 style="margin-bottom:1.5rem; font-size:1.4rem; color:var(--text);">Añadir Registro</h2>
-            <div style="display:flex; flex-direction:column; gap:15px;">
-                <div>
-                    <label>TIPO</label>
-                    <select id="mbTipo" style="width:100%; padding:10px; border-radius:10px; background:var(--bg); border:1px solid var(--border); color:var(--text);">
-                        <option value="baja">Baja Médica</option>
-                        <option value="permiso">Permiso Retribuido</option>
+    <div id="modalBaja" class="drawer-overlay" style="display:none; align-items:center; justify-content:center; padding:1rem; z-index:9999;" onclick="this.style.display='none'">
+        <div class="glass" style="width:100%; max-width:480px; padding:2rem; border-radius:24px; position:relative; background:var(--bg2); border:1px solid var(--border); box-shadow:var(--shadow-lg);" onclick="event.stopPropagation()">
+            <h2 style="margin-bottom:1.5rem; font-size:1.4rem; color:var(--text); font-weight:800;">Añadir Baja o Permiso</h2>
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:15px;">
+                <div style="grid-column: span 2;">
+                    <label style="font-size:0.65rem; font-weight:800; color:var(--text-dim); text-transform:uppercase; display:block; margin-bottom:5px;">Tipo de Ausencia</label>
+                    <select id="mbTipo" style="width:100%; padding:12px; border-radius:12px; background:var(--bg3); border:1px solid var(--border); color:var(--text);">
+                        <option value="" disabled selected>Tipo de ausencia...</option>
+                        <option value="BAJA 🏥">Baja Médica 🏥</option>
+                        <option value="PERM 🗓️">Permiso Retribuido 🗓️</option>
                     </select>
                 </div>
                 <div>
-                    <label>HOTEL</label>
-                    <select id="mbHotel" style="width:100%; padding:10px; border-radius:10px; background:var(--bg); border:1px solid var(--border); color:var(--text);">
-                        <option value="Cumbria Spa&Hotel">Cumbria Spa&Hotel</option>
-                        <option value="Sercotel Guadiana">Sercotel Guadiana</option>
+                    <label style="font-size:0.65rem; font-weight:800; color:var(--text-dim); text-transform:uppercase; display:block; margin-bottom:5px;">Hotel</label>
+                    <select id="mbHotel" style="width:100%; padding:12px; border-radius:12px; background:var(--bg3); border:1px solid var(--border); color:var(--text);">
+                        <option value="" disabled selected>Seleccionar hotel...</option>
                     </select>
                 </div>
                 <div>
-                    <label>EMPLEADO</label>
-                    <input type="text" id="mbEmp" placeholder="Nombre completo" style="width:100%; padding:10px; border-radius:10px; background:var(--bg); border:1px solid var(--border); color:var(--text);">
+                    <label style="font-size:0.65rem; font-weight:800; color:var(--text-dim); text-transform:uppercase; display:block; margin-bottom:5px;">Empleado</label>
+                    <input type="text" id="mbEmp" placeholder="Nombre completo" style="width:100%; padding:12px; border-radius:12px; background:var(--bg3); border:1px solid var(--border); color:var(--text);">
                 </div>
                 <div>
-                    <label>FECHA</label>
-                    <input type="date" id="mbFecha" style="width:100%; padding:10px; border-radius:10px; background:var(--bg); border:1px solid var(--border); color:var(--text);">
+                    <label style="font-size:0.65rem; font-weight:800; color:var(--text-dim); text-transform:uppercase; display:block; margin-bottom:5px;">Fecha Inicio</label>
+                    <input type="date" id="mbDateStart" style="width:100%; padding:12px; border-radius:12px; background:var(--bg3); border:1px solid var(--border); color:var(--text);">
                 </div>
                 <div>
-                    <label>OBSERVACIONES</label>
-                    <input type="text" id="mbObs" placeholder="Ej: Cita médica" style="width:100%; padding:10px; border-radius:10px; background:var(--bg); border:1px solid var(--border); color:var(--text);">
+                    <label style="font-size:0.65rem; font-weight:800; color:var(--text-dim); text-transform:uppercase; display:block; margin-bottom:5px;">Fecha Fin (Opcional)</label>
+                    <input type="date" id="mbDateEnd" style="width:100%; padding:12px; border-radius:12px; background:var(--bg3); border:1px solid var(--border); color:var(--text);">
                 </div>
-                <div style="display:flex; gap:10px; margin-top:10px;">
-                    <button class="btn" onclick="document.getElementById('modalBaja').style.display='none'">Cancelar</button>
-                    <button class="btn active" onclick="saveManualBaja()">Guardar</button>
+                <div style="grid-column: span 2;">
+                    <label style="font-size:0.65rem; font-weight:800; color:var(--text-dim); text-transform:uppercase; display:block; margin-bottom:5px;">Turno Original / Notas</label>
+                    <input type="text" id="mbObs" placeholder="Ej: Mañana (Cita Hospital)" style="width:100%; padding:12px; border-radius:12px; background:var(--bg3); border:1px solid var(--border); color:var(--text);">
                 </div>
-          <script src="https://cdnjs.cloudflare.com/ajax/libs/localforage/1.10.0/localforage.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
-    <script src="https://npmcdn.com/flatpickr/dist/l10ns/es.js"></script>
+            </div>
+            <div style="display:flex; gap:12px; margin-top:25px;">
+                <button class="btn" style="flex:1;" onclick="document.getElementById('modalBaja').style.display='none'">Cancelar</button>
+                <button class="btn" style="flex:1; background:var(--accent); color:white; font-weight:700;" onclick="saveManualBaja()">Guardar Registro</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="supabase.js"></script>
+    <script src="flatpickr.js"></script>
+    <script src="flatpickr_es.js"></script>
     <script src="supabase-config.js?v=8.2"></script>
     <script src="supabase-dao.js?v=8.2"></script>
     <script>
         const $ = (s) => document.querySelector(s);
-        let CURRENT_RANGE = { start: '', end: '' };
-
-        async function saveManualBaja() {
-            const btn = document.querySelector('button[onclick="saveManualBaja()"]');
-            const emp = $('#mbEmp').value.trim();
-            const fecha = $('#mbFecha').value;
-            if (!emp || !fecha) return alert("⚠️ Completa al menos Empleador y Fecha");
-            
-            const isPermiso = $('#mbTipo').value === 'permiso';
-            const tipoFinal = isPermiso ? 'PERM 🗓️' : 'BAJA 🏥'; // Usamos etiquetas con emojis para consistencia
-            const turnoOrg = $('#mbObs').value || 'M';
-
-            if (btn) { btn.disabled = true; btn.innerText = "Guardando..."; }
-
-            try {
-                await window.TurnosDB.upsertTurno(
-                    emp,
-                    fecha,
-                    turnoOrg,
-                    tipoFinal,
-                    $('#mbHotel').value,
-                    null 
-                );
-                
-                // Auto-crear ficha si no existe, con orden por defecto
-                await window.TurnosDB.upsertEmpleado({ id: emp, nombre: emp, orden: 999, activo: true });
-
-                $('#modalBaja').style.display = 'none';
-                $('#mbEmp').value = ''; $('#mbObs').value = '';
-                await renderBajas();
-                alert("✨ Registro guardado con éxito.");
-            } catch (err) { 
-                console.error(err);
-                alert("❌ Error: " + (err.message || "No se pudo conectar con el servidor")); 
-            } finally {
-                if (btn) { btn.disabled = false; btn.innerText = "Guardar"; }
-            }
-        }
-
+        
         async function renderBajas() {
-            if (!window.TurnosDB) return;
-            const container = $('#bajasBody');
-            const hotelFilter = $('#filterHotel')?.value || '';
-            const empFilter = $('#filterEmp')?.value.toLowerCase() || '';
-            try {
-                const bajas = await window.TurnosDB.fetchTipo('BAJA', CURRENT_RANGE.start, CURRENT_RANGE.end);
-                const perms = await window.TurnosDB.fetchTipo('PERM', CURRENT_RANGE.start, CURRENT_RANGE.end);
-                let combined = [...bajas, ...perms];
-                
-                if (hotelFilter) combined = combined.filter(v => v.hotel_id === hotelFilter);
-                if (empFilter) combined = combined.filter(v => v.empleado_id.toLowerCase().includes(empFilter));
+            const area = $('#bjContent');
+            if (!area || !window.TurnosDB) return;
 
-                if (combined.length === 0) {
-                    container.innerHTML = `<div style="padding:5rem; text-align:center; opacity:0.5;">No hay registros de bajas o permisos en este periodo.</div>`;
+            try {
+                const hotel = $('#bjHotel')?.value || 'all';
+                const emp = $('#bjEmp')?.value || 'all';
+                const rangeStr = $('#bjRange')?.value || '';
+                
+                let start = null, end = null;
+                if (rangeStr.includes(" a ")) {
+                    [start, end] = rangeStr.split(" a ");
+                }
+
+                // Por defecto los últimos 30 días para bajas más recientes
+                const d = new Date(); d.setDate(d.getDate() - 30);
+                const defaultStart = d.toISOString().split('T')[0];
+                
+                const dataBaja = await window.TurnosDB.fetchTipo('BAJA', start || defaultStart, end);
+                const dataPerm = await window.TurnosDB.fetchTipo('PERM', start || defaultStart, end);
+                let data = [...dataBaja, ...dataPerm];
+
+                if (hotel !== 'all') data = data.filter(t => t.hotel_id === hotel);
+                if (emp !== 'all') {
+                    const normTarget = window.TurnosDB.normalizeString(emp);
+                    data = data.filter(t => window.TurnosDB.normalizeString(t.empleado_id) === normTarget);
+                }
+
+                // Agrupación por periodos
+                const periods = [];
+                const sortedByEmp = {};
+                data.forEach(t => {
+                    const key = `${t.empleado_id}_${t.tipo}`;
+                    if (!sortedByEmp[key]) sortedByEmp[key] = [];
+                    sortedByEmp[key].push(t);
+                });
+
+                Object.keys(sortedByEmp).forEach(key => {
+                    const list = sortedByEmp[key].sort((a,b) => a.fecha.localeCompare(b.fecha));
+                    if (list.length === 0) return;
+
+                    let currentPeriod = {
+                        empId: list[0].empleado_id,
+                        hotel: list[0].hotel_id,
+                        tipo: list[0].tipo,
+                        start: list[0].fecha,
+                        end: list[0].fecha,
+                        days: 1
+                    };
+
+                    for (let i = 1; i < list.length; i++) {
+                        const prevDate = new Date(list[i-1].fecha + 'T12:00:00');
+                        const currDate = new Date(list[i].fecha + 'T12:00:00');
+                        const diff = (currDate - prevDate) / (1000 * 60 * 60 * 24);
+
+                        if (diff === 1) {
+                            currentPeriod.end = list[i].fecha;
+                            currentPeriod.days++;
+                        } else {
+                            periods.push(currentPeriod);
+                            currentPeriod = {
+                                empId: list[i].empleado_id,
+                                hotel: list[i].hotel_id,
+                                tipo: list[i].tipo,
+                                start: list[i].fecha,
+                                end: list[i].fecha,
+                                days: 1
+                            };
+                        }
+                    }
+                    periods.push(currentPeriod);
+                });
+
+                periods.sort((a,b) => b.start.localeCompare(a.start));
+
+                if (periods.length === 0) {
+                    area.innerHTML = `<div style="padding:4rem; text-align:center; opacity:0.3; background:var(--surface); border-radius:15px; border:1px solid var(--border);">No hay registros de bajas o permisos para los filtros actuales.</div>`;
                     return;
                 }
-                
-                combined.sort((a,b) => b.fecha.localeCompare(a.fecha));
-                
-                const rows = combined.map(v => {
-                    const isBaja = v.tipo.includes('BAJA');
-                    const color = isBaja ? '#f8d7da' : '#e2d9f3';
-                    const textColor = isBaja ? '#721c24' : '#3d2b56';
-                    return `
-                    <tr>
-                        <td style="padding:1rem;">
-                            <span style="background:${color}; color:${textColor}; padding:5px 12px; border-radius:15px; font-weight:700; font-size:0.75rem;">
-                                ${isBaja ? '🏥 BAJA' : '🗓️ PERMISO'}
-                            </span>
-                        </td>
-                        <td style="padding:1rem;">${window.TurnosDB.fmtDateLegacy(v.fecha)}</td>
-                        <td style="padding:1rem; font-size:0.8rem; opacity:0.8;">${v.hotel_id}</td>
-                        <td style="padding:1rem; font-weight:600;">${v.empleado_id}</td>
-                        <td style="padding:1rem; color:#155724; font-weight:700; background:#d4edda; border-radius:8px; display:inline-block; margin:5px;">
-                            ${v.sustituto ? `↔︎ ${v.sustituto}` : '<span style="opacity:0.3">—</span>'}
-                        </td>
-                        <td style="padding:1rem; font-size:0.85rem;">${v.turno || '—'}</td>
-                    </tr>`;
-                }).join('');
 
-                container.innerHTML = `
-                    <div class="table-container">
-                        <table class="preview-table" style="width:100%;">
+                area.innerHTML = `
+                    <div class="glass-panel" style="padding:0; overflow:hidden; border-radius:15px; border:1px solid var(--border);">
+                        <table class="preview-table" style="width:100%; border-collapse:collapse;">
                             <thead>
-                                <tr>
-                                    <th>Tipo</th>
-                                    <th>Fecha</th>
-                                    <th>Hotel</th>
-                                    <th>Empleado</th>
-                                    <th>Sustituido por</th>
-                                    <th>Turno/Nota</th>
+                                <tr style="background:var(--bg3);">
+                                    <th style="padding:1rem; text-align:left; font-size:0.7rem; color:var(--text-dim); text-transform:uppercase;">Tipo</th>
+                                    <th style="padding:1rem; text-align:left; font-size:0.7rem; color:var(--text-dim); text-transform:uppercase;">Empleado</th>
+                                    <th style="padding:1rem; text-align:left; font-size:0.7rem; color:var(--text-dim); text-transform:uppercase;">Hotel</th>
+                                    <th style="padding:1rem; text-align:center; font-size:0.7rem; color:var(--text-dim); text-transform:uppercase;">Periodo</th>
+                                    <th style="padding:1rem; text-align:center; font-size:0.7rem; color:var(--text-dim); text-transform:uppercase;">Estado</th>
                                 </tr>
                             </thead>
-                            <tbody>${rows}</tbody>
+                            <tbody>
+                                ${periods.map(p => {
+                                    const isBaja = p.tipo.includes('BAJA');
+                                    const badgeClass = isBaja ? 'background:rgba(239,68,68,0.1); color:#f87171;' : 'background:rgba(139,92,246,0.1); color:#a78bfa;';
+                                    return `
+                                    <tr style="border-top:1px solid var(--border);">
+                                        <td style="padding:1rem;">
+                                            <span style="${badgeClass} padding:5px 12px; border-radius:12px; font-weight:800; font-size:0.7rem;">
+                                                ${p.tipo}
+                                            </span>
+                                        </td>
+                                        <td style="padding:1rem; font-weight:700;">${p.empId}</td>
+                                        <td style="padding:1rem; font-size:0.85rem; color:var(--text-dim);">${p.hotel}</td>
+                                        <td style="padding:1rem; text-align:center;">
+                                            <div style="font-weight:600; font-size:0.9rem;">${window.TurnosDB.fmtDateLegacy(p.start)} — ${window.TurnosDB.fmtDateLegacy(p.end)}</div>
+                                            <div style="font-size:0.65rem; opacity:0.5; font-weight:800;">${p.days} DÍAS TOTALES</div>
+                                        </td>
+                                        <td style="padding:1rem; text-align:center;">
+                                            <button class="btn" style="padding:5px 10px; font-size:0.7rem;" onclick="editPeriod('${p.empId}', '${p.start}')">Gestionar</button>
+                                        </td>
+                                    </tr>`;
+                                }).join('')}
+                            </tbody>
                         </table>
-                    </div>`;
-            } catch (err) { 
-                container.innerHTML = `<div style="padding:2rem; color:red;">Error cargando datos: ${err.message}</div>`; 
+                    </div>
+                `;
+            } catch (err) {
+                area.innerHTML = `<div style="padding:2rem; color:var(--danger); text-align:center;">Error: ${err.message}</div>`;
             }
         }
 
-        window.initSupabaseSync = async () => {
-            const syncText = $('#syncText');
-            const syncDot = $('#syncDot');
+        async function saveManualBaja() {
+            const emp = $('#mbEmp').value.trim();
+            const dateStart = $('#mbDateStart').value;
+            const dateEnd = $('#mbDateEnd').value;
+            const tipo = $('#mbTipo').value;
+            const hotel = $('#mbHotel').value;
+            const obs = $('#mbObs').value;
+
+            if (!emp || !dateStart) return alert("Empleado y Fecha Inicio obligatorios.");
+
+            // Loop si hay rango
+            let current = new Date(dateStart + 'T12:00:00');
+            const end = dateEnd ? new Date(dateEnd + 'T12:00:00') : current;
+            const toInsert = [];
+
+            while (current <= end) {
+                toInsert.push({
+                    empleado_id: emp,
+                    fecha: current.toISOString().split('T')[0],
+                    turno: obs || 'M',
+                    tipo: tipo,
+                    hotel_id: hotel,
+                    updated_by: 'Admin'
+                });
+                current.setDate(current.getDate() + 1);
+            }
+
             try {
+                await window.TurnosDB.bulkUpsert(toInsert);
+                await window.TurnosDB.upsertEmpleado({ id: emp, nombre: emp, hotel_id: hotel, activo: true });
+                $('#modalBaja').style.display = 'none';
                 await renderBajas();
-                if (syncText) syncText.innerText = "Supabase Conectado";
-                if (syncDot) syncDot.style.background = "#10e898";
-                window.aplicarCambioLocal = renderBajas;
-            } catch (e) { if (syncText) syncText.innerText = "Error"; }
-        };
+            } catch (err) { alert("Error: " + err.message); }
+        }
+
+        async function initPage() {
+            if (localStorage.getItem('turnosweb_theme') === 'light') document.body.classList.add('light-mode');
+            
+            const [hotels, emps] = await Promise.all([window.TurnosDB.getHotels(), window.TurnosDB.getEmpleados()]);
+            
+            // Deduplicar visualmente por ID limpio
+            const uniqueEmps = [];
+            const seen = new Set();
+            emps.forEach(e => {
+                const cleanId = window.TurnosDB.cleanName(e.id);
+                if (!seen.has(cleanId)) {
+                    seen.add(cleanId);
+                    uniqueEmps.push({ ...e, id: cleanId });
+                }
+            });
+
+            $('#bjHotel').innerHTML = `<option value="all">Todos los Hoteles</option>` + hotels.map(h => `<option value="${h}">${h}</option>`).join('');
+            $('#mbHotel').innerHTML = `<option value="" disabled selected>Seleccionar hotel...</option>` + hotels.map(h => `<option value="${h}">${h}</option>`).join('');
+            $('#bjEmp').innerHTML = `<option value="all">Todos los Empleados</option>` + uniqueEmps.map(e => `<option value="${e.id}">${e.nombre}</option>`).join('');
+
+            flatpickr("#bjRange", {
+                mode: "range", dateFormat: "Y-m-d",
+                locale: { ...flatpickr.l10ns.es, firstDayOfWeek: 1 },
+                onChange: () => renderBajas()
+            });
+
+            await renderBajas();
+        }
 
         function toggleTheme() {
             document.body.classList.toggle('light-mode');
             localStorage.setItem('turnosweb_theme', document.body.classList.contains('light-mode') ? 'light' : 'dark');
         }
 
-        document.addEventListener('DOMContentLoaded', () => {
-            if (window.flatpickr && flatpickr.l10ns.es) {
-                flatpickr.localize(flatpickr.l10ns.es);
-                flatpickr.l10ns.es.firstDayOfWeek = 1;
-            }
-            if (localStorage.getItem('turnosweb_theme') === 'light') document.body.classList.add('light-mode');
-            flatpickr("#rangeTrigger", {
-                wrap: true, mode: "range", 
-                locale: { ...flatpickr.l10ns.es, firstDayOfWeek: 1 }, 
-                dateFormat: "Y-m-d",
-                onChange: (selectedDates) => {
-                    if (selectedDates.length === 2) {
-                        CURRENT_RANGE.start = selectedDates[0].toISOString().split('T')[0];
-                        CURRENT_RANGE.end = selectedDates[1].toISOString().split('T')[0];
-                        $('#rangeLabel').textContent = `${selectedDates[0].toLocaleDateString()} — ${selectedDates[1].toLocaleDateString()}`;
-                        renderBajas();
-                    }
-                }
-            });
-            window.initSupabaseSync();
-        });
+        document.addEventListener('DOMContentLoaded', initPage);
     </script>
-    <script src="sync-status.js"></script>
 </body>
 </html>

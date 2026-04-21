@@ -1,0 +1,3677 @@
+﻿[
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2025-06-09",
+    "empleado_id": "Natalio",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2025-06-10",
+    "empleado_id": "Natalio",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2025-06-11",
+    "empleado_id": "Natalio",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2025-06-12",
+    "empleado_id": "Natalio",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2025-06-13",
+    "empleado_id": "Natalio",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2025-06-14",
+    "empleado_id": "Natalio",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2025-06-15",
+    "empleado_id": "Natalio",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2025-06-16",
+    "empleado_id": "Natalio",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2025-06-16",
+    "empleado_id": "Macarena",
+    "sustituto": "Esther",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2025-06-17",
+    "empleado_id": "Natalio",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2025-06-17",
+    "empleado_id": "Macarena",
+    "sustituto": "Esther",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2025-06-18",
+    "empleado_id": "Natalio",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2025-06-18",
+    "empleado_id": "Macarena",
+    "sustituto": "Esther",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2025-06-19",
+    "empleado_id": "Natalio",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2025-06-19",
+    "empleado_id": "Macarena",
+    "sustituto": "Esther",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2025-06-20",
+    "empleado_id": "Natalio",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2025-06-20",
+    "empleado_id": "Macarena",
+    "sustituto": "Esther",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2025-06-21",
+    "empleado_id": "Natalio",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2025-06-21",
+    "empleado_id": "Macarena",
+    "sustituto": "Esther",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2025-06-22",
+    "empleado_id": "Natalio",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2025-06-22",
+    "empleado_id": "Macarena",
+    "sustituto": "Esther",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2025-06-23",
+    "empleado_id": "ValentÃ­n ",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2025-06-23",
+    "empleado_id": "Dani",
+    "sustituto": "Esther",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2025-06-24",
+    "empleado_id": "ValentÃ­n ",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2025-06-24",
+    "empleado_id": "Dani",
+    "sustituto": "Esther",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2025-06-25",
+    "empleado_id": "ValentÃ­n ",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2025-06-25",
+    "empleado_id": "Dani",
+    "sustituto": "Esther",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2025-06-26",
+    "empleado_id": "ValentÃ­n ",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2025-06-26",
+    "empleado_id": "Dani",
+    "sustituto": "Esther",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2025-06-27",
+    "empleado_id": "ValentÃ­n ",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2025-06-27",
+    "empleado_id": "Dani",
+    "sustituto": "Esther",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2025-06-28",
+    "empleado_id": "ValentÃ­n ",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2025-06-28",
+    "empleado_id": "Dani",
+    "sustituto": "Esther",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2025-06-29",
+    "empleado_id": "ValentÃ­n ",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2025-06-29",
+    "empleado_id": "Dani",
+    "sustituto": "Esther",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2025-06-30",
+    "empleado_id": "Cristina",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2025-06-30",
+    "empleado_id": "Diana",
+    "sustituto": "Esther",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2025-07-01",
+    "empleado_id": "Cristina",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2025-07-01",
+    "empleado_id": "Diana",
+    "sustituto": "Esther",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2025-07-02",
+    "empleado_id": "Cristina",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2025-07-02",
+    "empleado_id": "Diana",
+    "sustituto": "Esther",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2025-07-03",
+    "empleado_id": "Cristina",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2025-07-03",
+    "empleado_id": "Diana",
+    "sustituto": "Esther",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2025-07-04",
+    "empleado_id": "Cristina",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2025-07-04",
+    "empleado_id": "Diana",
+    "sustituto": "Esther",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2025-07-05",
+    "empleado_id": "Cristina",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2025-07-05",
+    "empleado_id": "Diana",
+    "sustituto": "Esther",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2025-07-06",
+    "empleado_id": "Cristina",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2025-07-06",
+    "empleado_id": "Diana",
+    "sustituto": "Esther",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2025-07-07",
+    "empleado_id": "Cristina",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2025-07-07",
+    "empleado_id": "Diana",
+    "sustituto": "Esther",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2025-07-08",
+    "empleado_id": "Cristina",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2025-07-08",
+    "empleado_id": "Diana",
+    "sustituto": "Esther",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2025-07-09",
+    "empleado_id": "Cristina",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2025-07-09",
+    "empleado_id": "Diana",
+    "sustituto": "Esther",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2025-07-10",
+    "empleado_id": "Cristina",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2025-07-10",
+    "empleado_id": "Diana",
+    "sustituto": "Esther",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2025-07-11",
+    "empleado_id": "Cristina",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2025-07-11",
+    "empleado_id": "Diana",
+    "sustituto": "Esther",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2025-07-12",
+    "empleado_id": "Cristina",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2025-07-12",
+    "empleado_id": "Diana",
+    "sustituto": "Esther",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2025-07-13",
+    "empleado_id": "Cristina",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2025-07-13",
+    "empleado_id": "Diana",
+    "sustituto": "Esther",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2025-07-14",
+    "empleado_id": "Cristina",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2025-07-14",
+    "empleado_id": "Diana",
+    "sustituto": "Esther",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2025-07-15",
+    "empleado_id": "Cristina",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2025-07-15",
+    "empleado_id": "Diana",
+    "sustituto": "Esther",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2025-07-16",
+    "empleado_id": "Cristina",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2025-07-16",
+    "empleado_id": "Diana",
+    "sustituto": "Esther",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2025-07-17",
+    "empleado_id": "Cristina",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2025-07-17",
+    "empleado_id": "Diana",
+    "sustituto": "Esther",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2025-07-18",
+    "empleado_id": "Cristina",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2025-07-18",
+    "empleado_id": "Diana",
+    "sustituto": "Esther",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2025-07-19",
+    "empleado_id": "Cristina",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2025-07-19",
+    "empleado_id": "Diana",
+    "sustituto": "Esther",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2025-07-20",
+    "empleado_id": "Cristina",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2025-07-20",
+    "empleado_id": "Diana",
+    "sustituto": "Esther",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2025-07-21",
+    "empleado_id": "Natalio",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2025-07-21",
+    "empleado_id": "Federico",
+    "sustituto": "Esther",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2025-07-22",
+    "empleado_id": "Natalio",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2025-07-22",
+    "empleado_id": "Federico",
+    "sustituto": "Esther",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2025-07-23",
+    "empleado_id": "Natalio",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2025-07-23",
+    "empleado_id": "Federico",
+    "sustituto": "Esther",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2025-07-24",
+    "empleado_id": "Natalio",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2025-07-24",
+    "empleado_id": "Federico",
+    "sustituto": "Esther",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2025-07-25",
+    "empleado_id": "Natalio",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2025-07-25",
+    "empleado_id": "Federico",
+    "sustituto": "Esther",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2025-07-26",
+    "empleado_id": "Natalio",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2025-07-26",
+    "empleado_id": "Federico",
+    "sustituto": "Esther",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2025-07-27",
+    "empleado_id": "Natalio",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2025-07-27",
+    "empleado_id": "Federico",
+    "sustituto": "Esther",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2025-07-28",
+    "empleado_id": "Natalio",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2025-07-28",
+    "empleado_id": "Dani",
+    "sustituto": "Esther",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2025-07-29",
+    "empleado_id": "Natalio",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2025-07-29",
+    "empleado_id": "Dani",
+    "sustituto": "Esther",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2025-07-30",
+    "empleado_id": "Natalio",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2025-07-30",
+    "empleado_id": "Dani",
+    "sustituto": "Esther",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2025-07-31",
+    "empleado_id": "Natalio",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2025-07-31",
+    "empleado_id": "Dani",
+    "sustituto": "Esther",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2025-08-01",
+    "empleado_id": "Natalio",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2025-08-01",
+    "empleado_id": "Dani",
+    "sustituto": "Esther",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2025-08-02",
+    "empleado_id": "Natalio",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2025-08-02",
+    "empleado_id": "Dani",
+    "sustituto": "Esther",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2025-08-03",
+    "empleado_id": "Natalio",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2025-08-03",
+    "empleado_id": "Dani",
+    "sustituto": "Esther",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2025-08-04",
+    "empleado_id": "ValentÃ­n ",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2025-08-04",
+    "empleado_id": "Macarena",
+    "sustituto": "Esther",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2025-08-05",
+    "empleado_id": "ValentÃ­n ",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2025-08-05",
+    "empleado_id": "Macarena",
+    "sustituto": "Esther",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2025-08-06",
+    "empleado_id": "ValentÃ­n ",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2025-08-06",
+    "empleado_id": "Macarena",
+    "sustituto": "Esther",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2025-08-07",
+    "empleado_id": "ValentÃ­n ",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2025-08-07",
+    "empleado_id": "Macarena",
+    "sustituto": "Esther",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2025-08-08",
+    "empleado_id": "ValentÃ­n ",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2025-08-08",
+    "empleado_id": "Macarena",
+    "sustituto": "Esther",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2025-08-09",
+    "empleado_id": "ValentÃ­n ",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2025-08-09",
+    "empleado_id": "Macarena",
+    "sustituto": "Esther",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2025-08-10",
+    "empleado_id": "ValentÃ­n ",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2025-08-10",
+    "empleado_id": "Macarena",
+    "sustituto": "Esther",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2025-08-11",
+    "empleado_id": "Cristina",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2025-08-11",
+    "empleado_id": "Macarena",
+    "sustituto": "Esther",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2025-08-12",
+    "empleado_id": "Cristina",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2025-08-12",
+    "empleado_id": "Macarena",
+    "sustituto": "Esther",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2025-08-13",
+    "empleado_id": "Cristina",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2025-08-13",
+    "empleado_id": "Macarena",
+    "sustituto": "Esther",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2025-08-14",
+    "empleado_id": "Cristina",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2025-08-14",
+    "empleado_id": "Macarena",
+    "sustituto": "Esther",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2025-08-15",
+    "empleado_id": "Cristina",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2025-08-15",
+    "empleado_id": "Macarena",
+    "sustituto": "Esther",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2025-08-16",
+    "empleado_id": "Cristina",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2025-08-16",
+    "empleado_id": "Macarena",
+    "sustituto": "Esther",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2025-08-17",
+    "empleado_id": "Cristina",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2025-08-17",
+    "empleado_id": "Macarena",
+    "sustituto": "Esther",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2025-08-18",
+    "empleado_id": "Natalio",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2025-08-18",
+    "empleado_id": "Dani",
+    "sustituto": "Esther",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2025-08-19",
+    "empleado_id": "Natalio",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2025-08-19",
+    "empleado_id": "Dani",
+    "sustituto": "Esther",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2025-08-20",
+    "empleado_id": "Natalio",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2025-08-20",
+    "empleado_id": "Dani",
+    "sustituto": "Esther",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2025-08-21",
+    "empleado_id": "Natalio",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2025-08-21",
+    "empleado_id": "Dani",
+    "sustituto": "Esther",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2025-08-22",
+    "empleado_id": "Dani",
+    "sustituto": "Esther",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2025-08-22",
+    "empleado_id": "Natalio",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2025-08-23",
+    "empleado_id": "Natalio",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2025-08-23",
+    "empleado_id": "Dani",
+    "sustituto": "Esther",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2025-08-24",
+    "empleado_id": "Natalio",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2025-08-24",
+    "empleado_id": "Dani",
+    "sustituto": "Esther",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2025-08-25",
+    "empleado_id": "ValentÃ­n ",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2025-08-25",
+    "empleado_id": "Federico",
+    "sustituto": "Esther",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2025-08-26",
+    "empleado_id": "ValentÃ­n ",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2025-08-26",
+    "empleado_id": "Federico",
+    "sustituto": "Esther",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2025-08-27",
+    "empleado_id": "ValentÃ­n ",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2025-08-27",
+    "empleado_id": "Federico",
+    "sustituto": "Esther",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2025-08-28",
+    "empleado_id": "ValentÃ­n ",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2025-08-28",
+    "empleado_id": "Federico",
+    "sustituto": "Esther",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2025-08-29",
+    "empleado_id": "ValentÃ­n ",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2025-08-29",
+    "empleado_id": "Federico",
+    "sustituto": "Esther",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2025-08-30",
+    "empleado_id": "ValentÃ­n ",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2025-08-30",
+    "empleado_id": "Federico",
+    "sustituto": "Esther",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2025-08-31",
+    "empleado_id": "ValentÃ­n ",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2025-08-31",
+    "empleado_id": "Federico",
+    "sustituto": "Esther",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2025-09-01",
+    "empleado_id": "Natalio",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2025-09-01",
+    "empleado_id": "Federico",
+    "sustituto": "Esther",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2025-09-02",
+    "empleado_id": "Natalio",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2025-09-02",
+    "empleado_id": "Federico",
+    "sustituto": "Esther",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2025-09-03",
+    "empleado_id": "Natalio",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2025-09-03",
+    "empleado_id": "Federico",
+    "sustituto": "Esther",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2025-09-04",
+    "empleado_id": "Natalio",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2025-09-04",
+    "empleado_id": "Federico",
+    "sustituto": "Esther",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2025-09-05",
+    "empleado_id": "Natalio",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2025-09-05",
+    "empleado_id": "Federico",
+    "sustituto": "Esther",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2025-09-06",
+    "empleado_id": "Natalio",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2025-09-06",
+    "empleado_id": "Federico",
+    "sustituto": "Esther",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2025-09-07",
+    "empleado_id": "Natalio",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2025-09-07",
+    "empleado_id": "Federico",
+    "sustituto": "Esther",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2025-09-08",
+    "empleado_id": "Cristina",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2025-09-09",
+    "empleado_id": "Cristina",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2025-09-10",
+    "empleado_id": "Cristina",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2025-09-11",
+    "empleado_id": "Cristina",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2025-09-12",
+    "empleado_id": "Cristina",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2025-09-13",
+    "empleado_id": "Cristina",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2025-09-14",
+    "empleado_id": "Cristina",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2025-09-15",
+    "empleado_id": "ValentÃ­n ",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2025-09-16",
+    "empleado_id": "ValentÃ­n ",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2025-09-17",
+    "empleado_id": "ValentÃ­n ",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2025-09-18",
+    "empleado_id": "ValentÃ­n ",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2025-09-19",
+    "empleado_id": "ValentÃ­n ",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2025-09-20",
+    "empleado_id": "ValentÃ­n ",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2025-09-21",
+    "empleado_id": "ValentÃ­n ",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2025-09-22",
+    "empleado_id": "Sergio",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2025-09-23",
+    "empleado_id": "Sergio",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2025-09-24",
+    "empleado_id": "Sergio",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2025-09-25",
+    "empleado_id": "Sergio",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2025-09-26",
+    "empleado_id": "Sergio",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2025-09-27",
+    "empleado_id": "Sergio",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2025-09-28",
+    "empleado_id": "Sergio",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2025-10-20",
+    "empleado_id": "Cristina",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2025-10-21",
+    "empleado_id": "Cristina",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2025-10-22",
+    "empleado_id": "Cristina",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2025-10-23",
+    "empleado_id": "Cristina",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2025-10-24",
+    "empleado_id": "Cristina",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2025-10-25",
+    "empleado_id": "Cristina",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2025-10-26",
+    "empleado_id": "Cristina",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2026-03-23",
+    "empleado_id": "Cristina",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2026-03-24",
+    "empleado_id": "Cristina",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2026-03-25",
+    "empleado_id": "Cristina",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2026-03-26",
+    "empleado_id": "Cristina",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2026-03-27",
+    "empleado_id": "Cristina",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2026-03-28",
+    "empleado_id": "Cristina",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2026-03-29",
+    "empleado_id": "Cristina",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2026-03-30",
+    "empleado_id": "Esther",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2026-03-31",
+    "empleado_id": "Esther",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2026-04-01",
+    "empleado_id": "Esther",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2026-04-02",
+    "empleado_id": "Esther",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2026-04-03",
+    "empleado_id": "Esther",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2026-04-04",
+    "empleado_id": "Esther",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2026-04-05",
+    "empleado_id": "Esther",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2026-04-06",
+    "empleado_id": "ValentÃ­n ",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2026-04-07",
+    "empleado_id": "ValentÃ­n ",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2026-04-08",
+    "empleado_id": "ValentÃ­n ",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2026-04-09",
+    "empleado_id": "ValentÃ­n ",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2026-04-10",
+    "empleado_id": "ValentÃ­n ",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2026-04-11",
+    "empleado_id": "ValentÃ­n ",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2026-04-12",
+    "empleado_id": "ValentÃ­n ",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2026-04-13",
+    "empleado_id": "Esther",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2026-04-14",
+    "empleado_id": "Esther",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2026-04-15",
+    "empleado_id": "Esther",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2026-04-16",
+    "empleado_id": "Esther",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2026-04-17",
+    "empleado_id": "Esther",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2026-04-18",
+    "empleado_id": "Esther",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2026-04-19",
+    "empleado_id": "Esther",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2026-04-20",
+    "empleado_id": "Cristina",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2026-04-21",
+    "empleado_id": "Cristina",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2026-04-22",
+    "empleado_id": "Cristina",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2026-04-23",
+    "empleado_id": "Cristina",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2026-04-24",
+    "empleado_id": "Cristina",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2026-04-25",
+    "empleado_id": "Cristina",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2026-04-26",
+    "empleado_id": "Cristina",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2026-04-27",
+    "empleado_id": "Cristina",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2026-04-28",
+    "empleado_id": "Cristina",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2026-04-29",
+    "empleado_id": "Cristina",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2026-04-30",
+    "empleado_id": "Cristina",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2026-05-01",
+    "empleado_id": "Cristina",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2026-05-02",
+    "empleado_id": "Cristina",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2026-05-03",
+    "empleado_id": "Cristina",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2026-05-04",
+    "empleado_id": "Sergio",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2026-05-05",
+    "empleado_id": "Sergio",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2026-05-06",
+    "empleado_id": "Sergio",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2026-05-07",
+    "empleado_id": "Sergio",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2026-05-08",
+    "empleado_id": "Sergio",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2026-05-09",
+    "empleado_id": "Sergio",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2026-05-10",
+    "empleado_id": "Sergio",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2026-05-11",
+    "empleado_id": "Esther",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2026-05-12",
+    "empleado_id": "Esther",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2026-05-13",
+    "empleado_id": "Esther",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2026-05-14",
+    "empleado_id": "Esther",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2026-05-15",
+    "empleado_id": "Esther",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2026-05-16",
+    "empleado_id": "Esther",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2026-05-17",
+    "empleado_id": "Esther",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2026-05-18",
+    "empleado_id": "Esther",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2026-05-19",
+    "empleado_id": "Esther",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2026-05-20",
+    "empleado_id": "Esther",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2026-05-21",
+    "empleado_id": "Esther",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2026-05-22",
+    "empleado_id": "Esther",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2026-05-23",
+    "empleado_id": "Esther",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2026-05-24",
+    "empleado_id": "Esther",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2026-05-25",
+    "empleado_id": "Cristina",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2026-05-26",
+    "empleado_id": "Cristina",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2026-05-27",
+    "empleado_id": "Cristina",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2026-05-28",
+    "empleado_id": "Cristina",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2026-05-29",
+    "empleado_id": "Cristina",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2026-05-30",
+    "empleado_id": "Cristina",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2026-05-31",
+    "empleado_id": "Cristina",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2026-06-01",
+    "empleado_id": "Esther",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2026-06-01",
+    "empleado_id": "Dani",
+    "sustituto": "Â¿?",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2026-06-02",
+    "empleado_id": "Esther",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2026-06-02",
+    "empleado_id": "Dani",
+    "sustituto": "Â¿?",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2026-06-03",
+    "empleado_id": "Esther",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2026-06-03",
+    "empleado_id": "Dani",
+    "sustituto": "Â¿?",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2026-06-04",
+    "empleado_id": "Esther",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2026-06-04",
+    "empleado_id": "Dani",
+    "sustituto": "Â¿?",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2026-06-05",
+    "empleado_id": "Esther",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2026-06-05",
+    "empleado_id": "Dani",
+    "sustituto": "Â¿?",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2026-06-06",
+    "empleado_id": "Esther",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2026-06-06",
+    "empleado_id": "Dani",
+    "sustituto": "Â¿?",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2026-06-07",
+    "empleado_id": "Esther",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2026-06-07",
+    "empleado_id": "Dani",
+    "sustituto": "Â¿?",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2026-06-08",
+    "empleado_id": "ValentÃ­n ",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2026-06-08",
+    "empleado_id": "Diana",
+    "sustituto": "Â¿?",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2026-06-09",
+    "empleado_id": "ValentÃ­n ",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2026-06-09",
+    "empleado_id": "Diana",
+    "sustituto": "Â¿?",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2026-06-10",
+    "empleado_id": "ValentÃ­n ",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2026-06-10",
+    "empleado_id": "Diana",
+    "sustituto": "Â¿?",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2026-06-11",
+    "empleado_id": "ValentÃ­n ",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2026-06-11",
+    "empleado_id": "Diana",
+    "sustituto": "Â¿?",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2026-06-12",
+    "empleado_id": "ValentÃ­n ",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2026-06-12",
+    "empleado_id": "Diana",
+    "sustituto": "Â¿?",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2026-06-13",
+    "empleado_id": "ValentÃ­n ",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2026-06-13",
+    "empleado_id": "Diana",
+    "sustituto": "Â¿?",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2026-06-14",
+    "empleado_id": "ValentÃ­n ",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2026-06-14",
+    "empleado_id": "Diana",
+    "sustituto": "Â¿?",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2026-06-15",
+    "empleado_id": "Sergio",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2026-06-15",
+    "empleado_id": "Federico",
+    "sustituto": "Â¿?",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2026-06-16",
+    "empleado_id": "Sergio",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2026-06-16",
+    "empleado_id": "Federico",
+    "sustituto": "Â¿?",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2026-06-17",
+    "empleado_id": "Sergio",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2026-06-17",
+    "empleado_id": "Federico",
+    "sustituto": "Â¿?",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2026-06-18",
+    "empleado_id": "Sergio",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2026-06-18",
+    "empleado_id": "Federico",
+    "sustituto": "Â¿?",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2026-06-19",
+    "empleado_id": "Sergio",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2026-06-19",
+    "empleado_id": "Federico",
+    "sustituto": "Â¿?",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2026-06-20",
+    "empleado_id": "Sergio",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2026-06-20",
+    "empleado_id": "Federico",
+    "sustituto": "Â¿?",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2026-06-21",
+    "empleado_id": "Sergio",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2026-06-21",
+    "empleado_id": "Federico",
+    "sustituto": "Â¿?",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2026-06-22",
+    "empleado_id": "Sergio",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2026-06-22",
+    "empleado_id": "Macarena",
+    "sustituto": "Â¿?",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2026-06-23",
+    "empleado_id": "Sergio",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2026-06-23",
+    "empleado_id": "Macarena",
+    "sustituto": "Â¿?",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2026-06-24",
+    "empleado_id": "Sergio",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2026-06-24",
+    "empleado_id": "Macarena",
+    "sustituto": "Â¿?",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2026-06-25",
+    "empleado_id": "Sergio",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2026-06-25",
+    "empleado_id": "Macarena",
+    "sustituto": "Â¿?",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2026-06-26",
+    "empleado_id": "Sergio",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2026-06-26",
+    "empleado_id": "Macarena",
+    "sustituto": "Â¿?",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2026-06-27",
+    "empleado_id": "Sergio",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2026-06-27",
+    "empleado_id": "Macarena",
+    "sustituto": "Â¿?",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2026-06-28",
+    "empleado_id": "Sergio",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2026-06-28",
+    "empleado_id": "Macarena",
+    "sustituto": "Â¿?",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2026-06-29",
+    "empleado_id": "ValentÃ­n ",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2026-06-29",
+    "empleado_id": "Federico",
+    "sustituto": "Â¿?",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2026-06-30",
+    "empleado_id": "ValentÃ­n ",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2026-06-30",
+    "empleado_id": "Federico",
+    "sustituto": "Â¿?",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2026-07-01",
+    "empleado_id": "ValentÃ­n ",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2026-07-01",
+    "empleado_id": "Federico",
+    "sustituto": "Â¿?",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2026-07-02",
+    "empleado_id": "ValentÃ­n ",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2026-07-02",
+    "empleado_id": "Federico",
+    "sustituto": "Â¿?",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2026-07-03",
+    "empleado_id": "ValentÃ­n ",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2026-07-03",
+    "empleado_id": "Federico",
+    "sustituto": "Â¿?",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2026-07-04",
+    "empleado_id": "ValentÃ­n ",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2026-07-04",
+    "empleado_id": "Federico",
+    "sustituto": "Â¿?",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2026-07-05",
+    "empleado_id": "ValentÃ­n ",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2026-07-05",
+    "empleado_id": "Federico",
+    "sustituto": "Â¿?",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2026-07-06",
+    "empleado_id": "Sergio",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2026-07-06",
+    "empleado_id": "Federico",
+    "sustituto": "Â¿?",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2026-07-07",
+    "empleado_id": "Sergio",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2026-07-07",
+    "empleado_id": "Federico",
+    "sustituto": "Â¿?",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2026-07-08",
+    "empleado_id": "Sergio",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2026-07-08",
+    "empleado_id": "Federico",
+    "sustituto": "Â¿?",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2026-07-09",
+    "empleado_id": "Sergio",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2026-07-09",
+    "empleado_id": "Federico",
+    "sustituto": "Â¿?",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2026-07-10",
+    "empleado_id": "Sergio",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2026-07-10",
+    "empleado_id": "Federico",
+    "sustituto": "Â¿?",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2026-07-11",
+    "empleado_id": "Sergio",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2026-07-11",
+    "empleado_id": "Federico",
+    "sustituto": "Â¿?",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2026-07-12",
+    "empleado_id": "Sergio",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2026-07-12",
+    "empleado_id": "Federico",
+    "sustituto": "Â¿?",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2026-07-13",
+    "empleado_id": "ValentÃ­n ",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2026-07-13",
+    "empleado_id": "Macarena",
+    "sustituto": "Â¿?",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2026-07-14",
+    "empleado_id": "ValentÃ­n ",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2026-07-14",
+    "empleado_id": "Macarena",
+    "sustituto": "Â¿?",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2026-07-15",
+    "empleado_id": "ValentÃ­n ",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2026-07-15",
+    "empleado_id": "Macarena",
+    "sustituto": "Â¿?",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2026-07-16",
+    "empleado_id": "ValentÃ­n ",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2026-07-16",
+    "empleado_id": "Macarena",
+    "sustituto": "Â¿?",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2026-07-17",
+    "empleado_id": "ValentÃ­n ",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2026-07-17",
+    "empleado_id": "Macarena",
+    "sustituto": "Â¿?",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2026-07-18",
+    "empleado_id": "ValentÃ­n ",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2026-07-18",
+    "empleado_id": "Macarena",
+    "sustituto": "Â¿?",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2026-07-19",
+    "empleado_id": "ValentÃ­n ",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2026-07-19",
+    "empleado_id": "Macarena",
+    "sustituto": "Â¿?",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2026-07-20",
+    "empleado_id": "Cristina",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2026-07-20",
+    "empleado_id": "Macarena",
+    "sustituto": "Â¿?",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2026-07-21",
+    "empleado_id": "Cristina",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2026-07-21",
+    "empleado_id": "Macarena",
+    "sustituto": "Â¿?",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2026-07-22",
+    "empleado_id": "Cristina",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2026-07-22",
+    "empleado_id": "Macarena",
+    "sustituto": "Â¿?",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2026-07-23",
+    "empleado_id": "Cristina",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2026-07-23",
+    "empleado_id": "Macarena",
+    "sustituto": "Â¿?",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2026-07-24",
+    "empleado_id": "Cristina",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2026-07-24",
+    "empleado_id": "Macarena",
+    "sustituto": "Â¿?",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2026-07-25",
+    "empleado_id": "Cristina",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2026-07-25",
+    "empleado_id": "Macarena",
+    "sustituto": "Â¿?",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2026-07-26",
+    "empleado_id": "Cristina",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2026-07-26",
+    "empleado_id": "Macarena",
+    "sustituto": "Â¿?",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2026-07-27",
+    "empleado_id": "Cristina",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2026-07-27",
+    "empleado_id": "Dani",
+    "sustituto": "Â¿?",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2026-07-28",
+    "empleado_id": "Cristina",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2026-07-28",
+    "empleado_id": "Dani",
+    "sustituto": "Â¿?",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2026-07-29",
+    "empleado_id": "Cristina",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2026-07-29",
+    "empleado_id": "Dani",
+    "sustituto": "Â¿?",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2026-07-30",
+    "empleado_id": "Cristina",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2026-07-30",
+    "empleado_id": "Dani",
+    "sustituto": "Â¿?",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2026-07-31",
+    "empleado_id": "Cristina",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2026-07-31",
+    "empleado_id": "Dani",
+    "sustituto": "Â¿?",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2026-08-01",
+    "empleado_id": "Cristina",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2026-08-01",
+    "empleado_id": "Dani",
+    "sustituto": "Â¿?",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2026-08-02",
+    "empleado_id": "Cristina",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2026-08-02",
+    "empleado_id": "Dani",
+    "sustituto": "Â¿?",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2026-08-03",
+    "empleado_id": "Esther",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2026-08-03",
+    "empleado_id": "Diana",
+    "sustituto": "Â¿?",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2026-08-04",
+    "empleado_id": "Esther",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2026-08-04",
+    "empleado_id": "Diana",
+    "sustituto": "Â¿?",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2026-08-05",
+    "empleado_id": "Esther",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2026-08-05",
+    "empleado_id": "Diana",
+    "sustituto": "Â¿?",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2026-08-06",
+    "empleado_id": "Esther",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2026-08-06",
+    "empleado_id": "Diana",
+    "sustituto": "Â¿?",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2026-08-07",
+    "empleado_id": "Esther",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2026-08-07",
+    "empleado_id": "Diana",
+    "sustituto": "Â¿?",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2026-08-08",
+    "empleado_id": "Esther",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2026-08-08",
+    "empleado_id": "Diana",
+    "sustituto": "Â¿?",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2026-08-09",
+    "empleado_id": "Esther",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2026-08-09",
+    "empleado_id": "Diana",
+    "sustituto": "Â¿?",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2026-08-10",
+    "empleado_id": "Esther",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2026-08-10",
+    "empleado_id": "Diana",
+    "sustituto": "Â¿?",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2026-08-11",
+    "empleado_id": "Esther",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2026-08-11",
+    "empleado_id": "Diana",
+    "sustituto": "Â¿?",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2026-08-12",
+    "empleado_id": "Esther",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2026-08-12",
+    "empleado_id": "Diana",
+    "sustituto": "Â¿?",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2026-08-13",
+    "empleado_id": "Esther",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2026-08-13",
+    "empleado_id": "Diana",
+    "sustituto": "Â¿?",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2026-08-14",
+    "empleado_id": "Esther",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2026-08-14",
+    "empleado_id": "Diana",
+    "sustituto": "Â¿?",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2026-08-15",
+    "empleado_id": "Esther",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2026-08-15",
+    "empleado_id": "Diana",
+    "sustituto": "Â¿?",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2026-08-16",
+    "empleado_id": "Esther",
+    "sustituto": "Miriam",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2026-08-16",
+    "empleado_id": "Diana",
+    "sustituto": "Â¿?",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2026-08-17",
+    "empleado_id": "Dani",
+    "sustituto": "Â¿?",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2026-08-18",
+    "empleado_id": "Dani",
+    "sustituto": "Â¿?",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2026-08-19",
+    "empleado_id": "Dani",
+    "sustituto": "Â¿?",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2026-08-20",
+    "empleado_id": "Dani",
+    "sustituto": "Â¿?",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2026-08-21",
+    "empleado_id": "Dani",
+    "sustituto": "Â¿?",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2026-08-22",
+    "empleado_id": "Dani",
+    "sustituto": "Â¿?",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2026-08-23",
+    "empleado_id": "Dani",
+    "sustituto": "Â¿?",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2026-08-24",
+    "empleado_id": "Macarena",
+    "sustituto": "Â¿?",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2026-08-25",
+    "empleado_id": "Macarena",
+    "sustituto": "Â¿?",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2026-08-26",
+    "empleado_id": "Macarena",
+    "sustituto": "Â¿?",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2026-08-27",
+    "empleado_id": "Macarena",
+    "sustituto": "Â¿?",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2026-08-28",
+    "empleado_id": "Macarena",
+    "sustituto": "Â¿?",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2026-08-29",
+    "empleado_id": "Macarena",
+    "sustituto": "Â¿?",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2026-08-30",
+    "empleado_id": "Macarena",
+    "sustituto": "Â¿?",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2026-08-31",
+    "empleado_id": "Federico",
+    "sustituto": "Â¿?",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2026-09-01",
+    "empleado_id": "Federico",
+    "sustituto": "Â¿?",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2026-09-02",
+    "empleado_id": "Federico",
+    "sustituto": "Â¿?",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2026-09-03",
+    "empleado_id": "Federico",
+    "sustituto": "Â¿?",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2026-09-04",
+    "empleado_id": "Federico",
+    "sustituto": "Â¿?",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2026-09-05",
+    "empleado_id": "Federico",
+    "sustituto": "Â¿?",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2026-09-06",
+    "empleado_id": "Federico",
+    "sustituto": "Â¿?",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2026-09-07",
+    "empleado_id": "Federico",
+    "sustituto": "Â¿?",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2026-09-08",
+    "empleado_id": "Federico",
+    "sustituto": "Â¿?",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2026-09-09",
+    "empleado_id": "Federico",
+    "sustituto": "Â¿?",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2026-09-10",
+    "empleado_id": "Federico",
+    "sustituto": "Â¿?",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2026-09-11",
+    "empleado_id": "Federico",
+    "sustituto": "Â¿?",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2026-09-12",
+    "empleado_id": "Federico",
+    "sustituto": "Â¿?",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2026-09-13",
+    "empleado_id": "Federico",
+    "sustituto": "Â¿?",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2026-09-14",
+    "empleado_id": "Dani",
+    "sustituto": "Â¿?",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2026-09-15",
+    "empleado_id": "Dani",
+    "sustituto": "Â¿?",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2026-09-16",
+    "empleado_id": "Dani",
+    "sustituto": "Â¿?",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2026-09-17",
+    "empleado_id": "Dani",
+    "sustituto": "Â¿?",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2026-09-18",
+    "empleado_id": "Dani",
+    "sustituto": "Â¿?",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2026-09-19",
+    "empleado_id": "Dani",
+    "sustituto": "Â¿?",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2026-09-20",
+    "empleado_id": "Dani",
+    "sustituto": "Â¿?",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2026-09-21",
+    "empleado_id": "Macarena",
+    "sustituto": "Â¿?",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2026-09-22",
+    "empleado_id": "Macarena",
+    "sustituto": "Â¿?",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2026-09-23",
+    "empleado_id": "Macarena",
+    "sustituto": "Â¿?",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2026-09-24",
+    "empleado_id": "Macarena",
+    "sustituto": "Â¿?",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2026-09-25",
+    "empleado_id": "Macarena",
+    "sustituto": "Â¿?",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2026-09-26",
+    "empleado_id": "Macarena",
+    "sustituto": "Â¿?",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2026-09-27",
+    "empleado_id": "Macarena",
+    "sustituto": "Â¿?",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2026-09-28",
+    "empleado_id": "Diana",
+    "sustituto": "Â¿?",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2026-09-29",
+    "empleado_id": "Diana",
+    "sustituto": "Â¿?",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2026-09-30",
+    "empleado_id": "Diana",
+    "sustituto": "Â¿?",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2026-10-01",
+    "empleado_id": "Diana",
+    "sustituto": "Â¿?",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2026-10-02",
+    "empleado_id": "Diana",
+    "sustituto": "Â¿?",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2026-10-03",
+    "empleado_id": "Diana",
+    "sustituto": "Â¿?",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2026-10-04",
+    "empleado_id": "Diana",
+    "sustituto": "Â¿?",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2026-10-05",
+    "empleado_id": "Diana",
+    "sustituto": "Â¿?",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2026-10-06",
+    "empleado_id": "Diana",
+    "sustituto": "Â¿?",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2026-10-07",
+    "empleado_id": "Diana",
+    "sustituto": "Â¿?",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2026-10-08",
+    "empleado_id": "Diana",
+    "sustituto": "Â¿?",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2026-10-09",
+    "empleado_id": "Diana",
+    "sustituto": "Â¿?",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2026-10-10",
+    "empleado_id": "Diana",
+    "sustituto": "Â¿?",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2026-10-11",
+    "empleado_id": "Diana",
+    "sustituto": "Â¿?",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2026-10-12",
+    "empleado_id": "Dani",
+    "sustituto": "Â¿?",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2026-10-13",
+    "empleado_id": "Dani",
+    "sustituto": "Â¿?",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2026-10-14",
+    "empleado_id": "Dani",
+    "sustituto": "Â¿?",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2026-10-15",
+    "empleado_id": "Dani",
+    "sustituto": "Â¿?",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2026-10-16",
+    "empleado_id": "Dani",
+    "sustituto": "Â¿?",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2026-10-17",
+    "empleado_id": "Dani",
+    "sustituto": "Â¿?",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2026-10-18",
+    "empleado_id": "Dani",
+    "sustituto": "Â¿?",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2026-10-19",
+    "empleado_id": "Macarena",
+    "sustituto": "Â¿?",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2026-10-20",
+    "empleado_id": "Macarena",
+    "sustituto": "Â¿?",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2026-10-21",
+    "empleado_id": "Macarena",
+    "sustituto": "Â¿?",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2026-10-22",
+    "empleado_id": "Macarena",
+    "sustituto": "Â¿?",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2026-10-23",
+    "empleado_id": "Macarena",
+    "sustituto": "Â¿?",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2026-10-24",
+    "empleado_id": "Macarena",
+    "sustituto": "Â¿?",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2026-10-25",
+    "empleado_id": "Macarena",
+    "sustituto": "Â¿?",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2026-10-26",
+    "empleado_id": "Dani",
+    "sustituto": "Â¿?",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2026-10-27",
+    "empleado_id": "Dani",
+    "sustituto": "Â¿?",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2026-10-28",
+    "empleado_id": "Dani",
+    "sustituto": "Â¿?",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2026-10-29",
+    "empleado_id": "Dani",
+    "sustituto": "Â¿?",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2026-10-30",
+    "empleado_id": "Dani",
+    "sustituto": "Â¿?",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2026-10-31",
+    "empleado_id": "Dani",
+    "sustituto": "Â¿?",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2026-11-01",
+    "empleado_id": "Dani",
+    "sustituto": "Â¿?",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2026-11-02",
+    "empleado_id": "Diana",
+    "sustituto": "Â¿?",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2026-11-03",
+    "empleado_id": "Diana",
+    "sustituto": "Â¿?",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2026-11-04",
+    "empleado_id": "Diana",
+    "sustituto": "Â¿?",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2026-11-05",
+    "empleado_id": "Diana",
+    "sustituto": "Â¿?",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2026-11-06",
+    "empleado_id": "Diana",
+    "sustituto": "Â¿?",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2026-11-07",
+    "empleado_id": "Diana",
+    "sustituto": "Â¿?",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2026-11-08",
+    "empleado_id": "Diana",
+    "sustituto": "Â¿?",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2026-11-09",
+    "empleado_id": "Federico",
+    "sustituto": "Â¿?",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2026-11-10",
+    "empleado_id": "Federico",
+    "sustituto": "Â¿?",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2026-11-11",
+    "empleado_id": "Federico",
+    "sustituto": "Â¿?",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2026-11-12",
+    "empleado_id": "Federico",
+    "sustituto": "Â¿?",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2026-11-13",
+    "empleado_id": "Federico",
+    "sustituto": "Â¿?",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2026-11-14",
+    "empleado_id": "Federico",
+    "sustituto": "Â¿?",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2026-11-15",
+    "empleado_id": "Federico",
+    "sustituto": "Â¿?",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2026-11-16",
+    "empleado_id": "Dani",
+    "sustituto": "Â¿?",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2026-11-17",
+    "empleado_id": "Dani",
+    "sustituto": "Â¿?",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2026-11-18",
+    "empleado_id": "Dani",
+    "sustituto": "Â¿?",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2026-11-19",
+    "empleado_id": "Dani",
+    "sustituto": "Â¿?",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2026-11-20",
+    "empleado_id": "Dani",
+    "sustituto": "Â¿?",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2026-11-21",
+    "empleado_id": "Dani",
+    "sustituto": "Â¿?",
+    "tipo": "VAC"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2026-11-22",
+    "empleado_id": "Dani",
+    "sustituto": "Â¿?",
+    "tipo": "VAC"
+  }
+]

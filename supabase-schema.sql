@@ -28,6 +28,21 @@ CREATE TABLE IF NOT EXISTS empleados (
   updated_at timestamptz DEFAULT now()
 );
 
+ALTER TABLE empleados ADD COLUMN IF NOT EXISTS tipo_personal text DEFAULT 'fijo';
+ALTER TABLE empleados ADD COLUMN IF NOT EXISTS estado_empresa text DEFAULT 'activo';
+ALTER TABLE empleados ADD COLUMN IF NOT EXISTS fecha_baja date;
+ALTER TABLE empleados ADD COLUMN IF NOT EXISTS motivo_baja text;
+ALTER TABLE empleados ADD COLUMN IF NOT EXISTS telefono text;
+ALTER TABLE empleados ADD COLUMN IF NOT EXISTS email text;
+ALTER TABLE empleados ADD COLUMN IF NOT EXISTS observaciones text;
+ALTER TABLE empleados ADD COLUMN IF NOT EXISTS hoteles_asignados text;
+ALTER TABLE empleados ADD COLUMN IF NOT EXISTS ajuste_vacaciones_dias numeric DEFAULT 0;
+ALTER TABLE empleados ADD COLUMN IF NOT EXISTS vacaciones_regularizadas_pagadas boolean DEFAULT false;
+ALTER TABLE empleados ADD COLUMN IF NOT EXISTS antiguedad text;
+ALTER TABLE empleados ADD COLUMN IF NOT EXISTS categoria text;
+ALTER TABLE empleados ADD COLUMN IF NOT EXISTS puesto text;
+ALTER TABLE empleados ADD COLUMN IF NOT EXISTS contrato text;
+
 -- 3. TABLA VACACIONES
 CREATE TABLE IF NOT EXISTS vacaciones (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),

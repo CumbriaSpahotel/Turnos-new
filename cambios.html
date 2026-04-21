@@ -6,7 +6,7 @@
     <title>TurnosWeb — Cambios de Turno</title>
     <link rel="icon" type="image/png" href="favicon.png">
     <link rel="stylesheet" href="admin.css">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <link rel="stylesheet" href="flatpickr.min.css">
 </head>
 <body class="light-mode">
     <aside class="sidebar">
@@ -26,8 +26,11 @@
             <a href="vacaciones.html" class="nav-item">🏖️ <span class="nav-label">Vacaciones</span></a>
             <a href="bajas.html" class="nav-item">🏥 <span class="nav-label">Bajas y Permisos</span></a>
             <a href="cambios.html" class="nav-item active">🔄 <span class="nav-label">Cambios de Turno</span></a>
+            <div class="nav-group-label">COMUNICACIÓN</div>
+            <a href="solicitudes.html" class="nav-item">📩 <span class="nav-label">Solicitudes</span></a>
+            <a href="bandeja.html" class="nav-item">📫 <span class="nav-label">Bandeja</span></a>
             <div class="nav-group-label">SISTEMA</div>
-            <a href="admin.html#export" class="nav-item">📦 <span class="nav-label">Configuración</span></a>
+            <a href="configuracion.html" class="nav-item">📦 <span class="nav-label">Configuración</span></a>
         </nav>
         <div class="sidebar-footer">
             <button class="theme-toggle" onclick="toggleTheme()">🌙</button>
@@ -50,7 +53,7 @@
         </section>
     </main>
 
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="supabase.js"></script>
     <script src="supabase-config.js?v=8.2"></script>
     <script src="supabase-dao.js?v=8.2"></script>
     <script>

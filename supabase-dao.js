@@ -18,7 +18,22 @@ window.TurnosDB = {
         if (!d) return null;
         if (d instanceof Date) return d.toISOString().split('T')[0];
         if (typeof d === 'string' && d.includes('T')) return d.split('T')[0];
-        return d; // Asumiendo ya YYYY-MM-DD o formato compatible
+        return d;
+    },
+
+    normalizeString(str) {
+        if (!str) return '';
+        return String(str)
+            .normalize("NFD")
+            .replace(/[\u0300-\u036f]/g, "")
+            .toLowerCase()
+            .trim();
+    },
+
+    cleanName(str) {
+        if (!str) return '';
+        // Mantiene tildes pero quita espacios extra y caracteres invisibles
+        return String(str).replace(/[\u200B-\u200D\uFEFF]/g, "").trim();
     },
 
     fmtDateLegacy(date, headerMode = false) {
@@ -38,13 +53,33 @@ window.TurnosDB = {
     },
 
     updateUISyncStatus(state) {
-        const dot = document.getElementById('syncDot');
+        const dot  = document.getElementById('syncDot');
         const text = document.getElementById('syncText');
+        const help = document.getElementById('syncHelp');
         if (!dot || !text) return;
         const colors = { ok: '#10e898', error: '#ff5f57', warn: '#ffb23f' };
         dot.style.background = colors[state] || colors.warn;
         text.textContent = state === 'ok' ? 'Sincronizado' : (state === 'error' ? 'Error Nube' : 'Conectando...');
+        if (help) help.style.display = (state === 'ok') ? 'none' : 'inline';
         window.realtimeActivo = (state === 'ok');
+    },
+
+    async fetchAll(makeQuery, pageSize = 1000) {
+        const allRows = [];
+        let from = 0;
+
+        while (true) {
+            const { data, error } = await makeQuery().range(from, from + pageSize - 1);
+            if (error) throw error;
+
+            const rows = data || [];
+            allRows.push(...rows);
+
+            if (rows.length < pageSize) break;
+            from += pageSize;
+        }
+
+        return allRows;
     },
 
     // --- LECTURA ---
@@ -56,7 +91,7 @@ window.TurnosDB = {
 
         try {
             const now = Date.now();
-            const cache = await localforage.getItem(cacheKey);
+            const cache = window.localforage ? await window.localforage.getItem(cacheKey) : null;
 
             // TEMP DEBUG (OBLIGATORIO V8.2)
             if (false && cache && (now - cache.timestamp < this._syncTTL)) {
@@ -65,15 +100,15 @@ window.TurnosDB = {
                 return cache.raw;
             }
 
-            const { data, error } = await client
+            const data = await this.fetchAll(() => client
                 .from('turnos')
                 .select('*')
                 .gte('fecha', i)
-                .lte('fecha', f);
-            
-            if (error) throw error;
+                .lte('fecha', f)
+                .order('fecha', { ascending: true })
+                .order('empleado_id', { ascending: true }));
 
-            await localforage.setItem(cacheKey, { timestamp: now, raw: data });
+            if (window.localforage) await window.localforage.setItem(cacheKey, { timestamp: now, raw: data });
             this.updateUISyncStatus('ok');
             this.initRealtime();
             return data || [];
@@ -81,7 +116,7 @@ window.TurnosDB = {
         } catch (err) {
             console.error("DAO Error (fetchRango):", err);
             this.updateUISyncStatus('error');
-            const fallback = await localforage.getItem(cacheKey);
+            const fallback = window.localforage ? await window.localforage.getItem(cacheKey) : null;
             return fallback ? fallback.raw : [];
         }
     },
@@ -90,12 +125,12 @@ window.TurnosDB = {
         const client = window.supabase;
         try {
             // Usamos ilike para que 'VAC' encuentre 'VAC 🏖️' etc.
-            let q = client.from('turnos').select('*').ilike('tipo', `${tipo}%`);
-            if (inicio) q = q.gte('fecha', this.normalizeDate(inicio));
-            if (fin) q = q.lte('fecha', this.normalizeDate(fin));
-            
-            const { data, error } = await q.order('fecha', { ascending: false });
-            if (error) throw error;
+            const data = await this.fetchAll(() => {
+                let q = client.from('turnos').select('*').ilike('tipo', `${tipo}%`);
+                if (inicio) q = q.gte('fecha', this.normalizeDate(inicio));
+                if (fin) q = q.lte('fecha', this.normalizeDate(fin));
+                return q.order('fecha', { ascending: false });
+            });
             return data || [];
         } catch (err) {
             console.error("DAO Error (fetchTipo):", err);
@@ -103,17 +138,41 @@ window.TurnosDB = {
         }
     },
 
+    async fetchVacaciones(inicio = null, fin = null) {
+        const client = window.supabase;
+        try {
+            const i = this.normalizeDate(inicio);
+            const f = this.normalizeDate(fin);
+
+            const data = await this.fetchAll(() => {
+                let q = client.from('vacaciones').select('*');
+                if (i && f) {
+                    q = q.lte('fecha_inicio', f).gte('fecha_fin', i);
+                } else if (i) {
+                    q = q.gte('fecha_fin', i);
+                } else if (f) {
+                    q = q.lte('fecha_inicio', f);
+                }
+                return q.order('fecha_inicio', { ascending: false });
+            });
+            return data || [];
+        } catch (err) {
+            console.warn("DAO Aviso (fetchVacaciones):", err);
+            return [];
+        }
+    },
+
     // --- ESCRITURA ---
-    async upsertTurno(empleado_id, fecha, turno, tipo, hotel_id, sustituto = null) {
+    async upsertTurno(empleado_id, fecha, turno, tipo, hotel_id, sustituto = null, updatedByOverride = null) {
         const client = window.supabase;
         try {
             if (!empleado_id || !fecha) throw new Error("ID de empleado y Fecha son obligatorios");
 
             const { data: { session } } = await client.auth.getSession();
-            const userEmail = session?.user?.email || 'WEB_ADMIN';
+            const userEmail = updatedByOverride || session?.user?.email || 'WEB_ADMIN';
 
             const payload = {
-                empleado_id,
+                empleado_id: this.cleanName(empleado_id),
                 fecha: this.normalizeDate(fecha),
                 turno,
                 tipo: tipo || 'NORMAL',
@@ -146,6 +205,7 @@ window.TurnosDB = {
 
             const processed = flatData.map(row => ({
                 ...row,
+                empleado_id: this.cleanName(row.empleado_id),
                 fecha: this.normalizeDate(row.fecha),
                 updated_by: userEmail,
                 updated_at: new Date().toISOString()
@@ -157,14 +217,68 @@ window.TurnosDB = {
 
             if (error) throw error;
             
-            // Limpieza proactiva de caché tras carga masiva
-            await localforage.clear();
+            // Limpieza proactiva de caché tras carga masiva, si esta vista cargó localforage.
+            if (window.localforage) await window.localforage.clear();
             this.updateUISyncStatus('ok');
         } catch (err) {
             console.error("DAO Error (bulkUpsert):", err);
             this.updateUISyncStatus('error');
             throw err;
         }
+    },
+
+    async upsertVacacionesPeriodo({ empleado_id, hotel_id, fecha_inicio, fecha_fin, sustituto = null }) {
+        const inicio = this.normalizeDate(fecha_inicio);
+        const fin = this.normalizeDate(fecha_fin);
+        if (!empleado_id || !hotel_id || !inicio || !fin) {
+            throw new Error("Empleado, hotel, fecha de inicio y fecha de fin son obligatorios");
+        }
+        if (fin < inicio) {
+            throw new Error("La fecha de fin no puede ser anterior a la fecha de inicio");
+        }
+
+        const rows = [];
+        const current = new Date(inicio + 'T12:00:00');
+        const limit = new Date(fin + 'T12:00:00');
+        while (current <= limit) {
+            rows.push({
+                empleado_id,
+                fecha: current.toISOString().split('T')[0],
+                turno: '',
+                tipo: 'VAC 🏖️',
+                hotel_id,
+                sustituto: sustituto || null
+            });
+            current.setDate(current.getDate() + 1);
+        }
+
+        await this.bulkUpsert(rows);
+        if (window.localforage) await window.localforage.clear();
+        return rows;
+    },
+
+    async deleteVacacionesPeriodo({ empleado_id, fecha_inicio, fecha_fin }) {
+        const client = window.supabase;
+        const inicio = this.normalizeDate(fecha_inicio);
+        const fin = this.normalizeDate(fecha_fin);
+        if (!empleado_id || !inicio || !fin) {
+            throw new Error("Empleado, fecha de inicio y fecha de fin son obligatorios");
+        }
+
+        const { error } = await client
+            .from('turnos')
+            .delete()
+            .eq('empleado_id', empleado_id)
+            .ilike('tipo', 'VAC%')
+            .gte('fecha', inicio)
+            .lte('fecha', fin);
+
+        if (error) {
+            this.updateUISyncStatus('error');
+            throw error;
+        }
+        if (window.localforage) await window.localforage.clear();
+        this.updateUISyncStatus('ok');
     },
 
     async migrateBatch(flatData) {
@@ -194,7 +308,7 @@ window.TurnosDB = {
                 .delete()
                 .neq('empleado_id', 'SYSTEM_RESERVED_KEY'); 
             if (error) throw error;
-            await localforage.clear();
+            if (window.localforage) await window.localforage.clear();
         } catch (err) {
             console.error("DAO Error (clearAll):", err);
             throw err;
@@ -204,15 +318,19 @@ window.TurnosDB = {
     async getHotels() {
         const client = window.supabase;
         try {
+            // Unificamos hoteles de la base de datos + lista base fija para evitar que desaparezcan
+            const baseHotels = ['Cumbria Spa&Hotel', 'Sercotel Guadiana'];
+            
             const { data, error } = await client
                 .from('turnos')
                 .select('hotel_id')
                 .not('hotel_id', 'is', null);
             
             if (error) throw error;
-            if (!data || data.length === 0) return ['Cumbria Spa&Hotel', 'Sercotel Guadiana'];
-            const unique = Array.from(new Set(data.map(h => h.hotel_id))).sort();
-            return unique.length > 0 ? unique : ['Cumbria Spa&Hotel', 'Sercotel Guadiana'];
+            
+            const dbHotels = (data || []).map(h => h.hotel_id);
+            const unique = Array.from(new Set([...baseHotels, ...dbHotels])).sort();
+            return unique;
         } catch (err) {
             console.error("DAO Error (getHotels):", err);
             return ['Cumbria Spa&Hotel', 'Sercotel Guadiana'];
@@ -255,14 +373,23 @@ window.TurnosDB = {
 
             if (error) {
                 // Si el error es por columna inexistente (400), intentamos guardado básico
-                if (error.status === 400 || error.code === 'PGRST100') {
+                if (error.status === 400 || error.code === 'PGRST100' || error.code === 'PGRST204') {
+                    const basicFields = new Set(['id', 'nombre', 'hotel_id', 'orden', 'activo']);
+                    const hasFichaFields = Object.keys(empData).some(key => !basicFields.has(key));
+                    if (hasFichaFields) {
+                        const el = document.getElementById('syncHelp');
+                        if (el) el.style.display = 'inline';
+                        throw new Error("Supabase no tiene las columnas nuevas de ficha o no ha recargado el esquema. Ejecuta el bloque ALTER TABLE de supabase-schema.sql y recarga la página.");
+                    }
                     console.warn("Schema mismatch detectado en upsertEmpleado. Reintentando guardado básico...");
                     const safeData = {
                         id: empData.id,
                         nombre: empData.nombre,
                         hotel_id: empData.hotel_id,
+                        activo: empData.activo,
                         updated_at: new Date().toISOString()
                     };
+                    Object.keys(safeData).forEach(key => safeData[key] === undefined && delete safeData[key]);
                     const { error: err2 } = await client.from('empleados').upsert(safeData);
                     if (err2) throw err2;
                 } else {

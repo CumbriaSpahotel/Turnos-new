@@ -139,7 +139,7 @@ window.MobileAdapter = (function () {
     return { grid, meta, absenceCount, subCandidate };
   }
 
-  function buildWeekData(FULL_DATA, hotel, monday) {
+  function buildWeekData(FULL_DATA, hotel, monday, profiles = []) {
     const mondayUTCDate = mondayUTC(monday);
     const mondayISO = isoFromUTCDate(mondayUTCDate);
     const weekDays = [];
@@ -148,29 +148,97 @@ window.MobileAdapter = (function () {
     }
 
     if (FULL_DATA && FULL_DATA.flat) {
-        // --- NUEVA LÓGICA SUPABASE (FLAT DATA) ---
         const flat = FULL_DATA.flat;
         const hotelNormTarget = normalizeHotelName(hotel);
+        const excelSource = FULL_DATA.excelSource || {};
         
-        // Filtrar por hotel y fechas de la semana
-        const weekShifts = flat.filter(t => {
-            if (hotel && normalizeHotelName(t.hotel_id) !== hotelNormTarget) return false;
-            return weekDays.includes(t.fecha);
+        // 1. Filtrar datos del hotel y detectar ausencias
+        const hData = flat.filter(t => normalizeHotelName(t.hotel_id) === hotelNormTarget && weekDays.includes(t.fecha));
+        
+        const isAbsent = new Set();
+        hData.forEach(t => {
+            const tipo = (t.tipo || '').toUpperCase();
+            if (tipo.startsWith('VAC') || tipo.startsWith('BAJA') || tipo.startsWith('PERM')) {
+                isAbsent.add(window.TurnosDB.normalizeString(t.empleado_id));
+            }
         });
 
-        const turnosByEmpleado = {};
-        const seenEmp = new Set();
+        const replacedBy = {}; const replacing = {};
+        hData.forEach(t => {
+            const normEmpId = window.TurnosDB.normalizeString(t.empleado_id);
+            if (t.sustituto && isAbsent.has(normEmpId)) {
+                replacedBy[normEmpId] = t.sustituto;
+                replacing[window.TurnosDB.normalizeString(t.sustituto)] = t.empleado_id;
+            }
+        });
+
+        // 2. Orden basado en Excel (Igual que Admin/Index)
+        const sourceRowsForHotel = excelSource[hotel] || [];
+        const currentWeekExcelRows = sourceRowsForHotel.filter(r => r.weekStart === mondayISO);
+        const excelOrder = currentWeekExcelRows.map(r => r.empleadoId);
+
+        const rendered = new Set();
+        const empList = []; // [{ id, displayAs, isAbsent, substituteFor }]
+
+        excelOrder.forEach(id => {
+            if (rendered.has(id)) return;
+            if (isAbsent.has(id)) {
+                const sub = replacedBy[id];
+                if (sub && !rendered.has(sub)) {
+                    empList.push({ id: sub, isAbsent: false, substituteFor: id });
+                    rendered.add(sub);
+                }
+            } else if (replacing[id]) {
+                empList.push({ id, isAbsent: false, substituteFor: null });
+                rendered.add(id);
+            } else {
+                empList.push({ id, isAbsent: false, substituteFor: null });
+                rendered.add(id);
+            }
+        });
+
+        // Añadir IDs que no están en el Excel de esta semana
+        const allIds = new Set();
+        hData.forEach(t => { if(t.empleado_id) allIds.add(t.empleado_id); if(t.sustituto) allIds.add(t.sustituto); });
         
-        weekShifts.forEach(t => {
-            const emp = t.empleado_id;
-            seenEmp.add(emp);
-            if (!turnosByEmpleado[emp]) turnosByEmpleado[emp] = {};
-            turnosByEmpleado[emp][t.fecha] = { turno: t.turno, tipo: t.tipo, sustituto: t.sustituto };
+        allIds.forEach(id => {
+            if (!rendered.has(id) && !isAbsent.has(id)) {
+                empList.push({ id, isAbsent: false, substituteFor: null });
+                rendered.add(id);
+            }
+        });
+
+        // Final: Ausentes al final
+        isAbsent.forEach(id => {
+            if (!rendered.has(id)) {
+                empList.push({ id, isAbsent: true, substituteFor: null });
+                rendered.add(id);
+            }
+        });
+
+        // 3. Mapear turnos finales
+        const turnosByEmpleado = {};
+        empList.forEach(entry => {
+            const { id: emp, substituteFor } = entry;
+            turnosByEmpleado[emp] = {};
+
+            if (substituteFor) {
+                const absenteeRow = currentWeekExcelRows.find(r => r.empleadoId === substituteFor);
+                weekDays.forEach((f, idx) => {
+                    const turn = absenteeRow ? absenteeRow.values[idx] : null;
+                    turnosByEmpleado[emp][f] = { turno: turn || '', tipo: 'NORMAL' };
+                });
+            } else {
+                hData.filter(t => t.empleado_id === emp).forEach(t => {
+                    turnosByEmpleado[emp][t.fecha] = { turno: t.turno, tipo: t.tipo, sustituto: t.sustituto };
+                });
+            }
         });
 
         return {
             monday: mondayUTCDate,
-            empleados: Array.from(seenEmp).sort(),
+            empleados: empList.map(e => e.id),
+            empDetailed: empList, // Para que el rendering sepa quién es ausente/sustituto
             turnosByEmpleado
         };
     }

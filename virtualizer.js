@@ -183,7 +183,52 @@ class VirtualTable {
 
     renderCellContent(cell, cellData, empName, fecha) {
         cell.dataset.empleadoId = empName;
-        cell.dataset.fecha = fecha;
+        cell.dataset.fecha = cellData.fecha || fecha;
+
+        const type = String(cellData.tipo || 'NORMAL').toUpperCase();
+        const rawTurno = String(cellData.turno || '').toLowerCase();
+        let cleanShiftColorCls = 'v-empty';
+        let cleanLabel = '';
+        let cleanIcon = '';
+
+        if (type.startsWith('VAC')) {
+            cleanShiftColorCls = 'v-vac';
+            cleanLabel = 'Vacaciones';
+        } else if (type.startsWith('BAJA')) {
+            cleanShiftColorCls = 'v-baja';
+            cleanLabel = 'Baja';
+        } else if (type.startsWith('PERM')) {
+            cleanShiftColorCls = 'v-perm';
+            cleanLabel = 'Permiso';
+        } else if (type.startsWith('CT')) {
+            cleanShiftColorCls = 'v-cambio';
+            cleanLabel = 'C/T';
+        } else if (rawTurno.includes('mañana') || rawTurno.includes('maã±ana') || rawTurno === 'm') {
+            cleanShiftColorCls = 'v-mañana';
+            cleanLabel = 'Mañana';
+        } else if (rawTurno.includes('tarde') || rawTurno === 't') {
+            cleanShiftColorCls = 'v-tarde';
+            cleanLabel = 'Tarde';
+        } else if (rawTurno.includes('noche') || rawTurno === 'n') {
+            cleanShiftColorCls = 'v-noche';
+            cleanLabel = 'Noche';
+        } else if (rawTurno.includes('descanso') || rawTurno === 'd') {
+            cleanShiftColorCls = 'v-descanso';
+            cleanLabel = 'Descanso';
+        }
+
+        if (cellData.isSub) {
+            cleanIcon = '<->';
+            cell.title = `Sustituyendo a ${cellData.subFor}`;
+        } else {
+            cell.title = '';
+        }
+
+        const cleanClsString = `v-cell ${cleanShiftColorCls}`;
+        if (cell.className !== cleanClsString) cell.className = cleanClsString;
+        const cleanDisplayHTML = `<div class="v-pill">${cleanLabel}${cleanIcon ? ` <small>${cleanIcon}</small>` : ''}</div>`;
+        if (cell.innerHTML !== cleanDisplayHTML) cell.innerHTML = cleanDisplayHTML;
+        return;
         
         const typeMapping = { 
             'VAC 🏖️': { cls: 'v-vac', label: 'Vacaciones 🏖️', icon: '' }, 

@@ -3,10 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TurnosWeb — Gestión de Vacaciones</title>
+    <title>TurnosWeb — Gestión de Vacaciones Premium</title>
     <link rel="icon" type="image/png" href="favicon.png">
     <link rel="stylesheet" href="admin.css">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <link rel="stylesheet" href="flatpickr.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/all.min.css">
 </head>
 <body class="light-mode">
     <aside class="sidebar">
@@ -20,14 +21,17 @@
         <nav class="sidebar-nav">
             <div class="nav-group-label">CUADRANTE</div>
             <a href="admin.html" class="nav-item">🏠 <span class="nav-label">Inicio / Cargar</span></a>
-            <a href="admin.html#preview" class="nav-item">📅 <span class="nav-label">Vista Previa</span></a>
-            <a href="admin.html#employees" class="nav-item">👥 <span class="nav-label">Empleados</span></a>
+            <a href="admin.html#section-preview" class="nav-item">📅 <span class="nav-label">Vista Previa</span></a>
+            <a href="admin.html#section-employees" class="nav-item">👥 <span class="nav-label">Empleados</span></a>
             <div class="nav-group-label">AUSENCIAS</div>
             <a href="vacaciones.html" class="nav-item active">🏖️ <span class="nav-label">Vacaciones</span></a>
             <a href="bajas.html" class="nav-item">🏥 <span class="nav-label">Bajas y Permisos</span></a>
             <a href="cambios.html" class="nav-item">🔄 <span class="nav-label">Cambios de Turno</span></a>
+            <div class="nav-group-label">COMUNICACIÓN</div>
+            <a href="solicitudes.html" class="nav-item">📩 <span class="nav-label">Solicitudes</span></a>
+            <a href="bandeja.html" class="nav-item">📫 <span class="nav-label">Bandeja</span></a>
             <div class="nav-group-label">SISTEMA</div>
-            <a href="admin.html#export" class="nav-item">📦 <span class="nav-label">Configuración</span></a>
+            <a href="configuracion.html" class="nav-item">📦 <span class="nav-label">Configuración</span></a>
         </nav>
         <div class="sidebar-footer">
             <button class="theme-toggle" onclick="toggleTheme()">🌙</button>
@@ -35,94 +39,444 @@
     </aside>
 
     <main class="main-wrap">
-        <section class="section active">
-            <header class="page-header">
+        <header class="page-header" style="padding:14px 24px; min-height:auto;">
+            <div>
+                <h1 class="page-title" style="margin:0; line-height:1.1;">Gestión de Vacaciones</h1>
+                <p class="page-subtitle" style="margin:2px 0 0;">Altas, cambios y anulaciones desde la app</p>
+            </div>
+            <div id="syncStatus" class="status-badge-premium" style="margin-left:auto; display:flex; align-items:center; gap:8px;">
+                <span id="syncDot" style="width:8px; height:8px; border-radius:50%; background:#10e898;"></span>
+                <span id="syncText">Supabase Conectado</span>
+            </div>
+        </header>
+
+        <section class="glass-panel" style="padding:12px 18px; margin-bottom:12px; border:1px solid var(--border); border-radius:12px;">
+            <div style="display:flex; justify-content:space-between; gap:12px; align-items:center; flex-wrap:wrap; margin-bottom:10px;">
                 <div>
-                    <h1 class="page-title">Gestión de Vacaciones</h1>
-                    <p class="page-subtitle">Periodos de vacaciones registrados</p>
+                    <h2 id="vacFormTitle" style="margin:0; font-size:1rem;">Alta de vacaciones</h2>
                 </div>
-                <div id="rangeTrigger" class="date-range-picker-premium" style="display:flex; align-items:center; gap:10px; background:var(--bg3); border:1px solid var(--border); padding:8px 15px; border-radius:12px; cursor:pointer; min-width:260px;">
-                    <span data-toggle>📅</span>
-                    <div style="display:flex; flex-direction:column;" data-toggle>
-                        <span id="rangeLabel" style="font-size:0.85rem; font-weight:700; color:var(--accent);">Seleccionar Rango...</span>
-                    </div>
+                <div id="vacFormStatus" style="font-size:0.8rem; color:var(--text-dim);"></div>
+            </div>
+            <form id="vacCreateForm" style="display:grid; grid-template-columns:repeat(6, minmax(140px, 1fr)); gap:12px; align-items:end;">
+                <label style="display:flex; flex-direction:column; gap:6px; font-size:0.72rem; color:var(--text-dim); font-weight:800; text-transform:uppercase;">
+                    Empleado
+                    <select id="newVacEmp" class="btn" required style="width:100%; background:var(--bg3); color:var(--text); border:1px solid var(--border); border-radius:10px; padding:10px;"></select>
+                </label>
+                <label style="display:flex; flex-direction:column; gap:6px; font-size:0.72rem; color:var(--text-dim); font-weight:800; text-transform:uppercase;">
+                    Hotel
+                    <select id="newVacHotel" class="btn" required style="width:100%; background:var(--bg3); color:var(--text); border:1px solid var(--border); border-radius:10px; padding:10px;"></select>
+                </label>
+                <label style="display:flex; flex-direction:column; gap:6px; font-size:0.72rem; color:var(--text-dim); font-weight:800; text-transform:uppercase;">
+                    Desde
+                    <input id="newVacStart" type="date" required class="btn" style="width:100%; background:var(--bg3); color:var(--text); border:1px solid var(--border); border-radius:10px; padding:10px;">
+                </label>
+                <label style="display:flex; flex-direction:column; gap:6px; font-size:0.72rem; color:var(--text-dim); font-weight:800; text-transform:uppercase;">
+                    Hasta
+                    <input id="newVacEnd" type="date" required class="btn" style="width:100%; background:var(--bg3); color:var(--text); border:1px solid var(--border); border-radius:10px; padding:10px;">
+                </label>
+                <label style="display:flex; flex-direction:column; gap:6px; font-size:0.72rem; color:var(--text-dim); font-weight:800; text-transform:uppercase;">
+                    Sustituto
+                    <select id="newVacSub" class="btn" style="width:100%; background:var(--bg3); color:var(--text); border:1px solid var(--border); border-radius:10px; padding:10px;"></select>
+                </label>
+                <button id="btnCreateVac" class="btn active" type="submit" style="background:var(--accent); color:white; border:none; border-radius:10px; padding:11px 16px; font-weight:800; cursor:pointer;">Guardar en nube</button>
+                <button id="btnCancelEdit" class="btn" type="button" style="display:none; background:var(--bg3); color:var(--text); border:1px solid var(--border); border-radius:10px; padding:11px 16px; font-weight:800; cursor:pointer;">Cancelar edición</button>
+            </form>
+        </section>
+
+        <section class="glass-panel" style="padding:10px 18px; margin-bottom:12px; border:1px solid var(--border); border-radius:12px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap;">
+                <div>
+                    <h2 style="margin:0; font-size:1rem;">Gestión anual de vacaciones</h2>
+                    <p style="margin:4px 0 0; color:var(--text-dim); font-size:0.85rem;">Por defecto se muestran las pendientes del año seleccionado.</p>
                 </div>
-                <div id="syncStatus" class="status-badge-premium" style="margin-left:auto; display:flex; align-items:center; gap:8px;">
-                    <span id="syncDot" style="width:8px; height:8px; border-radius:50%; background:#ff9800;"></span>
-                    <span id="syncText">Conectando...</span>
+                <div class="header-controls" style="display:flex; gap:12px; flex-wrap:wrap;">
+                    <select id="vacHotel" class="btn" style="background:var(--bg3); color:var(--text); border:1px solid var(--border); border-radius:10px; padding:7px 15px;" onchange="renderVacations()">
+                        <option value="all">Todos los Hoteles</option>
+                    </select>
+                    <select id="vacEmp" class="btn" style="background:var(--bg3); color:var(--text); border:1px solid var(--border); border-radius:10px; padding:7px 15px;" onchange="renderVacations()">
+                        <option value="all">Todos los Empleados</option>
+                    </select>
+                    <select id="vacYear" class="btn" style="background:var(--bg3); color:var(--text); border:1px solid var(--border); border-radius:10px; padding:7px 15px;" onchange="renderVacations()"></select>
+                    <select id="vacStatus" class="btn" style="background:var(--bg3); color:var(--text); border:1px solid var(--border); border-radius:10px; padding:7px 15px;" onchange="renderVacations()">
+                        <option value="pending">Pendientes</option>
+                        <option value="past">Pasadas</option>
+                        <option value="all">Todas</option>
+                    </select>
                 </div>
-            </header>
-            <div id="vacationsBody" class="glass-panel" style="min-height:500px; padding:1.5rem;"></div>
+            </div>
+        </section>
+
+        <section id="vacContent">
+            <div style="padding:4rem; text-align:center; opacity:0.3;">
+                <i class="fas fa-spinner fa-spin fa-2x" style="margin-bottom:1rem; display:block;"></i>
+                Sincronizando con la nube...
+            </div>
         </section>
     </main>
 
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
-    <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/es.js"></script>
+    <script src="supabase.js"></script>
+    <script src="flatpickr.js"></script>
+    <script src="flatpickr_es.js"></script>
     <script src="supabase-config.js?v=8.2"></script>
-    <script src="supabase-dao.js?v=8.2"></script>
+    <script src="supabase-dao.js?v=8.11"></script>
     <script>
         const $ = (s) => document.querySelector(s);
-        let CURRENT_RANGE = { start: '', end: '' };
+        let EMPLOYEES = [];
+        let HOTELS = [];
+        let editingPeriod = null;
 
-        async function renderVacations() {
-            if (!window.TurnosDB) return;
-            const container = $('#vacationsBody');
-            try {
-                const data = await window.TurnosDB.fetchTipo('VAC', CURRENT_RANGE.start, CURRENT_RANGE.end);
-                if (data.length === 0) {
-                    container.innerHTML = `<div style="padding:5rem; text-align:center; opacity:0.5;">No hay vacaciones registradas.</div>`;
-                    return;
-                }
-                const rows = data.map(v => `
-                    <tr>
-                        <td style="padding:1rem;">🏖️ VACACIONES</td>
-                        <td style="padding:1rem;">${window.TurnosDB.fmtDateLegacy(v.fecha)}</td>
-                        <td style="padding:1rem;">${v.hotel_id}</td>
-                        <td style="padding:1rem;">${v.empleado_id}</td>
-                    </tr>`).join('');
-                container.innerHTML = `<div class="table-container"><table class="preview-table" style="width:100%;"><thead><tr><th>Tipo</th><th>Fecha</th><th>Hotel</th><th>Empleado</th></tr></thead><tbody>${rows}</tbody></table></div>`;
-            } catch (err) { container.innerHTML = `Error: ${err.message}`; }
+        function daysInclusive(start, end) {
+            const a = new Date(start + 'T12:00:00');
+            const b = new Date(end + 'T12:00:00');
+            return Math.max(1, Math.round((b - a) / (1000 * 60 * 60 * 24)) + 1);
         }
 
-        window.initSupabaseSync = async () => {
-            const syncText = $('#syncText');
-            const syncDot = $('#syncDot');
+        function todayISO() {
+            const now = new Date();
+            return [
+                now.getFullYear(),
+                String(now.getMonth() + 1).padStart(2, '0'),
+                String(now.getDate()).padStart(2, '0')
+            ].join('-');
+        }
+
+        function escapeHtml(value) {
+            return String(value ?? '').replace(/[&<>"']/g, ch => ({
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#39;'
+            }[ch]));
+        }
+
+        function setFormStatus(message, type = 'info') {
+            const el = $('#vacFormStatus');
+            if (!el) return;
+            const colors = { info: 'var(--text-dim)', ok: '#10b981', error: '#ef4444' };
+            el.style.color = colors[type] || colors.info;
+            el.textContent = message || '';
+        }
+        
+        async function renderVacations() {
+            const area = $('#vacContent');
+            if (!area || !window.TurnosDB) return;
+
             try {
-                await renderVacations();
-                if (syncText) syncText.innerText = "Supabase Conectado";
-                if (syncDot) syncDot.style.background = "#10e898";
-                window.aplicarCambioLocal = renderVacations;
-            } catch (e) { if (syncText) syncText.innerText = "Error"; }
+                const hotel = $('#vacHotel')?.value || 'all';
+                const emp = $('#vacEmp')?.value || 'all';
+                const selectedYear = Number($('#vacYear')?.value || new Date().getFullYear());
+                const status = $('#vacStatus')?.value || 'pending';
+                const start = `${selectedYear}-01-01`;
+                const end = `${selectedYear}-12-31`;
+                const todayKey = todayISO();
+
+                let data = await window.TurnosDB.fetchTipo('VAC', start, end);
+                const profiles = await window.TurnosDB.getEmpleados();
+                const profileById = new Map(profiles.map(p => [p.id, p]));
+                
+                // Aplicar filtros locales
+                if (hotel !== 'all') data = data.filter(t => t.hotel_id === hotel);
+                if (emp !== 'all') {
+                    const normTarget = window.TurnosDB.normalizeString(emp);
+                    data = data.filter(t => window.TurnosDB.normalizeString(t.empleado_id) === normTarget);
+                }
+
+                // Agrupar por periodos contiguos
+                const periods = [];
+                const sortedByEmp = {};
+                data.forEach(t => {
+                    if (!sortedByEmp[t.empleado_id]) sortedByEmp[t.empleado_id] = [];
+                    sortedByEmp[t.empleado_id].push(t);
+                });
+
+                Object.keys(sortedByEmp).forEach(eId => {
+                    const list = sortedByEmp[eId].sort((a,b) => a.fecha.localeCompare(b.fecha));
+                    if (list.length === 0) return;
+
+                    let currentPeriod = {
+                        empId: eId,
+                        hotel: list[0].hotel_id,
+                        start: list[0].fecha,
+                        end: list[0].fecha,
+                        days: 1,
+                        sustituto: list[0].sustituto || ''
+                    };
+
+                    for (let i = 1; i < list.length; i++) {
+                        const prevDate = new Date(list[i-1].fecha + 'T12:00:00');
+                        const currDate = new Date(list[i].fecha + 'T12:00:00');
+                        const diff = (currDate - prevDate) / (1000 * 60 * 60 * 24);
+
+                        if (diff === 1 && (list[i].sustituto || '') === currentPeriod.sustituto) {
+                            currentPeriod.end = list[i].fecha;
+                            currentPeriod.days++;
+                        } else {
+                            periods.push(currentPeriod);
+                            currentPeriod = {
+                                empId: eId,
+                                hotel: list[i].hotel_id,
+                                start: list[i].fecha,
+                                end: list[i].fecha,
+                                days: 1,
+                                sustituto: list[i].sustituto || ''
+                            };
+                        }
+                    }
+                    periods.push(currentPeriod);
+                });
+
+                const uniquePeriods = Array.from(new Map(
+                    periods.map(p => [`${p.empId}|${p.hotel}|${p.start}|${p.end}|${p.sustituto || ''}`, p])
+                ).values());
+                const visiblePeriods = uniquePeriods.filter(p => {
+                    if (status === 'pending') return p.end >= todayKey;
+                    if (status === 'past') return p.end < todayKey;
+                    return true;
+                });
+                visiblePeriods.sort((a,b) => a.start.localeCompare(b.start));
+
+                if (visiblePeriods.length === 0) {
+                    area.innerHTML = `<div style="padding:4rem; text-align:center; opacity:0.45; background:var(--surface); border-radius:15px; border:1px solid var(--border);">No hay vacaciones para el año y filtros seleccionados.</div>`;
+                    return;
+                }
+
+                const totalDays = visiblePeriods.reduce((sum, p) => sum + p.days, 0);
+                const peopleCount = new Set(visiblePeriods.map(p => p.empId)).size;
+                const next = visiblePeriods[0];
+                window._visibleVacationPeriods = visiblePeriods;
+
+                area.innerHTML = `
+                    <div style="display:grid; grid-template-columns:repeat(3, minmax(180px, 1fr)); gap:12px; margin-bottom:14px;">
+                        <div class="glass-panel" style="padding:16px; border:1px solid var(--border); border-radius:15px;">
+                            <div style="font-size:0.7rem; color:var(--text-dim); font-weight:800; text-transform:uppercase;">Periodos</div>
+                            <div style="font-size:2rem; font-weight:900; margin-top:4px;">${visiblePeriods.length}</div>
+                        </div>
+                        <div class="glass-panel" style="padding:16px; border:1px solid var(--border); border-radius:15px;">
+                            <div style="font-size:0.7rem; color:var(--text-dim); font-weight:800; text-transform:uppercase;">Personas</div>
+                            <div style="font-size:2rem; font-weight:900; margin-top:4px;">${peopleCount}</div>
+                        </div>
+                        <div class="glass-panel" style="padding:16px; border:1px solid var(--border); border-radius:15px;">
+                            <div style="font-size:0.7rem; color:var(--text-dim); font-weight:800; text-transform:uppercase;">Próxima salida</div>
+                            <div style="font-size:1.15rem; font-weight:900; margin-top:8px;">${escapeHtml(next.empId)}</div>
+                            <div style="font-size:0.85rem; color:var(--text-dim); margin-top:4px;">${window.TurnosDB.fmtDateLegacy(next.start)} · ${totalDays} días planificados</div>
+                        </div>
+                    </div>
+                    <div class="glass-panel" style="padding:0; overflow:hidden; border-radius:15px; border:1px solid var(--border);">
+                        <table class="preview-table" style="width:100%; border-collapse:collapse;">
+                            <thead>
+                                <tr style="background:var(--bg3);">
+                                    <th style="padding:1rem; text-align:left; font-size:0.7rem; color:var(--text-dim); text-transform:uppercase;">Empleado</th>
+                                    <th style="padding:1rem; text-align:left; font-size:0.7rem; color:var(--text-dim); text-transform:uppercase;">Hotel</th>
+                                    <th style="padding:1rem; text-align:left; font-size:0.7rem; color:var(--text-dim); text-transform:uppercase;">Sustituto</th>
+                                    <th style="padding:1rem; text-align:center; font-size:0.7rem; color:var(--text-dim); text-transform:uppercase;">Estado</th>
+                                    <th style="padding:1rem; text-align:center; font-size:0.7rem; color:var(--text-dim); text-transform:uppercase;">Desde</th>
+                                    <th style="padding:1rem; text-align:center; font-size:0.7rem; color:var(--text-dim); text-transform:uppercase;">Hasta</th>
+                                    <th style="padding:1rem; text-align:center; font-size:0.7rem; color:var(--text-dim); text-transform:uppercase;">DURACIÓN</th>
+                                    <th style="padding:1rem; text-align:center; font-size:0.7rem; color:var(--text-dim); text-transform:uppercase;">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${visiblePeriods.map((p, idx) => {
+                                    const isFuture = p.end >= todayKey;
+                                    const statusLabel = isFuture ? 'PENDIENTE' : 'PASADA';
+                                    const statusColor = isFuture ? 'background:rgba(16,232,152,0.1); color:#10e898;' : 'background:rgba(255,255,255,0.05); color:var(--text-dim);';
+                                    
+                                    return `
+                                    <tr style="border-top:1px solid var(--border); transition:background 0.2s; cursor:default;" onmouseover="this.style.background='rgba(0,0,0,0.02)'" onmouseout="this.style.background='transparent'">
+                                        <td style="padding:1rem; font-weight:700; color:var(--accent);">${escapeHtml(p.empId)}</td>
+                                        <td style="padding:1rem; font-size:0.85rem; color:var(--text-dim);">${escapeHtml(p.hotel)}</td>
+                                        <td style="padding:1rem; font-size:0.85rem; color:var(--text-dim);">${p.sustituto ? escapeHtml(p.sustituto) : '<span style="opacity:0.45;">Sin asignar</span>'}</td>
+                                        <td style="padding:1rem; text-align:center;">
+                                            <span style="${statusColor} padding:3px 10px; border-radius:8px; font-weight:800; font-size:0.6rem;">
+                                                ${statusLabel}
+                                            </span>
+                                        </td>
+                                        <td style="padding:1rem; text-align:center; font-weight:600;">${window.TurnosDB.fmtDateLegacy(p.start)}</td>
+                                        <td style="padding:1rem; text-align:center; font-weight:600;">${window.TurnosDB.fmtDateLegacy(p.end)}</td>
+                                        <td style="padding:1rem; text-align:center;">
+                                            <span style="background:var(--accent-dim); color:var(--accent); padding:4px 12px; border-radius:10px; font-weight:800; font-size:0.8rem;">
+                                                ${p.days} días
+                                            </span>
+                                        </td>
+                                        <td style="padding:1rem; text-align:center; white-space:nowrap;">
+                                            <button class="btn" type="button" onclick="editVacationByIndex(${idx})" style="padding:6px 10px; border-radius:8px; border:1px solid var(--border); background:var(--bg3); color:var(--text); font-weight:800; cursor:pointer;">Editar</button>
+                                            <button class="btn" type="button" onclick="cancelVacationByIndex(${idx})" style="padding:6px 10px; border-radius:8px; border:1px solid rgba(239,68,68,0.35); background:rgba(239,68,68,0.08); color:#ef4444; font-weight:800; cursor:pointer; margin-left:6px;">Anular</button>
+                                        </td>
+                                    </tr>`;
+                                }).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+            } catch (err) {
+                area.innerHTML = `<div style="padding:2rem; color:var(--danger); text-align:center;">Error: ${err.message}</div>`;
+            }
+        }
+
+        function syncVacationFormHotel() {
+            const empId = $('#newVacEmp')?.value;
+            const profile = EMPLOYEES.find(e => e.id === empId);
+            if (profile?.hotel_id && $('#newVacHotel')) $('#newVacHotel').value = profile.hotel_id;
+
+            const selectedSub = $('#newVacSub')?.value || '';
+            $('#newVacSub').innerHTML = `<option value="">Sin sustituto asignado</option>` +
+                EMPLOYEES
+                    .filter(e => e.id !== empId)
+                    .map(e => `<option value="${escapeHtml(e.id)}">${escapeHtml(e.nombre || e.id)}</option>`)
+                    .join('');
+            if (selectedSub && selectedSub !== empId) $('#newVacSub').value = selectedSub;
+        }
+
+        function resetVacationForm() {
+            editingPeriod = null;
+            $('#vacCreateForm').reset();
+            const today = todayISO();
+            $('#newVacStart').value = '';
+            $('#newVacEnd').value = '';
+            $('#newVacEnd').min = today;
+            $('#vacFormTitle').textContent = 'Alta de vacaciones';
+            $('#btnCreateVac').textContent = 'Guardar en nube';
+            $('#btnCancelEdit').style.display = 'none';
+            syncVacationFormHotel();
+        }
+
+        window.editVacationByIndex = (idx) => {
+            const period = window._visibleVacationPeriods?.[idx];
+            if (!period) return;
+            editingPeriod = period;
+            $('#newVacEmp').value = period.empId;
+            syncVacationFormHotel();
+            $('#newVacHotel').value = period.hotel;
+            $('#newVacStart').value = period.start;
+            $('#newVacEnd').value = period.end;
+            $('#newVacEnd').min = period.start;
+            $('#newVacSub').value = period.sustituto || '';
+            $('#vacFormTitle').textContent = `Editando vacaciones de ${period.empId}`;
+            $('#btnCreateVac').textContent = 'Actualizar en nube';
+            $('#btnCancelEdit').style.display = 'block';
+            setFormStatus('Modifica las fechas o el sustituto y guarda.', 'info');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
         };
+
+        window.cancelVacationByIndex = async (idx) => {
+            const period = window._visibleVacationPeriods?.[idx];
+            if (!period) return;
+            const ok = confirm(`¿Anular las vacaciones de ${period.empId} del ${period.start} al ${period.end}?`);
+            if (!ok) return;
+            try {
+                setFormStatus('Anulando vacaciones...', 'info');
+                await window.TurnosDB.deleteVacacionesPeriodo({
+                    empleado_id: period.empId,
+                    fecha_inicio: period.start,
+                    fecha_fin: period.end
+                });
+                setFormStatus('Vacaciones anuladas.', 'ok');
+                if (editingPeriod && editingPeriod.empId === period.empId && editingPeriod.start === period.start && editingPeriod.end === period.end) {
+                    resetVacationForm();
+                }
+                await renderVacations();
+            } catch (err) {
+                setFormStatus(err.message || 'No se pudieron anular.', 'error');
+            }
+        };
+
+        async function createVacation(e) {
+            e.preventDefault();
+            const btn = $('#btnCreateVac');
+            const empleado_id = $('#newVacEmp').value;
+            const hotel_id = $('#newVacHotel').value;
+            const fecha_inicio = $('#newVacStart').value;
+            const fecha_fin = $('#newVacEnd').value;
+            const sustituto = $('#newVacSub').value || null;
+            const today = todayISO();
+
+            if (fecha_inicio < today) {
+                setFormStatus('Solo se pueden crear vacaciones futuras o desde hoy.', 'error');
+                return;
+            }
+            if (fecha_fin < fecha_inicio) {
+                setFormStatus('La fecha de fin no puede ser anterior al inicio.', 'error');
+                return;
+            }
+
+            try {
+                btn.disabled = true;
+                btn.style.opacity = '0.6';
+                setFormStatus(editingPeriod ? 'Actualizando vacaciones en Supabase...' : 'Guardando vacaciones en Supabase...', 'info');
+                if (editingPeriod) {
+                    await window.TurnosDB.deleteVacacionesPeriodo({
+                        empleado_id: editingPeriod.empId,
+                        fecha_inicio: editingPeriod.start,
+                        fecha_fin: editingPeriod.end
+                    });
+                }
+                const rows = await window.TurnosDB.upsertVacacionesPeriodo({ empleado_id, hotel_id, fecha_inicio, fecha_fin, sustituto });
+                setFormStatus(`${editingPeriod ? 'Actualizado' : 'Guardado'}: ${rows.length} días de vacaciones.`, 'ok');
+                resetVacationForm();
+                await renderVacations();
+            } catch (err) {
+                setFormStatus(err.message || 'No se pudo guardar.', 'error');
+            } finally {
+                btn.disabled = false;
+                btn.style.opacity = '1';
+            }
+        }
+
+        async function initPage() {
+            if (localStorage.getItem('turnosweb_theme') === 'light') document.body.classList.add('light-mode');
+            
+            // Llenar Hoteles
+            HOTELS = await window.TurnosDB.getHotels();
+            $('#vacHotel').innerHTML = `<option value="all">Todos los Hoteles</option>` + HOTELS.map(h => `<option value="${escapeHtml(h)}">${escapeHtml(h)}</option>`).join('');
+            $('#newVacHotel').innerHTML = `<option value="" disabled selected>Seleccionar hotel...</option>` + HOTELS.map(h => `<option value="${escapeHtml(h)}">${escapeHtml(h)}</option>`).join('');
+            const currentYear = new Date().getFullYear();
+            const years = [];
+            for (let y = currentYear - 2; y <= currentYear + 3; y++) years.push(y);
+            $('#vacYear').innerHTML = years.map(y => `<option value="${y}" ${y === currentYear ? 'selected' : ''}>${y}</option>`).join('');
+            
+            // Llenar Empleados
+            EMPLOYEES = await window.TurnosDB.getEmpleados();
+            // Deduplicar visualmente por ID limpio
+            const uniqueEmps = [];
+            const seen = new Set();
+            EMPLOYEES.forEach(e => {
+                const cleanId = window.TurnosDB.cleanName(e.id);
+                if (!seen.has(cleanId)) {
+                    seen.add(cleanId);
+                    uniqueEmps.push({ ...e, id: cleanId });
+                }
+            });
+
+            $('#vacEmp').innerHTML = `<option value="all">Todos los Empleados</option>` + uniqueEmps.map(e => `<option value="${escapeHtml(e.id)}">${escapeHtml(e.nombre || e.id)}</option>`).join('');
+            $('#newVacEmp').innerHTML = `<option value="" disabled selected>Seleccionar empleado...</option>` + uniqueEmps.map(e => `<option value="${escapeHtml(e.id)}">${escapeHtml(e.nombre || e.id)}</option>`).join('');
+            $('#newVacEmp').addEventListener('change', syncVacationFormHotel);
+            $('#vacCreateForm').addEventListener('submit', createVacation);
+            $('#btnCancelEdit').addEventListener('click', () => {
+                resetVacationForm();
+                setFormStatus('', 'info');
+            });
+
+            const today = todayISO();
+            $('#newVacStart').min = today;
+            $('#newVacEnd').min = today;
+            $('#newVacStart').value = '';
+            $('#newVacEnd').value = '';
+            $('#newVacStart').addEventListener('change', () => {
+                $('#newVacEnd').min = $('#newVacStart').value || today;
+                if ($('#newVacEnd').value < $('#newVacStart').value) $('#newVacEnd').value = $('#newVacStart').value;
+            });
+            resetVacationForm();
+
+            await renderVacations();
+        }
 
         function toggleTheme() {
             document.body.classList.toggle('light-mode');
             localStorage.setItem('turnosweb_theme', document.body.classList.contains('light-mode') ? 'light' : 'dark');
         }
 
-        document.addEventListener('DOMContentLoaded', () => {
-            if (window.flatpickr && flatpickr.l10ns.es) {
-                flatpickr.localize(flatpickr.l10ns.es);
-                flatpickr.l10ns.es.firstDayOfWeek = 1;
-            }
-            if (localStorage.getItem('turnosweb_theme') === 'light') document.body.classList.add('light-mode');
-            flatpickr("#rangeTrigger", {
-                wrap: true, mode: "range", 
-                locale: { ...flatpickr.l10ns.es, firstDayOfWeek: 1 }, 
-                dateFormat: "Y-m-d",
-                onChange: (selectedDates) => {
-                    if (selectedDates.length === 2) {
-                        CURRENT_RANGE.start = selectedDates[0].toISOString().split('T')[0];
-                        CURRENT_RANGE.end = selectedDates[1].toISOString().split('T')[0];
-                        $('#rangeLabel').textContent = `${selectedDates[0].toLocaleDateString()} — ${selectedDates[1].toLocaleDateString()}`;
-                        renderVacations();
-                    }
-                }
-            });
-            window.initSupabaseSync();
-        });
+        document.addEventListener('DOMContentLoaded', initPage);
     </script>
-    <script src="sync-status.js"></script>
 </body>
 </html>

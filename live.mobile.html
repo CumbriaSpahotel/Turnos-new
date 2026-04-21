@@ -2,464 +2,359 @@
 <html lang="es">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
   <title>Turnos · Versión Móvil</title>
-
+  
   <!-- PWA -->
   <link rel="manifest" href="manifest.json">
-  <meta name="theme-color" content="#1677ff">
+  <meta name="theme-color" content="#3b82f6">
   <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="default">
-  <link rel="apple-touch-icon" href="icons/icon-192.png">
-
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
-
-  <!-- Estilos base móviles -->
-  <link rel="stylesheet" href="styles.mobile.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
 
   <style>
-    :root{
-      --bg:#f6f8fb;
-      --card:#fff;
-      --text:#0f172a;
-      --muted:#475569;
-      --border:#e2e8f0;
-      --pill:#eef2ff;
-      --pill-text:#334155;
-      --night:#e5e7eb;
-      --night-text:#374151;
-      --rest:#fee2e2;
-      --rest-text:#7f1d1d;
-      /* Colores específicos de cápsulas */
-      --pill-manana-bg:#dcfce7;
-      --pill-manana-text:#166534;
-      --pill-tarde-bg:#e0f2fe;
-      --pill-tarde-text:#075985;
-    }
-
-    body.light-mode {
+    :root {
+      --primary: #3b82f6;
       --bg: #f8fafc;
       --card: #ffffff;
       --text: #0f172a;
+      --muted: #64748b;
       --border: #e2e8f0;
-      /* dark mode as fallback? no, light mode is active here */
+      --glass: rgba(255, 255, 255, 0.8);
+      
+      --pill-m: #dcfce7; --pill-m-text: #166534;
+      --pill-t: #e0f2fe; --pill-t-text: #075985;
+      --pill-n: #f1f5f9; --pill-n-text: #334155;
+      --pill-d: #fee2e2; --pill-d-text: #991b1b;
+      --pill-v: #fef9c3; --pill-v-text: #854d0e;
+    }
+
+    body.dark-mode {
+      --bg: #020617;
+      --card: #0f172a;
+      --text: #f1f5f9;
+      --muted: #94a3b8;
+      --border: #1e293b;
+      --glass: rgba(15, 23, 42, 0.8);
+      
+      --pill-m: rgba(34, 197, 94, 0.15); --pill-m-text: #4ade80;
+      --pill-t: rgba(59, 130, 246, 0.15); --pill-t-text: #60a5fa;
+      --pill-n: rgba(148, 163, 184, 0.15); --pill-n-text: #cbd5e1;
+      --pill-d: rgba(239, 68, 68, 0.15); --pill-d-text: #f87171;
+      --pill-v: rgba(234, 179, 8, 0.15); --pill-v-text: #facc15;
+    }
+
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Inter', sans-serif;
+      transition: background 0.3s ease;
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: var(--glass);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--border);
+      padding: 12px 16px;
+    }
+
+    .header-bar {
+      max-width: 1100px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .header-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .brand img {
+      width: 32px;
+      height: 32px;
+      border-radius: 10px;
+      background: white;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    }
+
+    .brand h1 {
+      font-family: 'Outfit', sans-serif;
+      font-size: 1.1rem;
+      font-weight: 800;
+      margin: 0;
+      letter-spacing: -0.02em;
+    }
+
+    .theme-toggle {
+        background: var(--bg);
+        border: 1px solid var(--border);
+        width: 36px;
+        height: 36px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.1rem;
+        cursor: pointer;
+    }
+
+    .controls-scroller {
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+      padding-bottom: 2px;
+      scrollbar-width: none;
+    }
+    .controls-scroller::-webkit-scrollbar { display: none; }
+
+    .control-item {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      padding: 6px 12px;
+      border-radius: 10px;
+      font-size: 0.8rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      white-space: nowrap;
+    }
+
+    .control-item select, .control-item input {
+      border: none;
+      background: transparent;
+      color: var(--text);
+      font: inherit;
+      font-weight: 800;
+      outline: none;
+    }
+
+    .btn-action {
+      background: var(--primary);
+      color: white;
+      border: none;
+      padding: 6px 14px;
+      border-radius: 10px;
+      font-weight: 800;
+      font-size: 0.75rem;
+      flex-shrink: 0;
+    }
+
+    main {
+      padding: 16px;
+      padding-bottom: 80px;
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+
+    .hotel-card {
+      background: var(--card);
+      border-radius: 24px;
+      border: 1px solid var(--border);
+      overflow: hidden;
+      margin-bottom: 24px;
+      box-shadow: 0 10px 15px -3px rgba(0,0,0,0.05);
+    }
+
+    .hotel-info {
+      padding: 16px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      background: linear-gradient(to bottom, var(--bg) 0%, transparent 100%);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .hotel-info img { height: 20px; width: auto; }
+    .hotel-info h2 { font-family: 'Outfit', sans-serif; font-size: 1rem; font-weight: 800; margin: 0; }
+
+    .table-wrapper {
+      overflow-x: auto;
+      scrollbar-width: none;
+      -webkit-overflow-scrolling: touch;
+    }
+    .table-wrapper::-webkit-scrollbar { display: none; }
+
+    .grid-head {
+      display: grid;
+      grid-template-columns: 110px repeat(7, 72px);
+      background: var(--bg);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .grid-th {
+      padding: 10px 8px;
+      font-size: 0.6rem;
+      font-weight: 900;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      text-align: center;
+    }
+
+    .grid-row {
+      display: grid;
+      grid-template-columns: 110px repeat(7, 72px);
+      border-bottom: 1px solid var(--border);
+      align-items: center;
+    }
+    .grid-row:last-child { border-bottom: none; }
+
+    .name-sticky {
+      padding: 12px 16px;
+      font-size: 0.85rem;
+      font-weight: 800;
+      position: sticky;
+      left: 0;
+      background: var(--card);
+      z-index: 10;
+      border-right: 2px solid var(--border);
+      display: flex;
+      flex-direction: column;
+    }
+    .name-sticky .stats { font-size: 0.6rem; color: var(--muted); margin-top: 2px; font-weight: 600; }
+
+    .grid-cell {
+      padding: 8px 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 54px;
+      border-right: 1px solid var(--border);
+    }
+    .grid-cell:last-child { border-right: none; }
+
+    .badge-shift {
+      font-size: 0.7rem;
+      font-weight: 800;
+      padding: 6px 8px;
+      border-radius: 10px;
+      width: 100%;
+      text-align: center;
+      white-space: nowrap;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+    }
+
+    .m { background: var(--pill-m); color: var(--pill-m-text); }
+    .t { background: var(--pill-t); color: var(--pill-t-text); }
+    .n { background: var(--pill-n); color: var(--pill-n-text); }
+    .d { background: var(--pill-d); color: var(--pill-d-text); }
+    .v { background: var(--pill-v); color: var(--pill-v-text); }
+
+    #corsAlert {
+      background: #fef2f2;
+      color: #991b1b;
+      padding: 14px;
+      border-radius: 16px;
+      font-size: 0.75rem;
+      margin-bottom: 16px;
+      border: 1px solid #fee2e2;
+      display: none;
+      align-items: center;
+      gap: 10px;
+      font-weight: 600;
     }
     
-    body:not(.light-mode) {
-      --bg: #060910;
-      --card: #141929;
-      --text: #dde4f8;
-      --muted: #8b9fcc;
-      --border: #1e2740;
-      --pill: rgba(255,255,255,0.05);
-      --pill-text: #dde4f8;
-    }
-
-    header:not(.light-mode) {
-        background: linear-gradient(180deg, #0b0e1c, #060910);
-    }
-
-    *{box-sizing:border-box}
-
-    body{
-      margin:0;
-      background:var(--bg);
-      color:var(--text);
-      font-family:"Inter",system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
-      -webkit-text-size-adjust:100%;
-    }
-
-    header{
-      position:sticky;
-      top:0;
-      z-index:10;
-      background:linear-gradient(180deg,#ffffff,#f8fafc);
-      border-bottom:1px solid var(--border);
-    }
-
-    .bar{
-      max-width:1100px;
-      margin:0 auto;
-      padding:8px 10px;
-      display:flex;
-      gap:8px;
-      align-items:center;
-      flex-wrap:nowrap;       /* todo en una sola línea */
-    }
-
-    .brand{
-      display:flex;
-      gap:10px;
-      align-items:center;
-      min-width:0;
-      flex:0 0 auto;
-    }
-
-    .brand img{
-      width:36px;
-      height:36px;
-      border-radius:12px;
-      object-fit:cover;
-      box-shadow:0 0 0 1px rgba(15,23,42,.06),0 4px 8px rgba(15,23,42,.18);
-      background:#fff;
-    }
-
-    .title{
-      font-size:14px;
-      font-weight:600;
-      color:#0f172a;
-      white-space:nowrap;
-      text-overflow:ellipsis;
-      overflow:hidden;
-    }
-
-    /* Controles en una sola fila, con scroll horizontal si no caben */
-    .controls{
-      display:flex;
-      flex-wrap:nowrap;
-      gap:6px;
-      margin-left:auto;
-      overflow-x:auto;
-      padding-bottom:4px;
-      flex:1 1 auto;
-      scrollbar-width:none;
-    }
-    .controls::-webkit-scrollbar{
-      display:none;
-    }
-
-    .field,
-    .btn-group{
-      flex:0 0 auto;          /* solo ocupan lo necesario */
-    }
-
-    .field{
-      display:flex;
-      align-items:center;
-      gap:6px;
-      background:#fff;
-      border:1px solid var(--border);
-      border-radius:12px;
-      padding:6px 10px;
-      white-space:nowrap;
-    }
-
-    .field label{
-      font-size:12px;
-      color:var(--muted);
-    }
-
-    .field select,
-    .field input{
-      border:0;
-      outline:0;
-      background:transparent;
-      font:inherit;
-      color:var(--text);
-    }
-
-    .btn{
-      border:1px solid var(--border);
-      background:#fff;
-      border-radius:12px;
-      padding:6px 10px;
-      font-weight:600;
-      font-size:12px;
-      cursor:pointer;
-      white-space:nowrap;
-    }
-
-    .btn-primary{
-      background:#1677ff;
-      border-color:#1677ff;
-      color:#fff;
-    }
-
-    .btn-group{display:flex;gap:6px}
-
-    main{
-      max-width:1100px;
-      margin:12px auto;
-      padding:0 14px 16px;
-    }
-
-    .card{
-      background:var(--card);
-      border-radius:16px;
-      box-shadow:0 1px 2px rgba(0,0,0,.04);
-      overflow-x:auto;
-      -webkit-overflow-scrolling:touch;
-      scrollbar-gutter:stable both-edges;
-      contain:layout paint;
-    }
-
-    .thead,.row{
-      display:grid;
-      grid-template-columns:160px repeat(7,1fr);
-    }
-
-    @media (max-width:700px){
-      .thead,.row{
-        grid-template-columns:106px repeat(7,minmax(68px,1fr));
-      }
-    }
-
-    .thead{
-      border-bottom:1px solid var(--border);
-      color:var(--muted);
-      font-size:12px;
-    }
-
-    .th,.cell-name,.cell{
-      padding:10px 12px;
-      border-right:1px solid var(--border);
-    }
-
-    .cell{
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      overflow:hidden;
-    }
-
-    .th:last-child,
-    .cell:last-child{
-      border-right:0;
-    }
-
-    .cell-name{
-      white-space:nowrap;
-      text-overflow:ellipsis;
-      overflow:hidden;
-      font-weight:600;
-      font-size:13px;
-      background:linear-gradient(90deg,#f9fafb,#ffffff);
-      position:sticky;
-      left:0;
-      z-index:2;
-      border-right:1px solid var(--border);
-    }
-
-    .row{
-      border-top:1px solid var(--border);
-      align-items:center;
-    }
-
-    .pill{
-      display:inline-flex;
-      align-items:center;
-      justify-content:center;
-      gap:6px;
-      padding:4px 10px;
-      min-width:88px;
-      border-radius:999px;
-      background:var(--pill);
-      color:var(--pill-text);
-      font-weight:600;
-      font-size:13px;
-      line-height:1.1;
-      white-space:nowrap;
-      word-break:keep-all;
-      max-width:95%;
-    }
-
-    .pill .badge{
-      display:inline-flex;
-      align-items:center;
-      justify-content:center;
-      width:16px;
-      height:16px;
-      border-radius:999px;
-      font-size:11px;
-      background:#e0edff;
-      color:#1d4ed8;
-    }
-
-    .pill.descanso{
-      background:var(--rest);
-      color:var(--rest-text);
-    }
-
-    .pill.noche{
-      background:var(--night);
-      color:var(--night-text);
-    }
-
-    /* Colores diferenciados para Mañana y Tarde */
-    .pill.manana{
-      background:var(--pill-manana-bg);
-      color:var(--pill-manana-text);
-    }
-
-    .pill.tarde{
-      background:var(--pill-tarde-bg);
-      color:var(--pill-tarde-text);
-    }
-
-    .weekday{
-      display:flex;
-      flex-direction:column;
-      gap:2px;
-    }
-
-    .weekday .name{font-size:12px}
-    .weekday .date{font-size:11px;color:var(--muted)}
-
-    .footerbar{
-      height:10px;
-      border-radius:6px;
-      background:linear-gradient(90deg,#b88a00,#e2c26e,#b88a00);
-      margin:14px 0;
-    }
-
-    /* Bloques multi-hotel */
-    .hotel-section{margin:14px 0}
-
-    .th-hotel{
-      padding:10px 12px;
-    }
-
-    .hotel-cell{
-      display:flex;
-      align-items:center;
-      gap:8px;
-    }
-
-    .hotel-cell-logo{
-      height:20px;
-      width:auto;
-      object-fit:contain;
-    }
-
-    .hotel-cell-name{
-      font-weight:600;
-    }
-
-    /* Campo semana: solo icono/selector de fecha para ahorrar espacio */
-    .field-week label{
-      display:none;
-    }
-
-    .field-week{
-      padding:4px 6px;
-    }
-
-    .field-week input[type="date"]{
-      min-width:0;
-      padding-inline:4px;
+    body.dark-mode #corsAlert {
+      background: rgba(239, 68, 68, 0.1);
+      color: #fca5a5;
+      border-color: rgba(239, 68, 68, 0.2);
     }
   </style>
 </head>
 <body>
-  <div id="protocolWarning" style="display:none; background:#ff5252; color:white; padding:12px; font-size:12px; text-align:center; font-weight:700;">
-    ⚠️ Protocolo 'file://' detectado. Algunas funciones (PWA, Actualización en vivo) están desactivadas. Usa un servidor local.
-  </div>
 
   <header>
-    <div class="bar">
-      <div class="brand">
-        <!-- Icono general de la app -->
-        <img id="hotelLogo" alt="Turnos Recepción" src="img/turnos_icon.png">
-        <div class="title" id="hotelTitle">Todos los hoteles</div>
+    <div class="header-bar">
+      <div class="header-top">
+        <div class="brand">
+          <img src="icons/icon-192.png" alt="Logo">
+          <h1>Turnos <span style="color:var(--primary)">Live</span></h1>
+        </div>
+        <button class="theme-toggle" onclick="toggleTheme()" id="themeBtn">🌙</button>
       </div>
 
-      <div class="controls">
-        <div class="field field-week">
-          <label>Semana (lunes):</label>
-          <input id="weekPicker" type="date">
+      <div class="controls-scroller">
+        <div class="control-item">
+          <select id="hotelSelect" onchange="refreshMobileView()">
+            <option value="">Hoteles</option>
+          </select>
         </div>
-        <div class="field">
-          <label>Hotel:</label>
-          <select id="hotelSelect"></select>
+        <div class="control-item">
+          <input type="date" id="dateInput" onchange="refreshMobileView()">
         </div>
-        <div class="btn-group">
-          <button class="btn-primary btn" id="prevWeekBtn">← Semana</button>
-          <button class="btn-primary btn" id="todayBtn">Hoy</button>
-          <button class="btn-primary btn" id="nextWeekBtn">Semana →</button>
-          <button class="btn" id="themeToggle" style="padding:6px 10px; font-size:16px;">🌙</button>
-        </div>
+        <button class="btn-action" onclick="changeWeek(-1)">←</button>
+        <button class="btn-action" onclick="changeWeek(1)">→</button>
       </div>
     </div>
   </header>
 
   <main>
-    <!-- Modo 1: un solo hotel -->
-    <section class="card" id="singleCard">
-      <div class="thead" id="thead"></div>
-      <div id="tbody"></div>
-    </section>
+    <div id="corsAlert">
+      <span>⚠️</span>
+      <div><b>Modo Local:</b> El orden de Excel está desactivado por límites del navegador (CORS).</div>
+    </div>
 
-    <!-- Modo 2: Todos los hoteles (uno debajo de otro) -->
-    <section id="multi" style="display:none;"></section>
-
-    <div class="footerbar"></div>
+    <div id="shiftGrid">
+      <div style="padding:40px; text-align:center; opacity:0.5">Cargando cuadrante...</div>
+    </div>
   </main>
 
-  <!-- Supabase Integration -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/localforage/1.10.0/localforage.min.js"></script>
-  <script src="supabase-config.js?v=8.2"></script>
-  <script src="supabase-dao.js?v=8.2"></script>
+  <script src="supabase.js"></script>
+  <script src="localforage.js"></script>
+  <script src="xlsx.full.min.js"></script>
+  <script src="supabase-config.js?v=9.7"></script>
+  <script src="supabase-dao.js?v=9.7"></script>
+  <script src="plantilla_mobile_adapter.js?v=9.7"></script>
+  <script src="mobile.app.js?v=9.8"></script>
 
-  <!-- Adaptador de semana, normalizador y lógica móvil -->
-  <script src="plantilla_mobile_adapter.js?v=8.2"></script>
-  <script src="mobile.app.js?v=8.2"></script>
-  
   <script>
-    // Sincronización Realtime para Móvil
-    // Sincronización Realtime para Móvil
-    window.initMobileSunc = async () => {
-        if (!window.TurnosDB) return;
-        
-        const now = new Date();
-        const monday = new Date(now.getFullYear(), now.getMonth(), now.getDate() - (now.getDay() === 0 ? 6 : now.getDay() - 1));
-        const sunday = new Date(monday); sunday.setDate(monday.getDate() + 14); // Cargar 2 semanas para buffer
-        
-        const inicio = monday.toISOString().split('T')[0];
-        const fin = sunday.toISOString().split('T')[0];
-
-        try {
-            const data = await window.TurnosDB.fetchRango(inicio, fin);
-            window.FULL_DATA = { schedule: [], flat: data };
-            if (typeof window.refreshMobileView === 'function') window.refreshMobileView();
-            
-            // Escuchar cambios
-            window.TurnosDB.initRealtime(inicio, fin);
-        } catch(e) {
-            console.error("Error cargando datos móviles:", e);
-        }
-    };
-
-    if (window.location.protocol === 'file:') {
-        const warn = document.getElementById('protocolWarning');
-        if (warn) warn.style.display = 'block';
+    function toggleTheme() {
+        document.body.classList.toggle('dark-mode');
+        const isDark = document.body.classList.contains('dark-mode');
+        document.getElementById('themeBtn').innerText = isDark ? '☀️' : '🌙';
+        localStorage.setItem('mobile-theme', isDark ? 'dark' : 'light');
     }
 
-    document.addEventListener('DOMContentLoaded', window.initMobileSunc);
-  </script>
+    if (localStorage.getItem('mobile-theme') === 'dark') {
+        document.body.classList.add('dark-mode');
+        document.getElementById('themeBtn').innerText = '☀️';
+    }
 
-  <!-- Registro del Service Worker para que se pueda instalar como App -->
-  <script>
-    const themeBtn = document.getElementById('themeToggle');
-    const setTheme = (mode) => {
-        document.body.classList.toggle('light-mode', mode === 'light');
-        if (themeBtn) themeBtn.textContent = mode === 'light' ? '☀️' : '🌙';
-        try {
-            localStorage.setItem('turnosweb_theme', mode);
-        } catch(e) {}
-    };
-    setTheme(localStorage.getItem('turnosweb_theme') || 'light');
-    if (themeBtn) themeBtn.onclick = () => setTheme(document.body.classList.contains('light-mode') ? 'dark' : 'light');
+    if (window.location.protocol === 'file:') {
+        document.getElementById('corsAlert').style.display = 'flex';
+    }
 
+    window.addEventListener('load', () => {
+        if (typeof window.initMobileSunc === 'function') {
+            window.initMobileSunc();
+        }
+    });
+
+    // PWA Service Worker
     if ('serviceWorker' in navigator && window.location.protocol !== 'file:') {
-      window.addEventListener('load', function () {
-        navigator.serviceWorker.register('service-worker.js')
-          .then(() => console.log('Service Worker registrado'))
-          .catch(err => console.error('Error al registrar SW', err));
-      });
-    } else if (window.location.protocol === 'file:') {
-        console.warn("PWA: El protocolo 'file://' no soporta Service Workers. Usa un servidor local para habilitar la instalación.");
+      navigator.serviceWorker.register('sw.js').catch(err => console.log("SW Fail:", err));
     }
   </script>
 </body>

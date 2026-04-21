@@ -1,0 +1,146 @@
+[
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2025-10-04",
+    "empleado_id": "Cristina",
+    "sustituto": "Gustavo Sánchez",
+    "turno": "P",
+    "tipo": "PERM 🗓️"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2025-10-05",
+    "empleado_id": "Cristina",
+    "sustituto": "Gustavo Sánchez",
+    "turno": "P",
+    "tipo": "PERM 🗓️"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2025-10-06",
+    "empleado_id": "Cristina",
+    "sustituto": "Isabel Hidalgo",
+    "turno": "P",
+    "tipo": "PERM 🗓️"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2025-10-07",
+    "empleado_id": "Cristina",
+    "sustituto": "Miriam",
+    "turno": "P",
+    "tipo": "PERM 🗓️"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2025-10-08",
+    "empleado_id": "Cristina",
+    "sustituto": "Isabel Hidalgo",
+    "turno": "P",
+    "tipo": "PERM 🗓️"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2025-11-29",
+    "empleado_id": "Esther",
+    "sustituto": "Natalio",
+    "turno": "P",
+    "tipo": "PERM 🗓️"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2025-11-30",
+    "empleado_id": "Esther",
+    "sustituto": "Natalio",
+    "turno": "P",
+    "tipo": "PERM 🗓️"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2025-12-01",
+    "empleado_id": "Esther",
+    "sustituto": "Natalio",
+    "turno": "Muerte del Padre",
+    "tipo": "PERM 🗓️"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2025-12-29",
+    "empleado_id": "Sergio",
+    "sustituto": "Natalio",
+    "turno": "Estar con sus hijos la mañana del 6 de enero. ",
+    "tipo": "BAJA 🏥"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2025-12-30",
+    "empleado_id": "Sergio",
+    "sustituto": "Natalio",
+    "turno": "Estar con sus hijos la mañana del 6 de enero. ",
+    "tipo": "BAJA 🏥"
+  },
+  {
+    "hotel_id": "Cumbria Spa&Hotel",
+    "fecha": "2025-12-31",
+    "empleado_id": "Sergio",
+    "sustituto": "",
+    "turno": "Baja - Pater",
+    "tipo": "BAJA 🏥"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2026-02-17",
+    "empleado_id": "Sergio Sánchez",
+    "sustituto": "Natalio",
+    "turno": "P",
+    "tipo": "PERM 🗓️"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2026-03-04",
+    "empleado_id": "Diana",
+    "sustituto": "Natalio",
+    "turno": "Operación Nacho",
+    "tipo": "PERM 🗓️"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2026-03-05",
+    "empleado_id": "Diana",
+    "sustituto": "Natalio",
+    "turno": "Operación Nacho",
+    "tipo": "PERM 🗓️"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2026-03-06",
+    "empleado_id": "Diana",
+    "sustituto": "Natalio",
+    "turno": "Operación Nacho",
+    "tipo": "PERM 🗓️"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2026-03-07",
+    "empleado_id": "Diana",
+    "sustituto": "Natalio",
+    "turno": "Operación Nacho",
+    "tipo": "PERM 🗓️"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2026-03-08",
+    "empleado_id": "Diana",
+    "sustituto": "Natalio",
+    "turno": "Operación Nacho",
+    "tipo": "PERM 🗓️"
+  },
+  {
+    "hotel_id": "Sercotel Guadiana",
+    "fecha": "2026-04-09",
+    "empleado_id": "Sergio Sánchez",
+    "sustituto": "Natalio",
+    "turno": "P",
+    "tipo": "PERM 🗓️"
+  }
+]
