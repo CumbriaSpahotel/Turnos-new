@@ -6,6 +6,38 @@
     <title>TurnosWeb — Configuración</title>
     <link rel="icon" type="image/png" href="favicon.png">
     <link rel="stylesheet" href="admin.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        .nav-item.active { background: var(--accent-dim); color: var(--accent); border-right: 3px solid var(--accent); }
+        .config-card {
+            background: var(--bg2);
+            border: 1px solid var(--border);
+            border-radius: 18px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+        }
+        .config-title { font-family: 'Outfit', sans-serif; font-size: 1.2rem; font-weight: 700; margin-bottom: 1rem; color: var(--text); }
+        .config-desc { font-size: 0.9rem; color: var(--text-dim); margin-bottom: 1.5rem; line-height: 1.5; }
+        
+        .btn-config {
+            padding: 12px 24px;
+            border-radius: 12px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            border: 1px solid var(--border);
+            background: var(--bg3);
+            color: var(--text);
+        }
+        .btn-config:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(0,0,0,0.05); }
+        .btn-config.primary { background: var(--accent); color: white; border: none; }
+        .btn-config.danger { color: #ff5252; border-color: rgba(255,82,82,0.2); background: rgba(255,82,82,0.05); }
+        .btn-config.danger:hover { background: #ff5252; color: white; }
+    </style>
 </head>
 <body class="light-mode">
     <aside class="sidebar">
@@ -40,19 +72,40 @@
         <section class="section active">
             <header class="page-header">
                 <div>
-                    <h1 class="page-title">Configuración y Backup</h1>
-                    <p class="page-subtitle">Gestión de base de datos y copias de seguridad locales</p>
+                    <h1 class="page-title">Configuración del Sistema</h1>
+                    <p class="page-subtitle">Gestión avanzada de la base de datos y copias de seguridad</p>
                 </div>
                 <div id="syncStatus" class="status-badge-premium" style="margin-left:auto; display:flex; align-items:center; gap:8px;">
                     <span id="syncDot" style="width:8px; height:8px; border-radius:50%; background:#ff9800;"></span>
                     <span id="syncText">Conectando...</span>
                 </div>
             </header>
-            <div class="glass-panel" style="padding:2.5rem;">
-                <button class="btn ok" onclick="downloadBackup()">Descargar Backup JSON</button>
-                <div style="margin-top:2rem; border-top:1px solid var(--border); padding-top:2rem;">
-                    <h3 style="color:var(--error);">Zona de Peligro</h3>
-                    <button class="btn" style="color:var(--error); border-color:var(--error);" onclick="wipeAllData()">BORRAR TODO (REINICIAR DB)</button>
+
+            <div class="config-card">
+                <div class="config-title">Copia de Seguridad (Backup)</div>
+                <p class="config-desc">
+                    Genera un archivo JSON con todos los registros actuales de tunos, vacaciones y eventos del cuadrante. 
+                    Es recomendable realizar esta operación antes de hacer cambios masivos.
+                </p>
+                <button class="btn-config primary" onclick="downloadBackup()">📥 Descargar Backup Completo</button>
+            </div>
+
+            <div class="config-card">
+                <div class="config-title">Limpieza de Caché Local</div>
+                <p class="config-desc">
+                    Si notas que los datos no se actualizan correctamente, puedes forzar la limpieza de la caché de tu navegador. 
+                    Esto no borrará datos de la nube, solo los datos guardados temporalmente en este equipo.
+                </p>
+                <button class="btn-config" onclick="clearCache()">🧹 Limpiar Caché Local</button>
+            </div>
+
+            <div class="config-card" style="border-color: rgba(255,82,82,0.3); background: rgba(255,82,82,0.02);">
+                <div class="config-title" style="color:#ff5252;">Zona de Peligro</div>
+                <p class="config-desc">
+                    Las siguientes acciones son irreversibles. Ten mucho cuidado antes de proceder.
+                </p>
+                <div style="display:flex; gap:15px;">
+                    <button class="btn-config danger" onclick="wipeAllData()">⚠️ Borrar toda la Base de Datos</button>
                 </div>
             </div>
         </section>
@@ -60,32 +113,69 @@
 
     <script src="supabase.js"></script>
     <script src="localforage.js"></script>
-    <script src="supabase-config.js?v=8.2"></script>
-    <script src="supabase-dao.js?v=8.2"></script>
+    <script src="supabase-config.js?v=9.8"></script>
+    <script src="supabase-dao.js?v=9.8"></script>
     <script>
         const $ = (s) => document.querySelector(s);
+        
         async function downloadBackup() {
-            const data = await window.TurnosDB.fetchRango('2024-01-01','2026-12-31');
-            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `backup_turnos_${new Date().toISOString().split('T')[0]}.json`;
-            a.click();
+            try {
+                // Obtenemos un rango amplio para asegurar backup completo
+                const data = await window.TurnosDB.fetchRango('2024-01-01','2028-12-31');
+                const eventos = await window.TurnosDB.fetchEventos();
+                const empleados = await window.TurnosDB.getEmpleados();
+                
+                const backup = {
+                    version: "8.2",
+                    timestamp: new Date().toISOString(),
+                    turnos: data,
+                    eventos: eventos,
+                    empleados: empleados
+                };
+
+                const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `backup_turnosweb_total_${new Date().toISOString().split('T')[0]}.json`;
+                a.click();
+            } catch (e) {
+                alert("Error al generar backup: " + e.message);
+            }
         }
+
+        async function clearCache() {
+            if (window.localforage) {
+                await window.localforage.clear();
+                alert("Caché local de datos limpiada con éxito.");
+                location.reload();
+            }
+        }
+
         async function wipeAllData() {
-            if (!confirm('¿ESTÁS SEGURO?')) return;
-            await window.TurnosDB.clearAll();
-            localStorage.clear();
-            await localforage.clear();
-            location.reload();
+            const pin = prompt('ESTA ACCIÓN BORRARÁ TODOS LOS TURNOS Y EVENTOS DE LA NUBE. Escribe "CONFIRMAR" para proceder:');
+            if (pin !== 'CONFIRMAR') return;
+
+            try {
+                await window.TurnosDB.clearAll();
+                if (window.localforage) await window.localforage.clear();
+                localStorage.clear();
+                alert("Sistema reiniciado con éxito.");
+                location.reload();
+            } catch (e) {
+                alert("Error: " + e.message);
+            }
         }
+
         function toggleTheme() {
             document.body.classList.toggle('light-mode');
             localStorage.setItem('turnosweb_theme', document.body.classList.contains('light-mode') ? 'light' : 'dark');
         }
+
         document.addEventListener('DOMContentLoaded', () => {
-            if (localStorage.getItem('turnosweb_theme') === 'light') document.body.classList.add('light-mode');
+            const savedTheme = localStorage.getItem('turnosweb_theme') || 'light';
+            if (savedTheme === 'light') document.body.classList.add('light-mode');
+            else document.body.classList.remove('light-mode');
         });
     </script>
     <script src="sync-status.js"></script>

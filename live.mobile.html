@@ -2,12 +2,20 @@
 <html lang="es">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
   <title>Turnos · Versión Móvil</title>
   
-  <!-- PWA -->
-  <link rel="manifest" href="manifest.json">
-  <meta name="theme-color" content="#3b82f6">
+  <!-- PWA (Solo activo en HTTP para evitar errores CORS locales) -->
+  <script>
+    if (window.location.protocol.startsWith('http')) {
+        const link = document.createElement('link');
+        link.rel = 'manifest';
+        link.href = 'manifest.json';
+        document.head.appendChild(link);
+    }
+  </script>
+  
+  <meta name="theme-color" content="#1a1d21">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   
@@ -17,34 +25,29 @@
 
   <style>
     :root {
-      --primary: #3b82f6;
-      --bg: #f8fafc;
+      --primary: #1677ff;
+      --bg: #f4f7fb;
+      --bg-header: #1a1d21;
       --card: #ffffff;
-      --text: #0f172a;
+      --text: #1e2a3a;
       --muted: #64748b;
       --border: #e2e8f0;
-      --glass: rgba(255, 255, 255, 0.8);
       
-      --pill-m: #dcfce7; --pill-m-text: #166534;
-      --pill-t: #e0f2fe; --pill-t-text: #075985;
-      --pill-n: #f1f5f9; --pill-n-text: #334155;
-      --pill-d: #fee2e2; --pill-d-text: #991b1b;
-      --pill-v: #fef9c3; --pill-v-text: #854d0e;
+      --color-m: #2f9e44; --bg-m: #ebfbee;
+      --color-t: #f08c00; --bg-t: #fff9db;
+      --color-n: #364fc7; --bg-n: #edf2ff;
+      --color-d: #fa5252; --bg-d: #fff5f5;
+      --color-v: #0b7285; --bg-v: #e3fafc;
+      --color-b: #fa5252; --bg-b: #fff5f5;
+      --color-p: #7048e8; --bg-p: #f3f0ff;
     }
 
     body.dark-mode {
-      --bg: #020617;
-      --card: #0f172a;
+      --bg: #0f172a;
+      --card: #1e293b;
       --text: #f1f5f9;
       --muted: #94a3b8;
-      --border: #1e293b;
-      --glass: rgba(15, 23, 42, 0.8);
-      
-      --pill-m: rgba(34, 197, 94, 0.15); --pill-m-text: #4ade80;
-      --pill-t: rgba(59, 130, 246, 0.15); --pill-t-text: #60a5fa;
-      --pill-n: rgba(148, 163, 184, 0.15); --pill-n-text: #cbd5e1;
-      --pill-d: rgba(239, 68, 68, 0.15); --pill-d-text: #f87171;
-      --pill-v: rgba(234, 179, 8, 0.15); --pill-v-text: #facc15;
+      --border: #334155;
     }
 
     * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -63,74 +66,24 @@
       position: sticky;
       top: 0;
       z-index: 100;
-      background: var(--glass);
-      backdrop-filter: blur(16px);
-      -webkit-backdrop-filter: blur(16px);
-      border-bottom: 1px solid var(--border);
+      background: var(--bg-header);
+      color: white;
       padding: 12px 16px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
     }
 
-    .header-bar {
-      max-width: 1100px;
-      margin: 0 auto;
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-    }
+    .header-bar { max-width: 800px; margin: 0 auto; display: flex; flex-direction: column; gap: 12px; }
+    .header-top { display: flex; align-items: center; justify-content: space-between; }
+    .brand { display: flex; align-items: center; gap: 10px; }
+    .brand img { width: 32px; height: 32px; border-radius: 8px; filter: brightness(0) invert(1); }
+    .brand h1 { font-family: 'Outfit', sans-serif; font-size: 1.1rem; font-weight: 800; margin: 0; letter-spacing: -0.02em; }
 
-    .header-top {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-    }
-
-    .brand {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-
-    .brand img {
-      width: 32px;
-      height: 32px;
-      border-radius: 10px;
-      background: white;
-      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-    }
-
-    .brand h1 {
-      font-family: 'Outfit', sans-serif;
-      font-size: 1.1rem;
-      font-weight: 800;
-      margin: 0;
-      letter-spacing: -0.02em;
-    }
-
-    .theme-toggle {
-        background: var(--bg);
-        border: 1px solid var(--border);
-        width: 36px;
-        height: 36px;
-        border-radius: 10px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 1.1rem;
-        cursor: pointer;
-    }
-
-    .controls-scroller {
-      display: flex;
-      gap: 8px;
-      overflow-x: auto;
-      padding-bottom: 2px;
-      scrollbar-width: none;
-    }
+    .controls-scroller { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 2px; scrollbar-width: none; }
     .controls-scroller::-webkit-scrollbar { display: none; }
 
     .control-item {
-      background: var(--bg);
-      border: 1px solid var(--border);
+      background: rgba(255,255,255,0.1);
+      border: 1px solid rgba(255,255,255,0.1);
       padding: 6px 12px;
       border-radius: 10px;
       font-size: 0.8rem;
@@ -144,86 +97,44 @@
     .control-item select, .control-item input {
       border: none;
       background: transparent;
-      color: var(--text);
+      color: white;
       font: inherit;
       font-weight: 800;
       outline: none;
     }
 
-    .btn-action {
-      background: var(--primary);
-      color: white;
-      border: none;
-      padding: 6px 14px;
-      border-radius: 10px;
-      font-weight: 800;
-      font-size: 0.75rem;
-      flex-shrink: 0;
-    }
+    .btn-action { background: var(--primary); color: white; border: none; padding: 6px 14px; border-radius: 10px; font-weight: 800; font-size: 0.75rem; flex-shrink: 0; }
 
-    main {
-      padding: 16px;
-      padding-bottom: 80px;
-      max-width: 1100px;
-      margin: 0 auto;
-    }
+    main { padding: 16px; padding-bottom: 80px; max-width: 800px; margin: 0 auto; }
 
     .hotel-card {
       background: var(--card);
-      border-radius: 24px;
+      border-radius: 20px;
       border: 1px solid var(--border);
       overflow: hidden;
       margin-bottom: 24px;
-      box-shadow: 0 10px 15px -3px rgba(0,0,0,0.05);
+      box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
     }
 
     .hotel-info {
-      padding: 16px;
+      padding: 12px 16px;
       display: flex;
       align-items: center;
       gap: 12px;
-      background: linear-gradient(to bottom, var(--bg) 0%, transparent 100%);
-      border-bottom: 1px solid var(--border);
-    }
-
-    .hotel-info img { height: 20px; width: auto; }
-    .hotel-info h2 { font-family: 'Outfit', sans-serif; font-size: 1rem; font-weight: 800; margin: 0; }
-
-    .table-wrapper {
-      overflow-x: auto;
-      scrollbar-width: none;
-      -webkit-overflow-scrolling: touch;
-    }
-    .table-wrapper::-webkit-scrollbar { display: none; }
-
-    .grid-head {
-      display: grid;
-      grid-template-columns: 110px repeat(7, 72px);
       background: var(--bg);
       border-bottom: 1px solid var(--border);
     }
+    .hotel-info img { height: 24px; width: 24px; border-radius: 6px; object-fit: cover; }
+    .hotel-info h2 { font-family: 'Outfit', sans-serif; font-size: 0.95rem; font-weight: 800; margin: 0; text-transform: uppercase; letter-spacing: 0.02em; }
 
-    .grid-th {
-      padding: 10px 8px;
-      font-size: 0.6rem;
-      font-weight: 900;
-      color: var(--muted);
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      text-align: center;
-    }
-
-    .grid-row {
-      display: grid;
-      grid-template-columns: 110px repeat(7, 72px);
-      border-bottom: 1px solid var(--border);
-      align-items: center;
-    }
-    .grid-row:last-child { border-bottom: none; }
-
+    .table-wrapper { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    .grid-head { display: grid; grid-template-columns: 120px repeat(7, 80px); background: var(--bg); border-bottom: 1px solid var(--border); }
+    .grid-th { padding: 10px 4px; font-size: 0.65rem; font-weight: 900; color: var(--muted); text-transform: uppercase; text-align: center; }
+    
+    .grid-row { display: grid; grid-template-columns: 120px repeat(7, 80px); border-bottom: 1px solid var(--border); }
     .name-sticky {
-      padding: 12px 16px;
-      font-size: 0.85rem;
+      padding: 12px 14px;
+      font-size: 0.8rem;
       font-weight: 800;
       position: sticky;
       left: 0;
@@ -232,54 +143,35 @@
       border-right: 2px solid var(--border);
       display: flex;
       flex-direction: column;
+      color: var(--primary);
+      justify-content: center;
     }
     .name-sticky .stats { font-size: 0.6rem; color: var(--muted); margin-top: 2px; font-weight: 600; }
 
-    .grid-cell {
-      padding: 8px 6px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      min-height: 54px;
-      border-right: 1px solid var(--border);
-    }
-    .grid-cell:last-child { border-right: none; }
-
+    .grid-cell { padding: 6px 4px; display: flex; align-items: center; justify-content: center; min-height: 58px; border-right: 1px solid var(--border); }
+    
     .badge-shift {
-      font-size: 0.7rem;
-      font-weight: 800;
-      padding: 6px 8px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      padding: 8px 4px;
       border-radius: 10px;
       width: 100%;
       text-align: center;
       white-space: nowrap;
-      box-shadow: 0 1px 2px rgba(0,0,0,0.05);
     }
+    .m { background: var(--bg-m); color: var(--color-m); border: 1px solid rgba(47,158,68,0.1); }
+    .t { background: var(--bg-t); color: var(--color-t); border: 1px solid rgba(240,140,0,0.1); }
+    .n { background: var(--bg-n); color: var(--color-n); border: 1px solid rgba(54,79,199,0.1); }
+    .d { background: var(--bg-d); color: var(--color-d); border: 1px solid rgba(250,82,82,0.1); }
+    .v { background: var(--bg-v); color: var(--color-v); border: 1px solid rgba(11,114,133,0.1); }
+    .b { background: var(--bg-b); color: var(--color-b); border: 1px dashed var(--color-b); }
+    .p { background: var(--bg-p); color: var(--color-p); border: 1px solid rgba(112,72,232,0.1); }
+    .empty { opacity: 0.2; font-size: 1.2rem; }
 
-    .m { background: var(--pill-m); color: var(--pill-m-text); }
-    .t { background: var(--pill-t); color: var(--pill-t-text); }
-    .n { background: var(--pill-n); color: var(--pill-n-text); }
-    .d { background: var(--pill-d); color: var(--pill-d-text); }
-    .v { background: var(--pill-v); color: var(--pill-v-text); }
-
-    #corsAlert {
-      background: #fef2f2;
-      color: #991b1b;
-      padding: 14px;
-      border-radius: 16px;
-      font-size: 0.75rem;
-      margin-bottom: 16px;
-      border: 1px solid #fee2e2;
-      display: none;
-      align-items: center;
-      gap: 10px;
-      font-weight: 600;
-    }
-    
-    body.dark-mode #corsAlert {
-      background: rgba(239, 68, 68, 0.1);
-      color: #fca5a5;
-      border-color: rgba(239, 68, 68, 0.2);
+    /* Barra de estado CORS */
+    .cors-warning {
+        background: #fff5f5; color: #fa5252; padding: 10px; border-radius: 12px; margin: 10px; 
+        font-size: 0.75rem; font-weight: 700; border: 1px solid #ffe3e3; display: none;
     }
   </style>
 </head>
@@ -289,10 +181,10 @@
     <div class="header-bar">
       <div class="header-top">
         <div class="brand">
-          <img src="icons/icon-192.png" alt="Logo">
-          <h1>Turnos <span style="color:var(--primary)">Live</span></h1>
+          <img src="Logo.png" alt="Logo">
+          <h1>Turnos <span style="color:var(--primary)">Público</span></h1>
         </div>
-        <button class="theme-toggle" onclick="toggleTheme()" id="themeBtn">🌙</button>
+        <button class="nav-btn" onclick="toggleTheme()" id="themeBtn" style="padding:4px 8px; font-size:1.1rem; background:transparent; border:none; cursor:pointer;">🌙</button>
       </div>
 
       <div class="controls-scroller">
@@ -304,32 +196,34 @@
         <div class="control-item">
           <input type="date" id="dateInput" onchange="refreshMobileView()">
         </div>
-        <button class="btn-action" onclick="changeWeek(-1)">←</button>
-        <button class="btn-action" onclick="changeWeek(1)">→</button>
+        <button class="btn-action" onclick="changeWeek(-1)">← Sem</button>
+        <button class="btn-action" onclick="changeWeek(1)">Sem →</button>
       </div>
     </div>
   </header>
 
-  <main>
-    <div id="corsAlert">
-      <span>⚠️</span>
-      <div><b>Modo Local:</b> El orden de Excel está desactivado por límites del navegador (CORS).</div>
-    </div>
+  <div id="corsAlert" class="cors-warning">
+    ⚠️ <b>Modo Local Detectado</b>: El navegador bloquea archivos locales (CORS). El orden de Excel se ha desactivado.
+  </div>
 
-    <div id="shiftGrid">
-      <div style="padding:40px; text-align:center; opacity:0.5">Cargando cuadrante...</div>
-    </div>
+  <main>
+    <div id="shiftGrid"></div>
   </main>
 
+  <!-- SCRIPTS ORDENADOS -->
   <script src="supabase.js"></script>
   <script src="localforage.js"></script>
   <script src="xlsx.full.min.js"></script>
-  <script src="supabase-config.js?v=9.7"></script>
-  <script src="supabase-dao.js?v=9.7"></script>
-  <script src="plantilla_mobile_adapter.js?v=9.7"></script>
-  <script src="mobile.app.js?v=9.8"></script>
+  <script src="supabase-config.js?v=9.8"></script>
+  <script src="supabase-dao.js?v=9.8"></script>
+  <script src="plantilla_mobile_adapter.js?v=9.8"></script>
+  <script src="mobile.app.js?v=9.9"></script>
 
   <script>
+    if (window.location.protocol === 'file:') {
+        document.getElementById('corsAlert').style.display = 'block';
+    }
+
     function toggleTheme() {
         document.body.classList.toggle('dark-mode');
         const isDark = document.body.classList.contains('dark-mode');
@@ -342,17 +236,12 @@
         document.getElementById('themeBtn').innerText = '☀️';
     }
 
-    if (window.location.protocol === 'file:') {
-        document.getElementById('corsAlert').style.display = 'flex';
-    }
-
     window.addEventListener('load', () => {
-        if (typeof window.initMobileSunc === 'function') {
-            window.initMobileSunc();
+        if (typeof window.refreshMobileView === 'function') {
+            window.refreshMobileView();
         }
     });
 
-    // PWA Service Worker
     if ('serviceWorker' in navigator && window.location.protocol !== 'file:') {
       navigator.serviceWorker.register('sw.js').catch(err => console.log("SW Fail:", err));
     }

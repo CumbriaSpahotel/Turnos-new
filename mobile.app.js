@@ -1,10 +1,11 @@
-/* mobile.app.js (V9.8 Premium Glassmorphism) */
+/* mobile.app.js (V3.1 Premium - Admin Standard) */
 (function () {
   const $  = (s, root = document) => root.querySelector(s);
   const $$ = (s, root = document) => Array.from(root.querySelectorAll(s));
 
   const pad = n => String(n).padStart(2, "0");
-  const weekdayShort = ["LUN", "MAR", "MIÉ", "JUE", "VIE", "SÁB", "DOM"];
+  const weekdayLong = ["DOMINGO", "LUNES", "MARTES", "MIERCOLES", "JUEVES", "VIERNES", "SABADO"];
+  const monthNames = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
 
   function mondayOf(date) {
     const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
@@ -29,31 +30,46 @@
     return "cumbria logo.jpg";
   }
 
-  function getLabel(item) {
-    if (!item) return "";
-    const t = (item.turno || '').toLowerCase();
-    const tipo = (item.tipo || '').toUpperCase();
-    if (tipo.startsWith('VAC')) return 'Vacaciones';
-    if (tipo.startsWith('BAJA')) return 'Baja';
-    if (tipo.startsWith('PERM')) return 'Permiso';
-    if (t.startsWith('m')) return 'Mañana';
-    if (t.startsWith('t')) return 'Tarde';
-    if (t.startsWith('n')) return 'Noche';
-    if (t.startsWith('d')) return 'Descanso';
-    return item.turno;
-  }
+  function getDisplayInfo(item) {
+    if (!item) return { label: '·', cls: 'empty', icon: '' };
+    
+    const type = String(item.tipo || 'NORMAL').toUpperCase();
+    const rawTurno = String(item.turno || '').toLowerCase();
+    
+    let cls = 'empty';
+    let label = '';
+    let icon = '';
 
-  function getClass(item) {
-    if (!item) return '';
-    const t = (item.turno || '').toLowerCase();
-    const tipo = (item.tipo || '').toUpperCase();
-    if (tipo.startsWith('VAC')) return 'v';
-    if (tipo.startsWith('BAJA') || tipo.startsWith('PERM')) return 'd';
-    if (t.startsWith('m')) return 'm';
-    if (t.startsWith('t')) return 't';
-    if (t.startsWith('n')) return 'n';
-    if (t.startsWith('d')) return 'd';
-    return '';
+    if (type.startsWith('VAC')) {
+      cls = 'v';
+      label = 'Vacaciones';
+      icon = '🏖️';
+    } else if (type.startsWith('BAJA')) {
+      cls = 'b';
+      label = 'Baja';
+      icon = '🏥';
+    } else if (type.startsWith('PERM')) {
+      cls = 'p';
+      label = 'Permiso';
+    } else if (rawTurno.includes('mañana') || rawTurno.includes('maã±ana') || rawTurno === 'm') {
+      cls = 'm';
+      label = 'Mañana';
+    } else if (rawTurno.includes('tarde') || rawTurno === 't') {
+      cls = 't';
+      label = 'Tarde';
+    } else if (rawTurno.includes('noche') || rawTurno === 'n') {
+      cls = 'n';
+      label = 'Noche';
+      icon = '🌙';
+    } else if (rawTurno.includes('descanso') || rawTurno === 'd') {
+      cls = 'd';
+      label = 'Descanso';
+    } else {
+        label = item.turno || '·';
+    }
+
+    if (item.isSub) icon = '↔︎';
+    return { label, cls, icon };
   }
 
   const dateInput   = $("#dateInput");
@@ -70,18 +86,15 @@
     }[ch]));
   }
 
-  const EXCEL_SOURCE_FILE = 'Plantilla%20Cuadrante%20Turnos%20v.8.0.xlsx';
-  const EXCEL_HOTEL_SHEETS = ['Cumbria Spa&Hotel', 'Sercotel Guadiana'];
-
   async function loadExcelSourceRows() {
     if (window._excelSourceRows) return window._excelSourceRows;
     try {
-        const response = await fetch(EXCEL_SOURCE_FILE, { cache: 'no-store' });
+        const response = await fetch('Plantilla%20Cuadrante%20Turnos%20v.8.0.xlsx', { cache: 'no-store' });
         if (!response.ok) return {};
         const buffer = await response.arrayBuffer();
         const workbook = XLSX.read(buffer, { type: 'array', cellDates: true });
         const result = {};
-        EXCEL_HOTEL_SHEETS.forEach(hotel => {
+        ['Cumbria Spa&Hotel', 'Sercotel Guadiana'].forEach(hotel => {
             const sheet = workbook.Sheets[hotel];
             if (!sheet) return;
             const matrix = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '', raw: true });
@@ -89,31 +102,40 @@
                 hotel,
                 weekStart: row[0] instanceof Date ? row[0].toISOString().split('T')[0] : (typeof row[0] === 'string' ? row[0].split('T')[0] : ''),
                 empleadoId: String(row[1] || '').trim(),
-                values: [0,1,2,3,4,5,6].map(i => {
-                    const val = String(row[i+2]||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
-                    if (val.startsWith('m')) return 'M';
-                    if (val.startsWith('t')) return 'T';
-                    if (val.startsWith('n')) return 'N';
-                    if (val.startsWith('d')) return 'D';
-                    return String(row[i+2]||'').trim();
-                })
+                values: [0,1,2,3,4,5,6].map(i => String(row[i+2]||'').trim())
             })).filter(r => r.weekStart && r.empleadoId);
         });
         window._excelSourceRows = result;
         return result;
     } catch(e) { 
-        console.warn("Excel no disponible (CORS/Network)"); 
         return {}; 
     }
   }
 
   window.refreshMobileView = async function() {
-    const data = window.FULL_DATA || { flat: [] };
-    const excelSource = await loadExcelSourceRows();
-    data.excelSource = excelSource;
+    if (!dateInput.value) {
+        dateInput.value = toISODateUTC(mondayOf(new Date()));
+    }
 
-    const hotels = Array.from(new Set(data.flat.map(t => t.hotel_id))).filter(Boolean).sort();
+    const startIso = dateInput.value;
+    const dEnd = new Date(startIso + "T12:00:00");
+    dEnd.setDate(dEnd.getDate() + 6);
+    const endIso = toISODateUTC(dEnd);
+
+    shiftGrid.innerHTML = `<div style="padding:40px; text-align:center; opacity:0.5; font-weight:700;">Sincronizando...</div>`;
     
+    let flatData = [];
+    try {
+        flatData = await window.TurnosDB.fetchRangoCalculado(startIso, endIso) || [];
+    } catch(e) { 
+        try { flatData = await window.TurnosDB.fetchRango(startIso, endIso) || []; } catch(e2){}
+    }
+    
+    const excelSource = await loadExcelSourceRows();
+    const profiles = await window.TurnosDB.getEmpleados();
+    const data = { flat: flatData, excelSource };
+
+    const hotels = Array.from(new Set(flatData.map(t => t.hotel_id))).filter(Boolean).sort();
     if (hotelSelect && hotelSelect.options.length <= 1) {
         const currentHotel = hotelSelect.value || "";
         hotelSelect.innerHTML = `<option value="">Todos los Hoteles</option>` +
@@ -121,29 +143,23 @@
         hotelSelect.value = hotels.includes(currentHotel) ? currentHotel : "";
     }
 
-    if (dateInput && !dateInput.value) {
-        dateInput.value = toISODateUTC(mondayOf(new Date()));
-    }
-
-    const hotelVal = hotelSelect ? hotelSelect.value : "";
-    const monday   = new Date((dateInput ? dateInput.value : toISODateUTC(new Date())) + "T12:00:00");
-
+    const hotelVal = hotelSelect.value || "";
+    const mondayD = new Date(startIso + "T12:00:00");
     shiftGrid.innerHTML = "";
 
-    if (!hotels.length && data.flat.length === 0) {
-      shiftGrid.innerHTML = `<div style="padding:40px; text-align:center; opacity:0.5">No hay turnos para esta semana.</div>`;
-      return;
-    }
-
     const hotelsToRender = hotelVal ? [hotelVal] : (hotels.length ? hotels : ['Cumbria Spa&Hotel', 'Sercotel Guadiana']);
-
     for (const h of hotelsToRender) {
-        await renderTable(h, monday, data, shiftGrid);
+        await renderTable(h, mondayD, data, shiftGrid, profiles);
+    }
+    
+    if (shiftGrid.innerHTML === "") {
+        shiftGrid.innerHTML = `<div style="padding:40px; text-align:center; opacity:0.5; color:var(--muted);">No hay turnos registrados en la nube.</div>`;
     }
   };
 
-  async function renderTable(hotel, monday, data, container) {
-    const weekData = window.MobileAdapter.buildWeekData(data, hotel, monday, window.PROFILES || []);
+  async function renderTable(hotel, monday, data, container, profiles) {
+    const FULL_DATA = { flat: data.flat, excelSource: data.excelSource };
+    const weekData = window.MobileAdapter.buildWeekData(FULL_DATA, hotel, monday, profiles);
     if (!weekData || !weekData.empDetailed || weekData.empDetailed.length === 0) return;
 
     const baseMonday = weekData.monday;
@@ -159,34 +175,42 @@
         </div>
         <div class="table-wrapper">
             <div class="grid-head">
-                <div class="grid-th th-emp">Empleado</div>
+                <div class="grid-th th-emp" style="font-size:0.7rem; color:var(--muted); text-transform:uppercase;">EMPLEADO</div>
                 ${dates.map((d, i) => {
                     const dayObj = new Date(d + 'T12:00:00');
-                    return `<div class="grid-th">${weekdayShort[i]}<br><span style="opacity:0.6">${dayObj.getUTCDate()}</span></div>`;
+                    const dayLabel = `${dayObj.getUTCDate()}/${monthNames[dayObj.getUTCMonth()]}/${dayObj.getUTCFullYear().toString().slice(-2)}`;
+                    return `<div class="grid-th">
+                        <span>${weekdayLong[dayObj.getUTCDay()]}</span><br>
+                        <span style="opacity:0.6; font-size:0.75rem; font-weight:500;">${dayLabel}</span>
+                    </div>`;
                 }).join('')}
             </div>
             <div class="grid-body">
                 ${(weekData.empDetailed || []).map(entry => {
                     const { id: emp, isAbsent: empIsAbsent } = entry;
                     const shifts = weekData.turnosByEmpleado[emp] || {};
-                    const n = Object.values(shifts).filter(s => (s.turno||'').toLowerCase().startsWith('n')).length;
-                    const dCount = Object.values(shifts).filter(s => (s.turno||'').toLowerCase().startsWith('d')).length;
+                    
+                    let n = 0, dCount = 0;
+                    Object.values(shifts).forEach(s => {
+                        const t = (s.turno||'').toLowerCase();
+                        if (t.startsWith('n')) n++;
+                        if (t.startsWith('d')) dCount++;
+                    });
 
                     return `
-                        <div class="grid-row" style="${empIsAbsent ? 'opacity:0.45; background:var(--bg);' : ''}">
-                            <div class="name-sticky" style="${empIsAbsent ? 'text-decoration:line-through; color:var(--muted);' : ''}">
-                                ${escapeHtml(emp)}
-                                <div class="stats">
-                                    <span>🌙 ${n}</span> • <span>D ${dCount}</span>
+                        <div class="grid-row" style="${empIsAbsent ? 'opacity:0.5;' : ''}">
+                            <div class="name-sticky">
+                                <span style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis; color:var(--primary); font-weight:800;">${escapeHtml(emp)}</span>
+                                <div class="stats" style="display:flex; gap:4px; margin-top:4px;">
+                                    <span style="background:#f8fafc; color:#64748b; padding:1px 4px; border-radius:4px; font-size:0.65rem; border:1px solid #eee;">N${n}</span>
+                                    <span style="background:#f8fafc; color:#0d6efd; padding:1px 4px; border-radius:4px; font-size:0.65rem; border:1px solid #eee;">D${dCount}</span>
                                 </div>
                             </div>
                             ${dates.map(dKey => {
                                 const item = shifts[dKey];
-                                if (!item) return `<div class="grid-cell"></div>`;
-                                const cls = getClass(item);
-                                const lab = getLabel(item);
+                                const { label, cls, icon } = getDisplayInfo(item);
                                 return `<div class="grid-cell">
-                                    <span class="badge-shift ${cls}">${escapeHtml(lab)}</span>
+                                    <span class="badge-shift ${cls}">${escapeHtml(label)} ${icon}</span>
                                 </div>`;
                             }).join('')}
                         </div>
@@ -199,17 +223,11 @@
   }
 
   window.changeWeek = function(delta) {
-    if (!dateInput) return;
     const d = new Date(dateInput.value + "T12:00:00");
     d.setDate(d.getDate() + (delta * 7));
     dateInput.value = toISODateUTC(mondayOf(d));
     window.refreshMobileView();
   };
 
-  window.initMobileSunc = async function() {
-    // Initial fetch handled by supabase-dao/adapter? 
-    // Usually FULL_DATA is populated before this.
-    await window.refreshMobileView();
-  };
-
+  window.initMobileSunc = async function() { await window.refreshMobileView(); };
 })();

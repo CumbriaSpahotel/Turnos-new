@@ -3,10 +3,120 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TurnosWeb — Cambios de Turno</title>
+    <title>TurnosWeb - Cambios de Turno</title>
     <link rel="icon" type="image/png" href="favicon.png">
-    <link rel="stylesheet" href="admin.css">
-    <link rel="stylesheet" href="flatpickr.min.css">
+    <link rel="stylesheet" href="admin.css?v=8.22">
+    <style>
+        .changes-dashboard {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 14px;
+            margin: 18px 0;
+        }
+        .change-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 18px;
+            box-shadow: var(--shadow-sm);
+        }
+        .change-card span {
+            display: block;
+            color: var(--text-dim);
+            font-size: 0.72rem;
+            font-weight: 800;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+        }
+        .change-card strong {
+            display: block;
+            margin-top: 8px;
+            color: var(--text);
+            font-size: 2rem;
+            line-height: 1;
+        }
+        .changes-toolbar {
+            display: grid;
+            grid-template-columns: 1.3fr 1fr 1fr 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 14px;
+        }
+        .changes-toolbar input,
+        .changes-toolbar select {
+            width: 100%;
+            background: var(--bg3);
+            color: var(--text);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 11px 12px;
+            font-weight: 700;
+        }
+        .changes-layout {
+            display: grid;
+            grid-template-columns: 1fr 320px;
+            gap: 16px;
+            align-items: start;
+        }
+        .change-side-panel {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 16px;
+            box-shadow: var(--shadow-sm);
+        }
+        .change-side-panel h3 {
+            margin: 0 0 12px;
+            font-size: 0.8rem;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: var(--text-dim);
+        }
+        .next-change {
+            padding: 12px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            margin-bottom: 8px;
+            background: var(--bg2);
+        }
+        .next-change strong { display:block; margin-bottom: 4px; }
+        .next-change small { color: var(--text-dim); font-weight: 700; }
+        .change-type-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 5px 9px;
+            border-radius: 8px;
+            background: #e7f1ff;
+            color: #0d6efd;
+            font-size: 0.72rem;
+            font-weight: 900;
+            text-transform: uppercase;
+        }
+        .change-actions {
+            display: flex;
+            gap: 8px;
+            justify-content: flex-end;
+        }
+        .mini-btn {
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            background: var(--bg3);
+            color: var(--text);
+            padding: 7px 10px;
+            font-weight: 800;
+            cursor: pointer;
+        }
+        .mini-btn.danger {
+            color: #c62828;
+            border-color: #ffcdd2;
+            background: #fff5f5;
+        }
+        @media (max-width: 1100px) {
+            .changes-dashboard { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+            .changes-toolbar { grid-template-columns: 1fr 1fr; }
+            .changes-layout { grid-template-columns: 1fr; }
+        }
+    </style>
 </head>
 <body class="light-mode">
     <aside class="sidebar">
@@ -19,21 +129,21 @@
         </div>
         <nav class="sidebar-nav">
             <div class="nav-group-label">CUADRANTE</div>
-            <a href="admin.html" class="nav-item">🏠 <span class="nav-label">Inicio / Cargar</span></a>
-            <a href="admin.html#preview" class="nav-item">📅 <span class="nav-label">Vista Previa</span></a>
-            <a href="admin.html#employees" class="nav-item">👥 <span class="nav-label">Empleados</span></a>
+            <a href="admin.html" class="nav-item"><span class="nav-label">Inicio / Cargar</span></a>
+            <a href="admin.html#section-preview" class="nav-item"><span class="nav-label">Vista Previa</span></a>
+            <a href="admin.html#section-employees" class="nav-item"><span class="nav-label">Empleados</span></a>
             <div class="nav-group-label">AUSENCIAS</div>
-            <a href="vacaciones.html" class="nav-item">🏖️ <span class="nav-label">Vacaciones</span></a>
-            <a href="bajas.html" class="nav-item">🏥 <span class="nav-label">Bajas y Permisos</span></a>
-            <a href="cambios.html" class="nav-item active">🔄 <span class="nav-label">Cambios de Turno</span></a>
-            <div class="nav-group-label">COMUNICACIÓN</div>
-            <a href="solicitudes.html" class="nav-item">📩 <span class="nav-label">Solicitudes</span></a>
-            <a href="bandeja.html" class="nav-item">📫 <span class="nav-label">Bandeja</span></a>
+            <a href="vacaciones.html" class="nav-item"><span class="nav-label">Vacaciones</span></a>
+            <a href="bajas.html" class="nav-item"><span class="nav-label">Bajas y Permisos</span></a>
+            <a href="cambios.html" class="nav-item active"><span class="nav-label">Cambios de Turno</span></a>
+            <div class="nav-group-label">COMUNICACION</div>
+            <a href="solicitudes.html" class="nav-item"><span class="nav-label">Solicitudes</span></a>
+            <a href="bandeja.html" class="nav-item"><span class="nav-label">Bandeja</span></a>
             <div class="nav-group-label">SISTEMA</div>
-            <a href="configuracion.html" class="nav-item">📦 <span class="nav-label">Configuración</span></a>
+            <a href="configuracion.html" class="nav-item"><span class="nav-label">Configuracion</span></a>
         </nav>
         <div class="sidebar-footer">
-            <button class="theme-toggle" onclick="toggleTheme()">🌙</button>
+            <button class="theme-toggle" id="themeToggle" onclick="toggleTheme()">Tema</button>
         </div>
     </aside>
 
@@ -42,61 +152,244 @@
             <header class="page-header">
                 <div>
                     <h1 class="page-title">Cambios de Turno</h1>
-                    <p class="page-subtitle">Historial de permutas procesadas</p>
+                    <p class="page-subtitle">Control de intercambios, cambios de direccion y anulaciones</p>
                 </div>
                 <div id="syncStatus" class="status-badge-premium" style="margin-left:auto; display:flex; align-items:center; gap:8px;">
                     <span id="syncDot" style="width:8px; height:8px; border-radius:50%; background:#ff9800;"></span>
                     <span id="syncText">Conectando...</span>
                 </div>
             </header>
-            <div id="swapsBody" class="glass-panel" style="min-height:400px; padding:1.5rem;"></div>
+
+            <div class="changes-dashboard">
+                <div class="change-card"><span>Cambios activos</span><strong id="statActive">0</strong></div>
+                <div class="change-card"><span>Proximos 30 dias</span><strong id="statNext">0</strong></div>
+                <div class="change-card"><span>Semana actual</span><strong id="statWeek">0</strong></div>
+                <div class="change-card"><span>Personas afectadas</span><strong id="statPeople">0</strong></div>
+            </div>
+
+            <div class="changes-toolbar">
+                <input id="filterSearch" type="search" placeholder="Buscar empleado, hotel u observacion..." autocomplete="off">
+                <select id="filterHotel"><option value="">Todos los hoteles</option></select>
+                <select id="filterType">
+                    <option value="">Todos los tipos</option>
+                    <option value="INTERCAMBIO_TURNO">Intercambio de turno</option>
+                    <option value="CAMBIO_TURNO">Cambio de direccion</option>
+                    <option value="INTERCAMBIO_HOTEL">Intercambio de hotel</option>
+                    <option value="CAMBIO_HOTEL">Cambio de hotel</option>
+                </select>
+                <select id="filterStatus">
+                    <option value="activo">Activos</option>
+                    <option value="">Todos</option>
+                    <option value="anulado">Anulados</option>
+                </select>
+                <input id="filterMonth" type="month">
+            </div>
+
+            <div class="changes-layout">
+                <div class="glass-panel" style="padding:0; overflow:hidden;">
+                    <div class="table-container">
+                        <table class="preview-table" style="width:100%; border-collapse:collapse;">
+                            <thead>
+                                <tr style="background:var(--bg2); border-bottom:1px solid var(--border);">
+                                    <th style="padding:15px; text-align:left;">Fecha</th>
+                                    <th style="padding:15px; text-align:left;">Hotel</th>
+                                    <th style="padding:15px; text-align:left;">Participantes</th>
+                                    <th style="padding:15px; text-align:left;">Tipo</th>
+                                    <th style="padding:15px; text-align:left;">Observacion</th>
+                                    <th style="padding:15px; text-align:right;">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="swapsBody">
+                                <tr><td colspan="6" style="padding:4rem; text-align:center; opacity:0.5;">Cargando cambios...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <aside class="change-side-panel">
+                    <h3>Proximos cambios</h3>
+                    <div id="nextChanges"></div>
+                </aside>
+            </div>
         </section>
     </main>
 
     <script src="supabase.js"></script>
-    <script src="supabase-config.js?v=8.2"></script>
-    <script src="supabase-dao.js?v=8.2"></script>
+    <script src="supabase-config.js?v=9.8"></script>
+    <script src="supabase-dao.js?v=9.10"></script>
     <script>
         const $ = (s) => document.querySelector(s);
-        async function renderSwaps() {
-            if (!window.TurnosDB) return;
-            const container = $('#swapsBody');
-            try {
-                // Solo pedimos CT (Cambios de Turno reales). 
-                // Las VACACIONES ya no deberían venir con este tipo tras el fix en admin.js
-                const data = await window.TurnosDB.fetchTipo('CT');
-                
-                if (data.length === 0) {
-                    container.innerHTML = `<div style="padding:5rem; text-align:center; opacity:0.5;">No hay permutas o cambios de turno registrados.</div>`;
-                    return;
-                }
-                const rows = data.map(s => `
-                    <tr>
-                        <td style="padding:1rem;"><b>${window.TurnosDB.fmtDateLegacy(s.fecha)}</b></td>
-                        <td style="padding:1rem;">${s.hotel_id}</td>
-                        <td style="padding:1rem;">
-                           <div style="display:flex; align-items:center; gap:10px;">
-                             <span>${s.empleado_id}</span>
-                             <span style="color:var(--accent); font-weight:bold;">↔</span>
-                             <span>${s.sustituto || '<i style="opacity:0.5;">Sin asignar</i>'}</span>
-                           </div>
-                        </td>
-                        <td style="padding:1rem;">${s.turno || '—'}</td>
-                    </tr>`).join('');
-                container.innerHTML = `<div class="table-container"><table class="preview-table" style="width:100%;"><thead><tr><th>Fecha</th><th>Hotel</th><th>Participantes</th><th>Observaciones (Turno)</th></tr></thead><tbody>${rows}</tbody></table></div>`;
-            } catch (err) { container.innerHTML = `Error: ${err.message}`; }
+        let allEvents = [];
+
+        const changeTypes = new Set(['INTERCAMBIO_TURNO', 'CAMBIO_TURNO', 'INTERCAMBIO_HOTEL', 'CAMBIO_HOTEL', 'INTERCAMBIO_POSICION', 'CAMBIO_POSICION']);
+        const typeLabel = {
+            INTERCAMBIO_TURNO: 'Intercambio de turno',
+            CAMBIO_TURNO: 'Cambio de direccion',
+            INTERCAMBIO_HOTEL: 'Intercambio de hotel',
+            CAMBIO_HOTEL: 'Cambio de hotel',
+            INTERCAMBIO_POSICION: 'Intercambio de posicion',
+            CAMBIO_POSICION: 'Cambio de posicion'
+        };
+
+        function escapeHtml(value) {
+            return String(value ?? '').replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
         }
 
-        window.initSupabaseSync = async () => {
-            const syncText = $('#syncText');
-            const syncDot = $('#syncDot');
+        function isoToday() {
+            return new Date().toISOString().slice(0, 10);
+        }
+
+        function dateInCurrentWeek(date) {
+            const d = new Date(`${date}T12:00:00`);
+            const today = new Date();
+            const monday = new Date(today);
+            monday.setDate(today.getDate() + (today.getDay() === 0 ? -6 : 1 - today.getDay()));
+            monday.setHours(0, 0, 0, 0);
+            const sunday = new Date(monday);
+            sunday.setDate(monday.getDate() + 6);
+            sunday.setHours(23, 59, 59, 999);
+            return d >= monday && d <= sunday;
+        }
+
+        function eventDate(event) {
+            return window.TurnosDB.normalizeDate(event.fecha_inicio || event.fecha);
+        }
+
+        function eventHotel(event) {
+            return event.hotel_origen || event.hotel_destino || event.hotel_id || 'General';
+        }
+
+        async function loadEvents() {
+            if (!window.supabase) return [];
+            const { data, error } = await window.supabase
+                .from('eventos_cuadrante')
+                .select('*')
+                .order('fecha_inicio', { ascending: false });
+            if (error) throw error;
+            return (data || []).filter(e => changeTypes.has(String(e.tipo || '').toUpperCase()));
+        }
+
+        function applyFilters(events) {
+            const q = $('#filterSearch').value.trim().toLowerCase();
+            const hotel = $('#filterHotel').value;
+            const type = $('#filterType').value;
+            const status = $('#filterStatus').value;
+            const month = $('#filterMonth').value;
+
+            return events.filter(event => {
+                const haystack = [
+                    event.empleado_id,
+                    event.empleado_destino_id,
+                    eventHotel(event),
+                    event.observaciones,
+                    event.turno_nuevo,
+                    event.tipo
+                ].join(' ').toLowerCase();
+                if (q && !haystack.includes(q)) return false;
+                if (hotel && eventHotel(event) !== hotel) return false;
+                if (type && String(event.tipo).toUpperCase() !== type) return false;
+                if (status && String(event.estado || 'activo').toLowerCase() !== status) return false;
+                if (month && !eventDate(event).startsWith(month)) return false;
+                return true;
+            });
+        }
+
+        function renderStats(events) {
+            const today = isoToday();
+            const in30 = new Date();
+            in30.setDate(in30.getDate() + 30);
+            const maxDate = in30.toISOString().slice(0, 10);
+            const active = events.filter(e => (e.estado || 'activo') !== 'anulado');
+            const people = new Set();
+            active.forEach(e => {
+                if (e.empleado_id) people.add(e.empleado_id);
+                if (e.empleado_destino_id) people.add(e.empleado_destino_id);
+            });
+            $('#statActive').textContent = active.length;
+            $('#statNext').textContent = active.filter(e => eventDate(e) >= today && eventDate(e) <= maxDate).length;
+            $('#statWeek').textContent = active.filter(e => dateInCurrentWeek(eventDate(e))).length;
+            $('#statPeople').textContent = people.size;
+        }
+
+        function renderNext(events) {
+            const today = isoToday();
+            const upcoming = events
+                .filter(e => (e.estado || 'activo') !== 'anulado' && eventDate(e) >= today)
+                .sort((a, b) => eventDate(a).localeCompare(eventDate(b)))
+                .slice(0, 6);
+
+            $('#nextChanges').innerHTML = upcoming.length ? upcoming.map(e => `
+                <div class="next-change">
+                    <strong>${escapeHtml(window.TurnosDB.fmtDateLegacy(eventDate(e)))} · ${escapeHtml(eventHotel(e))}</strong>
+                    <small>${escapeHtml(e.empleado_id)}${e.empleado_destino_id ? ` 🔄 ${escapeHtml(e.empleado_destino_id)}` : ''}</small>
+                </div>
+            `).join('') : '<div style="opacity:0.55;">No hay cambios futuros.</div>';
+        }
+
+        function renderHotels(events) {
+            const select = $('#filterHotel');
+            const current = select.value;
+            const hotels = Array.from(new Set(events.map(eventHotel))).sort();
+            select.innerHTML = '<option value="">Todos los hoteles</option>' + hotels.map(h => `<option value="${escapeHtml(h)}">${escapeHtml(h)}</option>`).join('');
+            select.value = hotels.includes(current) ? current : '';
+        }
+
+        function renderTable() {
+            const filtered = applyFilters(allEvents);
+            const body = $('#swapsBody');
+
+            if (!filtered.length) {
+                body.innerHTML = '<tr><td colspan="6" style="padding:4rem; text-align:center; opacity:0.5;">No hay cambios con los filtros seleccionados.</td></tr>';
+                return;
+            }
+
+            body.innerHTML = filtered.map(event => {
+                const status = String(event.estado || 'activo').toLowerCase();
+                const isAnulado = status === 'anulado';
+                const date = eventDate(event);
+                const participants = event.empleado_destino_id
+                    ? `${escapeHtml(event.empleado_id)} <strong style="color:var(--accent);">🔄</strong> ${escapeHtml(event.empleado_destino_id)}`
+                    : escapeHtml(event.empleado_id || '');
+
+                return `
+                    <tr style="border-bottom:1px solid var(--border); ${isAnulado ? 'opacity:0.45;' : ''}">
+                        <td style="padding:15px;"><b style="color:var(--accent);">${escapeHtml(window.TurnosDB.fmtDateLegacy(date))}</b></td>
+                        <td style="padding:15px;">${escapeHtml(eventHotel(event))}</td>
+                        <td style="padding:15px;">${participants}</td>
+                        <td style="padding:15px;"><span class="change-type-pill">🔄 ${escapeHtml(typeLabel[event.tipo] || event.tipo)}</span></td>
+                        <td style="padding:15px;">${escapeHtml(event.observaciones || event.turno_nuevo || '')}</td>
+                        <td style="padding:15px;">
+                            <div class="change-actions">
+                                ${isAnulado ? '<span style="font-weight:800; color:#c62828;">Anulado</span>' : `<button class="mini-btn danger" onclick="anularCambio('${escapeHtml(event.id)}')">Anular</button>`}
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        async function renderSwaps() {
+            const body = $('#swapsBody');
             try {
-                await renderSwaps();
-                if (syncText) syncText.innerText = "Supabase Conectado";
-                if (syncDot) syncDot.style.background = "#10e898";
-                window.aplicarCambioLocal = renderSwaps;
-            } catch (e) { if (syncText) syncText.innerText = "Error"; }
-        };
+                allEvents = await loadEvents();
+                renderHotels(allEvents);
+                renderStats(allEvents);
+                renderNext(allEvents);
+                renderTable();
+                const syncText = $('#syncText');
+                const syncDot = $('#syncDot');
+                if (syncText) syncText.textContent = 'Supabase Conectado';
+                if (syncDot) syncDot.style.background = '#10e898';
+            } catch (err) {
+                body.innerHTML = `<tr><td colspan="6" style="color:#c62828; padding:2rem; text-align:center;">Error: ${escapeHtml(err.message)}</td></tr>`;
+            }
+        }
+
+        async function anularCambio(id) {
+            if (!confirm('Anular este cambio de turno?')) return;
+            await window.TurnosDB.anularEvento(id);
+            await renderSwaps();
+        }
 
         function toggleTheme() {
             document.body.classList.toggle('light-mode');
@@ -104,10 +397,23 @@
         }
 
         document.addEventListener('DOMContentLoaded', () => {
-            if (localStorage.getItem('turnosweb_theme') === 'light') document.body.classList.add('light-mode');
-            window.initSupabaseSync();
+            const savedTheme = localStorage.getItem('turnosweb_theme') || 'light';
+            document.body.classList.toggle('light-mode', savedTheme === 'light');
+            const now = new Date();
+            $('#filterMonth').value = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+            ['filterSearch', 'filterHotel', 'filterType', 'filterStatus', 'filterMonth'].forEach(id => {
+                document.getElementById(id).addEventListener('input', renderTable);
+                document.getElementById(id).addEventListener('change', renderTable);
+            });
+            renderSwaps();
+            if (window.supabase) {
+                window.supabase
+                    .channel('changes_realtime')
+                    .on('postgres_changes', { event: '*', schema: 'public', table: 'eventos_cuadrante' }, renderSwaps)
+                    .subscribe();
+            }
         });
     </script>
-    <script src="sync-status.js"></script>
+    <script src="sync-status.js?v=8.2"></script>
 </body>
 </html>

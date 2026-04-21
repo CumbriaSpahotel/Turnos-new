@@ -5,6 +5,26 @@ window.parsedData = null;
 window.$ = (s) => document.querySelector(s);
 window.$$ = (s) => document.querySelectorAll(s);
 
+window.cleanLogText = (value) => String(value ?? '')
+    .replace(/Ã¡|ÃƒÂ¡/g, 'a')
+    .replace(/Ã©|ÃƒÂ©/g, 'e')
+    .replace(/Ã­|ÃƒÂ­/g, 'i')
+    .replace(/Ã³|ÃƒÂ³/g, 'o')
+    .replace(/Ãº|ÃƒÂº/g, 'u')
+    .replace(/Ã±|ÃƒÂ±/g, 'n')
+    .replace(/Ã|ÃƒÂ/g, 'A')
+    .replace(/Ã‰|ÃƒÂ‰/g, 'E')
+    .replace(/Ã|ÃƒÂ/g, 'I')
+    .replace(/Ã“|ÃƒÂ“/g, 'O')
+    .replace(/Ãš|ÃƒÂš/g, 'U')
+    .replace(/[\u{1F300}-\u{1FAFF}]/gu, '')
+    .replace(/[\u2600-\u27BF]/g, '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/\s+/g, ' ')
+    .replace(/[^\n\r\t -~]/g, '')
+    .trim();
+
 // --- SISTEMA DE LOGS ---
 window.addLog = (msg, type = 'info') => {
     const bodies = [$('#logBody'), $('#homeLogBody')];
@@ -18,7 +38,7 @@ window.addLog = (msg, type = 'info') => {
         line.style.padding = '5px 10px';
         line.style.fontSize = '0.75rem';
         line.style.marginBottom = '2px';
-        line.textContent = `> ${msg} [${time}]`;
+        line.textContent = `> ${window.cleanLogText(msg)} [${time}]`;
         
         if (body.id === 'homeLogBody') {
             body.prepend(line);
@@ -31,7 +51,7 @@ window.addLog = (msg, type = 'info') => {
 
 // --- NAVEGACIÃ“N ---
 window.switchSection = (id) => {
-    window.addLog(`Cambiando a secciÃ³n: ${id}`);
+    window.addLog(`Cambiando a seccion: ${id}`);
     const sections = $$('.section');
     const navItems = $$('.nav-item');
     
@@ -58,13 +78,13 @@ window.toggleTheme = () => {
 
 
 window.fmtDate = (d) => {
-    if (!d || d.length < 10) return d || 'â€”';
+    if (!d || d.length < 10) return d || '-';
     const parts = d.split('-');
     return `${parseInt(parts[2])}/${parseInt(parts[1])}/${parts[0]}`;
 };
 
 window.fmtDateLegacy = (date) => {
-    if (!date) return 'â€”';
+    if (!date) return '-';
     const d = new Date(date);
     if (isNaN(d.getTime())) return date;
     const day = String(d.getDate()).padStart(2, '0');
@@ -97,7 +117,7 @@ window.syncToSupabase = async (flatData) => {
 };
 
 window.clearAllData = async () => {
-    if (!confirm("âš ï¸ Â¿ESTÃS SEGURO? Esto borrarÃ¡ TODO el cuadrante de Supabase de forma permanente.")) return;
+    if (!confirm("ESTAS SEGURO? Esto borrara TODO el cuadrante de Supabase de forma permanente.")) return;
     try {
         await window.TurnosDB.clearAll();
         window.addLog("Base de datos vaciada", "warn");
@@ -107,43 +127,43 @@ window.clearAllData = async () => {
     }
 };
 
-window.updateDashboardStats = () => {
-    const data = window.parsedData;
-    if (!data) return;
+window.updateDashboardStats = async () => {
+    try {
+        const today = new Date().toISOString().split('T')[0];
+        
+        // Actualizar Cabecera de Fecha
+        const headerDate = document.getElementById('current-date-header');
+        if (headerDate) headerDate.textContent = new Date().toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
 
-    // Fecha actual
-    const today = new Date().toISOString().split('T')[0];
-    const headerDate = document.getElementById('current-date-header');
-    if (headerDate) headerDate.textContent = new Date().toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+        // 1. Empleados activos hoy (Turnos registrados en Supabase)
+        const hoyTurnos = await window.TurnosDB.fetchRango(today, today);
+        const active = hoyTurnos.filter(t => t.turno && !String(t.turno).toLowerCase().includes('descanso')).length;
+        const elActive = document.getElementById('stat-active-emp');
+        if (elActive) elActive.textContent = active;
 
-    // Empleados activos hoy
-    let active = 0;
-    (data.schedule || []).forEach(g => {
-        g.turnos.forEach(t => {
-            if (t.fecha === today && t.turno && !String(t.turno).toLowerCase().includes('descanso')) active++;
-        });
-    });
-    const elActive = document.getElementById('stat-active-emp');
-    if (elActive) elActive.textContent = active;
+        // 2. Permutas Pendientes (Desde la tabla peticiones_cambio)
+        if (window.supabase) {
+            const { count, error } = await window.supabase
+                .from('peticiones_cambio')
+                .select('*', { count: 'exact', head: true })
+                .eq('estado', 'pendiente');
+            
+            const elSwaps = document.getElementById('stat-pending-swaps');
+            if (elSwaps && !error) elSwaps.textContent = count || 0;
+        }
 
-    // Permutas
-    const elSwaps = document.getElementById('stat-pending-swaps');
-    if (elSwaps) elSwaps.textContent = (data.swaps || []).length;
+        // 3. Vacaciones (Próximos 30 días)
+        const next30 = new Date(); next30.setDate(next30.getDate() + 30);
+        const next30Str = next30.toISOString().split('T')[0];
+        const vax = await window.TurnosDB.fetchVacaciones(today, next30Str);
+        const vacEmps = new Set(vax.map(v => v.empleado_id));
+        
+        const elVac = document.getElementById('stat-next-vac');
+        if (elVac) elVac.textContent = vacEmps.size;
 
-    // Vacaciones (prÃ³ximos 30 dÃ­as)
-    const next30 = new Date(); next30.setDate(next30.getDate() + 30);
-    const next30Str = next30.toISOString().split('T')[0];
-    const vacEmps = new Set();
-    (data.schedule || []).forEach(g => {
-        g.turnos.forEach(t => {
-            const raw = typeof t.turno === 'string' ? t.turno : (t.turno.TipoInterpretado || t.turno.TurnoOriginal || '');
-            if (t.fecha >= today && t.fecha <= next30Str && window.classify(raw) === 'v') vacEmps.add(t.empleado);
-        });
-    });
-    const elVac = document.getElementById('stat-next-vac');
-    if (elVac) elVac.textContent = vacEmps.size;
-
-    // Dashboard stats updated successfully
+    } catch (e) {
+        console.warn("Error actualizando estadísticas del dashboard:", e);
+    }
 };
 
 window.isoDate = (date) => {
@@ -224,7 +244,7 @@ window.saveData = () => {
             if ($('#status-text')) $('#status-text').textContent = 'Solo Nube (Local Lleno)';
         } else if (!window._storageWarningShown) {
             window.addLog('âŒ ERROR: Bloqueo de Almacenamiento detectado.', 'error');
-            alert("âš ï¸ ATENCIÃ“N: Tu navegador estÃ¡ bloqueando el almacenamiento de datos. Debes desactivar la 'PrevenciÃ³n de Seguimiento Estricta' o permitir cookies para este sitio.");
+            alert("ATENCION: Tu navegador esta bloqueando el almacenamiento de datos. Debes desactivar la Prevencion de Seguimiento Estricta o permitir cookies para este sitio.");
             window._storageWarningShown = true;
         }
     }
@@ -448,7 +468,7 @@ window.renderPreview = async () => {
         const endISO = window.isoDate(end);
 
         // 3. Fetch de datos
-        const data = await window.TurnosDB.fetchRango(startISO, endISO);
+        const data = await window.TurnosDB.fetchRangoCalculado(startISO, endISO);
         const hotels = await window.TurnosDB.getHotels();
         const profiles = await window.TurnosDB.getEmpleados();
         const excelSource = await loadExcelSourceRows().catch(() => ({}));
@@ -475,109 +495,76 @@ window.renderPreview = async () => {
             const hData = data.filter(t => t.hotel_id === hName);
             if (hData.length === 0) continue;
 
-            // ── ORDENAMIENTO DE EMPLEADOS (Regla v8) ─────────────────────────
-            // A) Empleados que tienen turno en este hotel (base: Excel order)
-            const hProfiles = profiles
-                .filter(p => p.hotel_id === hName || profiles.some(x => x.hotel_id === hName && x.id === p.id))
-                .sort((a, b) => (a.orden ?? 999) - (b.orden ?? 999) || String(a.id).localeCompare(String(b.id)));
+            if (isWeekly) {
+                // ── MODO SEMANAL: TABLA HORIZONTAL (EXISTENTE) ─────────────────
+                
+                // Recopilar IDs y perfiles específicos
+                const allIds = new Map();
+                hData.forEach(t => {
+                    if (t.empleado_id) allIds.set(normalizeEmployeeKey(t.empleado_id), String(t.empleado_id).trim());
+                    if (t.sustituto)   allIds.set(normalizeEmployeeKey(t.sustituto), String(t.sustituto).trim());
+                });
 
-            // Recopilar todos los IDs presentes en los datos (empleados + sustitutos)
-            const allIds = new Map();
-            hData.forEach(t => {
-                if (t.empleado_id) allIds.set(normalizeEmployeeKey(t.empleado_id), String(t.empleado_id).trim());
-                if (t.sustituto)   allIds.set(normalizeEmployeeKey(t.sustituto), String(t.sustituto).trim());
-            });
+                const isAbsent = new Set();
+                hData.forEach(t => {
+                    const tipo = (t.tipo || '').toUpperCase();
+                    if (tipo.startsWith('VAC') || tipo.startsWith('BAJA') || tipo.startsWith('PERM')) isAbsent.add(normalizeEmployeeKey(t.empleado_id));
+                });
 
-            // B) Detectar quién está de VAC/BAJA/PERM en ALGÚN día del periodo
-            const isAbsent = new Set();
-            hData.forEach(t => {
-                const tipo = (t.tipo || '').toUpperCase();
-                if (tipo.startsWith('VAC') || tipo.startsWith('BAJA') || tipo.startsWith('PERM')) {
-                    isAbsent.add(normalizeEmployeeKey(t.empleado_id));
-                }
-            });
-
-            // C) Detectar quién sustituye a quién (sustituto → empleado ausente)
-            const replacedBy = {};  // { ausente: sustituto }
-            const replacing  = {};  // { sustituto: ausente }
-            hData.forEach(t => {
-                const absentKey = normalizeEmployeeKey(t.empleado_id);
-                const subKey = normalizeEmployeeKey(t.sustituto);
-                if (subKey && isAbsent.has(absentKey)) {
-                    replacedBy[absentKey] = String(t.sustituto).trim();
-                    replacing[subKey] = String(t.empleado_id).trim();
-                }
-            });
-
-            // D) Construir lista ordenada final (SEGÚN EXCEL ORIGINAL)
-            const rendered = new Set();
-            const empList  = [];  // [{ id, displayAs, isAbsent, substituteFor }]
-
-            // Usar el orden del Excel fuente para este hotel y esta semana
-            const sourceRows = excelSource[hName] || [];
-            const currentWeekRows = sourceRows.filter(r => r.weekStart === startISO);
-            const displayByKey = new Map();
-            const excelOrder = [];
-            currentWeekRows.forEach(r => {
-                const key = normalizeEmployeeKey(r.empleadoId);
-                if (!key || displayByKey.has(key)) return;
-                displayByKey.set(key, String(r.displayName || r.empleadoId || '').trim());
-                excelOrder.push(key);
-            });
-
-            // Regla: Substitutos en posición del ausente, Ausentes al final
-            excelOrder.forEach(empKey => {
-                if (!empKey || rendered.has(empKey)) return;
-
-                if (isAbsent.has(empKey)) {
-                    // Si está ausente, buscamos su sustituto en los datos de Supabase
-                    const sub = replacedBy[empKey];
-                    const subKey = normalizeEmployeeKey(sub);
-                    if (subKey && !rendered.has(subKey)) {
-                        empList.push({
-                            id: allIds.get(subKey) || sub,
-                            displayAs: allIds.get(subKey) || sub,
-                            isAbsent: false,
-                            substituteFor: allIds.get(empKey) || displayByKey.get(empKey) || empKey
-                        });
-                        rendered.add(subKey);
+                const replacedBy = {};
+                hData.forEach(t => {
+                    if (t.sustituto && isAbsent.has(normalizeEmployeeKey(t.empleado_id))) {
+                        replacedBy[normalizeEmployeeKey(t.empleado_id)] = String(t.sustituto).trim();
                     }
-                    // El ausente NO se añade aquí, se añade al final
-                } else if (replacing[empKey]) {
-                    // Es un sustituto asignado manualmente; si ya se procesó con su "ausente", skip.
-                    // Si llegamos aquí y no ha sido procesado, es un trabajador normal.
-                    const display = allIds.get(empKey) || displayByKey.get(empKey) || empKey;
-                    empList.push({ id: display, displayAs: display, isAbsent: false, substituteFor: null });
-                    rendered.add(empKey);
-                } else {
-                    const display = allIds.get(empKey) || displayByKey.get(empKey) || empKey;
-                    empList.push({ id: display, displayAs: display, isAbsent: false, substituteFor: null });
-                    rendered.add(empKey);
-                }
-            });
+                });
 
-            // Añadir IDs que estén en hData pero NO en el Excel de esta semana (casos raros)
-            allIds.forEach((display, empKey) => {
-                if (!rendered.has(empKey) && !isAbsent.has(empKey)) {
-                    empList.push({ id: display, displayAs: display, isAbsent: false, substituteFor: null });
-                    rendered.add(empKey);
-                }
-            });
+                const rendered = new Set();
+                const empList  = [];
+                const sourceRows = excelSource[hName] || [];
+                const currentWeekRows = sourceRows.filter(r => r.weekStart === startISO);
+                const displayByKey = new Map();
+                const excelOrder = [];
+                currentWeekRows.forEach(r => {
+                    const key = normalizeEmployeeKey(r.empleadoId);
+                    if (!key || displayByKey.has(key)) return;
+                    displayByKey.set(key, String(r.displayName || r.empleadoId || '').trim());
+                    excelOrder.push(key);
+                });
 
-            // Finalmente, añadir los ausentes (VAC/BAJA/PERM) al final de la tabla
-            isAbsent.forEach(empKey => {
-                if (!rendered.has(empKey)) {
-                    const display = allIds.get(empKey) || displayByKey.get(empKey) || empKey;
-                    empList.push({ id: display, displayAs: display, isAbsent: true, substituteFor: null });
-                    rendered.add(empKey);
-                }
-            });
+                excelOrder.forEach(empKey => {
+                    if (rendered.has(empKey)) return;
+                    if (isAbsent.has(empKey)) {
+                        const sub = replacedBy[empKey];
+                        const subKey = normalizeEmployeeKey(sub);
+                        if (subKey && !rendered.has(subKey)) {
+                            empList.push({ id: allIds.get(subKey) || sub, displayAs: allIds.get(subKey) || sub, isAbsent: false, substituteFor: allIds.get(empKey) || displayByKey.get(empKey) || empKey });
+                            rendered.add(subKey);
+                        }
+                    } else {
+                        const display = allIds.get(empKey) || displayByKey.get(empKey) || empKey;
+                        empList.push({ id: display, displayAs: display, isAbsent: false, substituteFor: null });
+                        rendered.add(empKey);
+                    }
+                });
 
-            if (empList.length === 0) continue;
+                allIds.forEach((display, empKey) => {
+                    if (!rendered.has(empKey) && !isAbsent.has(empKey)) {
+                        empList.push({ id: display, displayAs: display, isAbsent: false, substituteFor: null });
+                        rendered.add(empKey);
+                    }
+                });
 
-            // ── RENDER HTML ────────────────────────────────────────────────
-            const hotelSection = document.createElement('div');
-            hotelSection.innerHTML = `
+                isAbsent.forEach(empKey => {
+                    if (!rendered.has(empKey)) {
+                        empList.push({ id: allIds.get(empKey) || empKey, displayAs: allIds.get(empKey) || empKey, isAbsent: true, substituteFor: null });
+                        rendered.add(empKey);
+                    }
+                });
+
+                if (empList.length === 0) continue;
+
+                const hotelSection = document.createElement('div');
+                hotelSection.innerHTML = `
                 <div class="glass-panel" style="margin-bottom:3rem; padding:0; overflow:hidden; border:1px solid #ddd; background:white; border-radius:12px; box-shadow:0 2px 15px rgba(0,0,0,0.03);">
                     <div style="padding:15px 25px; border-bottom:1px solid #eee; display:flex; align-items:center; gap:15px; background:white;">
                         <div style="background:white; padding:4px; border:1px solid #eee; border-radius:8px; display:flex; align-items:center; justify-content:center; width:45px; height:45px; min-width:45px;">
@@ -590,51 +577,27 @@ window.renderPreview = async () => {
                             <thead>
                                 <tr style="background:#f8f9fa;">
                                     <th style="padding:1px 25px; text-align:left; border-bottom:1px solid #eee; width:220px; color:#888; font-size:0.75rem; text-transform:uppercase; letter-spacing:0.02em; position:sticky; left:0; background:#f8f9fa; z-index:4; border-right:1px solid #eee;">Empleado</th>
-                                    ${columns.map(c => `
-                                        <th style="padding:12px; border-bottom:1px solid #eee; text-align:center; min-width:115px; border-left:1px solid #eee;">
-                                            <div style="font-size:0.65rem; color:#999; text-transform:uppercase; font-weight:700; margin-bottom:2px;">${c.dayName}</div>
-                                            <div style="font-size:0.75rem; font-weight:600; color:#555;">${c.dayDisplay.toLowerCase()}</div>
-                                        </th>
-                                    `).join('')}
+                                    ${columns.map(c => `<th style="padding:12px; border-bottom:1px solid #eee; text-align:center; min-width:115px; border-left:1px solid #eee;"><div style="font-size:0.65rem; color:#999; text-transform:uppercase; font-weight:700; margin-bottom:2px;">${c.dayName}</div><div style="font-size:0.75rem; font-weight:600; color:#555;">${c.dayDisplay.toLowerCase()}</div></th>`).join('')}
                                 </tr>
                             </thead>
                             <tbody>
                                 ${empList.map(entry => {
                                     const { id: emp, displayAs, isAbsent: empIsAbsent, substituteFor } = entry;
-                                    const empKey = normalizeEmployeeKey(emp);
-                                    
-                                    // REGLA: Si es sustituto, coge los turnos del ausente desde el EXCEL en la semana correspondiente
                                     let activeShifts = [];
                                     if (substituteFor) {
-                                        const sourceRows = excelSource[hName] || [];
-                                        // Buscar la fila del ausente QUE CORRESPONDA A ESTA SEMANA (startISO)
-                                        const absenteeRow = sourceRows.find(r => normalizeEmployeeKey(r.empleadoId) === normalizeEmployeeKey(substituteFor) && r.weekStart === startISO);
-                                        
-                                        columns.forEach((col, idx) => {
-                                            const turn = absenteeRow ? absenteeRow.values[idx] : null;
-                                            activeShifts.push({ fecha: col.date, turno: turn || '', tipo: 'NORMAL' });
-                                        });
+                                        const absenteeRow = (excelSource[hName] || []).find(r => normalizeEmployeeKey(r.empleadoId) === normalizeEmployeeKey(substituteFor) && r.weekStart === startISO);
+                                        columns.forEach((col, idx) => activeShifts.push({ fecha: col.date, turno: absenteeRow ? absenteeRow.values[idx] : '', tipo: 'NORMAL' }));
                                     } else {
-                                        activeShifts = hData.filter(t => normalizeEmployeeKey(t.empleado_id) === empKey);
+                                        activeShifts = hData.filter(t => normalizeEmployeeKey(t.empleado_id) === normalizeEmployeeKey(emp));
                                     }
-
                                     const nights = activeShifts.filter(t => (t.turno||'').toLowerCase().startsWith('n')).length;
                                     const rests  = activeShifts.filter(t => (t.turno||'').toLowerCase().startsWith('d')).length;
-
-                                    const nameStyle = empIsAbsent
-                                        ? 'font-weight:600; color:#aaa; font-size:0.85rem; white-space:nowrap; text-decoration:line-through;'
-                                        : 'font-weight:600; color:var(--accent); font-size:0.85rem; white-space:nowrap;';
-                                    
-                                    const labelSuffix = '';
 
                                     return `
                                         <tr style="border-bottom:1px solid #eee; ${empIsAbsent ? 'opacity:0.45; background:#fafafa;' : ''}">
                                             <td style="padding:12px 25px; vertical-align:middle; background:white; position:sticky; left:0; z-index:2; border-right:1px solid #eee;">
                                                 <div style="display:flex; align-items:center; justify-content:space-between; gap:10px;">
-                                                    <div>
-                                                        <span style="${nameStyle}">${escapeHtml(displayAs)}</span>
-                                                        ${labelSuffix}
-                                                    </div>
+                                                    <div><span style="${empIsAbsent ? 'font-weight:600; color:#aaa; font-size:0.85rem; white-space:nowrap; text-decoration:line-through;' : 'font-weight:600; color:var(--accent); font-size:0.85rem; white-space:nowrap;'}">${escapeHtml(displayAs)}</span></div>
                                                     <div style="display:flex; gap:6px; background:rgba(0,0,0,0.03); padding:4px 8px; border-radius:10px;">
                                                         <div style="font-size:0.65rem; color:#f0ad4e; font-weight:700;">N ${nights}</div>
                                                         <div style="font-size:0.65rem; color:#5bc0de; font-weight:700;">D ${rests}</div>
@@ -644,31 +607,14 @@ window.renderPreview = async () => {
                                             ${columns.map(c => {
                                                 const s = activeShifts.find(t => t.fecha === c.date);
                                                 if (!s) return `<td style="background:#fdfdfd; border-left:1px solid #eee;"></td>`;
-
-                                                const tipo = (s.tipo || '').toUpperCase();
-                                                const turnoLC = (s.turno || '').toLowerCase();
-                                                let cls = 'x', label = s.turno || '-';
-
-                                                if (tipo.startsWith('VAC')) { cls = 'vacaciones'; label = 'Vacaciones 🏖️'; }
-                                                else if (tipo.startsWith('BAJA')) { cls = 'baja'; label = 'Baja 🏥'; }
-                                                else if (tipo.startsWith('PERM')) { cls = 'permiso'; label = 'Permiso'; }
-                                                else if (tipo.includes('CT')) { 
-                                                    cls = turnoLC.startsWith('m') ? 'mañana' : turnoLC.startsWith('t') ? 'tarde' : turnoLC.startsWith('n') ? 'noche' : 'descanso'; 
-                                                    label = (turnoLC.startsWith('m') ? 'Mañana' : turnoLC.startsWith('t') ? 'Tarde' : turnoLC.startsWith('n') ? 'Noche' : 'Descanso') + ' ↕'; 
-                                                } else {
-                                                    if (turnoLC.startsWith('m')) { cls = 'mañana'; label = 'Mañana'; }
-                                                    else if (turnoLC.startsWith('t')) { cls = 'tarde'; label = 'Tarde'; }
-                                                    else if (turnoLC.startsWith('n')) { cls = 'noche'; label = 'Noche'; }
-                                                    else if (turnoLC.startsWith('d')) { cls = 'descanso'; label = 'Descanso'; }
-                                                }
-
-                                                return `
-                                                    <td style="padding:10px; text-align:center; border-left:1px solid #eee;">
-                                                        <div class="turno-pill-legacy turno-${cls}" style="display:inline-flex; align-items:center; justify-content:center; padding:8px 5px; width:100%; border-radius:15px; font-size:0.8rem; font-weight:600; box-shadow:0 2px 4px rgba(0,0,0,0.05);">
-                                                            ${label}
-                                                        </div>
-                                                    </td>
-                                                `;
+                                                const t = (s.tipo||'').toUpperCase(); const l = (s.turno||'').toLowerCase();
+                                                let cls = 'x', lbl = s.turno || '-';
+                                                if (t.startsWith('VAC')) { cls = 'vacaciones'; lbl = 'Vacaciones 🏖️'; }
+                                                else if (t.startsWith('BAJA')) { cls = 'baja'; lbl = 'Baja 🏥'; }
+                                                else if (t.startsWith('PERM')) { cls = 'permiso'; lbl = 'Permiso'; }
+                                                else if (t.includes('CT')) { cls = l.startsWith('m') ? 'mañana' : l.startsWith('t') ? 'tarde' : l.startsWith('n') ? 'noche' : 'descanso'; lbl = (l.startsWith('m') ? 'Mañana' : l.startsWith('t') ? 'Tarde' : l.startsWith('n') ? 'Noche' : 'Descanso') + ' 🔄'; }
+                                                else { if(l.startsWith('m')){cls='mañana';lbl='Mañana';} else if(l.startsWith('t')){cls='tarde';lbl='Tarde';} else if(l.startsWith('n')){cls='noche';lbl='Noche';} else if(l.startsWith('d')){cls='descanso';lbl='Descanso';} }
+                                                return `<td style="padding:10px; text-align:center; border-left:1px solid #eee;"><div class="turno-pill-legacy turno-${cls}" style="display:inline-flex; align-items:center; justify-content:center; padding:8px 5px; width:100%; border-radius:15px; font-size:0.8rem; font-weight:600; box-shadow:0 2px 4px rgba(0,0,0,0.05);">${lbl}</div></td>`;
                                             }).join('')}
                                         </tr>
                                     `;
@@ -676,9 +622,97 @@ window.renderPreview = async () => {
                             </tbody>
                         </table>
                     </div>
-                </div>
-            `;
-            area.appendChild(hotelSection);
+                </div>`;
+                area.appendChild(hotelSection);
+
+            } else {
+                // ── MODO MENSUAL: CALENDARIO GRUPO (NUEVO) ───────────────────────
+                const hotelSection = document.createElement('div');
+                hotelSection.className = 'hotel-calendar-view';
+                hotelSection.style.marginBottom = '2rem';
+                
+                // Generar días de calendario con padding
+                const firstDay = new Date(columns[0].date + 'T12:00:00');
+                const lastDay = new Date(columns[columns.length-1].date + 'T12:00:00');
+                const startDow = firstDay.getDay() || 7;
+                const endDow = lastDay.getDay() || 7;
+                
+                const cells = [];
+                // Padding inicial
+                for(let i=1; i < startDow; i++) cells.push('<div class="cal-cell empty"></div>');
+                
+                // Días activos
+                columns.forEach(col => {
+                    const diaData = hData.filter(t => t.fecha === col.date);
+                    
+                    const groupByShift = { M: [], T: [], N: [], ABS: [] };
+                    diaData.forEach(t => {
+                        const shift = (t.turno || '').toLowerCase();
+                        const tipo = (t.tipo || '').toUpperCase();
+                        const name = t.empleado_id;
+                        
+                        if (tipo.startsWith('VAC') || tipo.startsWith('BAJA') || tipo.startsWith('PERM')) groupByShift.ABS.push({ name, tipo });
+                        else if (shift.startsWith('m')) groupByShift.M.push(name);
+                        else if (shift.startsWith('t')) groupByShift.T.push(name);
+                        else if (shift.startsWith('n')) groupByShift.N.push(name);
+                    });
+
+                    const renderList = (list, cls, label) => {
+                        if (!list.length) return '';
+                        return `<div class="cal-shift-group ${cls}"><strong>${label}:</strong> <span>${list.map(n => n.name || n).join(', ')}</span></div>`;
+                    };
+
+                    const isToday = col.date === window.isoDate(new Date());
+
+                    cells.push(`
+                        <div class="cal-cell ${isToday ? 'today' : ''} ${col.isWeekend ? 'weekend' : ''}">
+                            <div class="cal-day-num">${new Date(col.date+'T12:00:00').getDate()}</div>
+                            <div class="cal-day-content">
+                                ${renderList(groupByShift.M, 'm', 'M')}
+                                ${renderList(groupByShift.T, 't', 'T')}
+                                ${renderList(groupByShift.N, 'n', 'N')}
+                                ${renderList(groupByShift.ABS.map(a => `${a.name} (${a.tipo.split(' ')[0]})`), 'abs', 'V/B')}
+                            </div>
+                        </div>
+                    `);
+                });
+
+                // Padding final
+                for(let i=endDow; i < 7; i++) cells.push('<div class="cal-cell empty"></div>');
+                
+                hotelSection.innerHTML = `
+                    <div class="glass-panel" style="padding:0; overflow:hidden; border-radius:15px; background:white; overflow:hidden; box-shadow:var(--shadow-sm);">
+                        <div style="padding:15px 25px; background:white; border-bottom:1px solid #eee; display:flex; align-items:center; gap:15px;">
+                            <img src="${hName.toLowerCase().includes('guadiana') ? 'guadiana logo.jpg' : 'cumbria logo.jpg'}" style="width:35px; height:35px; object-fit:contain;">
+                            <h2 style="margin:0; font-size:1rem; font-weight:700; color:var(--text);">${hName} - ${new Date(startISO+'T12:00:00').toLocaleDateString('es-ES', { month: 'long', year: 'numeric' }).toUpperCase()}</h2>
+                        </div>
+                        <div class="cal-grid-header">
+                            <div>LUN</div><div>MAR</div><div>MIÉ</div><div>JUE</div><div>VIE</div><div>SÁB</div><div>DOM</div>
+                        </div>
+                        <div class="cal-grid-body">
+                            ${cells.join('')}
+                        </div>
+                    </div>
+                    <style>
+                        .cal-grid-header { display: grid; grid-template-columns: repeat(7, 1fr); background: #f8fafc; border-bottom: 1px solid #eee; text-align: center; }
+                        .cal-grid-header div { padding: 10px; font-size: 0.65rem; font-weight: 800; color: #94a3b8; }
+                        .cal-grid-body { display: grid; grid-template-columns: repeat(7, 1fr); background: #eee; gap: 1px; }
+                        .cal-cell { background: white; min-height: 120px; padding: 8px; position: relative; transition: background 0.2s; }
+                        .cal-cell.empty { background: #fdfdfd; }
+                        .cal-cell.weekend { background: #fafafa; }
+                        .cal-cell.today { background: var(--success-dim); }
+                        .cal-cell.today .cal-day-num { background: var(--success); color: white; border-radius: 50%; width: 22px; height: 22px; display: flex; align-items:center; justify-content:center; }
+                        .cal-day-num { font-size: 0.75rem; font-weight: 800; color: #64748b; margin-bottom: 5px; }
+                        .cal-shift-group { font-size: 0.68rem; margin-bottom: 2px; line-height: 1.2; display: flex; gap: 4px; }
+                        .cal-shift-group strong { min-width: 15px; color: var(--text-dim); }
+                        .cal-shift-group.m span { color: #166534; }
+                        .cal-shift-group.t span { color: #92400e; }
+                        .cal-shift-group.n span { color: #1e3a8a; }
+                        .cal-shift-group.abs span { color: #991b1b; font-style: italic; }
+                    </style>
+                `;
+                area.appendChild(hotelSection);
+            }
         }
 
         if (area.children.length === 0) {
@@ -1648,7 +1682,7 @@ window.populateEmployees = async () => {
                 <span class="el-avatar" style="background:hsl(${hue}, 80%, 94%); color:hsl(${hue}, 70%, 30%)">${escapeHtml(initials)}</span>
                 <span>
                     <strong class="el-name">${escapeHtml(displayName)}</strong>
-                    <small class="el-meta">${escapeHtml(p.puesto || p.categoria || 'Sin puesto definido')} Â· ID ${escapeHtml(p.id)}</small>
+                    <small class="el-meta">${escapeHtml(p.puesto || p.categoria || 'Sin puesto definido')} - ID ${escapeHtml(p.id)}</small>
                 </span>
             </span>
             <span class="el-pill type">${escapeHtml(typeText)}</span>
@@ -2105,7 +2139,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const info = document.createElement('div');
                 info.style.padding = '10px';
                 info.innerHTML = `
-                    <div style="font-size:0.8rem; font-weight:900; color:var(--accent); margin-bottom:5px;">âœ“ BASE DE DATOS ACTIVA</div>
+                    <div style="font-size:0.8rem; font-weight:900; color:var(--accent); margin-bottom:5px;">BASE DE DATOS ACTIVA</div>
                     <div style="font-size:0.75rem; opacity:0.7;">Origen: Supabase Cloud</div>
                 `;
                 homeLog.prepend(info);
@@ -2158,7 +2192,7 @@ window.importConfig = () => {
             const data = JSON.parse(e.target.result);
             if (data.main) localStorage.setItem('turnosweb_admin_data', JSON.stringify(data.main));
             if (data.profiles) localStorage.setItem('turnosweb_emp_profiles', JSON.stringify(data.profiles));
-            window.addLog('ConfiguraciÃ³n restaurada con Ã©xito.', 'ok');
+            window.addLog('Configuracion restaurada con exito.', 'ok');
             location.reload();
         } catch (err) {
             window.addLog('Error al importar: ' + err.message, 'err');
@@ -2468,7 +2502,7 @@ window.renderVacationsView = async () => {
                             <th style="padding:1rem; text-align:left; font-size:0.7rem; color:var(--text-dim); text-transform:uppercase;">Hotel</th>
                             <th style="padding:1rem; text-align:center; font-size:0.7rem; color:var(--text-dim); text-transform:uppercase;">Desde</th>
                             <th style="padding:1rem; text-align:center; font-size:0.7rem; color:var(--text-dim); text-transform:uppercase;">Hasta</th>
-                            <th style="padding:1rem; text-align:center; font-size:0.7rem; color:var(--text-dim); text-transform:uppercase;">DÃ­as</th>
+                            <th style="padding:1rem; text-align:center; font-size:0.7rem; color:var(--text-dim); text-transform:uppercase;">Dias</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -2523,3 +2557,13 @@ window.refreshBadges = async () => {
     }
 };
 
+// Inicializacion automatica del dashboard
+document.addEventListener('DOMContentLoaded', async () => {
+    const checkDAO = setInterval(async () => {
+        if (window.TurnosDB && window.TurnosDB.client) {
+            clearInterval(checkDAO);
+            await window.updateDashboardStats();
+            await window.refreshBadges();
+        }
+    }, 500);
+});

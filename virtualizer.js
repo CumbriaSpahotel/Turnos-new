@@ -35,7 +35,7 @@ class VirtualTable {
         
         const thead = document.createElement('thead');
         const trHead = document.createElement('tr');
-        trHead.innerHTML = `<th style="position:sticky; left:0; z-index:20; background:var(--bg3); border-bottom:1px solid var(--border); padding:10px;">Personal</th>` + this.columns.map(c => `
+        trHead.innerHTML = `<th style="position:sticky; left:0; z-index:20; background:var(--bg3); border-bottom:1px solid var(--border); padding:10px; font-size:0.7rem; color:var(--text-dim); text-transform:uppercase;">EMPLEADO</th>` + this.columns.map(c => `
             <th class="${c.isWeekend ? 'weekend' : ''} ${c.isToday ? 'today' : ''}" style="padding:8px; text-align:center; min-width:${this.compact ? '30px' : '60px'}; position:sticky; top:0; z-index:15; background:var(--bg3); border-bottom:1px solid var(--border);">
                 <div style="font-size:0.6rem; color:var(--text-dim); text-transform:uppercase;">${c.title}</div>
                 <div style="font-size:0.85rem; font-weight:800; color:var(--text);">${c.subtitle}</div>
@@ -137,7 +137,7 @@ class VirtualTable {
             const td = tds[0];
             td.colSpan = this.columns.length + 1;
             td.innerHTML = `<div style="display:flex; align-items:center; gap:10px; padding:10px; background:var(--bg3); border-radius:12px; margin:5px 10px;">
-                <span style="font-size:1.2rem;">🏨</span>
+                <span style="font-size:1rem;">Hotel</span>
                 <span style="text-transform:uppercase; letter-spacing:0.1em; font-weight:900; color:var(--accent);">${rowData.title}</span>
             </div>`;
             // Hide other tds
@@ -164,13 +164,14 @@ class VirtualTable {
         });
 
         tds[0].innerHTML = `
-            <img src="${logoUrl}" class="emp-logo" onerror="this.style.display='none'">
-            <div style="display:flex; flex-direction:column; cursor:pointer;" onclick="window.openEmpDrawer('${rowData.empName}')">
-                <span style="font-weight:700; color:var(--accent);">${rowData.empName}</span>
-            </div>
-            <div class="emp-badges">
-                <span class="emp-badge">🌙 ${nights}</span>
-                <span class="emp-badge">D ${rests}</span>
+            <div style="display:flex; align-items:center; justify-content:space-between; width:100%;">
+                <div style="display:flex; flex-direction:column;">
+                    <span style="font-weight:700; color:var(--accent); font-size:0.9rem;">${rowData.empName}</span>
+                </div>
+                <div class="emp-badges" style="display:flex; gap:4px;">
+                    <span class="emp-badge" style="font-size:0.7rem; font-weight:800; padding:2px 6px; border-radius:4px; background:#f8fafc; color:#64748b; border:1px solid #e2e8f0;">N${nights}</span>
+                    <span class="emp-badge" style="font-size:0.7rem; font-weight:800; padding:2px 6px; border-radius:4px; background:#f8fafc; color:#0d6efd; border:1px solid #e2e8f0;">D${rests}</span>
+                </div>
             </div>
         `;
 
@@ -201,9 +202,24 @@ class VirtualTable {
             cleanShiftColorCls = 'v-perm';
             cleanLabel = 'Permiso';
         } else if (type.startsWith('CT')) {
-            cleanShiftColorCls = 'v-cambio';
-            cleanLabel = 'C/T';
-        } else if (rawTurno.includes('mañana') || rawTurno.includes('maã±ana') || rawTurno === 'm') {
+            if (rawTurno.includes('mañana') || rawTurno.includes('manana') || rawTurno === 'm') {
+                cleanShiftColorCls = 'v-mañana';
+                cleanLabel = 'Mañana';
+            } else if (rawTurno.includes('tarde') || rawTurno === 't') {
+                cleanShiftColorCls = 'v-tarde';
+                cleanLabel = 'Tarde';
+            } else if (rawTurno.includes('noche') || rawTurno === 'n') {
+                cleanShiftColorCls = 'v-noche';
+                cleanLabel = 'Noche';
+            } else if (rawTurno.includes('descanso') || rawTurno === 'd') {
+                cleanShiftColorCls = 'v-descanso';
+                cleanLabel = 'Descanso';
+            } else {
+                cleanShiftColorCls = 'v-cambio';
+                cleanLabel = 'Cambio';
+            }
+            cleanIcon = '\u{1F504}';
+        } else if (rawTurno.includes('mañana') || rawTurno.includes('manana') || rawTurno === 'm') {
             cleanShiftColorCls = 'v-mañana';
             cleanLabel = 'Mañana';
         } else if (rawTurno.includes('tarde') || rawTurno === 't') {
@@ -217,10 +233,10 @@ class VirtualTable {
             cleanLabel = 'Descanso';
         }
 
-        if (cellData.isSub) {
-            cleanIcon = '<->';
+        if (cellData.isSub && !cleanIcon) {
+            cleanIcon = '\u{1F504}';
             cell.title = `Sustituyendo a ${cellData.subFor}`;
-        } else {
+        } else if (!cellData.isSub) {
             cell.title = '';
         }
 
@@ -229,44 +245,6 @@ class VirtualTable {
         const cleanDisplayHTML = `<div class="v-pill">${cleanLabel}${cleanIcon ? ` <small>${cleanIcon}</small>` : ''}</div>`;
         if (cell.innerHTML !== cleanDisplayHTML) cell.innerHTML = cleanDisplayHTML;
         return;
-        
-        const typeMapping = { 
-            'VAC 🏖️': { cls: 'v-vac', label: 'Vacaciones 🏖️', icon: '' }, 
-            'BAJA 🏥': { cls: 'v-baja', label: 'Baja Médica 🏥', icon: '' }, 
-            'PERM 🗓️': { cls: 'v-perm', label: 'Permiso 🗓️', icon: '' }, 
-            'CT 🔄': { cls: 'v-cambio', label: 'C/T 🔄', icon: '' }, 
-            'NORMAL': { cls: 'v-normal', label: '', icon: '' },
-            'VAC': { cls: 'v-vac', label: 'Vacaciones 🏖️', icon: '' }, 
-            'BAJA': { cls: 'v-baja', label: 'Baja Médica 🏥', icon: '' }, 
-            'PERM': { cls: 'v-perm', label: 'Permiso 🗓️', icon: '' }, 
-            'CT': { cls: 'v-cambio', label: 'C/T 🔄', icon: '' }
-        };
-
-        const config = typeMapping[cellData.tipo] || typeMapping['NORMAL'];
-        let shiftColorCls = config.cls;
-        let icon = config.icon;
-        let label = (cellData.tipo && cellData.tipo !== 'NORMAL') ? config.label : (cellData.turno || '');
-
-        if (cellData.tipo === 'NORMAL' || !cellData.tipo) {
-            const t = String(label).toLowerCase();
-            if (t.includes('mañana') || t === 'm') { shiftColorCls = 'v-mañana'; icon = '☀️'; label = 'Mañana'; }
-            else if (t.includes('tarde') || t === 't') { shiftColorCls = 'v-tarde'; icon = '⛅'; label = 'Tarde'; }
-            else if (t.includes('noche') || t === 'n') { shiftColorCls = 'v-noche'; icon = '🌙'; label = 'Noche'; }
-            else if (t.includes('descanso') || t === 'd') { shiftColorCls = 'v-descanso'; icon = ''; label = 'Descanso'; }
-            else if (!t || t === '·' || t === '') { shiftColorCls = 'v-empty'; label = '·'; icon = ''; }
-        }
-
-        // Si es un sustituto cubriendo a alguien
-        if (cellData.isSub) {
-            icon = '↔︎';
-            cell.title = `Sustituyendo a ${cellData.subFor}`;
-        }
-
-        const clsString = `v-cell ${shiftColorCls}`;
-        if (cell.className !== clsString) cell.className = clsString;
-        
-        const displayHTML = `<div class="v-pill">${label} ${icon ? `<small>${icon}</small>` : ''}</div>`;
-        if (cell.innerHTML !== displayHTML) cell.innerHTML = displayHTML;
     }
 
     updateRowOptimistic(payload) {

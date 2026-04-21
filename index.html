@@ -1,511 +1,319 @@
-﻿<!doctype html>
+<!doctype html>
 <html lang="es">
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <title>TurnosWeb â€” Cuadrante PÃºblico</title>
+  <title>TurnosWeb — Cuadrante Público</title>
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
   <link rel="stylesheet" href="flatpickr.min.css">
-  <link rel="stylesheet" href="styles.css">
   <link rel="icon" type="image/png" href="favicon.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
   <style>
-      :root { --accent: #1677ff; --accent-hover: #4096ff; --border: #e8e8e8; --bg: #f4f7fb; --text: #1e2a3a; }
-      body { background: var(--bg); font-family: 'Inter', -apple-system, system-ui, sans-serif; color: var(--text); margin: 0; }
-      .nav-btn { background: var(--accent); color: white; border: none; padding: 10px 20px; border-radius: 8px; font-weight: 700; cursor: pointer; transition: 0.2s; font-size: 0.85rem; text-decoration: none; display: inline-flex; align-items: center; gap: 8px; }
-      .nav-btn:hover { background: var(--accent-hover); box-shadow: 0 4px 12px rgba(22,119,255,0.2); }
+      :root { 
+          --accent: #1677ff; 
+          --accent-hover: #4096ff; 
+          --border: #e2e8f0; 
+          --bg: #f4f7fb; 
+          --bg2: #ffffff;
+          --bg3: #f8fafc;
+          --surface: #ffffff;
+          --text: #1e2a3a; 
+          --text-dim: #64748b;
+          --shadow-sm: 0 2px 8px rgba(0,0,0,0.05);
+      }
       
-      /* Panel de hotel */
-      .glass-panel { background: white; border-radius: 14px; border: 1px solid #e2e8f0; box-shadow: 0 2px 12px rgba(0,0,0,0.06); overflow: hidden; margin-bottom: 32px; }
-      .hotel-header { padding: 16px 24px; display: flex; align-items: center; gap: 16px; border-bottom: 1px solid #eef2f7; background: white; }
-      .hotel-header img { height: 36px; width: 36px; object-fit: contain; border-radius: 6px; border: 1px solid #eee; padding: 2px; }
-      .hotel-header h2 { margin: 0; font-size: 1.05rem; font-weight: 700; color: #1e2a3a; display: flex; align-items: center; gap: 10px; }
-      .hotel-header h2 .week-label { font-size: 0.85rem; font-weight: 500; color: #94a3b8; }
-      .hotel-total-nights { margin-left: auto; background: #fff9db; color: #d97706; border: 1px solid #fde68a; padding: 5px 14px; border-radius: 20px; font-size: 0.8rem; font-weight: 700; white-space: nowrap; }
+      body { 
+          background: var(--bg); 
+          font-family: 'Inter', -apple-system, system-ui, sans-serif; 
+          color: var(--text); 
+          margin: 0; 
+          overflow-x: hidden;
+      }
 
-      /* Tabla */
-      table { width: 100%; border-collapse: collapse; }
-      th { padding: 12px 8px; background: #f8fafc; border-bottom: 1px solid #e2e8f0; font-size: 0.68rem; color: #64748b; text-transform: uppercase; font-weight: 700; text-align: center; letter-spacing: 0.03em; }
-      td { padding: 10px 8px; border-bottom: 1px solid #f1f5f9; border-right: 1px solid #f8fafc; vertical-align: middle; }
-      tr:last-child td { border-bottom: none; }
+      header {
+          background: #1a1d21;
+          color: white;
+          padding: 12px 30px;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          position: sticky;
+          top: 0;
+          z-index: 1000;
+          box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+      }
 
-      /* Columna nombre */
-      .name-col { width: 200px; min-width: 200px; text-align: left; padding-left: 24px; border-right: 1px solid #e2e8f0; background: white; }
-      .th-emp { color: var(--accent) !important; text-align: left !important; padding-left: 24px !important; font-weight: 700 !important; font-size: 0.72rem !important; }
-      .emp-name { font-size: 0.9rem; font-weight: 600; color: var(--accent); display: block; margin-bottom: 3px; }
-      .emp-stats { display: flex; gap: 6px; align-items: center; }
-      .b-night { color: #f59e0b; font-size: 0.72rem; font-weight: 700; }
-      .b-rest  { color: #64748b; font-size: 0.72rem; font-weight: 700; }
+      .nav-btn { 
+          background: rgba(255,255,255,0.1); 
+          color: white; 
+          border: 1px solid rgba(255,255,255,0.1); 
+          padding: 8px 16px; 
+          border-radius: 8px; 
+          font-weight: 700; 
+          cursor: pointer; 
+          transition: 0.2s; 
+          font-size: 0.8rem; 
+          text-decoration: none; 
+          display: inline-flex; 
+          align-items: center; 
+          gap: 6px; 
+      }
+      .nav-btn:hover { background: var(--accent); border-color: var(--accent); }
+      
+      .preview-week.week { 
+          background: var(--surface); 
+          border: 1px solid var(--border); 
+          border-radius: 20px; 
+          margin-bottom: 2rem; 
+          overflow: hidden; 
+          box-shadow: var(--shadow-sm);
+      }
 
-      /* Pills de turno */
-      .pill { display: block; padding: 7px 6px; border-radius: 20px; font-size: 0.82rem; font-weight: 600; text-align: center; transition: transform 0.1s; cursor: default; width: 90%; margin: 0 auto; }
-      .pill:hover { transform: scale(1.03); }
-      .p-m { background: #d3f9d8; color: #2f9e44; }   /* MaÃ±ana - verde suave */
-      .p-t { background: #fff3bf; color: #e67700; }   /* Tarde - amarillo suave */
-      .p-n { background: #e5edff; color: #3451b2; }   /* Noche - azul suave */
-      .p-d { background: #ffe3e3; color: #c92a2a; }   /* Descanso - rosa suave */
-      .p-v { background: #c5f6fa; color: #0c8599; }   /* Vacaciones - cian suave */
-      .p-b { background: #e5dbff; color: #6741d9; }   /* Baja/Permiso - lila suave */
-      .sub-badge { outline: 2px solid var(--accent); outline-offset: 1px; }
+      .preview-week-header.week-head { 
+          display: flex; 
+          align-items: center; 
+          gap: 12px; 
+          padding: 1.2rem 1.5rem; 
+          border-bottom: 1px solid var(--border); 
+          background: linear-gradient(135deg, #f8fafc, #ffffff);
+      }
+      .preview-week-header.week-head img {
+          width: 40px; height: 40px; border-radius: 10px; object-fit: cover; border: 1px solid rgba(0,0,0,0.05);
+      }
+      .preview-week-header.week-head h3 { 
+          margin: 0; 
+          font-size: 1.1rem; 
+          font-weight: 800; 
+          color: var(--text); 
+          font-family: 'Outfit', sans-serif;
+          letter-spacing: -0.01em;
+      }
+
+      .viewport { border-radius: 0 !important; border: none !important; box-shadow: none !important; min-height: unset !important; height: auto !important; overflow: visible !important; }
+      .preview-table-v2 { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 0.85rem; }
+      .preview-table-v2 th { background: var(--bg3); padding: 12px 8px; border-bottom: 1px solid var(--border); font-weight: 700; position: sticky; top: -1px; z-index: 100; }
+      .preview-table-v2 td { padding: 4px; border-bottom: 1px solid #f1f5f9; vertical-align: middle; }
+      
+      .emp-cell { padding-left: 20px !important; min-width: 180px; z-index: 50; }
+      .emp-logo { width: 24px; height: 24px; border-radius: 4px; margin-right: 10px; vertical-align: middle; display: none; }
+      .emp-badges { display: flex; gap: 4px; margin-top: 2px; }
+      .emp-badge { font-size: 0.65rem; font-weight: 800; padding: 1px 6px; border-radius: 10px; background: var(--bg3); color: var(--text-dim); border: 1px solid var(--border); }
+      
+      .v-pill { 
+          padding: 8px 4px; border-radius: 12px; font-weight: 700; font-size: 0.75rem; text-align: center; 
+          transition: all 0.2s; cursor: default; width: 95%; margin: 0 auto;
+      }
+      .v-mañana .v-pill   { background: #ebfbee; color: #2f9e44; border: 1px solid rgba(47,158,68,0.1); }
+      .v-tarde .v-pill    { background: #fff9db; color: #f08c00; border: 1px solid rgba(240,140,0,0.1); }
+      .v-noche .v-pill    { background: #edf2ff; color: #364fc7; border: 1px solid rgba(54,79,199,0.1); }
+      .v-descanso .v-pill { background: #fff5f5; color: #fa5252; border: 1px solid rgba(250,82,82,0.1); }
+      .v-vac .v-pill      { background: #e3fafc; color: #0b7285; border: 1px solid rgba(11,114,133,0.1); }
+      .v-baja .v-pill     { background: #fff5f5; color: #fa5252; border: 1px dashed #fa5252; }
+      .v-perm .v-pill     { background: #f3f0ff; color: #7048e8; border: 1px solid rgba(112,72,232,0.1); }
+      .v-cambio .v-pill   { background: #e7f1ff; color: #0d6efd; border: 1px solid #0d6efd; }
+      .v-empty .v-pill    { opacity: 0.2; background: #eee; height: 10px; border-radius: 4px; }
   </style>
 </head>
 <body>
-  <header style="background:#1a1d21; color:white; padding:15px 30px; display:flex; justify-content:space-between; align-items:center;">
+  <header>
     <div style="display:flex; align-items:center; gap:20px;">
-      <img src="Logo.png" alt="Logo" style="height:45px; filter:brightness(0) invert(1);">
+      <img src="Logo.png" alt="Logo" style="height:40px; filter:brightness(0) invert(1);">
       <div>
-        <div style="font-size:1.4rem; font-weight:800; letter-spacing:-0.5px;">Cuadrante PÃºblico</div>
-        <div style="font-size:0.8rem; opacity:0.7;">Disponibilidad y Turnos en Tiempo Real</div>
+        <div style="font-size:1.2rem; font-weight:800; font-family:'Outfit', sans-serif; letter-spacing:-0.02em;">Cuadrante Público</div>
+        <div style="font-size:0.7rem; opacity:0.6; text-transform:uppercase; letter-spacing:0.05em; font-weight:700;">Disponibilidad en tiempo real</div>
       </div>
     </div>
-    <div style="display:flex; gap:12px; align-items:center;">
-      <button class="nav-btn" onclick="changeWeek(-1)">â† Semana</button>
+    <div style="display:flex; gap:10px; align-items:center;">
+      <button class="nav-btn" onclick="changeWeek(-1)">← Semana</button>
       <button class="nav-btn" onclick="goToday()">Hoy</button>
-      <button class="nav-btn" onclick="changeWeek(1)">Semana â†’</button>
-      <div style="width:1px; height:30px; background:rgba(255,255,255,0.2); margin:0 10px;"></div>
-      <select id="hotelSelect" onchange="renderPublicView()" style="background:#2a2e35; color:white; border:1px solid #444; border-radius:8px; padding:10px; font-weight:600;">
+      <button class="nav-btn" onclick="changeWeek(1)">Semana →</button>
+      <div style="width:1px; height:24px; background:rgba(255,255,255,0.2); margin:0 10px;"></div>
+      <select id="hotelSelect" onchange="renderPublicView()" style="background:#2a2e35; color:white; border:1px solid #444; border-radius:8px; padding:8px 12px; font-weight:600; font-size:0.85rem;">
         <option value="">Todos los Hoteles</option>
       </select>
-      <input type="text" id="dateRange" style="background:#2a2e35; color:white; border:1px solid #444; border-radius:8px; padding:10px; width:220px; font-weight:600;">
-      <a href="solicitud.html" style="background:var(--accent); color:white; text-decoration:none; padding:10px 18px; border-radius:8px; font-weight:700; font-size:0.9rem; margin-left:10px;">ðŸ”„ Solicitar Cambio</a>
+      <input type="text" id="dateRange" style="background:#2a2e35; color:white; border:1px solid #444; border-radius:8px; padding:8px 12px; width:200px; font-weight:600; font-size:0.85rem;">
+      <a href="solicitud.html" style="background:var(--accent); color:white; text-decoration:none; padding:8px 16px; border-radius:8px; font-weight:700; font-size:0.85rem; margin-left:10px;">🔄 Solicitar Cambio</a>
     </div>
   </header>
-
-  <main id="app" style="padding:40px;"></main>
-
-  <script src="supabase.js?v=local_1"></script>
-  <script src="localforage.js?v=local_1"></script>
-  <script src="flatpickr.js?v=local_1"></script>
-  <script src="flatpickr_es.js?v=local_1"></script>
-  <script src="supabase-config.js?v=9.7"></script>
-  <script src="supabase-dao.js?v=9.7"></script>
-  <script src="xlsx.full.min.js"></script>
+  
+  <main id="app" style="padding:32px 40px;"></main>
+  
+  <script src="supabase.js"></script>
+  <script src="localforage.js"></script>
+  <script src="flatpickr.js"></script>
+  <script src="flatpickr_es.js"></script>
+  <script src="virtualizer.js?v=8.5"></script>
+  <script src="supabase-config.js?v=9.8"></script>
+  <script src="supabase-dao.js?v=9.10"></script>
   
   <script>
     const $ = (s) => document.querySelector(s);
     let _picker;
-
     const logoFor = (h) => h.toLowerCase().includes('guadiana') ? 'guadiana logo.jpg' : 'cumbria logo.jpg';
-    const dayNames = ['DOMINGO','LUNES','MARTES','MIÃ‰RCOLES','JUEVES','VIERNES','SÃBADO'];
-    const SpanishLocale = {
-        weekdays: { shorthand: ["Dom", "Lun", "Mar", "MiÃ©", "Jue", "Vie", "SÃ¡b"], longhand: ["Domingo", "Lunes", "Martes", "MiÃ©rcoles", "Jueves", "Viernes", "SÃ¡bado"] },
-        months: { shorthand: ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"], longhand: ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"] },
-        firstDayOfWeek: 1, rangeSeparator: " a ", time_24hr: true
-    };
-
-    const EXCEL_SOURCE_FILE = 'Plantilla%20Cuadrante%20Turnos%20v.8.0.xlsx';
-    const EXCEL_HOTEL_SHEETS = ['Cumbria Spa&Hotel', 'Sercotel Guadiana'];
-    const toIsoDate = (value) => {
-        const d = value instanceof Date ? value : new Date(value);
-        return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().split('T')[0];
-    };
-    const getMonday = (value) => {
-        const d = value instanceof Date ? new Date(value) : new Date(value + 'T12:00:00');
-        const day = d.getDay();
-        d.setHours(12, 0, 0, 0);
-        d.setDate(d.getDate() - (day === 0 ? 6 : day - 1));
-        return d;
-    };
-    const getSunday = (value) => {
-        const monday = getMonday(value);
-        const sunday = new Date(monday);
-        sunday.setDate(monday.getDate() + 6);
-        return sunday;
-    };
-    const normalizeEmployeeKey = (value) =>
-        String(value || '')
-            .normalize('NFD')
-             .replace(/[\u0300-\u036f]/g, '')
-             .replace(/\s+/g, ' ')
-            .trim()
-            .toLowerCase();
-
-    async function loadExcelSourceRows() {
-        if (window._excelSourceRows) return window._excelSourceRows;
-        try {
-            const response = await fetch(EXCEL_SOURCE_FILE, { cache: 'no-store' });
-            if (!response.ok) return {};
-            const buffer = await response.arrayBuffer();
-            const workbook = XLSX.read(buffer, { type: 'array', cellDates: true });
-            const result = {};
-            EXCEL_HOTEL_SHEETS.forEach(hotel => {
-                const sheet = workbook.Sheets[hotel];
-                if (!sheet) return;
-                const matrix = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '', raw: true });
-                result[hotel] = matrix.slice(1).map(row => ({
-                    hotel,
-                    weekStart: row[0] instanceof Date ? row[0].toISOString().split('T')[0] : (typeof row[0] === 'string' ? row[0].split('T')[0] : ''),
-                    empleadoId: String(row[1] || '').trim(),
-                    values: [0,1,2,3,4,5,6].map(i => {
-                        const val = String(row[i+2]||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
-                        if (val.startsWith('m')) return 'M';
-                        if (val.startsWith('t')) return 'T';
-                        if (val.startsWith('n')) return 'N';
-                        if (val.startsWith('d')) return 'D';
-                        return String(row[i+2]||'').trim();
-                    })
-                })).filter(r => r.weekStart && r.empleadoId);
-            });
-            window._excelSourceRows = result;
-            return result;
-        } catch(e) { console.error("Error cargando Excel:", e); return {}; }
-    }
-
-    async function renderPublicView() {
-        const container = $('#app');
-        const selectedDates = _picker?.selectedDates || [];
-        if (selectedDates.length < 1) {
-            container.innerHTML = '<div style="padding:40px; opacity:0.5;">No hay rango seleccionado.</div>';
-            return;
+    
+    window.renderPublicView = async () => {
+        const area = $('#app');
+        const selHotel = $('#hotelSelect').value;
+        const rangeStr = $('#dateRange').value;
+        
+        let startIso, endIso;
+        if (rangeStr.includes(" a ")) {
+            [startIso, endIso] = rangeStr.split(" a ");
+        } else {
+            const d = new Date();
+            const off = (d.getDay() === 0 ? -6 : 1 - d.getDay());
+            d.setDate(d.getDate() + off);
+            startIso = d.toISOString().split('T')[0];
+            const endD = new Date(d);
+            endD.setDate(endD.getDate() + 6);
+            endIso = endD.toISOString().split('T')[0];
         }
 
-        const startDate = getMonday(selectedDates[0]);
-        const endDate = selectedDates[1] ? getSunday(selectedDates[1]) : getSunday(selectedDates[0]);
-        const start = toIsoDate(startDate);
-        const end = toIsoDate(endDate);
-
-        if (_picker) {
-            const currentStart = selectedDates[0] ? toIsoDate(selectedDates[0]) : '';
-            const currentEnd = selectedDates[1] ? toIsoDate(selectedDates[1]) : currentStart;
-            if (currentStart !== start || currentEnd !== end) {
-                _picker.setDate([startDate, endDate], false);
-            }
-        }
+        area.innerHTML = `<div style="padding:4rem; text-align:center; opacity:0.5; font-weight:700;">Sincronizando cuadrante...</div>`;
 
         try {
-            console.log('Cargando datos para:', start, end);
-            const data = await window.TurnosDB.fetchRango(start, end);
+            let data = await window.TurnosDB.fetchRangoCalculado(startIso, endIso);
+            if (selHotel) data = data.filter(t => t.hotel_id === selHotel);
             const profiles = await window.TurnosDB.getEmpleados();
-            const excelSource = await loadExcelSourceRows();
 
-            if (!data || data.length === 0) {
-                container.innerHTML = '<div style="padding:40px; text-align:center; opacity:0.6;"><h3>No hay cuadrante para estas fechas</h3><p>Si crees que es un error, contacta con recepcion.</p></div>';
+            area.innerHTML = '';
+            const hotelsFound = [...new Set(data.map(t => t.hotel_id))].sort();
+            if (selHotel && !hotelsFound.includes(selHotel)) hotelsFound.push(selHotel);
+            
+            if (hotelsFound.length === 0) {
+                area.innerHTML = `<div style="padding:4rem; text-align:center; opacity:0.5;">No hay turnos registrados para este periodo en la nube.</div>`;
                 return;
             }
 
-            data.forEach(t => {
-                if (t.tipo === 'VAC' && !t.hotel_id) {
-                    const normId = window.TurnosDB.normalizeString(t.empleado_id);
-                    const p = profiles.find(pr => window.TurnosDB.normalizeString(pr.id) === normId);
-                    t.hotel_id = p?.hotel_id || 'Cumbria Spa&Hotel';
-                }
-            });
-
-            const hotels = [...new Set(data.map(t => t.hotel_id))].sort();
-            if ($('#hotelSelect').options.length <= 1) {
-                $('#hotelSelect').innerHTML = '<option value="">Todos los Hoteles</option>' + hotels.map(h => '<option value="' + h + '">' + h + '</option>').join('');
+            for (const hName of hotelsFound) {
+                const hShifts = data.filter(t => t.hotel_id === hName);
+                const safeId = hName.replace(/[^a-z0-9]/gi, '-');
+                const card = document.createElement('div');
+                card.className = 'preview-week week';
+                card.innerHTML = `
+                    <div class="preview-week-header week-head">
+                        <img src="${logoFor(hName)}">
+                        <h3>${hName.toUpperCase()}</h3>
+                    </div>
+                    <div id="grid-container-${safeId}" style="padding:0;"></div>
+                `;
+                area.appendChild(card);
+                const container = card.querySelector(`#grid-container-${safeId}`);
+                await renderEnContenedor(container, startIso, endIso, hShifts, hName, profiles);
             }
-
-            container.innerHTML = '';
-
-            const weeks = [];
-            let wCursor = new Date(startDate);
-            const wLimit = new Date(endDate);
-            while (wCursor <= wLimit) {
-                const week = [];
-                for (let i = 0; i < 7; i++) {
-                    week.push(toIsoDate(wCursor));
-                    wCursor.setDate(wCursor.getDate() + 1);
-                }
-                weeks.push(week);
-            }
-
-            const mNames = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
-            const publicDayNames = ['Lun', 'Mar', 'Mie', 'Jue', 'Vie', 'Sab', 'Dom'];
-            const hotelSel = $('#hotelSelect').value;
-            const hotelsToRender = hotelSel ? [hotelSel] : hotels;
-
-            weeks.forEach(weekDates => {
-                const weekStart = weekDates[0];
-                hotelsToRender.forEach(hName => {
-                    const hData = data.filter(t => t.hotel_id === hName && weekDates.includes(t.fecha));
-                    if (hData.length === 0) return;
-
-                    const allIds = new Map();
-                    hData.forEach(t => {
-                        if (t.empleado_id) allIds.set(normalizeEmployeeKey(t.empleado_id), String(t.empleado_id).trim());
-                        if (t.sustituto) allIds.set(normalizeEmployeeKey(t.sustituto), String(t.sustituto).trim());
-                    });
-
-                    const isAbsent = new Set();
-                    hData.forEach(t => {
-                        const tipo = (t.tipo || '').toUpperCase();
-                        if (tipo.startsWith('VAC') || tipo.startsWith('BAJA') || tipo.startsWith('PERM')) {
-                            isAbsent.add(normalizeEmployeeKey(t.empleado_id));
-                        }
-                    });
-
-                    const replacedBy = {};
-                    hData.forEach(t => {
-                        const absentKey = normalizeEmployeeKey(t.empleado_id);
-                        const subKey = normalizeEmployeeKey(t.sustituto);
-                        if (subKey && isAbsent.has(absentKey)) {
-                            replacedBy[absentKey] = String(t.sustituto).trim();
-                        }
-                    });
-
-                    const sourceRows = excelSource[hName] || [];
-                    const currentWeekRows = sourceRows.filter(r => r.weekStart === weekStart);
-                    const displayByKey = new Map();
-                    const excelOrder = [];
-                    currentWeekRows.forEach(r => {
-                        const key = normalizeEmployeeKey(r.empleadoId);
-                        if (!key || displayByKey.has(key)) return;
-                        displayByKey.set(key, String(r.empleadoId || '').trim());
-                        excelOrder.push(key);
-                    });
-
-                    const rendered = new Set();
-                    const empList = [];
-
-                    excelOrder.forEach(empKey => {
-                        if (!empKey || rendered.has(empKey)) return;
-                        if (isAbsent.has(empKey)) {
-                            const sub = replacedBy[empKey];
-                            const subKey = normalizeEmployeeKey(sub);
-                            if (subKey && !rendered.has(subKey)) {
-                                empList.push({
-                                    id: allIds.get(subKey) || sub,
-                                    displayAs: allIds.get(subKey) || sub,
-                                    isAbsent: false,
-                                    substituteFor: allIds.get(empKey) || displayByKey.get(empKey) || empKey
-                                });
-                                rendered.add(subKey);
-                            }
-                        } else {
-                            const display = allIds.get(empKey) || displayByKey.get(empKey) || empKey;
-                            empList.push({ id: display, displayAs: display, isAbsent: false, substituteFor: null });
-                            rendered.add(empKey);
-                        }
-                    });
-
-                    allIds.forEach((display, empKey) => {
-                        if (!rendered.has(empKey) && !isAbsent.has(empKey)) {
-                            empList.push({ id: display, displayAs: display, isAbsent: false, substituteFor: null });
-                            rendered.add(empKey);
-                        }
-                    });
-
-                    isAbsent.forEach(empKey => {
-                        if (!rendered.has(empKey)) {
-                            const display = allIds.get(empKey) || displayByKey.get(empKey) || empKey;
-                            empList.push({ id: display, displayAs: display, isAbsent: true, substituteFor: null });
-                            rendered.add(empKey);
-                        }
-                    });                    const html = `
-                    <div class="glass-panel">
-                        <div class="hotel-header">
-                            <img src="${logoFor(hName)}">
-                            <h2>${hName} <span class="week-label">Semana ${weekStart}</span></h2>
-                        </div>
-                        <div style="overflow-x:auto;">
-                            <table>
-                                <thead>
-                                    <tr>
-                                        <th class="th-emp">Empleado</th>
-                                        ${weekDates.map((f, idx) => {
-                                            const d = new Date(f + 'T12:00:00');
-                                            return `<th>${publicDayNames[idx]}<br><span style="font-weight:500;font-size:0.68rem;color:#94a3b8;">${d.getDate()}/${mNames[d.getMonth()]}</span></th>`;
-                                        }).join('')}
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    ${empList.map(entry => {
-                                        const emp = entry.id;
-                                        const displayAs = entry.displayAs;
-                                        const empIsAbsent = entry.isAbsent;
-                                        const substituteFor = entry.substituteFor;
-                                        const empKey = normalizeEmployeeKey(emp);
-
-                                        let activeShifts = [];
-                                        if (substituteFor) {
-                                            const absenteeRow = currentWeekRows.find(r => normalizeEmployeeKey(r.empleadoId) === normalizeEmployeeKey(substituteFor));
-                                            weekDates.forEach((f, idx) => {
-                                                const turn = absenteeRow ? absenteeRow.values[idx] : null;
-                                                activeShifts.push({ fecha: f, turno: turn || '', tipo: 'NORMAL' });
-                                            });
-                                        } else {
-                                            activeShifts = hData.filter(t => normalizeEmployeeKey(t.empleado_id) === empKey);
-                                        }
-
-                                        const n = activeShifts.filter(t => (t.turno || '').toLowerCase().startsWith('n')).length;
-                                        const dCount = activeShifts.filter(t => (t.turno || '').toLowerCase().startsWith('d')).length;
-
-                                        return `
-                                        <tr style="${empIsAbsent ? 'opacity:0.45; background:#fafafa;' : ''}">
-                                            <td class="name-col">
-                                                <span class="emp-name" style="${empIsAbsent ? 'text-decoration:line-through; color:#aaa;' : ''}">${displayAs || emp}</span>
-                                                <div class="emp-stats">
-                                                    <span class="b-night">&#x1F319; ${n}</span>
-                                                    <span class="b-rest">D ${dCount}</span>
-                                                </div>
-                                            </td>
-                                            ${weekDates.map(f => {
-                                                const shift = activeShifts.find(t => t.fecha === f);
-                                                if (!shift) return '<td></td>';
-                                                const tKey = (shift.turno || '').toLowerCase();
-                                                let cls = 'p-m';
-                                                let lab = shift.turno || '';
-                                                if (tKey.startsWith('m')) { cls = 'p-m'; lab = 'Manana'; }
-                                                else if (tKey.startsWith('t')) { cls = 'p-t'; lab = 'Tarde'; }
-                                                else if (tKey.startsWith('n')) { cls = 'p-n'; lab = 'Noche &#x1F319;'; }
-                                                else if (tKey.startsWith('d')) { cls = 'p-d'; lab = 'Descanso'; }
-
-                                                const tipoUp = (shift.tipo || '').toUpperCase();
-                                                if (tipoUp.startsWith('VAC')) { cls = 'p-v'; lab = 'Vacaciones'; }
-                                                else if (tipoUp.startsWith('BAJA')) { cls = 'p-b'; lab = 'Baja'; }
-                                                else if (tipoUp.startsWith('PERM')) { cls = 'p-b'; lab = 'Permiso'; }
-
-                                                return `<td><span class="pill ${cls}">${lab}</span></td>`;
-                                            }).join('')}
-                                        </tr>`;
-                                    }).join('')}
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>`;
-
-                    container.insertAdjacentHTML('beforeend', html);
-                });
-            });
-
-            renderNightsSummary(container, data, profiles);
-
-        } catch (err) {
-            console.error('Error en renderPublicView:', err);
-            container.innerHTML = '<div style="background:rgba(239,68,68,0.1); color:#ef4444; padding:30px; border-radius:15px; border:1px solid #ef4444; text-align:center; margin:20px;"><h3>Error de sincronizacion</h3><p style="margin-bottom:20px;">' + err.message + '</p><div style="background:white; color:black; padding:15px; border-radius:10px; font-size:0.8rem; text-align:left;"><strong>Posible solucion:</strong><br>Si estas viendo esto, el navegador ha bloqueado el acceso a la base de datos.<br><br>1. Haz clic en el candado de la URL.<br>2. Desactiva la proteccion contra rastreo si aplica.<br>3. Recarga la pagina.</div><button onclick="location.reload()" style="margin-top:20px; background:#ef4444; color:white; border:none; padding:10px 20px; border-radius:8px; font-weight:bold; cursor:pointer;">REINTENTAR</button></div>';
+        } catch (e) {
+            console.error(e);
+            area.innerHTML = `<div style="padding:4rem; text-align:center; color:red;">Error de conexión: ${e.message}</div>`;
         }
-    }
+    };
 
-    function renderNightsSummary(container, data, profiles) {
-        // Solo turnos de noche reales
-        const nights = data.filter(t => {
-            const turno = (t.turno || '').toLowerCase();
-            const tipo = (t.tipo || '').toUpperCase();
-            return turno.startsWith('n') && !tipo.startsWith('VAC') && !tipo.startsWith('BAJA') && !tipo.startsWith('PERM');
-        });
-
-        if (nights.length === 0) return;
-
-        // Agrupar por mes â†’ hotel â†’ empleado
-        const byMonth = {};
-        nights.forEach(t => {
-            const month = t.fecha.substring(0, 7);
-            const hotel = t.hotel_id || 'Sin Hotel';
-            const emp = t.empleado_id;
-            if (!byMonth[month]) byMonth[month] = {};
-            if (!byMonth[month][hotel]) byMonth[month][hotel] = {};
-            byMonth[month][hotel][emp] = (byMonth[month][hotel][emp] || 0) + 1;
-        });
-
-        const monthNames = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
-        const sortedMonths = Object.keys(byMonth).sort();
-
-        let summaryHtml = `
-        <div style="margin-top:48px; padding-top:32px; border-top:2px solid #e2e8f0;">
-            <h3 style="font-size:1.1rem; font-weight:800; color:#1e2a3a; margin:0 0 28px 0; display:flex; align-items:center; gap:10px;">
-                ðŸŒ™ Resumen de Noches por Periodo
-            </h3>`;
-
-        sortedMonths.forEach(monthKey => {
-            const [year, mon] = monthKey.split('-').map(Number);
-            const monthLabel = monthNames[mon - 1] + ' de ' + year;
-            summaryHtml += `<h4 style="font-size:0.95rem; font-weight:700; color:#334155; margin:0 0 12px 0;">${monthLabel}</h4><div style="display:flex; flex-wrap:wrap; gap:0;">`;
-
-            const hotelsInMonth = Object.keys(byMonth[monthKey]).sort();
-            hotelsInMonth.forEach(hotel => {
-                const empData = byMonth[monthKey][hotel];
-                const empList = Object.keys(empData)
-                    .filter(e => empData[e] > 0)
-                    .sort((a, b) => {
-                        const pa = profiles.find(p => p.id === a);
-                        const pb = profiles.find(p => p.id === b);
-                        const ordA = pa?.orden ?? 9999;
-                        const ordB = pb?.orden ?? 9999;
-                        return ordA !== ordB ? ordA - ordB : a.localeCompare(b);
-                    });
-
-                if (empList.length === 0) return;
-
-                summaryHtml += `
-                <div style="display:inline-block; vertical-align:top; background:white; border:1px solid #e2e8f0; border-radius:10px; overflow:hidden; margin-bottom:16px; margin-right:16px; box-shadow:0 1px 6px rgba(0,0,0,0.04); min-width:240px;">
-                    <table style="border-collapse:collapse; white-space:nowrap;">
-                        <thead>
-                            <tr style="background:#f8fafc;">
-                                <th style="padding:9px 20px; text-align:left; font-size:0.7rem; color:#64748b; font-weight:700; letter-spacing:0.05em; text-transform:uppercase; border-bottom:1px solid #e2e8f0;">${hotel}</th>
-                                <th style="padding:9px 20px; text-align:center; font-size:0.7rem; color:#3b5bdb; font-weight:700; letter-spacing:0.05em; text-transform:uppercase; border-bottom:1px solid #e2e8f0; min-width:80px;">Noches</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            ${empList.map(emp => `
-                            <tr style="border-bottom:1px solid #f1f5f9;">
-                                <td style="padding:9px 20px; font-size:0.88rem; font-weight:600; color:#1e2a3a;">${emp}</td>
-                                <td style="padding:9px 20px; text-align:center; font-size:0.92rem; font-weight:700; color:${empData[emp] >= 7 ? '#3b5bdb' : '#334155'};">${empData[emp]}</td>
-                            </tr>`).join('')}
-                        </tbody>
-                    </table>
-                </div>`;
+    async function renderEnContenedor(container, inicio, fin, hotelData, hotelName, profiles) {
+        const columns = [];
+        let curr = new Date(inicio + "T12:00:00");
+        const end = new Date(fin + "T12:00:00");
+        while (curr <= end) {
+            const iso = curr.toISOString().split('T')[0];
+            const dayNames = ['DOMINGO','LUNES','MARTES','MIERCOLES','JUEVES','VIERNES','SABADO'];
+            const monthNames = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+            columns.push({
+                dbFecha: iso,
+                title: dayNames[curr.getDay()],
+                subtitle: `${curr.getDate()}/${monthNames[curr.getMonth()]}/${curr.getFullYear().toString().slice(-2)}`,
+                isWeekend: curr.getDay() === 0 || curr.getDay() === 6,
+                isToday: iso === new Date().toISOString().split('T')[0]
             });
-
-            summaryHtml += `</div><div style="margin-bottom:24px;"></div>`;
-        });
-
-        summaryHtml += `</div>`;
-        container.insertAdjacentHTML('beforeend', summaryHtml);
-    }
-
-    async function init() {
-        if (window.location.protocol === 'file:') {
-            console.warn("ADVERTENCIA: Ejecutando desde sistema de archivos local.");
+            curr.setDate(curr.getDate() + 1);
         }
 
-        // Por defecto: SEMANA ACTUAL (Lunes a Domingo)
-        const today = new Date();
-        const mon = new Date(today.getFullYear(), today.getMonth(), today.getDate() - (today.getDay() === 0 ? 6 : today.getDay() - 1));
-        const sun = new Date(mon); sun.setDate(mon.getDate() + 6);
+        const table = new window.VirtualTable(container, { columns, rowHeight: 56 });
+        // --- LÓGICA DE FUSIÓN Y ORDENACIÓN (IGUAL QUE ADMIN) ---
+        const empMap = new Map();
+        hotelData.forEach(t => {
+            if (t.empleado_id) {
+                const norm = window.TurnosDB.normalizeString(t.empleado_id);
+                if (!empMap.has(norm)) empMap.set(norm, t.empleado_id);
+            }
+            if (t.sustituto) {
+                const normS = window.TurnosDB.normalizeString(t.sustituto);
+                if (!empMap.has(normS)) empMap.set(normS, t.sustituto);
+            }
+        });
         
-        const defaultStart = mon.toISOString().split('T')[0];
-        const defaultEnd   = sun.toISOString().split('T')[0];
+        const allUniqueNorm = Array.from(empMap.keys());
 
-        _picker = flatpickr("#dateRange", {
-            mode: "range", 
-            locale: SpanishLocale, 
-            dateFormat: "Y-m-d", 
-            altInput: true, 
-            altFormat: "d/m/Y", 
-            firstDayOfWeek: 1,
-            defaultDate: [defaultStart, defaultEnd], 
-            onChange: renderPublicView
+        // Contar ausencias para mover al fondo (como en Admin)
+        const absenceCount = {};
+        allUniqueNorm.forEach(normName => {
+            absenceCount[normName] = 0;
+            columns.forEach(c => {
+                const d = hotelData.find(s => window.TurnosDB.normalizeString(s.empleado_id) === normName && s.fecha === c.dbFecha);
+                if (d && d.tipo !== 'NORMAL' && !d.tipo.includes('CT')) absenceCount[normName]++;
+            });
         });
-        await renderPublicView();
+
+        const isTotalAbsent = (norm) => absenceCount[norm] >= columns.length;
+
+        const sortedNorm = allUniqueNorm.sort((a,b) => {
+            // 1. Ausentes totales al final
+            const aAb = isTotalAbsent(a), bAb = isTotalAbsent(b);
+            if (aAb !== bAb) return aAb ? 1 : -1;
+            
+            // 2. Orden de base de datos
+            const pA = profiles.find(p => window.TurnosDB.normalizeString(p.id) === a || window.TurnosDB.normalizeString(p.nombre) === a);
+            const pB = profiles.find(p => window.TurnosDB.normalizeString(p.id) === b || window.TurnosDB.normalizeString(p.nombre) === b);
+            return (pA?.orden ?? 999) - (pB?.orden ?? 999);
+        });
+
+        const rows = sortedNorm.map(normName => {
+            const originalName = empMap.get(normName);
+            const cells = columns.map(c => {
+                const direct = hotelData.find(s => window.TurnosDB.normalizeString(s.empleado_id) === normName && s.fecha === c.dbFecha);
+                if (direct) return { turno: direct.turno, tipo: direct.tipo, sustituto: direct.sustituto };
+                const substituted = hotelData.find(s => window.TurnosDB.normalizeString(s.sustituto) === normName && s.fecha === c.dbFecha);
+                if (substituted) return { turno: substituted.turno, tipo: 'NORMAL', isSub: true, subFor: substituted.empleado_id };
+                return { turno: '', tipo: 'NORMAL' };
+            });
+            return { empName: originalName, cells, hotel_id: hotelName };
+        });
+        table.setData(rows);
     }
 
-    function changeWeek(delta) {
-        if (!_picker) return;
-        const current = _picker.selectedDates;
-        if (current.length < 1) return;
-        const start = new Date(current[0]);
-        start.setDate(start.getDate() + (delta * 7));
-        const end = new Date(start); end.setDate(end.getDate() + 6);
-        _picker.setDate([start, end]);
-        renderPublicView();
-    }
+    window.changeWeek = (delta) => {
+        const current = _picker.selectedDates[0] || new Date();
+        current.setDate(current.getDate() + (delta * 7));
+        const monday = new Date(current);
+        monday.setDate(monday.getDate() + (monday.getDay() === 0 ? -6 : 1 - monday.getDay()));
+        const sunday = new Date(monday);
+        sunday.setDate(sunday.getDate() + 6);
+        _picker.setDate([monday, sunday]);
+        window.renderPublicView();
+    };
 
-    function goToday() {
-        const today = new Date();
-        const mon = new Date(today.getFullYear(), today.getMonth(), today.getDate() - (today.getDay() === 0 ? 6 : today.getDay() - 1));
-        const sun = new Date(mon); sun.setDate(mon.getDate() + 6);
-        if (_picker) _picker.setDate([mon, sun]);
-        renderPublicView();
-    }
+    window.goToday = () => {
+        const d = new Date();
+        const monday = new Date(d);
+        monday.setDate(monday.getDate() + (monday.getDay() === 0 ? -6 : 1 - monday.getDay()));
+        const sunday = new Date(monday);
+        sunday.setDate(sunday.getDate() + 6);
+        _picker.setDate([monday, sunday]);
+        window.renderPublicView();
+    };
 
-    document.addEventListener('DOMContentLoaded', init);
+    document.addEventListener('DOMContentLoaded', async () => {
+        _picker = flatpickr("#dateRange", {
+            mode: "range",
+            dateFormat: "Y-m-d",
+            locale: { ...flatpickr.l10ns.es, firstDayOfWeek: 1 },
+            onChange: () => window.renderPublicView()
+        });
+        const hotels = await window.TurnosDB.getHotels();
+        $('#hotelSelect').innerHTML = `<option value="">Todos los Hoteles</option>` + 
+            hotels.map(h => `<option value="${h}">${h}</option>`).join('');
+        window.goToday();
+    });
   </script>
 </body>
 </html>
-
-
-

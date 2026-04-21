@@ -6,17 +6,20 @@
     <title>Solicitud de Cambio de Turno — TurnosWeb</title>
     <link rel="icon" type="image/png" href="favicon.png">
     <link rel="stylesheet" href="admin.css">
-    <link rel="stylesheet" href="flatpickr.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
     <style>
-        /* Estilos heredados y adaptados del documento proporcionado */
+        :root { --surface: #ffffff; --bg2: #f8fafc; --bg3: #f1f5f9; }
+        body { font-family: 'Inter', sans-serif; background: #eaeff5; margin: 0; }
+        
         .ct-form-container {
             max-width: 900px;
             margin: 2rem auto;
             background: var(--surface);
-            border-radius: 20px;
-            border: 1px solid var(--border);
+            border-radius: 24px;
+            border: 1px solid rgba(0,0,0,0.05);
             overflow: hidden;
-            box-shadow: var(--shadow-lg);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.08);
         }
         
         .ct-header {
@@ -24,19 +27,12 @@
             color: white;
             padding: 3rem 2rem;
             text-align: center;
-            border-bottom: 3px solid var(--accent);
+            border-bottom: 4px solid var(--accent);
         }
-        
-        .ct-header h1 { font-size: 1.8rem; font-weight: 800; margin-bottom: 0.5rem; }
-        .ct-header p { opacity: 0.7; font-size: 0.9rem; }
+        .ct-header h1 { font-family: 'Outfit', sans-serif; font-size: 2rem; font-weight: 800; margin: 0; }
+        .ct-header p { opacity: 0.7; font-size: 0.95rem; margin-top: 5px; }
 
-        .ct-body { padding: 2rem; }
-        
-        fieldset {
-            border: none;
-            padding: 0;
-            margin-bottom: 2.5rem;
-        }
+        .ct-body { padding: 2.5rem; }
         
         legend {
             font-size: 0.75rem;
@@ -44,11 +40,11 @@
             text-transform: uppercase;
             letter-spacing: 0.1em;
             color: var(--accent);
-            margin-bottom: 1.5rem;
+            margin-bottom: 2rem;
             display: block;
             width: 100%;
-            border-bottom: 1px solid var(--border);
-            padding-bottom: 8px;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 10px;
         }
 
         .input-grid {
@@ -58,107 +54,140 @@
             margin-bottom: 1.5rem;
         }
 
-        .field { display: flex; flex-direction: column; gap: 8px; margin-bottom: 1rem; }
-        .field label { font-size: 0.85rem; font-weight: 700; color: var(--text); }
+        .field { display: flex; flex-direction: column; gap: 8px; margin-bottom: 1.2rem; }
+        .field label { font-size: 0.85rem; font-weight: 700; color: #475569; }
         
         input[type="text"], input[type="date"], select, textarea {
             background: var(--bg3);
-            border: 1px solid var(--border);
-            color: var(--text);
-            padding: 12px 15px;
-            border-radius: 10px;
+            border: 1px solid #e2e8f0;
+            color: #1e293b;
+            padding: 14px;
+            border-radius: 12px;
             font-size: 0.95rem;
+            font-family: inherit;
+            transition: 0.2s;
         }
+        input:focus, select:focus { outline: none; border-color: var(--accent); background: white; box-shadow: 0 0 0 4px rgba(var(--accent-rgb), 0.1); }
 
         .shift-card {
             background: var(--bg2);
-            border: 1px solid var(--border);
-            border-radius: 12px;
+            border: 1px solid #e2e8f0;
+            border-radius: 16px;
             padding: 1.5rem;
             margin-bottom: 1rem;
-            position: relative;
+            animation: fadeIn 0.3s ease-out;
         }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
         .shift-grid {
             display: grid;
-            grid-template-columns: 1.5fr 1fr 1fr 2fr auto;
+            grid-template-columns: 1.5fr 1.2fr 1.2fr 1.5fr auto;
             gap: 1rem;
             align-items: flex-end;
         }
 
         .btn-delete {
-            background: var(--bg3);
-            color: var(--text-dim);
-            border: 1px solid var(--border);
-            width: 40px; height: 40px;
-            border-radius: 8px;
-            cursor: pointer;
-            display: flex; align-items: center; justify-content: center;
-        }
-
-        .btn-add-shift {
-            background: transparent;
-            color: var(--accent);
-            border: 2px dashed var(--border);
-            padding: 1rem;
-            width: 100%;
+            background: white;
+            color: #ef4444;
+            border: 1px solid #fee2e2;
+            width: 44px; height: 44px;
             border-radius: 12px;
             cursor: pointer;
-            font-weight: 700;
-            margin-bottom: 2rem;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.2rem;
+            transition: 0.2s;
         }
+        .btn-delete:hover { background: #ef4444; color: white; }
+
+        .btn-add-shift {
+            background: white;
+            color: var(--accent);
+            border: 2px dashed #e2e8f0;
+            padding: 1.2rem;
+            width: 100%;
+            border-radius: 16px;
+            cursor: pointer;
+            font-weight: 700;
+            margin-bottom: 2.5rem;
+            transition: 0.2s;
+        }
+        .btn-add-shift:hover { border-color: var(--accent); background: rgba(var(--accent-rgb), 0.02); }
 
         .agreement {
             display: flex;
             gap: 12px;
-            background: var(--bg3);
-            padding: 1.2rem;
-            border-radius: 10px;
-            font-size: 0.85rem;
-            line-height: 1.4;
+            background: #f8fafc;
+            padding: 1.5rem;
+            border-radius: 16px;
+            font-size: 0.9rem;
+            color: #475569;
             cursor: pointer;
+            border: 1px solid #e2e8f0;
+            align-items: center;
+            margin-top: 1rem;
         }
 
         .btn-submit-main {
             background: var(--accent);
             color: white;
             border: none;
-            padding: 1.2rem;
+            padding: 1.4rem;
             width: 100%;
-            border-radius: 12px;
+            border-radius: 16px;
             font-weight: 800;
             text-transform: uppercase;
             letter-spacing: 0.1em;
             cursor: pointer;
             font-size: 1rem;
+            box-shadow: 0 10px 20px rgba(var(--accent-rgb), 0.2);
+            transition: 0.3s;
         }
+        .btn-submit-main:hover { transform: translateY(-3px); box-shadow: 0 15px 30px rgba(var(--accent-rgb), 0.3); }
+        .btn-submit-main:disabled { background: #cbd5e1; cursor: not-allowed; transform: none; box-shadow: none; }
 
         #success-notice {
             display: none;
             text-align: center;
-            background: #d4edda;
-            color: #155724;
-            padding: 2rem;
-            border-radius: 15px;
+            background: #f0fdf4;
+            color: #166534;
+            padding: 3rem 2rem;
+            border-radius: 24px;
+            border: 1px solid #dcfce7;
             margin-top: 1rem;
+        }
+
+        .loading-spinner {
+            display: inline-block;
+            width: 20px; height: 20px;
+            border: 3px solid rgba(255,255,255,.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s ease-in-out infinite;
+            margin-right: 10px;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        @media (max-width: 768px) {
+            .input-grid, .shift-grid { grid-template-columns: 1fr; }
+            .ct-form-container { margin: 0; border-radius: 0; }
+            .btn-delete { width: 100%; margin-top: 0.5rem; }
         }
     </style>
 </head>
-<body class="light-mode">
+<body>
     <div class="ct-form-container">
         <header class="ct-header">
-            <h1>Solicitud de Cambio de Turno</h1>
-            <p>Sercotel Guadiana & Cumbria Spa&Hotel</p>
+            <h1>Cambio de Turno</h1>
+            <p id="hotel-labels">Sercotel Guadiana & Cumbria Spa&Hotel</p>
         </header>
 
         <div class="ct-body">
-            <form id="form-cambio-v3" action="https://formspree.io/f/xvgawqya" method="POST">
-                
+            <form id="form-solicitud">
                 <fieldset>
-                    <legend>01. Identificación</legend>
+                    <legend>01. IDENTIFICACIÓN</legend>
                     <div class="field" style="margin-bottom:1.5rem;">
                         <label>Seleccionar Hotel</label>
-                        <select id="v3_hotel" required>
+                        <select id="sel_hotel" required>
                             <option value="">— Seleccione Hotel —</option>
                             <option value="Sercotel Guadiana">Sercotel Guadiana</option>
                             <option value="Cumbria Spa&Hotel">Cumbria Spa&Hotel</option>
@@ -168,198 +197,186 @@
                     <div class="input-grid">
                         <div class="field">
                             <label>Empleado Solicitante</label>
-                            <select id="v3_solicitante" name="solicitante" required>
-                                <option value="">— Seleccione —</option>
+                            <select id="sel_solicitante" required disabled>
+                                <option value="">— Seleccione Hotel —</option>
                             </select>
                         </div>
                         <div class="field">
                             <label>Compañero que acepta</label>
-                            <select id="v3_companero" name="companero" required>
-                                <option value="">— Seleccione —</option>
+                            <select id="sel_companero" required disabled>
+                                <option value="">— Seleccione Hotel —</option>
                             </select>
                         </div>
                     </div>
 
                     <label class="agreement">
-                        <input type="checkbox" name="acuerdo_confirmado" required style="width:18px; height:18px;">
-                        <span>Declaro que ambos empleados están informados y aceptan este cambio bajo las políticas del hotel.</span>
+                        <input type="checkbox" id="check_acuerdo" required style="width:20px; height:20px;">
+                        <span>Declaro que ambos empleados aceptamos este intercambio voluntariamente.</span>
                     </label>
                 </fieldset>
 
                 <fieldset>
-                    <legend>02. Detalles del Intercambio</legend>
-                    <div id="v3_items_container">
-                        <div class="shift-card-wrapper">
-                            <div class="shift-card">
-                                <div class="shift-grid">
-                                    <div class="field">
-                                        <label>Fecha</label>
-                                        <input type="date" class="v3-fecha" required>
-                                    </div>
-                                    <div class="field">
-                                        <label>Turno Actual</label>
-                                        <select class="v3-origen">
-                                            <option>Mañana</option>
-                                            <option>Tarde</option>
-                                            <option>Noche</option>
-                                            <option>Descanso</option>
-                                        </select>
-                                    </div>
-                                    <div class="field">
-                                        <label>Nuevo Turno</label>
-                                        <select class="v3-destino">
-                                            <option>Mañana</option>
-                                            <option>Tarde</option>
-                                            <option>Noche</option>
-                                            <option>Descanso</option>
-                                        </select>
-                                    </div>
-                                    <div class="field">
-                                        <label>Notas</label>
-                                        <input type="text" class="v3-nota" placeholder="Motivo o detalle...">
-                                    </div>
-                                    <button type="button" class="btn-delete" onclick="quitarFilaV3(this)">✕</button>
+                    <legend>02. DETALLES DEL INTERCAMBIO</legend>
+                    <div id="items_container">
+                        <div class="shift-card">
+                            <div class="shift-grid">
+                                <div class="field">
+                                    <label>Fecha</label>
+                                    <input type="date" class="v_fecha" required onchange="window.syncShiftRow(this)">
                                 </div>
+                                <div class="field">
+                                    <label>Turno Actual</label>
+                                    <select class="v_origen">
+                                        <option value="">—</option>
+                                        <option>Mañana</option>
+                                        <option>Tarde</option>
+                                        <option>Noche</option>
+                                        <option>Descanso</option>
+                                    </select>
+                                </div>
+                                <div class="field">
+                                    <label>Nuevo Turno</label>
+                                    <select class="v_destino">
+                                        <option value="">—</option>
+                                        <option>Mañana</option>
+                                        <option>Tarde</option>
+                                        <option>Noche</option>
+                                        <option>Descanso</option>
+                                    </select>
+                                </div>
+                                <div class="field">
+                                    <label>Notas</label>
+                                    <input type="text" class="v_nota" placeholder="Motivo...">
+                                </div>
+                                <button type="button" class="btn-delete" onclick="quitarFila(this)">✕</button>
                             </div>
                         </div>
                     </div>
 
-                    <button type="button" class="btn-add-shift" onclick="nuevaFilaV3()">
-                        + Añadir otra fecha
-                    </button>
+                    <button type="button" class="btn-add-shift" onclick="nuevaFila()">+ Añadir otra fecha</button>
 
                     <div class="field">
-                        <label>Observaciones Adicionales</label>
-                        <textarea name="observaciones" rows="3" placeholder="Opcional..."></textarea>
+                        <label>Observaciones Adicionales (Opcional)</label>
+                        <textarea id="obs" rows="3"></textarea>
                     </div>
                 </fieldset>
 
-                <button type="submit" id="v3_btn_submit" class="btn-submit-main">
-                    Enviar Solicitud Oficial
-                </button>
-
-                <div id="success-notice">
-                    <div style="font-size: 2rem; margin-bottom: 10px;">✨</div>
-                    Solicitud enviada con éxito. Administración la revisará pronto.
-                </div>
+                <button type="submit" id="btn_submit" class="btn-submit-main">Enviar Solicitud Oficial</button>
             </form>
+
+            <div id="success-notice">
+                <div style="font-size: 3rem; margin-bottom: 1.5rem;">✅</div>
+                <h2 style="margin:0 0 10px 0; font-family:'Outfit';">¡Enviado con éxito!</h2>
+                <p>La administración ha recibido tu solicitud y la revisará en breve.</p>
+                <button class="btn-add-shift" style="margin-top:1.5rem; width:auto; padding:0.8rem 2rem;" onclick="location.reload()">Nueva Solicitud</button>
+            </div>
         </div>
     </div>
 
     <script src="supabase.js"></script>
-    <script src="localforage.js"></script>
-    <script src="supabase-config.js?v=8.2"></script>
-    <script src="supabase-dao.js?v=8.2"></script>
+    <script src="supabase-config.js?v=9.8"></script>
+    <script src="supabase-dao.js?v=9.8"></script>
 
     <script>
-        let _allEmployees = [];
+        const $ = s => document.querySelector(s);
+        let _emps = [];
 
-        async function init() {
-            _allEmployees = await window.TurnosDB.getEmpleados();
-            
-            document.getElementById("v3_hotel").addEventListener("change", updateEmpDrop);
-            document.getElementById("v3_solicitante").addEventListener("change", syncShifts);
-            document.getElementById("v3_companero").addEventListener("change", syncShifts);
+        async function startup() {
+            try {
+                _emps = await window.TurnosDB.getEmpleados();
+                $("#sel_hotel").addEventListener("change", populateEmployeeDrops);
+            } catch (e) {
+                console.error("Error al conectar con DB:", e);
+                alert("Error de conexión con la base de datos.");
+            }
         }
 
-        function updateEmpDrop() {
-            const h = document.getElementById("v3_hotel").value;
-            const s1 = document.getElementById("v3_solicitante");
-            const s2 = document.getElementById("v3_companero");
-            
+        function populateEmployeeDrops() {
+            const h = $("#sel_hotel").value;
+            const s1 = $("#sel_solicitante");
+            const s2 = $("#sel_companero");
+
             if (!h) {
-                s1.innerHTML = '<option value="">— Seleccione Hotel Primero —</option>';
-                s2.innerHTML = '<option value="">— Seleccione Hotel Primero —</option>';
+                s1.disabled = s2.disabled = true;
                 return;
             }
 
-            const hotelKey = h.toLowerCase().split(' ')[0]; // "sercotel" o "cumbria"
-            const filtered = _allEmployees.filter(e => {
-                const isActive = e.activo !== false;
-                const empHotel = (e.hotel_id || "").toLowerCase();
-                const matchesHotel = empHotel.includes(hotelKey);
-                // Si la migración es nueva y no tiene hotel_id, dejamos ver (fallback preventivo)
-                if (isActive && (!e.hotel_id || matchesHotel)) return true;
-                return false;
-            });
+            const hotelKey = h.toLowerCase().includes('cumbria') ? 'cumbria' : 'guadiana';
+            const filtered = _emps.filter(e => {
+                const hotelVal = (e.hotel_id || "").toLowerCase();
+                return e.activo !== false && hotelVal.includes(hotelKey);
+            }).sort((a,b) => a.nombre.localeCompare(b.nombre));
 
-            const html = '<option value="">— Seleccione Empleado —</option>' + 
-                         filtered.sort((a,b) => a.nombre.localeCompare(b.nombre))
-                                 .map(e => `<option value="${e.id}">${e.nombre}</option>`).join('');
+            const options = `<option value="">— Seleccione Empleado —</option>` + 
+                            filtered.map(e => `<option value="${e.id}">${e.nombre}</option>`).join('');
             
-            s1.innerHTML = html;
-            s2.innerHTML = html;
+            s1.innerHTML = s2.innerHTML = options;
+            s1.disabled = s2.disabled = false;
         }
 
-        async function syncShifts() {
-            const sol = document.getElementById("v3_solicitante").value;
-            const comp = document.getElementById("v3_companero").value;
-            const hotel = document.getElementById("v3_hotel").value;
-            const rows = document.querySelectorAll(".shift-card-wrapper");
+        window.syncShiftRow = async (input) => {
+            const card = input.closest(".shift-card");
+            const solId = $("#sel_solicitante").value;
+            const date = input.value;
+            const selOrig = card.querySelector(".v_origen");
 
-            const mapTurno = (t) => {
-                const s = String(t || "").toUpperCase();
-                if (s.startsWith('M')) return 'Mañana';
-                if (s.startsWith('T')) return 'Tarde';
-                if (s.startsWith('N')) return 'Noche';
-                if (s.startsWith('D')) return 'Descanso';
-                return t;
-            };
+            if (!solId || !date) return;
 
-            rows.forEach(async (row) => {
-                const fInput = row.querySelector(".v3-fecha");
-                const sOrig = row.querySelector(".v3-origen");
-                const sDest = row.querySelector(".v3-destino");
+            try {
+                // Buscamos el turno real de este empleado en esa fecha
+                const turns = await window.TurnosDB.fetchRango(date, date);
+                const match = turns.find(t => t.empleado_id === solId);
                 
-                if (fInput.value && sol && comp) {
-            if (!t) return "Descanso";
-            const low = t.toLowerCase();
-            if (low.startsWith('m')) return "Mañana";
-            if (low.startsWith('t')) return "Tarde";
-            if (low.startsWith('n')) return "Noche";
-            return "Descanso";
+                if (match) {
+                    const mapped = mapShiftLabel(match.turno || match.tipo);
+                    selOrig.value = mapped;
+                }
+            } catch (e) { console.warn("Error sync shifts", e); }
+        };
+
+        function mapShiftLabel(t) {
+            const s = String(t || "").toUpperCase();
+            if (s.startsWith('M')) return 'Mañana';
+            if (s.startsWith('T')) return 'Tarde';
+            if (s.startsWith('N')) return 'Noche';
+            if (s.startsWith('D')) return 'Descanso';
+            if (s.includes('VAC')) return 'Descanso';
+            return 'Mañana'; // Default
         }
 
-        function nuevaFilaV3() {
-            const container = document.getElementById("v3_items_container");
-            const base = document.querySelector(".shift-card-wrapper");
-            const clone = base.cloneNode(true);
+        function nuevaFila() {
+            const container = $("#items_container");
+            const first = container.querySelector(".shift-card");
+            const clone = first.cloneNode(true);
             clone.querySelectorAll('input').forEach(i => i.value = '');
-            const fInput = clone.querySelector(".v3-fecha");
-            fInput.addEventListener("change", syncShifts);
+            clone.querySelectorAll('select').forEach(s => s.selectedIndex = 0);
             container.appendChild(clone);
         }
 
-        function quitarFilaV3(btn) {
-            const total = document.querySelectorAll(".shift-card-wrapper").length;
-            if (total > 1) btn.closest(".shift-card-wrapper").remove();
+        function quitarFila(btn) {
+            const all = document.querySelectorAll(".shift-card");
+            if (all.length > 1) btn.closest(".shift-card").remove();
         }
 
-        document.querySelectorAll(".v3-fecha").forEach(el => el.addEventListener("change", syncShifts));
-
-        document.getElementById("form-cambio-v3").addEventListener("submit", async function(e) {
+        $("#form-solicitud").addEventListener("submit", async (e) => {
             e.preventDefault();
-            const btn = document.getElementById("v3_btn_submit");
-            const form = e.target;
-            const sol = document.getElementById("v3_solicitante").value;
-            const comp = document.getElementById("v3_companero").value;
-            const hotel = document.getElementById("v3_hotel").value;
+            const btn = $("#btn_submit");
+            const hotel = $("#sel_hotel").value;
+            const sol = $("#sel_solicitante").value;
+            const comp = $("#sel_companero").value;
+            
+            if (sol === comp) return alert("El solicitante y el compañero no pueden ser la misma persona.");
             
             btn.disabled = true;
-            btn.textContent = "ENVIANDO...";
+            btn.innerHTML = `<span class="loading-spinner"></span> ENVIANDO...`;
 
-            const f = document.querySelectorAll(".v3-fecha");
-            const o = document.querySelectorAll(".v3-origen");
-            const d = document.querySelectorAll(".v3-destino");
-            const n = document.querySelectorAll(".v3-nota");
-
-            const fechasPermuta = [];
-            f.forEach((val, i) => {
-                fechasPermuta.push({
-                    fecha: val.value,
-                    origen: o[i].value,
-                    destino: d[i].value,
-                    nota: n[i].value
+            const items = [];
+            document.querySelectorAll(".shift-card").forEach(card => {
+                items.push({
+                    fecha: card.querySelector(".v_fecha").value,
+                    origen: card.querySelector(".v_origen").value,
+                    destino: card.querySelector(".v_destino").value,
+                    nota: card.querySelector(".v_nota").value
                 });
             });
 
@@ -367,41 +384,29 @@
                 hotel: hotel,
                 solicitante: sol,
                 companero: comp,
-                fechas: fechasPermuta,
-                observaciones: form.observaciones.value,
-                _subject: `Solicitud Turno [${hotel}]: ${sol} / ${comp}`
+                fechas: items,
+                observaciones: $("#obs").value,
+                estado: 'pendiente'
             };
 
             try {
-                if (window.supabase) {
-                    const { error } = await window.supabase.from('peticiones_cambio').insert([payload]);
-                    if (error) {
-                        console.warn("Error insertando en Supabase (intentando compatibilidad):", error);
-                        if (error.code === '42703' || error.status === 400) {
-                             const { hotel, ...compatPayload } = payload;
-                             await window.supabase.from('peticiones_cambio').insert([compatPayload]);
-                        }
-                    }
-                }
-                const response = await fetch(form.action, {
-                    method: "POST",
-                    body: JSON.stringify(payload),
-                    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' }
-                });
-                if (response.ok) {
-                    document.getElementById("success-notice").style.display = "block";
-                    btn.textContent = "ENVIADO";
-                    form.reset();
-                }
+                const { error } = await window.supabase.from('peticiones_cambio').insert([payload]);
+                if (error) throw error;
+                
+                // Efecto visual de éxito
+                $("#form-solicitud").style.display = "none";
+                $("#success-notice").style.display = "block";
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+
             } catch (err) {
                 console.error(err);
-                alert("Error al enviar solicitud: " + err.message);
+                alert("Error al enviar: " + err.message);
                 btn.disabled = false;
-                btn.textContent = "Enviar Solicitud Oficial";
+                btn.innerHTML = `Enviar Solicitud Oficial`;
             }
         });
 
-        document.addEventListener("DOMContentLoaded", init);
+        document.addEventListener("DOMContentLoaded", startup);
     </script>
 </body>
 </html>

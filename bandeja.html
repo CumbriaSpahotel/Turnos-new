@@ -5,6 +5,76 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TurnosWeb — Bandeja</title>
     <link rel="stylesheet" href="admin.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        .nav-item.active { background: var(--accent-dim); color: var(--accent); border-right: 3px solid var(--accent); }
+        
+        .message-card {
+            background: var(--bg2);
+            border: 1px solid var(--border);
+            border-radius: 15px;
+            padding: 1.2rem;
+            margin-bottom: 1rem;
+            transition: 0.2s;
+            display: flex;
+            gap: 1.2rem;
+            align-items: flex-start;
+            position: relative;
+        }
+        .message-card.unread { border-left: 4px solid var(--accent); background: rgba(var(--accent-rgb), 0.03); }
+        .message-card:hover { transform: translateX(5px); box-shadow: 0 5px 15px rgba(0,0,0,0.05); }
+
+        .msg-icon {
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            flex-shrink: 0;
+        }
+        .msg-icon.info { background: rgba(33, 150, 243, 0.1); color: #2196f3; }
+        .msg-icon.aviso { background: rgba(255, 152, 0, 0.1); color: #ff9800; }
+        .msg-icon.urgente { background: rgba(244, 67, 54, 0.1); color: #f44336; }
+
+        .msg-content { flex-grow: 1; }
+        .msg-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 5px; }
+        .msg-title { font-weight: 700; font-family: 'Outfit', sans-serif; font-size: 1rem; }
+        .msg-meta { font-size: 0.75rem; color: var(--text-dim); }
+        .msg-body { font-size: 0.9rem; color: var(--text); line-height: 1.4; }
+
+        .msg-actions { display: flex; gap: 8px; margin-top: 10px; }
+        .btn-msg {
+            background: transparent;
+            border: 1px solid var(--border);
+            padding: 5px 10px;
+            border-radius: 8px;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: 0.2s;
+            color: var(--text-dim);
+        }
+        .btn-msg:hover { background: var(--bg3); color: var(--text); }
+        .btn-delete:hover { border-color: #f44336; color: #f44336; background: rgba(244, 67, 54, 0.05); }
+
+        .stats-bar {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+        .stat-pill {
+            background: var(--bg2);
+            padding: 10px 20px;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: 600;
+        }
+    </style>
 </head>
 <body class="light-mode">
     <aside class="sidebar">
@@ -40,32 +110,130 @@
             <header class="page-header">
                 <div>
                     <h1 class="page-title">Bandeja de Mensajes</h1>
-                    <p class="page-subtitle">Historial de notificaciones y avisos del sistema</p>
+                    <p class="page-subtitle">Comunicaciones, alertas y notificaciones del personal</p>
                 </div>
                 <div id="syncStatus" class="status-badge-premium" style="margin-left:auto; display:flex; align-items:center; gap:8px;">
                     <span id="syncDot" style="width:8px; height:8px; border-radius:50%; background:#ff9800;"></span>
                     <span id="syncText">Conectando...</span>
                 </div>
             </header>
+
+            <div class="stats-bar">
+                <div class="stat-pill">
+                    <span id="unreadCount" style="color:var(--accent); font-size:1.2rem;">0</span>
+                    <span style="font-size:0.8rem; opacity:0.7;">Mensajes Sin Leer</span>
+                </div>
+                <div class="stat-pill">
+                    <span id="totalCount" style="font-size:1.2rem;">0</span>
+                    <span style="font-size:0.8rem; opacity:0.7;">Total Recibidos</span>
+                </div>
+                <button onclick="handleClearAll()" class="btn-msg" style="margin-left:auto; height:fit-content; align-self:center;">🗑️ Vaciar Bandeja</button>
+            </div>
+
             <div id="messagesList" class="glass-panel" style="min-height:500px; padding:2rem;">
                 <div style="text-align:center; opacity:0.5; padding:5rem;">
-                    📭 Módulo de bandeja en migración a Supabase.
+                    📭 No hay mensajes en la bandeja.
                 </div>
             </div>
         </section>
     </main>
 
     <script src="supabase.js"></script>
-    <script src="supabase-config.js?v=8.2"></script>
-    <script src="supabase-dao.js?v=8.2"></script>
+    <script src="supabase-config.js?v=9.8"></script>
+    <script src="supabase-dao.js?v=9.8"></script>
     <script>
         const $ = (s) => document.querySelector(s);
+        
+        async function fetchMessages() {
+            const list = $('#messagesList');
+            try {
+                const data = await window.TurnosDB.fetchMensajes();
+                
+                $('#unreadCount').textContent = data.filter(m => !m.leido).length;
+                $('#totalCount').textContent = data.length;
+
+                if (data.length === 0) {
+                    list.innerHTML = `
+                        <div style="text-align:center; opacity:0.5; padding:5rem;">
+                            📭 Bandeja de entrada vacía.
+                        </div>`;
+                    return;
+                }
+
+                list.innerHTML = data.map(msg => `
+                    <div class="message-card ${msg.leido ? '' : 'unread'}">
+                        <div class="msg-icon ${msg.tipo || 'info'}">
+                            ${getIcon(msg.tipo)}
+                        </div>
+                        <div class="msg-content">
+                            <div class="msg-header">
+                                <span class="msg-title">${msg.asunto || 'Sin Asunto'}</span>
+                                <span class="msg-meta">${new Date(msg.created_at).toLocaleString('es-ES')}</span>
+                            </div>
+                            <div style="margin-bottom:8px;">
+                                <span style="font-size:0.75rem; font-weight:700; color:var(--accent);">${msg.emisor}</span>
+                                ${msg.hotel_id ? `<span style="font-size:0.7rem; opacity:0.5; margin-left:5px;">@ ${msg.hotel_id}</span>` : ''}
+                            </div>
+                            <div class="msg-body">${msg.cuerpo}</div>
+                            <div class="msg-actions">
+                                ${!msg.leido ? `<button class="btn-msg" onclick="handleMarkRead('${msg.id}')">👁️ Marcar como leído</button>` : ''}
+                                <button class="btn-msg btn-delete" onclick="handleDelete('${msg.id}')">🗑️ Eliminar</button>
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+
+            } catch (err) {
+                console.error(err);
+                list.innerHTML = `<div style="color:#ff5252; padding:2rem; text-align:center;">Error: ${err.message}</div>`;
+            }
+        }
+
+        function getIcon(tipo) {
+            if (tipo === 'aviso') return '⚠️';
+            if (tipo === 'urgente') return '🚨';
+            return '✉️';
+        }
+
+        async function handleMarkRead(id) {
+            try {
+                await window.TurnosDB.marcarMensajeLeido(id);
+                fetchMessages();
+            } catch (e) { alert(e.message); }
+        }
+
+        async function handleDelete(id) {
+            if (!confirm("¿Eliminar este mensaje permanentemente?")) return;
+            try {
+                await window.TurnosDB.eliminarMensaje(id);
+                fetchMessages();
+            } catch (e) { alert(e.message); }
+        }
+
+        async function handleClearAll() {
+            if (!confirm("¿Estás seguro de vaciar toda la bandeja de mensajes?")) return;
+            // Podríamos implementar un clearMessages en el DAO si fuera necesario
+            alert("Opción no habilitada por seguridad. Elimine uno a uno.");
+        }
+
         function toggleTheme() {
             document.body.classList.toggle('light-mode');
             localStorage.setItem('turnosweb_theme', document.body.classList.contains('light-mode') ? 'light' : 'dark');
         }
+
         document.addEventListener('DOMContentLoaded', () => {
-            if (localStorage.getItem('turnosweb_theme') === 'light') document.body.classList.add('light-mode');
+            const savedTheme = localStorage.getItem('turnosweb_theme') || 'light';
+            if (savedTheme === 'light') document.body.classList.add('light-mode');
+            fetchMessages();
+
+            if (window.supabase) {
+                window.supabase
+                    .channel('mensajes_changes')
+                    .on('postgres_changes', { event: '*', schema: 'public', table: 'mensajes' }, () => {
+                        fetchMessages();
+                    })
+                    .subscribe();
+            }
         });
     </script>
     <script src="sync-status.js"></script>

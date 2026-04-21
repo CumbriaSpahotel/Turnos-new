@@ -12,6 +12,7 @@
 window.TurnosDB = {
     _channel: null,
     _syncTTL: 5 * 60 * 1000, 
+    client: null, // Se asignará al cargar config
 
     // --- UTILIDADES ---
     normalizeDate(d) {
@@ -136,6 +137,319 @@ window.TurnosDB = {
             console.error("DAO Error (fetchTipo):", err);
             return [];
         }
+    },
+
+    async fetchEventos(inicio = null, fin = null) {
+        const client = window.supabase;
+        const i = this.normalizeDate(inicio);
+        const f = this.normalizeDate(fin);
+
+        try {
+            const data = await this.fetchAll(() => {
+                let q = client
+                    .from('eventos_cuadrante')
+                    .select('*')
+                    .neq('estado', 'anulado');
+
+                if (i && f) {
+                    q = q.lte('fecha_inicio', f).or(`fecha_fin.is.null,fecha_fin.gte.${i}`);
+                } else if (i) {
+                    q = q.or(`fecha_fin.is.null,fecha_fin.gte.${i}`);
+                } else if (f) {
+                    q = q.lte('fecha_inicio', f);
+                }
+
+                return q.order('fecha_inicio', { ascending: true });
+            });
+            return data || [];
+        } catch (err) {
+            console.warn("DAO Aviso (fetchEventos):", err);
+            return [];
+        }
+    },
+
+    async upsertEvento(evento) {
+        const client = window.supabase;
+        try {
+            if (!evento?.tipo || !evento?.fecha_inicio) {
+                throw new Error("Tipo y fecha de inicio son obligatorios");
+            }
+
+            const { data: { session } } = await client.auth.getSession();
+            const payload = {
+                ...evento,
+                fecha_inicio: this.normalizeDate(evento.fecha_inicio),
+                fecha_fin: evento.fecha_fin ? this.normalizeDate(evento.fecha_fin) : null,
+                estado: evento.estado || 'activo',
+                payload: evento.payload || {},
+                updated_by: session?.user?.email || 'WEB_ADMIN',
+                updated_at: new Date().toISOString()
+            };
+
+            const { data, error } = await client
+                .from('eventos_cuadrante')
+                .upsert(payload)
+                .select()
+                .single();
+
+            if (error) throw error;
+            if (window.localforage) await window.localforage.clear();
+            this.updateUISyncStatus('ok');
+            return data;
+        } catch (err) {
+            console.error("DAO Error (upsertEvento):", err);
+            this.updateUISyncStatus('error');
+            throw err;
+        }
+    },
+
+    async fetchPeticiones() {
+        const client = window.supabase;
+        try {
+            const { data, error } = await client
+                .from('peticiones_cambio')
+                .select('*')
+                .order('created_at', { ascending: false });
+            if (error) throw error;
+            return data || [];
+        } catch (err) {
+            console.error("DAO Error (fetchPeticiones):", err);
+            return [];
+        }
+    },
+
+    async actualizarEstadoPeticion(id, estado) {
+        const client = window.supabase;
+        try {
+            const { error } = await client
+                .from('peticiones_cambio')
+                .update({ estado, updated_at: new Date().toISOString() })
+                .eq('id', id);
+            if (error) throw error;
+            this.updateUISyncStatus('ok');
+        } catch (err) {
+            console.error("DAO Error (actualizarEstadoPeticion):", err);
+            this.updateUISyncStatus('error');
+            throw err;
+        }
+    },
+
+    async procesarAprobacionPeticion(peticion) {
+        try {
+            const fechas = Array.isArray(peticion.fechas) ? peticion.fechas : [];
+            for (const f of fechas) {
+                await this.upsertEvento({
+                    tipo: peticion.companero ? 'INTERCAMBIO_TURNO' : 'CAMBIO_TURNO',
+                    empleado_id: peticion.solicitante,
+                    empleado_destino_id: peticion.companero || null,
+                    fecha_inicio: f.fecha,
+                    fecha_fin: f.fecha,
+                    turno_nuevo: f.destino,
+                    observaciones: `Aprobado desde Solicitudes: ${peticion.observaciones || ''}`,
+                    payload: { peticion_id: peticion.id, original_data: f }
+                });
+            }
+            await this.actualizarEstadoPeticion(peticion.id, 'aprobada');
+        } catch (err) {
+            console.error("DAO Error (procesarAprobacionPeticion):", err);
+            throw err;
+        }
+    },
+
+    async fetchMensajes(receptor = 'ADMIN') {
+        const client = window.supabase;
+        try {
+            const { data, error } = await client
+                .from('mensajes')
+                .select('*')
+                .eq('receptor', receptor)
+                .order('created_at', { ascending: false });
+            if (error) throw error;
+            return data || [];
+        } catch (err) {
+            console.error("DAO Error (fetchMensajes):", err);
+            return [];
+        }
+    },
+
+    async marcarMensajeLeido(id) {
+        const client = window.supabase;
+        try {
+            const { error } = await client
+                .from('mensajes')
+                .update({ leido: true })
+                .eq('id', id);
+            if (error) throw error;
+        } catch (err) {
+            console.error("DAO Error (marcarMensajeLeido):", err);
+            throw err;
+        }
+    },
+
+    async eliminarMensaje(id) {
+        const client = window.supabase;
+        try {
+            const { error } = await client
+                .from('mensajes')
+                .delete()
+                .eq('id', id);
+            if (error) throw error;
+        } catch (err) {
+            console.error("DAO Error (eliminarMensaje):", err);
+            throw err;
+        }
+    },
+
+    async anularEvento(id) {
+        const client = window.supabase;
+        try {
+            const { error } = await client
+                .from('eventos_cuadrante')
+                .update({ estado: 'anulado', updated_at: new Date().toISOString() })
+                .eq('id', id);
+            if (error) throw error;
+            if (window.localforage) await window.localforage.clear();
+            this.updateUISyncStatus('ok');
+        } catch (err) {
+            console.error("DAO Error (anularEvento):", err);
+            this.updateUISyncStatus('error');
+            throw err;
+        }
+    },
+
+    async fetchRangoCalculado(inicio, fin) {
+        const base = await this.fetchRango(inicio, fin);
+        const eventos = await this.fetchEventos(inicio, fin);
+        return this.aplicarEventosCuadrante(base, eventos, inicio, fin);
+    },
+
+    aplicarEventosCuadrante(baseRows, eventos, inicio, fin) {
+        const norm = (value) => this.normalizeString(value).replace(/\s+/g, ' ');
+        const start = this.normalizeDate(inicio);
+        const end = this.normalizeDate(fin);
+        const rows = (baseRows || []).map(row => ({ ...row, base_empleado_id: row.base_empleado_id || row.empleado_id }));
+        const datesBetween = (a, b) => {
+            const out = [];
+            const current = new Date(`${a}T12:00:00`);
+            const limit = new Date(`${b}T12:00:00`);
+            while (current <= limit) {
+                out.push(current.toISOString().split('T')[0]);
+                current.setDate(current.getDate() + 1);
+            }
+            return out;
+        };
+        const eventDates = (event) => {
+            const a = this.normalizeDate(event.fecha_inicio);
+            const b = this.normalizeDate(event.fecha_fin || event.fecha_inicio);
+            const from = a < start ? start : a;
+            const to = b > end ? end : b;
+            return from && to && from <= to ? datesBetween(from, to) : [];
+        };
+        const byEmpDate = (emp, date) => rows.filter(row => norm(row.empleado_id) === norm(emp) && row.fecha === date);
+        const firstByEmpDate = (emp, date) => byEmpDate(emp, date)[0] || null;
+        const ensureRow = (emp, date, template = {}) => {
+            let row = firstByEmpDate(emp, date);
+            if (!row) {
+                row = {
+                    empleado_id: emp,
+                    base_empleado_id: emp,
+                    fecha: date,
+                    turno: template.turno || '',
+                    tipo: template.tipo || 'NORMAL',
+                    hotel_id: template.hotel_id || template.hotel_origen || '',
+                    sustituto: null,
+                    updated_by: 'EVENTO_CALCULADO'
+                };
+                rows.push(row);
+            }
+            return row;
+        };
+
+        (eventos || [])
+            .filter(event => (event.estado || 'activo') !== 'anulado')
+            .sort((a, b) => {
+                const order = {
+                    BAJA_EMPRESA: 10,
+                    BAJA: 20,
+                    PERM: 20,
+                    VAC: 20,
+                    COBERTURA: 30,
+                    CAMBIO_HOTEL: 40,
+                    CAMBIO_POSICION: 40,
+                    INTERCAMBIO_HOTEL: 40,
+                    INTERCAMBIO_POSICION: 40,
+                    INTERCAMBIO_TURNO: 50,
+                    CAMBIO_TURNO: 60,
+                    REFUERZO: 70
+                };
+                return (order[String(a.tipo).toUpperCase()] || 999) - (order[String(b.tipo).toUpperCase()] || 999);
+            })
+            .forEach(event => {
+                const type = String(event.tipo || '').toUpperCase();
+                const emp = event.empleado_id;
+                const dest = event.empleado_destino_id;
+
+                eventDates(event).forEach(date => {
+                    if (['VAC', 'BAJA', 'PERM'].includes(type)) {
+                        const affected = byEmpDate(emp, date);
+                        const targetRows = affected.length ? affected : [ensureRow(emp, date, event)];
+                        targetRows.forEach(row => {
+                            row.tipo = type;
+                            row.sustituto = dest || row.sustituto || null;
+                            row.evento_id = event.id;
+                        });
+                    } else if (type === 'COBERTURA') {
+                        byEmpDate(emp, date).forEach(row => {
+                            row.sustituto = dest || row.sustituto || null;
+                            row.evento_id = event.id;
+                        });
+                    } else if (['CAMBIO_HOTEL', 'CAMBIO_POSICION', 'INTERCAMBIO_HOTEL', 'INTERCAMBIO_POSICION'].includes(type)) {
+                        const rowA = firstByEmpDate(emp, date);
+                        const rowB = firstByEmpDate(dest, date);
+                        if (rowA && rowB) {
+                            const aEmp = rowA.empleado_id;
+                            rowA.empleado_id = rowB.empleado_id;
+                            rowB.empleado_id = aEmp;
+                            rowA.evento_id = event.id;
+                            rowB.evento_id = event.id;
+                        } else if (rowA && dest) {
+                            rowA.empleado_id = dest;
+                            rowA.evento_id = event.id;
+                        }
+                    } else if (type === 'INTERCAMBIO_TURNO') {
+                        const rowA = firstByEmpDate(emp, date);
+                        const rowB = firstByEmpDate(dest, date);
+                        if (rowA && rowB) {
+                            const turnoA = rowA.turno;
+                            rowA.turno = rowB.turno;
+                            rowB.turno = turnoA;
+                            rowA.tipo = 'CT';
+                            rowB.tipo = 'CT';
+                            rowA.evento_tipo = type;
+                            rowB.evento_tipo = type;
+                            rowA.sustituto = dest || rowA.sustituto || null;
+                            rowB.sustituto = emp || rowB.sustituto || null;
+                            rowA.evento_id = event.id;
+                            rowB.evento_id = event.id;
+                        }
+                    } else if (type === 'CAMBIO_TURNO') {
+                        const row = ensureRow(emp, date, event);
+                        row.turno = event.turno_nuevo || row.turno;
+                        row.tipo = 'CT';
+                        row.evento_tipo = type;
+                        row.sustituto = dest || row.sustituto || null;
+                        row.evento_id = event.id;
+                    } else if (type === 'REFUERZO' && emp) {
+                        const row = ensureRow(emp, date, event);
+                        row.turno = event.turno_nuevo || event.turno_original || row.turno || '';
+                        row.hotel_id = event.hotel_destino || event.hotel_origen || row.hotel_id;
+                        row.tipo = 'NORMAL';
+                        row.evento_id = event.id;
+                    }
+                });
+            });
+
+        return rows.sort((a, b) => String(a.fecha).localeCompare(String(b.fecha)) || String(a.hotel_id || '').localeCompare(String(b.hotel_id || '')) || String(a.empleado_id || '').localeCompare(String(b.empleado_id || '')));
     },
 
     async fetchVacaciones(inicio = null, fin = null) {
