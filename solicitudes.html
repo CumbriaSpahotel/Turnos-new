@@ -89,7 +89,6 @@
             <a href="cambios.html" class="nav-item">🔄 <span class="nav-label">Cambios de Turno</span></a>
             <div class="nav-group-label">COMUNICACIÓN</div>
             <a href="solicitudes.html" class="nav-item active">📩 <span class="nav-label">Solicitudes</span></a>
-            <a href="bandeja.html" class="nav-item">📫 <span class="nav-label">Bandeja</span></a>
             <div class="nav-group-label">SISTEMA</div>
             <a href="configuracion.html" class="nav-item">📦 <span class="nav-label">Configuración</span></a>
         </nav>
@@ -129,8 +128,8 @@
     </main>
 
     <script src="supabase.js"></script>
-    <script src="supabase-config.js?v=9.9"></script>
-    <script src="supabase-dao.js?v=9.9"></script>
+    <script src="supabase-dao.js?v=10.0"></script>
+    <script src="supabase-config.js?v=10.0"></script>
     <script>
         const $ = (s) => document.querySelector(s);
         let _allRequests = [];
@@ -174,12 +173,12 @@
                                         ${req.estado}
                                     </div>
                                     
-                                    ${req.estado === 'pendiente' ? `
-                                        <div style="display:flex; gap:10px;">
-                                            <button class="btn-reject" onclick="handleAction('${req.id}', 'rechazada')">✖ Denegar</button>
-                                            <button class="btn-approve" onclick="handleAction('${req.id}', 'aprobada')">✔ Aprobar</button>
-                                        </div>
-                                    ` : ''}
+                                    <div style="display:flex; gap:10px;">
+                                        ${req.estado !== 'rechazada' ? `<button class="btn-reject" onclick="handleAction('${req.id}', 'rechazada')">${req.estado === 'aprobada' ? '✖ Rectificar y Denegar' : '✖ Denegar'}</button>` : ''}
+                                        ${req.estado !== 'aprobada' ? `<button class="btn-approve" onclick="handleAction('${req.id}', 'aprobada')">${req.estado === 'rechazada' ? '✔ Reabrir y Aprobar' : '✔ Aprobar'}</button>` : ''}
+                                        ${(req.estado === 'aprobada' || req.estado === 'rechazada') ? `<button class="btn-msg" style="border-radius:10px; padding:8px 16px; font-weight:700;" onclick="handleAction('${req.id}', 'pendiente')">🔄 Devolver a Pendiente</button>` : ''}
+                                    </div>
+
                                 </div>
                             </div>
 
@@ -255,10 +254,14 @@
             if (savedTheme === 'light') document.body.classList.add('light-mode');
             else document.body.classList.remove('light-mode');
             
-            // Esperar a que el cliente esté cargado
+            // Esperar a que el motor y el cliente estén listos
             const checkConnect = setInterval(() => {
-                if (window.TurnosDB && window.TurnosDB.client) {
+                if (window.TurnosDB && window.supabase) {
                     clearInterval(checkConnect);
+                    
+                    // Asegurar que el cliente está asignado al DAO
+                    if (!window.TurnosDB.client) window.TurnosDB.client = window.supabase;
+                    
                     fetchRequests();
                     
                     // Suscribirse a cambios en tiempo real
@@ -270,9 +273,9 @@
                         })
                         .subscribe();
                 }
-            }, 500);
+            }, 300);
         });
     </script>
-    <script src="sync-status.js?v=9.9"></script>
+    <script src="sync-status.js?v=10.0"></script>
 </body>
 </html>

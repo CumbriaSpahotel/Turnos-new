@@ -63,10 +63,6 @@
                 <span class="nav-label">Solicitudes</span>
                 <span class="nav-badge" id="badge-requests">0</span>
             </a>
-            <a href="bandeja.html" class="nav-item" id="nav-inbox" style="text-decoration:none;">
-                <span class="nav-icon">-</span>
-                <span class="nav-label">Bandeja</span>
-            </a>
 
             <div class="nav-group-label">SISTEMA</div>
             <button class="nav-item" onclick="switchSection('export')" id="nav-export">
@@ -168,16 +164,23 @@
                 <div><h1 class="page-title">Vista Previa</h1></div>
                 <div class="header-controls">
                     <select id="prevHotel" class="btn" onchange="renderPreview()" style="background:var(--bg3); color:var(--text); border:1px solid var(--border); border-radius:10px; padding:7px 15px;"></select>
-                    <div id="prevDateContainer">
+                    <div id="prevDateContainer" style="display:flex; align-items:center; gap:6px;">
+                        <button class="btn" id="btnPrevWeek" onclick="navigatePreview(-1)" style="background:var(--bg3); color:var(--text); border:1px solid var(--border); border-radius:10px; padding:7px 12px; cursor:pointer; font-size:1rem;" title="Semana anterior">&#8592;</button>
                         <input type="text" id="prevWeekDate" class="btn" style="background:var(--bg3); color:var(--text); border:1px solid var(--border); border-radius:10px; padding:7px 15px; width:130px;">
+                        <button class="btn" id="btnNextWeek" onclick="navigatePreview(1)" style="background:var(--bg3); color:var(--text); border:1px solid var(--border); border-radius:10px; padding:7px 12px; cursor:pointer; font-size:1rem;" title="Semana siguiente">&#8594;</button>
                     </div>
-                    <div id="prevMonthContainer" style="display:none;">
+                    <div id="prevMonthContainer" style="display:none; align-items:center; gap:6px;">
+                        <button class="btn" id="btnPrevMonth" onclick="navigatePreview(-1)" style="background:var(--bg3); color:var(--text); border:1px solid var(--border); border-radius:10px; padding:7px 12px; cursor:pointer; font-size:1rem;" title="Mes anterior">&#8592;</button>
                         <input type="text" id="prevMonth" class="btn" style="background:var(--bg3); color:var(--text); border:1px solid var(--border); border-radius:10px; padding:7px 15px; width:130px;">
+                        <button class="btn" id="btnNextMonth" onclick="navigatePreview(1)" style="background:var(--bg3); color:var(--text); border:1px solid var(--border); border-radius:10px; padding:7px 12px; cursor:pointer; font-size:1rem;" title="Mes siguiente">&#8594;</button>
                     </div>
                     <div class="btn-group">
                         <button class="btn active" id="btnViewWeekly" onclick="switchPreviewMode('weekly')">Semanal</button>
                         <button class="btn" id="btnViewMonthly" onclick="switchPreviewMode('monthly')">Mensual</button>
                     </div>
+                    <button class="btn-premium pulse-animation" id="btnSyncGaps" onclick="window.syncGapsFromExcel()" style="background:#ff9800; color:white; border:none; border-radius:12px; padding:10px 20px; font-weight:800; cursor:pointer; box-shadow:0 4px 15px rgba(255,152,0,0.3); display:flex; align-items:center; gap:8px;" title="Sincronizar turnos faltantes desde el Excel">
+                        <span style="font-size:1.2rem;">☁️</span> Completar Supabase
+                    </button>
                 </div>
             </header>
             <div id="previewContent"></div>
@@ -268,10 +271,20 @@
     </script>
     
     <script src="localforage.js"></script>
-    <script src="supabase-dao.js?v=9.10"></script>
+    <script src="supabase-dao.js?v=9.13"></script>
     <script src="virtualizer.js?v=8.5"></script>
 
-    <script src="admin.js?v=9.9"></script>
-    <script src="sync-status.js?v=8.2"></script>
+    <script src="admin.js?v=10.1"></script>
+    <script src="sync-status.js?v=10.1"></script>
+    <style>
+        @keyframes pulse {
+            0% { transform: scale(1); box-shadow: 0 4px 15px rgba(255,152,0,0.3); }
+            50% { transform: scale(1.05); box-shadow: 0 4px 25px rgba(255,152,0,0.5); }
+            100% { transform: scale(1); box-shadow: 0 4px 15px rgba(255,152,0,0.3); }
+        }
+        .pulse-animation {
+            animation: pulse 2s infinite;
+        }
+    </style>
 </body>
 </html>

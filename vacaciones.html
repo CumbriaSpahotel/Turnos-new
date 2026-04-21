@@ -29,7 +29,6 @@
             <a href="cambios.html" class="nav-item">🔄 <span class="nav-label">Cambios de Turno</span></a>
             <div class="nav-group-label">COMUNICACIÓN</div>
             <a href="solicitudes.html" class="nav-item">📩 <span class="nav-label">Solicitudes</span></a>
-            <a href="bandeja.html" class="nav-item">📫 <span class="nav-label">Bandeja</span></a>
             <div class="nav-group-label">SISTEMA</div>
             <a href="configuracion.html" class="nav-item">📦 <span class="nav-label">Configuración</span></a>
         </nav>
@@ -45,8 +44,8 @@
                 <p class="page-subtitle" style="margin:2px 0 0;">Altas, cambios y anulaciones desde la app</p>
             </div>
             <div id="syncStatus" class="status-badge-premium" style="margin-left:auto; display:flex; align-items:center; gap:8px;">
-                <span id="syncDot" style="width:8px; height:8px; border-radius:50%; background:#10e898;"></span>
-                <span id="syncText">Supabase Conectado</span>
+                <span id="syncDot" style="width:8px; height:8px; border-radius:50%; background:#ff9800;"></span>
+                <span id="syncText">Conectando...</span>
             </div>
         </header>
 
@@ -478,5 +477,6 @@
 
         document.addEventListener('DOMContentLoaded', initPage);
     </script>
+    <script src="sync-status.js?v=10.0"></script>
 </body>
 </html>

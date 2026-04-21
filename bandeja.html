@@ -139,8 +139,8 @@
     </main>
 
     <script src="supabase.js"></script>
-    <script src="supabase-config.js?v=9.8"></script>
-    <script src="supabase-dao.js?v=9.8"></script>
+    <script src="supabase-dao.js?v=10.0"></script>
+    <script src="supabase-config.js?v=10.0"></script>
     <script>
         const $ = (s) => document.querySelector(s);
         
@@ -224,18 +224,26 @@
         document.addEventListener('DOMContentLoaded', () => {
             const savedTheme = localStorage.getItem('turnosweb_theme') || 'light';
             if (savedTheme === 'light') document.body.classList.add('light-mode');
-            fetchMessages();
+            
+            // Watchdog de conexión para asegurar carga
+            const checkConnect = setInterval(() => {
+                if (window.TurnosDB && window.supabase) {
+                    clearInterval(checkConnect);
+                    
+                    if (!window.TurnosDB.client) window.TurnosDB.client = window.supabase;
+                    
+                    fetchMessages();
 
-            if (window.supabase) {
-                window.supabase
-                    .channel('mensajes_changes')
-                    .on('postgres_changes', { event: '*', schema: 'public', table: 'mensajes' }, () => {
-                        fetchMessages();
-                    })
-                    .subscribe();
-            }
+                    window.supabase
+                        .channel('mensajes_changes')
+                        .on('postgres_changes', { event: '*', schema: 'public', table: 'mensajes' }, () => {
+                            fetchMessages();
+                        })
+                        .subscribe();
+                }
+            }, 300);
         });
     </script>
-    <script src="sync-status.js"></script>
+    <script src="sync-status.js?v=10.0"></script>
 </body>
 </html>

@@ -127,6 +127,82 @@ window.clearAllData = async () => {
     }
 };
 
+/**
+ * syncGapsFromExcel: Lee el Excel en disco, compara con Supabase
+ * y sube SOLO los turnos que faltan (sin sobrescribir Vacaciones/Bajas/CT).
+ */
+window.syncGapsFromExcel = async () => {
+    const btn = document.getElementById('btnSyncGaps');
+    if (btn) { btn.disabled = true; btn.textContent = 'Sincronizando...'; }
+    window.addLog('\uD83D\uDD0D Iniciando sincronizaci\u00F3n de gaps Excel \u2192 Supabase...', 'ok');
+
+    try {
+        // 1. Leer el Excel completo con loadExcelSourceRows
+        window._excelSourceRows = null; // forzar re-lectura
+        const excelSource = await loadExcelSourceRows();
+
+        const toInsert = [];
+        const seen = new Set();
+
+        for (const [hotelName, rows] of Object.entries(excelSource)) {
+            for (const row of rows) {
+                if (!row.weekStart || !row.empleadoId) continue;
+                for (let d = 0; d < 7; d++) {
+                    const turno = row.values[d];
+                    if (!turno) continue;
+                    const fecha = window.addDays(row.weekStart, d);
+                    const key = `${row.empleadoId}|${fecha}`;
+                    if (seen.has(key)) continue;
+                    seen.add(key);
+                    toInsert.push({
+                        empleado_id: row.empleadoId,
+                        fecha,
+                        turno,
+                        hotel_id: hotelName,
+                        tipo: 'NORMAL',
+                        sustituto: null
+                    });
+                }
+            }
+        }
+
+        window.addLog(`\uD83D\uDCCA Excel le\u00EDdo: ${toInsert.length} registros totales.`);
+
+        // 2. Comparar con Supabase: buscar fechas cubiertas
+        const allDates = toInsert.map(r => r.fecha);
+        const minDate = allDates.reduce((a, b) => a < b ? a : b);
+        const maxDate = allDates.reduce((a, b) => a > b ? a : b);
+
+        const existing = await window.TurnosDB.fetchRango(minDate, maxDate);
+        const existingKeys = new Set(existing.map(r => `${r.empleado_id}|${r.fecha}`));
+        const specialKeys  = new Set(
+            existing.filter(r => r.tipo && r.tipo !== 'NORMAL' && r.tipo !== '')
+                    .map(r => `${r.empleado_id}|${r.fecha}`)
+        );
+
+        // Solo insertar los que NO existen en Supabase Y no están protegidos
+        const gaps = toInsert.filter(r => {
+            const k = `${r.empleado_id}|${r.fecha}`;
+            return !existingKeys.has(k) && !specialKeys.has(k);
+        });
+
+        if (gaps.length === 0) {
+            window.addLog('\u2705 Supabase ya est\u00E1 completo. No hay gaps que rellenar.', 'ok');
+        } else {
+            window.addLog(`\u2601\uFE0F Subiendo ${gaps.length} turnos faltantes...`);
+            await window.TurnosDB.bulkUpsert(gaps);
+            if (window.localforage) await window.localforage.clear();
+            window.addLog(`\uD83D\uDE80 Sincronizaci\u00F3n completada: ${gaps.length} turnos a\u00F1adidos a Supabase.`, 'ok');
+            window.renderPreview();
+        }
+    } catch (err) {
+        console.error('syncGapsFromExcel error:', err);
+        window.addLog(`\u274C Error en sincronizaci\u00F3n: ${err.message}`, 'error');
+    } finally {
+        if (btn) { btn.disabled = false; btn.textContent = '\u2601\uFE0F Completar Supabase desde Excel'; }
+    }
+};
+
 window.updateDashboardStats = async () => {
     try {
         const today = new Date().toISOString().split('T')[0];
@@ -273,71 +349,64 @@ window.processWorkbook = async (wb) => {
 
     // ── Procesar CADA pestaña como cuadrante de hotel ──────────────────────
     for (const sheetName of wb.SheetNames) {
-        const sheet   = wb.Sheets[sheetName];
-        const rawRows = XLSX.utils.sheet_to_json(sheet, { defval: '' });
-        if (rawRows.length === 0) continue;
+        const sheet = wb.Sheets[sheetName];
+        // Usar índice posicional (igual que loadExcelSourceRows) para no perder columnas por cabeceras raras
+        const matrix = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '', raw: true });
+        if (matrix.length < 2) continue;
 
-        // Detectar si la pestaña tiene columna de empleado/nombre
-        const firstRow = rawRows[0];
-        const hasEmpCol = Object.keys(firstRow).some(k =>
-            k.trim().toLowerCase().includes('empleado') ||
-            k.trim().toLowerCase().includes('nombre')
-        );
-        if (!hasEmpCol) {
-            window.addLog(`⚠️ Pestaña "${sheetName}" ignorada (sin columna Empleado/Nombre).`, 'warn');
+        // Fila de cabecera (row 0) y filas de datos (row 1+)
+        const header = matrix[0].map(h => String(h || '').trim().toLowerCase());
+
+        // Detectar columnas por nombre en cabecera
+        const norm = s => String(s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
+        const semanaColIdx = header.findIndex(h => norm(h).includes('semana'));
+        const empColIdx    = header.findIndex(h => norm(h).includes('empleado') || norm(h).includes('nombre'));
+
+        if (empColIdx === -1) {
+            window.addLog(`\u26A0\uFE0F Pesta\u00F1a "${sheetName}" ignorada (sin columna Empleado/Nombre).`, 'warn');
             continue;
         }
 
+        // Columnas de días: las 7 columnas DESPUÉS de la columna de empleado
+        // Estructura esperada: [Semana, Empleado, Lun, Mar, Mie, Jue, Vie, Sab, Dom, ...]
+        const firstDayIdx = empColIdx + 1;
+
         const hotelID = normalizeHotel(sheetName);
-        window.addLog(`📋 Procesando hoja "${sheetName}" → ${hotelID}...`);
+        window.addLog(`\uD83D\uDCCB Procesando hoja "${sheetName}" \u2192 ${hotelID}...`);
         if (!window.hotelOrders[hotelID]) window.hotelOrders[hotelID] = [];
 
-        rawRows.forEach(rawRow => {
-            // Limpiar espacios en claves
-            const row = {};
-            for (let k in rawRow) row[String(k).trim()] = rawRow[k];
+        for (let ri = 1; ri < matrix.length; ri++) {
+            const row = matrix[ri];
 
-            // Buscar columna de semana
-            const semanaCol = Object.keys(row).find(k => k.toLowerCase().includes('semana'));
-            const rawSemana = row[semanaCol];
-            if (!rawSemana) return;
+            // Fecha de la semana (col 0 o semanaColIdx)
+            const rawSemana = row[semanaColIdx >= 0 ? semanaColIdx : 0];
+            if (!rawSemana) continue;
 
-            // Calcular fecha del lunes de esa semana
-            const weekDate = typeof rawSemana === 'number'
-                ? new Date((rawSemana - 25569) * 86400 * 1000)
-                : new Date(rawSemana);
+            const weekDate = (rawSemana instanceof Date)
+                ? rawSemana
+                : typeof rawSemana === 'number'
+                    ? new Date(Math.round((rawSemana - 25569) * 86400 * 1000))
+                    : new Date(rawSemana);
             const lunes = window.isoDate(window.getMonday(weekDate));
 
-            // Columna de empleado
-            const empCol = Object.keys(row).find(k =>
-                k.toLowerCase().includes('empleado') ||
-                k.toLowerCase().includes('nombre')
-            );
-            const emp = String(row[empCol] || '').trim();
-            if (!lunes || !emp) return;
+            const emp = String(row[empColIdx] || '').trim();
+            if (!lunes || !emp) continue;
 
-            // Registrar orden de empleado en este hotel
             if (!window.hotelOrders[hotelID].includes(emp)) {
                 window.hotelOrders[hotelID].push(emp);
             }
 
-            // Procesar cada día (Lunes a Domingo)
-            DIAS.forEach((dia, i) => {
-                // Buscar columna del día (ignorando tildes)
-                const norm = s => s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-                const diaCol = Object.keys(row).find(k => norm(k).includes(norm(dia)));
-                if (!diaCol) return;
+            // Procesar los 7 días posicionalmente (Lun=0 … Dom=6)
+            for (let d = 0; d < 7; d++) {
+                const fechaISO = window.addDays(lunes, d);
+                const rawTurno = String(row[firstDayIdx + d] || '').trim();
+                const uniqKey  = `${emp}|${fechaISO}`;
 
-                const fechaISO  = window.addDays(lunes, i);
-                const rawTurno  = String(row[diaCol] || '').trim();
-                const uniqKey   = `${emp}|${fechaISO}`;
-
-                if (seen.has(uniqKey)) return;
+                if (seen.has(uniqKey)) continue;
                 seen.add(uniqKey);
 
-                // Mapear turno → M / T / N / D
                 const finalTurno = extraerTurno(rawTurno);
-                if (!finalTurno) return; // celda vacía o valor no reconocido → omitir
+                if (!finalTurno) continue; // celda vacía o no reconocida
 
                 toInsert.push({
                     empleado_id: emp,
@@ -347,10 +416,10 @@ window.processWorkbook = async (wb) => {
                     tipo:        'NORMAL',
                     sustituto:   null
                 });
-            });
-        });
+            }
+        }
 
-        window.addLog(`   ✅ ${hotelID}: ${toInsert.filter(r => r.hotel_id === hotelID).length} turnos listos.`, 'ok');
+        window.addLog(`   \u2705 ${hotelID}: ${toInsert.filter(r => r.hotel_id === hotelID).length} turnos listos.`, 'ok');
     }
 
     // ── Subir a Supabase ────────────────────────────────────────────────────
@@ -432,10 +501,27 @@ window.switchPreviewMode = (mode) => {
     if (btnW) btnW.classList.toggle('active', mode === 'weekly');
     if (btnM) btnM.classList.toggle('active', mode === 'monthly');
     
-    if (dateC) dateC.style.display = mode === 'weekly' ? 'block' : 'none';
-    if (monthC) monthC.style.display = mode === 'monthly' ? 'block' : 'none';
+    if (dateC) dateC.style.display = mode === 'weekly' ? 'flex' : 'none';
+    if (monthC) monthC.style.display = mode === 'monthly' ? 'flex' : 'none';
     
     window.renderPreview();
+};
+
+window.navigatePreview = (direction) => {
+    if (window._previewMode === 'weekly') {
+        const fp = window._fpWeek;
+        if (!fp) return;
+        const current = fp.selectedDates[0] || new Date();
+        const next = new Date(current);
+        next.setDate(next.getDate() + direction * 7);
+        fp.setDate(next, true);
+    } else {
+        const fp = window._fpMonth;
+        if (!fp) return;
+        const current = fp.selectedDates[0] || new Date();
+        const next = new Date(current.getFullYear(), current.getMonth() + direction, 1);
+        fp.setDate(next, true);
+    }
 };
 
 window.renderPreview = async () => {
@@ -549,6 +635,10 @@ window.renderPreview = async () => {
 
                 allIds.forEach((display, empKey) => {
                     if (!rendered.has(empKey) && !isAbsent.has(empKey)) {
+                        // Solo añadir si el empleado tiene al menos un turno propio en este hotel
+                        // (evita que sustitutos de otros hoteles aparezcan aquí)
+                        const hasOwnRecord = hData.some(t => normalizeEmployeeKey(t.empleado_id) === empKey);
+                        if (!hasOwnRecord) return;
                         empList.push({ id: display, displayAs: display, isAbsent: false, substituteFor: null });
                         rendered.add(empKey);
                     }
@@ -565,19 +655,24 @@ window.renderPreview = async () => {
 
                 const hotelSection = document.createElement('div');
                 hotelSection.innerHTML = `
-                <div class="glass-panel" style="margin-bottom:3rem; padding:0; overflow:hidden; border:1px solid #ddd; background:white; border-radius:12px; box-shadow:0 2px 15px rgba(0,0,0,0.03);">
-                    <div style="padding:15px 25px; border-bottom:1px solid #eee; display:flex; align-items:center; gap:15px; background:white;">
-                        <div style="background:white; padding:4px; border:1px solid #eee; border-radius:8px; display:flex; align-items:center; justify-content:center; width:45px; height:45px; min-width:45px;">
+                <div class="glass-panel" style="margin-bottom:3rem; padding:0; overflow:hidden; border:1px solid #e2e8f0; background:white; border-radius:16px; box-shadow:0 4px 20px rgba(0,0,0,0.04);">
+                    <div style="padding:18px 25px; border-bottom:1px solid #f1f5f9; display:flex; align-items:center; gap:15px; background:linear-gradient(to right, #ffffff, #f8fafc);">
+                        <div style="background:white; padding:6px; border:1px solid #edf2f7; border-radius:12px; display:flex; align-items:center; justify-content:center; width:48px; height:48px; box-shadow:0 2px 8px rgba(0,0,0,0.05);">
                             <img src="${hName.toLowerCase().includes('guadiana') ? 'guadiana logo.jpg' : 'cumbria logo.jpg'}" style="width:100%; height:100%; object-fit:contain;">
                         </div>
-                        <h2 style="margin:0; font-size:1.1rem; color:#444; font-weight:700;">${hName} - <span style="color:#888; font-weight:500;">Semana ${window.TurnosDB.fmtDateLegacy(startISO)}</span></h2>
+                        <h2 style="margin:0; font-size:1.15rem; color:#1e293b; font-weight:800; font-family:'Outfit', sans-serif;">${hName} <span style="color:#94a3b8; font-weight:500; font-size:0.9rem; margin-left:8px;">Semana del ${window.TurnosDB.fmtDateLegacy(startISO)}</span></h2>
                     </div>
                     <div style="overflow-x:auto; background:white;">
-                        <table class="preview-table" style="width:100%; border-collapse:collapse; margin:0;">
+                        <table class="preview-table-premium" style="width:100%; border-collapse:collapse; margin:0;">
                             <thead>
-                                <tr style="background:#f8f9fa;">
-                                    <th style="padding:1px 25px; text-align:left; border-bottom:1px solid #eee; width:220px; color:#888; font-size:0.75rem; text-transform:uppercase; letter-spacing:0.02em; position:sticky; left:0; background:#f8f9fa; z-index:4; border-right:1px solid #eee;">Empleado</th>
-                                    ${columns.map(c => `<th style="padding:12px; border-bottom:1px solid #eee; text-align:center; min-width:115px; border-left:1px solid #eee;"><div style="font-size:0.65rem; color:#999; text-transform:uppercase; font-weight:700; margin-bottom:2px;">${c.dayName}</div><div style="font-size:0.75rem; font-weight:600; color:#555;">${c.dayDisplay.toLowerCase()}</div></th>`).join('')}
+                                <tr style="background:#f8fafc;">
+                                    <th style="padding:15px 25px; text-align:left; border-bottom:1px solid #f1f5f9; width:240px; color:#64748b; font-size:0.7rem; text-transform:uppercase; letter-spacing:0.05em; position:sticky; left:0; background:#f8fafc; z-index:10; border-right:1px solid #f1f5f9; font-weight:800;">Empleado</th>
+                                    ${columns.map(c => `
+                                        <th style="padding:12px; border-bottom:1px solid #f1f5f9; text-align:center; min-width:125px; border-left:1px solid #f1f5f9;">
+                                            <div style="font-size:0.65rem; color:#94a3b8; text-transform:uppercase; font-weight:800; letter-spacing:0.03em;">${c.dayName}</div>
+                                            <div style="font-size:0.75rem; font-weight:600; color:#475569;">${c.dayDisplay.toLowerCase()}</div>
+                                        </th>
+                                    `).join('')}
                                 </tr>
                             </thead>
                             <tbody>
@@ -594,27 +689,40 @@ window.renderPreview = async () => {
                                     const rests  = activeShifts.filter(t => (t.turno||'').toLowerCase().startsWith('d')).length;
 
                                     return `
-                                        <tr style="border-bottom:1px solid #eee; ${empIsAbsent ? 'opacity:0.45; background:#fafafa;' : ''}">
-                                            <td style="padding:12px 25px; vertical-align:middle; background:white; position:sticky; left:0; z-index:2; border-right:1px solid #eee;">
-                                                <div style="display:flex; align-items:center; justify-content:space-between; gap:10px;">
-                                                    <div><span style="${empIsAbsent ? 'font-weight:600; color:#aaa; font-size:0.85rem; white-space:nowrap; text-decoration:line-through;' : 'font-weight:600; color:var(--accent); font-size:0.85rem; white-space:nowrap;'}">${escapeHtml(displayAs)}</span></div>
-                                                    <div style="display:flex; gap:6px; background:rgba(0,0,0,0.03); padding:4px 8px; border-radius:10px;">
-                                                        <div style="font-size:0.65rem; color:#f0ad4e; font-weight:700;">N ${nights}</div>
-                                                        <div style="font-size:0.65rem; color:#5bc0de; font-weight:700;">D ${rests}</div>
+                                        <tr style="border-bottom:1px solid #f1f5f9; ${empIsAbsent ? 'background:#fafafa;' : ''}">
+                                            <td style="padding:12px 25px; vertical-align:middle; background:white; position:sticky; left:0; z-index:5; border-right:1px solid #f1f5f9;">
+                                                <div style="display:flex; align-items:center; justify-content:space-between; gap:12px;">
+                                                    <span style="${empIsAbsent ? 'font-weight:600; color:#cbd5e1; text-decoration:line-through;' : 'font-weight:700; color:#334155;'} font-size:0.85rem;">${escapeHtml(displayAs)}</span>
+                                                    <div style="display:flex; gap:8px;">
+                                                        <div title="Noches" style="display:flex; align-items:center; gap:3px; background:#f1f5f9; padding:2px 8px; border-radius:8px; font-size:0.65rem; font-weight:800; color:#64748b; border:1px solid #e2e8f0;">🌙 ${nights}</div>
+                                                        <div title="Descansos" style="display:flex; align-items:center; gap:3px; background:#fff1f2; padding:2px 8px; border-radius:8px; font-size:0.65rem; font-weight:800; color:#be123c; border:1px solid #fecdd3;">D ${rests}</div>
                                                     </div>
                                                 </div>
                                             </td>
-                                            ${columns.map(c => {
+                                            ${columns.map((c, colIdx) => {
                                                 const s = activeShifts.find(t => t.fecha === c.date);
-                                                if (!s) return `<td style="background:#fdfdfd; border-left:1px solid #eee;"></td>`;
-                                                const t = (s.tipo||'').toUpperCase(); const l = (s.turno||'').toLowerCase();
-                                                let cls = 'x', lbl = s.turno || '-';
-                                                if (t.startsWith('VAC')) { cls = 'vacaciones'; lbl = 'Vacaciones 🏖️'; }
-                                                else if (t.startsWith('BAJA')) { cls = 'baja'; lbl = 'Baja 🏥'; }
-                                                else if (t.startsWith('PERM')) { cls = 'permiso'; lbl = 'Permiso'; }
-                                                else if (t.includes('CT')) { cls = l.startsWith('m') ? 'mañana' : l.startsWith('t') ? 'tarde' : l.startsWith('n') ? 'noche' : 'descanso'; lbl = (l.startsWith('m') ? 'Mañana' : l.startsWith('t') ? 'Tarde' : l.startsWith('n') ? 'Noche' : 'Descanso') + ' 🔄'; }
-                                                else { if(l.startsWith('m')){cls='mañana';lbl='Mañana';} else if(l.startsWith('t')){cls='tarde';lbl='Tarde';} else if(l.startsWith('n')){cls='noche';lbl='Noche';} else if(l.startsWith('d')){cls='descanso';lbl='Descanso';} }
-                                                return `<td style="padding:10px; text-align:center; border-left:1px solid #eee;"><div class="turno-pill-legacy turno-${cls}" style="display:inline-flex; align-items:center; justify-content:center; padding:8px 5px; width:100%; border-radius:15px; font-size:0.8rem; font-weight:600; box-shadow:0 2px 4px rgba(0,0,0,0.05);">${lbl}</div></td>`;
+                                                if (!s || !s.turno) return `<td style="background:#fafbfc; border-left:1px solid #f1f5f9; opacity:0.3;"><div style="width:100%; height:12px; background:#e2e8f0; border-radius:6px; max-width:60px; margin:0 auto;"></div></td>`;
+                                                
+                                                const t = (s.tipo||'').toUpperCase(); 
+                                                const l = (s.turno||'').toLowerCase();
+                                                let style = '', lbl = s.turno, icon = '';
+                                                
+                                                if (t.startsWith('VAC')) { style = 'background:#e0f2fe; color:#0369a1; border:1px solid #bae6fd;'; lbl = 'Vacaciones'; icon = '🏖️'; }
+                                                else if (t.startsWith('BAJA')) { style = 'background:#fef2f2; color:#b91c1c; border:1px dashed #fecdd3;'; lbl = 'Baja'; icon = '🏥'; }
+                                                else if (t.startsWith('PERM')) { style = 'background:#f3e8ff; color:#7e22ce; border:1px solid #e9d5ff;'; lbl = 'Permiso'; icon = '📋'; }
+                                                else if (l.startsWith('m')) { style = 'background:#ebfbee; color:#2f9e44; border:1px solid #d3f9d8;'; lbl = 'Mañana'; }
+                                                else if (l.startsWith('t')) { style = 'background:#fff9db; color:#f08c00; border:1px solid #fff3bf;'; lbl = 'Tarde'; }
+                                                else if (l.startsWith('n')) { style = 'background:#edf2ff; color:#364fc7; border:1px solid #dbe4ff;'; lbl = 'Noche'; icon = '🌙'; }
+                                                else if (l.startsWith('d')) { style = 'background:#fff5f5; color:#fa5252; border:1px solid #ffc9c9;'; lbl = 'Descanso'; }
+                                                
+                                                if (t.includes('CT')) { icon = '🔄'; style += ' box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);'; }
+
+                                                return `
+                                                    <td style="padding:8px; text-align:center; border-left:1px solid #f1f5f9;">
+                                                        <div style="display:inline-flex; align-items:center; justify-content:center; gap:6px; padding:10px 4px; width:100%; border-radius:12px; font-size:0.75rem; font-weight:800; ${style}">
+                                                            ${lbl} ${icon}
+                                                        </div>
+                                                    </td>`;
                                             }).join('')}
                                         </tr>
                                     `;
@@ -626,91 +734,139 @@ window.renderPreview = async () => {
                 area.appendChild(hotelSection);
 
             } else {
-                // ── MODO MENSUAL: CALENDARIO GRUPO (NUEVO) ───────────────────────
+                // ── MODO MENSUAL: CALENDARIO PREMIUM (v2) ───────────────────────
                 const hotelSection = document.createElement('div');
                 hotelSection.className = 'hotel-calendar-view';
-                hotelSection.style.marginBottom = '2rem';
-                
-                // Generar días de calendario con padding
+                hotelSection.style.marginBottom = '2.5rem';
+
+                // Padding inicial (lunes = 1)
                 const firstDay = new Date(columns[0].date + 'T12:00:00');
-                const lastDay = new Date(columns[columns.length-1].date + 'T12:00:00');
-                const startDow = firstDay.getDay() || 7;
-                const endDow = lastDay.getDay() || 7;
-                
+                const lastDay  = new Date(columns[columns.length - 1].date + 'T12:00:00');
+                const startDow = firstDay.getDay() === 0 ? 7 : firstDay.getDay(); // 1=lun…7=dom
+                const endDow   = lastDay.getDay()  === 0 ? 7 : lastDay.getDay();
+
+                // Normalización de nombre para comparar hotel_id robusto
+                const normH = s => String(s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim();
+                const hNorm = normH(hName);
+
+                // Aquí usamos data completa filtrada por hotel con comparación normalizada
+                const hDataFull = data.filter(t => normH(t.hotel_id) === hNorm);
+
                 const cells = [];
-                // Padding inicial
-                for(let i=1; i < startDow; i++) cells.push('<div class="cal-cell empty"></div>');
-                
-                // Días activos
+                for (let i = 1; i < startDow; i++) cells.push('<div class="cal2-cell cal2-empty"></div>');
+
+                const today = window.isoDate(new Date());
+
                 columns.forEach(col => {
-                    const diaData = hData.filter(t => t.fecha === col.date);
-                    
-                    const groupByShift = { M: [], T: [], N: [], ABS: [] };
+                    const diaData = hDataFull.filter(t => t.fecha === col.date);
+                    const isToday = col.date === today;
+                    const dow = new Date(col.date + 'T12:00:00').getDay();
+                    const isWeekend = dow === 0 || dow === 6;
+
+                    // Agrupar: M / T / N / D / ABS / CT
+                    const groups = { M: [], T: [], N: [], D: [], ABS: [], CT: [] };
                     diaData.forEach(t => {
                         const shift = (t.turno || '').toLowerCase();
-                        const tipo = (t.tipo || '').toUpperCase();
-                        const name = t.empleado_id;
+                        const tipo  = (t.tipo  || '').toUpperCase();
+                        const name  = String(t.empleado_id || '').split(' ')[0]; // primer nombre
                         
-                        if (tipo.startsWith('VAC') || tipo.startsWith('BAJA') || tipo.startsWith('PERM')) groupByShift.ABS.push({ name, tipo });
-                        else if (shift.startsWith('m')) groupByShift.M.push(name);
-                        else if (shift.startsWith('t')) groupByShift.T.push(name);
-                        else if (shift.startsWith('n')) groupByShift.N.push(name);
+                        if (tipo.includes('CT')) {
+                            groups.CT.push({ name, shift: shift.charAt(0).toUpperCase() });
+                        } else if (tipo.startsWith('VAC')) {
+                            groups.ABS.push({ name: t.empleado_id, icon: '🏖️', cls: 'vac' });
+                        } else if (tipo.startsWith('BAJA')) {
+                            groups.ABS.push({ name: t.empleado_id, icon: '🏥', cls: 'baja' });
+                        } else if (tipo.startsWith('PERM')) {
+                            groups.ABS.push({ name: t.empleado_id, icon: '📋', cls: 'perm' });
+                        } else if (shift.startsWith('m')) {
+                            groups.M.push(name);
+                        } else if (shift.startsWith('t')) {
+                            groups.T.push(name);
+                        } else if (shift.startsWith('n')) {
+                            groups.N.push(name);
+                        } else if (shift.startsWith('d')) {
+                            groups.D.push(name);
+                        }
                     });
 
-                    const renderList = (list, cls, label) => {
-                        if (!list.length) return '';
-                        return `<div class="cal-shift-group ${cls}"><strong>${label}:</strong> <span>${list.map(n => n.name || n).join(', ')}</span></div>`;
-                    };
+                    const badge = (list, cls, icon, label) => list.length
+                        ? `<div class="cal2-group cal2-${cls}" title="${label}: ${list.join(', ')}">
+                             <span class="cal2-icon">${icon}</span>
+                             <span class="cal2-names">${list.join(' · ')}</span>
+                           </div>`
+                        : '';
 
-                    const isToday = col.date === window.isoDate(new Date());
+                    const absBadge = groups.ABS.map(a =>
+                        `<div class="cal2-group cal2-${a.cls}" title="${a.name}">
+                           <span class="cal2-icon">${a.icon}</span>
+                           <span class="cal2-names">${a.name}</span>
+                         </div>`
+                    ).join('');
 
                     cells.push(`
-                        <div class="cal-cell ${isToday ? 'today' : ''} ${col.isWeekend ? 'weekend' : ''}">
-                            <div class="cal-day-num">${new Date(col.date+'T12:00:00').getDate()}</div>
-                            <div class="cal-day-content">
-                                ${renderList(groupByShift.M, 'm', 'M')}
-                                ${renderList(groupByShift.T, 't', 'T')}
-                                ${renderList(groupByShift.N, 'n', 'N')}
-                                ${renderList(groupByShift.ABS.map(a => `${a.name} (${a.tipo.split(' ')[0]})`), 'abs', 'V/B')}
+                        <div class="cal2-cell ${isToday ? 'cal2-today' : ''} ${isWeekend ? 'cal2-weekend' : ''}">
+                            <div class="cal2-daynum ${isToday ? 'cal2-daynum-today' : ''}">${new Date(col.date + 'T12:00:00').getDate()}</div>
+                            <div class="cal2-content">
+                                ${badge(groups.M, 'm', '☀️', 'Mañana')}
+                                ${badge(groups.T, 't', '🌤️', 'Tarde')}
+                                ${badge(groups.N, 'n', '🌙', 'Noche')}
+                                ${badge(groups.CT.map(ct => `${ct.name} (${ct.shift})`), 'ct', '🔄', 'Cambio Turno')}
+                                ${badge(groups.D, 'd', '😴', 'Descanso')}
+                                ${absBadge}
+                                ${diaData.length === 0 ? '<div style="font-size:0.6rem; color:#cbd5e1; text-align:center; margin-top:10px;">Sin turnos</div>' : ''}
                             </div>
-                        </div>
-                    `);
+                        </div>`);
                 });
 
-                // Padding final
-                for(let i=endDow; i < 7; i++) cells.push('<div class="cal-cell empty"></div>');
-                
+                for (let i = endDow; i < 7; i++) cells.push('<div class="cal2-cell cal2-empty"></div>');
+
                 hotelSection.innerHTML = `
-                    <div class="glass-panel" style="padding:0; overflow:hidden; border-radius:15px; background:white; overflow:hidden; box-shadow:var(--shadow-sm);">
-                        <div style="padding:15px 25px; background:white; border-bottom:1px solid #eee; display:flex; align-items:center; gap:15px;">
-                            <img src="${hName.toLowerCase().includes('guadiana') ? 'guadiana logo.jpg' : 'cumbria logo.jpg'}" style="width:35px; height:35px; object-fit:contain;">
-                            <h2 style="margin:0; font-size:1rem; font-weight:700; color:var(--text);">${hName} - ${new Date(startISO+'T12:00:00').toLocaleDateString('es-ES', { month: 'long', year: 'numeric' }).toUpperCase()}</h2>
+                    <div style="background:white; border-radius:18px; overflow:hidden; border:1px solid #e8ecf0; box-shadow:0 4px 24px rgba(0,0,0,0.06);">
+                        <div style="padding:18px 24px; background:linear-gradient(135deg,#f8fafc 0%,#eef2f7 100%); border-bottom:1px solid #e4e9f0; display:flex; align-items:center; gap:14px;">
+                            <div style="background:white; padding:6px; border-radius:10px; box-shadow:0 2px 8px rgba(0,0,0,0.08); display:flex;">
+                                <img src="${hName.toLowerCase().includes('guadiana') ? 'guadiana logo.jpg' : 'cumbria logo.jpg'}" style="width:36px; height:36px; object-fit:contain;">
+                            </div>
+                            <div>
+                                <div style="font-size:1rem; font-weight:800; color:#1e293b; letter-spacing:-0.02em;">${hName}</div>
+                                <div style="font-size:0.75rem; color:#64748b; font-weight:600; margin-top:1px;">${new Date(startISO+'T12:00:00').toLocaleDateString('es-ES',{month:'long',year:'numeric'}).toUpperCase()}</div>
+                            </div>
+                            <div style="margin-left:auto; display:flex; gap:6px; flex-wrap:wrap; justify-content:flex-end;">
+                                <span style="font-size:0.65rem; background:#ecfdf5; color:#166534; border-radius:20px; padding:3px 10px; font-weight:700;">☀️ Mañana</span>
+                                <span style="font-size:0.65rem; background:#fff7ed; color:#9a3412; border-radius:20px; padding:3px 10px; font-weight:700;">🌤️ Tarde</span>
+                                <span style="font-size:0.65rem; background:#eff6ff; color:#1e40af; border-radius:20px; padding:3px 10px; font-weight:700;">🌙 Noche</span>
+                                <span style="font-size:0.65rem; background:#f1f5f9; color:#475569; border-radius:20px; padding:3px 10px; font-weight:700;">😴 Descanso</span>
+                                <span style="font-size:0.65rem; background:#fdf4ff; color:#701a75; border-radius:20px; padding:3px 10px; font-weight:700;">🔄 CT</span>
+                                <span style="font-size:0.65rem; background:#fef9c3; color:#854d0e; border-radius:20px; padding:3px 10px; font-weight:700;">🏖️ Vac/Baja</span>
+                            </div>
                         </div>
-                        <div class="cal-grid-header">
+                        <div class="cal2-header">
                             <div>LUN</div><div>MAR</div><div>MIÉ</div><div>JUE</div><div>VIE</div><div>SÁB</div><div>DOM</div>
                         </div>
-                        <div class="cal-grid-body">
-                            ${cells.join('')}
-                        </div>
+                        <div class="cal2-grid">${cells.join('')}</div>
                     </div>
                     <style>
-                        .cal-grid-header { display: grid; grid-template-columns: repeat(7, 1fr); background: #f8fafc; border-bottom: 1px solid #eee; text-align: center; }
-                        .cal-grid-header div { padding: 10px; font-size: 0.65rem; font-weight: 800; color: #94a3b8; }
-                        .cal-grid-body { display: grid; grid-template-columns: repeat(7, 1fr); background: #eee; gap: 1px; }
-                        .cal-cell { background: white; min-height: 120px; padding: 8px; position: relative; transition: background 0.2s; }
-                        .cal-cell.empty { background: #fdfdfd; }
-                        .cal-cell.weekend { background: #fafafa; }
-                        .cal-cell.today { background: var(--success-dim); }
-                        .cal-cell.today .cal-day-num { background: var(--success); color: white; border-radius: 50%; width: 22px; height: 22px; display: flex; align-items:center; justify-content:center; }
-                        .cal-day-num { font-size: 0.75rem; font-weight: 800; color: #64748b; margin-bottom: 5px; }
-                        .cal-shift-group { font-size: 0.68rem; margin-bottom: 2px; line-height: 1.2; display: flex; gap: 4px; }
-                        .cal-shift-group strong { min-width: 15px; color: var(--text-dim); }
-                        .cal-shift-group.m span { color: #166534; }
-                        .cal-shift-group.t span { color: #92400e; }
-                        .cal-shift-group.n span { color: #1e3a8a; }
-                        .cal-shift-group.abs span { color: #991b1b; font-style: italic; }
-                    </style>
-                `;
+                        .cal2-header{display:grid;grid-template-columns:repeat(7,1fr);background:#f1f5f9;}
+                        .cal2-header div{padding:10px 6px;text-align:center;font-size:0.62rem;font-weight:800;color:#94a3b8;letter-spacing:0.08em;}
+                        .cal2-grid{display:grid;grid-template-columns:repeat(7,1fr);background:#e2e8f0;gap:1px;}
+                        .cal2-cell{background:#fff;min-height:130px;padding:8px 7px;position:relative;transition:background 0.15s;}
+                        .cal2-empty{background:#f8fafc !important;}
+                        .cal2-weekend{background:#fafbfc;}
+                        .cal2-today{background:#f0fdf4 !important;}
+                        .cal2-daynum{font-size:0.72rem;font-weight:800;color:#94a3b8;margin-bottom:6px;width:22px;height:22px;display:flex;align-items:center;justify-content:center;}
+                        .cal2-daynum-today{background:#10b981;color:white !important;border-radius:50%;font-weight:800;}
+                        .cal2-content{display:flex;flex-direction:column;gap:3px;}
+                        .cal2-group{display:flex;align-items:flex-start;gap:4px;padding:3px 5px;border-radius:6px;font-size:0.65rem;line-height:1.3;}
+                        .cal2-icon{font-size:0.7rem;flex-shrink:0;margin-top:1px;}
+                        .cal2-names{font-weight:600;overflow:hidden;word-break:break-word;}
+                        .cal2-m{background:#ecfdf5;color:#166534;}
+                        .cal2-t{background:#fff7ed;color:#9a3412;}
+                        .cal2-n{background:#eff6ff;color:#1e40af;}
+                        .cal2-d{background:#f1f5f9;color:#475569;}
+                        .cal2-ct{background:#fdf4ff;color:#701a75;border:1px dashed #d8b4fe;}
+                        .cal2-vac{background:#fef9c3;color:#854d0e;font-style:italic;}
+                        .cal2-baja{background:#fce7f3;color:#9d174d;font-style:italic;}
+                        .cal2-perm{background:#f3e8ff;color:#6b21a8;font-style:italic;}
+                    </style>`;
                 area.appendChild(hotelSection);
             }
         }
@@ -803,15 +959,15 @@ window.renderSemanaEnContenedor = async (container, inicio, fin, hotelData) => {
 };
 
 window.populatePreview = () => {
-    // Inicializar Flatpickrs
+    // Inicializar Flatpickrs — guardar instancias en globals para los botones ← →
     if (window.flatpickr) {
-        flatpickr("#prevWeekDate", {
+        window._fpWeek = flatpickr("#prevWeekDate", {
             dateFormat: "Y-m-d",
             defaultDate: "today",
             locale: { ...flatpickr.l10ns.es, firstDayOfWeek: 1 },
             onChange: () => window.renderPreview()
         });
-        flatpickr("#prevMonth", {
+        window._fpMonth = flatpickr("#prevMonth", {
             dateFormat: "Y-m",
             defaultDate: new Date(),
             locale: { ...flatpickr.l10ns.es, firstDayOfWeek: 1 },

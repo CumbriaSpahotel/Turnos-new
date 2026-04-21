@@ -12,7 +12,7 @@
 window.TurnosDB = {
     _channel: null,
     _syncTTL: 5 * 60 * 1000, 
-    client: null, // Se asignará al cargar config
+    client: window.supabase || null, // Se asigna automáticamente si ya existe
 
     // --- UTILIDADES ---
     normalizeDate(d) {
@@ -221,6 +221,11 @@ window.TurnosDB = {
     async actualizarEstadoPeticion(id, estado) {
         const client = window.supabase;
         try {
+            // Si pasamos a rechazada desde aprobada, intentamos anular eventos vinculados
+            if (estado === 'rechazada' || estado === 'pendiente') {
+                await this.anularEventosPeticion(id);
+            }
+
             const { error } = await client
                 .from('peticiones_cambio')
                 .update({ estado, updated_at: new Date().toISOString() })
@@ -234,8 +239,27 @@ window.TurnosDB = {
         }
     },
 
+    async anularEventosPeticion(peticionId) {
+        const client = window.supabase;
+        try {
+            // Buscar eventos en eventos_cuadrante que tengan este peticion_id en su payload
+            const { error } = await client
+                .from('eventos_cuadrante')
+                .update({ estado: 'anulado', updated_at: new Date().toISOString() })
+                .filter('payload->>peticion_id', 'eq', peticionId);
+            
+            if (error) console.warn("DAO Aviso (anularEventosPeticion):", error.message);
+            if (window.localforage) await window.localforage.clear();
+        } catch (e) {
+            console.error("Error anulando eventos vinculados:", e);
+        }
+    },
+
     async procesarAprobacionPeticion(peticion) {
         try {
+            // Asegurar que no hay eventos antiguos activos de esta petición
+            await this.anularEventosPeticion(peticion.id);
+
             const fechas = Array.isArray(peticion.fechas) ? peticion.fechas : [];
             for (const f of fechas) {
                 await this.upsertEvento({
@@ -449,6 +473,33 @@ window.TurnosDB = {
                 });
             });
 
+        const processedLegacySwaps = new Set();
+        rows
+            .filter(row => String(row.tipo || '').toUpperCase().startsWith('CT') && row.sustituto && !row.evento_id)
+            .forEach(row => {
+                const partner = firstByEmpDate(row.sustituto, row.fecha);
+                if (!partner) return;
+                const a = norm(row.empleado_id);
+                const b = norm(partner.empleado_id);
+                const pairKey = [row.fecha, a < b ? a : b, a < b ? b : a].join('|');
+                if (processedLegacySwaps.has(pairKey)) return;
+                processedLegacySwaps.add(pairKey);
+
+                const partnerIsCt = String(partner.tipo || '').toUpperCase().startsWith('CT');
+                const isReciprocalCt = partnerIsCt && norm(partner.sustituto) === norm(row.empleado_id);
+                if (!isReciprocalCt) {
+                    const turnoA = row.turno;
+                    row.turno = partner.turno;
+                    partner.turno = turnoA;
+                }
+                row.tipo = 'CT';
+                partner.tipo = 'CT';
+                row.evento_tipo = 'INTERCAMBIO_TURNO';
+                partner.evento_tipo = 'INTERCAMBIO_TURNO';
+                row.sustituto = partner.empleado_id;
+                partner.sustituto = row.empleado_id;
+            });
+
         return rows.sort((a, b) => String(a.fecha).localeCompare(String(b.fecha)) || String(a.hotel_id || '').localeCompare(String(b.hotel_id || '')) || String(a.empleado_id || '').localeCompare(String(b.empleado_id || '')));
     },
 
@@ -579,9 +630,16 @@ window.TurnosDB = {
             throw new Error("Empleado, fecha de inicio y fecha de fin son obligatorios");
         }
 
+        // REGLA DE ORO: No borramos físicamente. Marcamos como tipo NORMAL para "anular" la ausencia
+        // manteniendo el registro de que el empleado estaba previsto ese día.
         const { error } = await client
             .from('turnos')
-            .delete()
+            .update({ 
+                tipo: 'NORMAL', 
+                sustituto: null, 
+                updated_by: 'ANULACION_HISTORICA',
+                updated_at: new Date().toISOString() 
+            })
             .eq('empleado_id', empleado_id)
             .ilike('tipo', 'VAC%')
             .gte('fecha', inicio)
@@ -602,9 +660,14 @@ window.TurnosDB = {
     async deleteTurno(empleado_id, fecha) {
         const client = window.supabase;
         try {
+            // REGLA DE ORO: En lugar de borrar, lo dejamos como un hueco normal o anulado
             const { error } = await client
                 .from('turnos')
-                .delete()
+                .update({ 
+                    tipo: 'ANULADO', 
+                    updated_by: 'BORRADO_LOGICO', 
+                    updated_at: new Date().toISOString() 
+                })
                 .eq('empleado_id', empleado_id)
                 .eq('fecha', this.normalizeDate(fecha));
             if (error) throw error;

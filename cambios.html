@@ -137,8 +137,7 @@
             <a href="bajas.html" class="nav-item"><span class="nav-label">Bajas y Permisos</span></a>
             <a href="cambios.html" class="nav-item active"><span class="nav-label">Cambios de Turno</span></a>
             <div class="nav-group-label">COMUNICACION</div>
-            <a href="solicitudes.html" class="nav-item"><span class="nav-label">Solicitudes</span></a>
-            <a href="bandeja.html" class="nav-item"><span class="nav-label">Bandeja</span></a>
+            <a href="solicitudes.html" class="nav-item">📩 <span class="nav-label">Solicitudes</span></a>
             <div class="nav-group-label">SISTEMA</div>
             <a href="configuracion.html" class="nav-item"><span class="nav-label">Configuracion</span></a>
         </nav>
@@ -152,7 +151,7 @@
             <header class="page-header">
                 <div>
                     <h1 class="page-title">Cambios de Turno</h1>
-                    <p class="page-subtitle">Control de intercambios, cambios de direccion y anulaciones</p>
+                    <p class="page-subtitle">Control de intercambios y cambios de turno</p>
                 </div>
                 <div id="syncStatus" class="status-badge-premium" style="margin-left:auto; display:flex; align-items:center; gap:8px;">
                     <span id="syncDot" style="width:8px; height:8px; border-radius:50%; background:#ff9800;"></span>
@@ -174,10 +173,9 @@
                     <option value="">Todos los tipos</option>
                     <option value="INTERCAMBIO_TURNO">Intercambio de turno</option>
                     <option value="CAMBIO_TURNO">Cambio de direccion</option>
-                    <option value="INTERCAMBIO_HOTEL">Intercambio de hotel</option>
-                    <option value="CAMBIO_HOTEL">Cambio de hotel</option>
                 </select>
                 <select id="filterStatus">
+                    <option value="pendiente">Pendientes</option>
                     <option value="activo">Activos</option>
                     <option value="">Todos</option>
                     <option value="anulado">Anulados</option>
@@ -216,19 +214,16 @@
 
     <script src="supabase.js"></script>
     <script src="supabase-config.js?v=9.8"></script>
-    <script src="supabase-dao.js?v=9.10"></script>
+    <script src="supabase-dao.js?v=9.13"></script>
     <script>
         const $ = (s) => document.querySelector(s);
         let allEvents = [];
+        let usingLegacyChanges = false;
 
-        const changeTypes = new Set(['INTERCAMBIO_TURNO', 'CAMBIO_TURNO', 'INTERCAMBIO_HOTEL', 'CAMBIO_HOTEL', 'INTERCAMBIO_POSICION', 'CAMBIO_POSICION']);
+        const changeTypes = new Set(['INTERCAMBIO_TURNO', 'CAMBIO_TURNO']);
         const typeLabel = {
             INTERCAMBIO_TURNO: 'Intercambio de turno',
-            CAMBIO_TURNO: 'Cambio de direccion',
-            INTERCAMBIO_HOTEL: 'Intercambio de hotel',
-            CAMBIO_HOTEL: 'Cambio de hotel',
-            INTERCAMBIO_POSICION: 'Intercambio de posicion',
-            CAMBIO_POSICION: 'Cambio de posicion'
+            CAMBIO_TURNO: 'Cambio de direccion'
         };
 
         function escapeHtml(value) {
@@ -259,14 +254,131 @@
             return event.hotel_origen || event.hotel_destino || event.hotel_id || 'General';
         }
 
+        function normalizeKey(value) {
+            return window.TurnosDB.normalizeString(value || '').replace(/\s+/g, ' ');
+        }
+
+        function legacySwapKey(row) {
+            const a = normalizeKey(row.empleado_id);
+            const b = normalizeKey(row.sustituto);
+            const first = a < b ? a : b;
+            const second = a < b ? b : a;
+            return [row.fecha, first, second].join('|');
+        }
+
+        function mapLegacyChanges(rows) {
+            const grouped = new Map();
+            (rows || []).forEach(row => {
+                if (!row.sustituto) {
+                    const id = `legacy-${row.empleado_id}-${row.fecha}`;
+                    if (!grouped.has(id)) grouped.set(id, row);
+                    return;
+                }
+                const key = legacySwapKey(row);
+                const current = grouped.get(key);
+                if (!current) {
+                    grouped.set(key, row);
+                    return;
+                }
+                const currentUpdated = String(current.updated_at || '');
+                const rowUpdated = String(row.updated_at || '');
+                if (rowUpdated < currentUpdated) grouped.set(key, row);
+            });
+
+            return Array.from(grouped.values()).map(row => ({
+                id: row.sustituto ? `legacy-${legacySwapKey(row)}` : `legacy-${row.empleado_id}-${row.fecha}`,
+                tipo: row.sustituto ? 'INTERCAMBIO_TURNO' : 'CAMBIO_TURNO',
+                estado: 'activo',
+                fecha_inicio: row.fecha,
+                fecha_fin: row.fecha,
+                empleado_id: row.empleado_id,
+                empleado_destino_id: row.sustituto || null,
+                hotel_origen: row.hotel_id,
+                observaciones: row.updated_by === 'DIRECCION_MODO_EXCEL' ? 'Cambio importado Excel' : (row.turno || 'Cambio manual'),
+                turno_nuevo: row.turno || '',
+                is_legacy: true
+            }));
+        }
+
+        async function empleadosDeHotel(hotel, selectedNames = []) {
+            const selectedKeys = new Set(selectedNames.filter(Boolean).map(normalizeKey));
+            const profiles = await window.TurnosDB.getEmpleados();
+            const result = [];
+            const seen = new Set();
+
+            (profiles || []).forEach(emp => {
+                const name = emp.nombre || emp.id;
+                const key = normalizeKey(name || emp.id);
+                if (!key || seen.has(key)) return;
+                const status = String(emp.estado_empresa || (emp.activo === false ? 'baja' : 'activo')).toLowerCase();
+                const assigned = String(emp.hoteles_asignados || '');
+                const belongsToHotel =
+                    !hotel ||
+                    emp.hotel_id === hotel ||
+                    assigned.split(/[;,|]/).map(h => h.trim()).includes(hotel) ||
+                    selectedKeys.has(key);
+
+                if (status === 'baja' && !selectedKeys.has(key)) return;
+                if (!belongsToHotel) return;
+
+                seen.add(key);
+                result.push({
+                    id: emp.id || name,
+                    nombre: name,
+                    orden: emp.orden ?? 999
+                });
+            });
+
+            selectedNames.filter(Boolean).forEach(name => {
+                const key = normalizeKey(name);
+                if (!seen.has(key)) {
+                    seen.add(key);
+                    result.push({ id: name, nombre: name, orden: 9999 });
+                }
+            });
+
+            return result.sort((a, b) => (a.orden ?? 999) - (b.orden ?? 999) || String(a.nombre).localeCompare(String(b.nombre)));
+        }
+
+        function employeeSelectOptions(empleados, selected) {
+            const selectedKey = normalizeKey(selected);
+            return empleados.map(emp => {
+                const value = emp.id || emp.nombre;
+                const isSelected = normalizeKey(value) === selectedKey || normalizeKey(emp.nombre) === selectedKey;
+                return `<option value="${escapeHtml(value)}" ${isSelected ? 'selected' : ''}>${escapeHtml(emp.nombre || value)}</option>`;
+            }).join('');
+        }
+
         async function loadEvents() {
             if (!window.supabase) return [];
-            const { data, error } = await window.supabase
+            
+            // 1. Cargar eventos modernos
+            const { data: events, error } = await window.supabase
                 .from('eventos_cuadrante')
                 .select('*')
                 .order('fecha_inicio', { ascending: false });
-            if (error) throw error;
-            return (data || []).filter(e => changeTypes.has(String(e.tipo || '').toUpperCase()));
+            
+            if (error) console.warn("Error cargando eventos modernos:", error);
+
+            // 2. Cargar registros históricos (tipo CT) de la tabla turnos
+            const legacyData = await window.TurnosDB.fetchTipo('CT', '2024-01-01', '2030-12-31');
+            
+            const legacyMapped = mapLegacyChanges(legacyData || []);
+
+            // 3. Fusionar evitando duplicados si el evento ya existe para esa petición
+            const combined = [...(events || [])];
+            
+            // Solo añadir legacy si no hay un evento moderno que lo cubra (por fecha y empleado)
+            legacyMapped.forEach(leg => {
+                const alreadyHasEvent = combined.some(e => 
+                    e.empleado_id === leg.empleado_id && 
+                    eventDate(e) === leg.fecha_inicio &&
+                    (e.estado || 'activo') !== 'anulado'
+                );
+                if (!alreadyHasEvent) combined.push(leg);
+            });
+
+            return combined.filter(e => changeTypes.has(String(e.tipo || '').toUpperCase()) || e.is_legacy);
         }
 
         function applyFilters(events) {
@@ -275,6 +387,7 @@
             const type = $('#filterType').value;
             const status = $('#filterStatus').value;
             const month = $('#filterMonth').value;
+            const today = isoToday();
 
             return events.filter(event => {
                 const haystack = [
@@ -288,9 +401,17 @@
                 if (q && !haystack.includes(q)) return false;
                 if (hotel && eventHotel(event) !== hotel) return false;
                 if (type && String(event.tipo).toUpperCase() !== type) return false;
-                if (status && String(event.estado || 'activo').toLowerCase() !== status) return false;
+                if (status === 'pendiente' && (String(event.estado || 'activo').toLowerCase() === 'anulado' || eventDate(event) < today)) return false;
+                if (status && status !== 'pendiente' && String(event.estado || 'activo').toLowerCase() !== status) return false;
                 if (month && !eventDate(event).startsWith(month)) return false;
                 return true;
+            }).sort((a, b) => {
+                const da = new Date(eventDate(a) + 'T12:00:00').getTime();
+                const db = new Date(eventDate(b) + 'T12:00:00').getTime();
+                const now = new Date(today + 'T12:00:00').getTime();
+                
+                // Orden por proximidad absoluta a hoy
+                return Math.abs(da - now) - Math.abs(db - now);
             });
         }
 
@@ -321,7 +442,7 @@
             $('#nextChanges').innerHTML = upcoming.length ? upcoming.map(e => `
                 <div class="next-change">
                     <strong>${escapeHtml(window.TurnosDB.fmtDateLegacy(eventDate(e)))} · ${escapeHtml(eventHotel(e))}</strong>
-                    <small>${escapeHtml(e.empleado_id)}${e.empleado_destino_id ? ` 🔄 ${escapeHtml(e.empleado_destino_id)}` : ''}</small>
+                    <small>${escapeHtml(e.empleado_id)}${e.empleado_destino_id ? ` &#128260; ${escapeHtml(e.empleado_destino_id)}` : ''}</small>
                 </div>
             `).join('') : '<div style="opacity:0.55;">No hay cambios futuros.</div>';
         }
@@ -348,7 +469,7 @@
                 const isAnulado = status === 'anulado';
                 const date = eventDate(event);
                 const participants = event.empleado_destino_id
-                    ? `${escapeHtml(event.empleado_id)} <strong style="color:var(--accent);">🔄</strong> ${escapeHtml(event.empleado_destino_id)}`
+                    ? `${escapeHtml(event.empleado_id)} <strong style="color:var(--accent);">&#128260;</strong> ${escapeHtml(event.empleado_destino_id)}`
                     : escapeHtml(event.empleado_id || '');
 
                 return `
@@ -356,11 +477,11 @@
                         <td style="padding:15px;"><b style="color:var(--accent);">${escapeHtml(window.TurnosDB.fmtDateLegacy(date))}</b></td>
                         <td style="padding:15px;">${escapeHtml(eventHotel(event))}</td>
                         <td style="padding:15px;">${participants}</td>
-                        <td style="padding:15px;"><span class="change-type-pill">🔄 ${escapeHtml(typeLabel[event.tipo] || event.tipo)}</span></td>
+                        <td style="padding:15px;"><span class="change-type-pill">&#128260; ${escapeHtml(typeLabel[event.tipo] || event.tipo)}</span></td>
                         <td style="padding:15px;">${escapeHtml(event.observaciones || event.turno_nuevo || '')}</td>
                         <td style="padding:15px;">
                             <div class="change-actions">
-                                ${isAnulado ? '<span style="font-weight:800; color:#c62828;">Anulado</span>' : `<button class="mini-btn danger" onclick="anularCambio('${escapeHtml(event.id)}')">Anular</button>`}
+                                ${isAnulado ? '<span style="font-weight:800; color:#c62828;">Anulado</span>' : `<button class="mini-btn" onclick="openEditCambio('${escapeHtml(event.id)}')">Editar</button><button class="mini-btn danger" onclick="anularCambio('${escapeHtml(event.id)}')">Anular</button>`}
                             </div>
                         </td>
                     </tr>
@@ -378,8 +499,13 @@
                 renderTable();
                 const syncText = $('#syncText');
                 const syncDot = $('#syncDot');
-                if (syncText) syncText.textContent = 'Supabase Conectado';
-                if (syncDot) syncDot.style.background = '#10e898';
+                if (usingLegacyChanges) {
+                    window.cloudStatusOverride = { state: 'warn', text: 'Supabase conectado - modo historico CT' };
+                    window.setCloudStatus?.('warn', 'Supabase conectado - modo historico CT');
+                } else {
+                    window.cloudStatusOverride = null;
+                    window.setCloudStatus?.('ok', 'Supabase conectado');
+                }
             } catch (err) {
                 body.innerHTML = `<tr><td colspan="6" style="color:#c62828; padding:2rem; text-align:center;">Error: ${escapeHtml(err.message)}</td></tr>`;
             }
@@ -387,7 +513,174 @@
 
         async function anularCambio(id) {
             if (!confirm('Anular este cambio de turno?')) return;
-            await window.TurnosDB.anularEvento(id);
+            const original = allEvents.find(e => String(e.id) === String(id));
+            if (usingLegacyChanges || String(id).startsWith('legacy-')) {
+                await deleteLegacyCambio(original);
+            } else {
+                await window.TurnosDB.anularEvento(id);
+            }
+            await renderSwaps();
+        }
+
+        async function deleteLegacyCambio(event) {
+            if (!event) return;
+            const date = eventDate(event);
+            const { error } = await window.supabase
+                .from('turnos')
+                .delete()
+                .eq('empleado_id', event.empleado_id)
+                .eq('fecha', date)
+                .eq('tipo', 'CT');
+            if (error) throw error;
+            if (event.empleado_destino_id) {
+                const { error: errorDest } = await window.supabase
+                    .from('turnos')
+                    .delete()
+                    .eq('empleado_id', event.empleado_destino_id)
+                    .eq('fecha', date)
+                    .eq('tipo', 'CT');
+                if (errorDest) throw errorDest;
+            }
+        }
+
+        async function fetchTurnoDia(empleadoId, fecha) {
+            const { data, error } = await window.supabase
+                .from('turnos')
+                .select('*')
+                .eq('empleado_id', empleadoId)
+                .eq('fecha', fecha)
+                .limit(1);
+            if (error) throw error;
+            return (data || [])[0] || null;
+        }
+
+        async function saveLegacyIntercambio(payload, original) {
+            const emp = payload.empleado_id;
+            const dest = payload.empleado_destino_id;
+            const date = payload.fecha_inicio;
+            if (!emp || !dest) throw new Error('Un intercambio necesita dos empleados.');
+
+            const rowEmp = await fetchTurnoDia(emp, date);
+            const rowDest = await fetchTurnoDia(dest, date);
+            const turnoEmp = rowEmp?.turno || payload.turno_original || '';
+            const turnoDest = rowDest?.turno || payload.turno_nuevo || '';
+            const hotelEmp = rowEmp?.hotel_id || payload.hotel_origen || eventHotel(original);
+            const hotelDest = rowDest?.hotel_id || payload.hotel_origen || eventHotel(original);
+
+            await window.TurnosDB.upsertTurno(emp, date, turnoDest, 'CT', hotelEmp, dest, 'DIRECCION_CAMBIOS');
+            await window.TurnosDB.upsertTurno(dest, date, turnoEmp, 'CT', hotelDest, emp, 'DIRECCION_CAMBIOS');
+        }
+
+        async function openEditCambio(id) {
+            const event = allEvents.find(e => String(e.id) === String(id));
+            if (!event) return;
+            const existing = document.getElementById('editCambioModal');
+            if (existing) existing.remove();
+
+            const hotel = eventHotel(event);
+            const empleados = await empleadosDeHotel(hotel, [event.empleado_id, event.empleado_destino_id]);
+            const empleadoOptions = employeeSelectOptions(empleados, event.empleado_id);
+            const destinoOptions = employeeSelectOptions(empleados, event.empleado_destino_id);
+
+            const modal = document.createElement('div');
+            modal.id = 'editCambioModal';
+            modal.style.cssText = 'position:fixed; inset:0; z-index:9999; background:rgba(15,23,42,0.45); display:flex; align-items:center; justify-content:center; padding:24px;';
+            modal.innerHTML = `
+                <form onsubmit="saveEditCambio(event)" style="width:min(860px, 96vw); background:var(--surface); border:1px solid var(--border); border-radius:8px; box-shadow:var(--shadow-lg); padding:0; overflow:hidden;">
+                    <input type="hidden" id="editId" value="${escapeHtml(event.id)}">
+                    <input type="hidden" id="editHotelOrigen" value="${escapeHtml(hotel)}">
+                    <div style="padding:20px 22px; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; gap:14px; align-items:flex-start;">
+                        <div>
+                            <div style="font-size:0.75rem; color:var(--text-dim); font-weight:900; letter-spacing:0.08em; text-transform:uppercase;">Ficha de cambio de turno</div>
+                            <h2 style="margin:5px 0 0; font-size:1.35rem;">${escapeHtml(window.TurnosDB.fmtDateLegacy(eventDate(event)))} · ${escapeHtml(hotel)}</h2>
+                        </div>
+                        <button type="button" class="mini-btn" onclick="document.getElementById('editCambioModal').remove()">Cerrar</button>
+                    </div>
+                    <div style="padding:18px 22px;">
+                        <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:14px;">
+                            <div style="border:1px solid var(--border); border-radius:8px; padding:14px; background:var(--bg2);">
+                                <div style="font-size:0.72rem; font-weight:900; color:var(--text-dim); text-transform:uppercase;">Empleado origen</div>
+                                <strong style="display:block; margin-top:6px; font-size:1.1rem;">${escapeHtml(event.empleado_id || '')}</strong>
+                            </div>
+                            <div style="border:1px solid var(--border); border-radius:8px; padding:14px; background:var(--bg2);">
+                                <div style="font-size:0.72rem; font-weight:900; color:var(--text-dim); text-transform:uppercase;">Empleado destino</div>
+                                <strong style="display:block; margin-top:6px; font-size:1.1rem;">${escapeHtml(event.empleado_destino_id || 'Sin asignar')}</strong>
+                            </div>
+                        </div>
+                        <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px;">
+                            <label style="font-weight:800; font-size:0.75rem;">Fecha<br><input id="editFechaInicio" type="date" value="${escapeHtml(eventDate(event))}" required style="width:100%; padding:10px; border:1px solid var(--border); border-radius:8px;"></label>
+                            <label style="font-weight:800; font-size:0.75rem;">Tipo<br>
+                                <select id="editTipo" style="width:100%; padding:10px; border:1px solid var(--border); border-radius:8px;">
+                                ${Array.from(changeTypes).map(t => `<option value="${t}" ${String(event.tipo).toUpperCase() === t ? 'selected' : ''}>${escapeHtml(typeLabel[t] || t)}</option>`).join('')}
+                                </select>
+                            </label>
+                            <label style="font-weight:800; font-size:0.75rem;">Turno nuevo<br><select id="editTurnoNuevo" style="width:100%; padding:10px; border:1px solid var(--border); border-radius:8px;">
+                                ${['', 'M', 'T', 'N', 'D'].map(t => `<option value="${t}" ${String(event.turno_nuevo || '') === t ? 'selected' : ''}>${t || 'Sin cambio'}</option>`).join('')}
+                            </select></label>
+                            <label style="font-weight:800; font-size:0.75rem;">Empleado<br>
+                                <select id="editEmpleado" required style="width:100%; padding:10px; border:1px solid var(--border); border-radius:8px;">${empleadoOptions}</select>
+                            </label>
+                            <label style="font-weight:800; font-size:0.75rem;">Compañero<br>
+                                <select id="editDestino" style="width:100%; padding:10px; border:1px solid var(--border); border-radius:8px;">
+                                    <option value="">Sin compañero</option>${destinoOptions}
+                                </select>
+                            </label>
+                            <label style="font-weight:800; font-size:0.75rem;">Hotel<br><input value="${escapeHtml(hotel)}" disabled style="width:100%; padding:10px; border:1px solid var(--border); border-radius:8px; opacity:0.75;"></label>
+                        </div>
+                        <label style="display:block; margin-top:12px; font-weight:800; font-size:0.75rem;">Observacion<br><textarea id="editObservaciones" style="width:100%; min-height:76px; padding:10px; border:1px solid var(--border); border-radius:8px;">${escapeHtml(event.observaciones || '')}</textarea></label>
+                        <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; margin-top:18px;">
+                            <span style="font-size:0.78rem; color:var(--text-dim); font-weight:800;">Solo aparecen empleados activos asignados a este hotel.</span>
+                            <div style="display:flex; gap:10px;">
+                                <button type="button" class="mini-btn" onclick="document.getElementById('editCambioModal').remove()">Cancelar</button>
+                                <button type="submit" class="mini-btn" style="background:var(--accent); color:white;">Guardar cambios</button>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            `;
+            document.body.appendChild(modal);
+        }
+
+        async function saveEditCambio(ev) {
+            ev.preventDefault();
+            const id = $('#editId').value;
+            const original = allEvents.find(e => String(e.id) === String(id));
+            if (!original) return;
+            const payload = {
+                ...original,
+                tipo: $('#editTipo').value,
+                fecha_inicio: $('#editFechaInicio').value,
+                fecha_fin: $('#editFechaInicio').value,
+                empleado_id: $('#editEmpleado').value,
+                empleado_destino_id: $('#editDestino').value || null,
+                hotel_origen: $('#editHotelOrigen').value || null,
+                hotel_destino: null,
+                turno_nuevo: $('#editTurnoNuevo').value || null,
+                observaciones: $('#editObservaciones').value.trim() || null,
+                estado: original.estado || 'activo'
+            };
+
+            if (usingLegacyChanges || String(id).startsWith('legacy-')) {
+                if (payload.tipo === 'INTERCAMBIO_TURNO') {
+                    await deleteLegacyCambio(original);
+                    await saveLegacyIntercambio(payload, original);
+                } else {
+                    const oldKeyChanged = original.empleado_id !== payload.empleado_id || eventDate(original) !== payload.fecha_inicio;
+                    if (oldKeyChanged) await deleteLegacyCambio(original);
+                    await window.TurnosDB.upsertTurno(
+                        payload.empleado_id,
+                        payload.fecha_inicio,
+                        payload.turno_nuevo || payload.observaciones || 'CT',
+                        'CT',
+                        payload.hotel_origen || eventHotel(original),
+                        payload.empleado_destino_id,
+                        'DIRECCION_CAMBIOS'
+                    );
+                }
+            } else {
+                await window.TurnosDB.upsertEvento(payload);
+            }
+            document.getElementById('editCambioModal')?.remove();
             await renderSwaps();
         }
 
@@ -399,21 +692,28 @@
         document.addEventListener('DOMContentLoaded', () => {
             const savedTheme = localStorage.getItem('turnosweb_theme') || 'light';
             document.body.classList.toggle('light-mode', savedTheme === 'light');
-            const now = new Date();
-            $('#filterMonth').value = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+            $('#filterStatus').value = 'pendiente';
+            $('#filterMonth').value = '';
             ['filterSearch', 'filterHotel', 'filterType', 'filterStatus', 'filterMonth'].forEach(id => {
                 document.getElementById(id).addEventListener('input', renderTable);
                 document.getElementById(id).addEventListener('change', renderTable);
             });
-            renderSwaps();
-            if (window.supabase) {
+            document.getElementById('filterStatus').addEventListener('change', (e) => {
+                if (e.target.value === 'activo') {
+                    $('#filterMonth').value = ''; // Limpiar mes si elige Activos para ver todos
+                    renderTable();
+                }
+            });
+
+            renderSwaps().then(() => {
+                if (!window.supabase || usingLegacyChanges) return;
                 window.supabase
                     .channel('changes_realtime')
                     .on('postgres_changes', { event: '*', schema: 'public', table: 'eventos_cuadrante' }, renderSwaps)
                     .subscribe();
-            }
+            });
         });
     </script>
-    <script src="sync-status.js?v=8.2"></script>
+    <script src="sync-status.js?v=10.0"></script>
 </body>
 </html>
