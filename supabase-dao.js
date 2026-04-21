@@ -530,27 +530,9 @@ window.TurnosDB = {
     },
 
     async fetchVacaciones(inicio = null, fin = null) {
-        const client = window.supabase;
-        try {
-            const i = this.normalizeDate(inicio);
-            const f = this.normalizeDate(fin);
-
-            const data = await this.fetchAll(() => {
-                let q = client.from('vacaciones').select('*');
-                if (i && f) {
-                    q = q.lte('fecha_inicio', f).gte('fecha_fin', i);
-                } else if (i) {
-                    q = q.gte('fecha_fin', i);
-                } else if (f) {
-                    q = q.lte('fecha_inicio', f);
-                }
-                return q.order('fecha_inicio', { ascending: false });
-            });
-            return data || [];
-        } catch (err) {
-            console.warn("DAO Aviso (fetchVacaciones):", err);
-            return [];
-        }
+        // La tabla legacy `vacaciones` no existe en todos los despliegues.
+        // La fuente activa son los turnos/eventos calculados con tipo VAC.
+        return this.fetchTipo('VAC', inicio, fin);
     },
 
     // --- ESCRITURA ---

@@ -621,7 +621,7 @@ window.renderPreview = async () => {
                 });
 
                 if (empList.length === 0) continue;
-                const logoUrl = h.includes('Guadiana') ? 'guadiana logo.jpg' : 'cumbria logo.jpg';
+                const logoUrl = hName.includes('Guadiana') ? 'guadiana logo.jpg' : 'cumbria logo.jpg';
 
                 const hotelSection = document.createElement('div');
                 hotelSection.innerHTML = `
