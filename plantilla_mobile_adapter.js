@@ -1,365 +1,78 @@
 /* plantilla_mobile_adapter.js
    Adaptador para versión móvil:
-   - Usa window.FULL_DATA (mismo formato que index/live)
-   - Para cada hotel + lunes de semana construye la misma parrilla lógica que index
-   - Respeta orden_empleados y mueve al final los ausentes toda la semana
-   - Añade al sustituto en la posición del ausente
+   - Utiliza window.TurnosEngine como motor de renderizado pasivo.
+   - Garantiza paridad total con index.html y admin.js.
+   - Respeta estrictamente el orden de filas definido en el Excel original.
+   - Aplica ausencias (Vacaciones, Baja) sobre la estructura fija del Excel.
+   - El campo 'sustituto' se ignora completamente según las reglas globales.
 */
 window.MobileAdapter = (function () {
-  const pad = n => String(n).padStart(2, "0");
+    const pad = n => String(n).padStart(2, "0");
 
-  function normalizeDateKey(value) {
-    if (!value) return null;
-
-    if (typeof value === "string") {
-      if (/^\d{4}-\d{2}-\d{2}$/.test(value)) return value;
-      const m = value.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
-      if (m) {
-        return `${m[3]}-${m[2]}-${m[1]}`;
-      }
+    function mondayUTC(date) {
+        const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+        const day = d.getUTCDay();
+        const diff = (day === 0 ? -6 : 1 - day);
+        d.setUTCDate(d.getUTCDate() + diff);
+        return d;
     }
 
-    if (value instanceof Date) {
-      return [
-        value.getFullYear(),
-        pad(value.getMonth() + 1),
-        pad(value.getDate())
-      ].join("-");
+    function addDays(d, n) {
+        const x = new Date(d.getTime());
+        x.setUTCDate(x.getUTCDate() + n);
+        return x;
     }
 
-    return null;
-  }
+    function isoFromUTCDate(d) {
+        return [
+            d.getUTCFullYear(),
+            pad(d.getUTCMonth() + 1),
+            pad(d.getUTCDate())
+        ].join("-");
+    }
 
-  function normalizeHotelName(name) {
-    if (name == null) return "";
-    const raw = String(name);
-    const s = window.MobilePatch ? window.MobilePatch.normalize(raw) : raw;
-    return s.toLowerCase().trim();
-  }
-
-  function mondayUTC(date) {
-    const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
-    const day = d.getUTCDay();
-    const diff = (day === 0 ? -6 : 1 - day);
-    d.setUTCDate(d.getUTCDate() + diff);
-    return d;
-  }
-
-  function addDays(d, n) {
-    const x = new Date(d.getTime());
-    x.setUTCDate(x.getUTCDate() + n);
-    return x;
-  }
-
-  function isoFromUTCDate(d) {
-    return [
-      d.getUTCFullYear(),
-      pad(d.getUTCMonth() + 1),
-      pad(d.getUTCDate())
-    ].join("-");
-  }
-
-  function buildWeekGrid(hotelGroup, weekDays) {
-    const grid = {};
-    const meta = {};
-    const absenceCount = {};
-    const subCandidate = {};
-
-    const allEmployees = new Set(hotelGroup.orden_empleados || []);
-
-    (hotelGroup.turnos || []).forEach(t => {
-      const turno = t.turno;
-      if (turno && typeof turno === "object" && turno.Sustituto) {
-        allEmployees.add(turno.Sustituto);
-      }
-    });
-
-    allEmployees.forEach(emp => {
-      grid[emp] = {};
-      meta[emp] = {};
-      weekDays.forEach(d => {
-        grid[emp][d] = "";
-        meta[emp][d] = null;
-      });
-    });
-
-    (hotelGroup.turnos || []).forEach(t => {
-      const emp = t.empleado;
-      const fechaKey = normalizeDateKey(t.fecha);
-      if (!emp || !fechaKey) return;
-      if (!grid[emp] || !(fechaKey in grid[emp])) return;
-      grid[emp][fechaKey] = t.turno;
-    });
-
-    for (const emp of (hotelGroup.orden_empleados || [])) {
-      for (const day of weekDays) {
-        const raw = grid[emp] && grid[emp][day];
-        if (raw && typeof raw === "object") {
-          const exact =
-            (raw.TipoInterpretado ??
-             raw.TipoAusencia ??
-             raw["Tipo Ausencia"] ??
-             "").toString().trim();
-          const etiqueta = exact || "Ausencia";
-
-          grid[emp][day] = etiqueta;
-
-          const m = meta[emp][day] || {};
-          m.isAbsence = true;
-          m.absenceLabel = etiqueta;
-          meta[emp][day] = m;
-
-          absenceCount[emp] = (absenceCount[emp] || 0) + 1;
-
-          const sust = raw.Sustituto;
-          if (sust) {
-            if (!grid[sust]) {
-              grid[sust] = {};
-              meta[sust] = {};
-              weekDays.forEach(d => {
-                grid[sust][d] = "";
-                meta[sust][d] = null;
-              });
-            }
-            const turnoOrig =
-              raw.TurnoOriginal ||
-              raw["TurnoOriginal"] ||
-              raw["Turno original"] ||
-              raw.Turno ||
-              "";
-
-            grid[sust][day] = turnoOrig;
-            meta[sust][day] = { isSub: true, for: emp, turno: turnoOrig };
-            if (!subCandidate[emp]) subCandidate[emp] = sust;
-          }
+    function buildWeekData(FULL_DATA, hotel, monday, profiles = []) {
+        const mondayUTCDate = mondayUTC(monday);
+        const mondayISO = isoFromUTCDate(mondayUTCDate);
+        const weekDays = [];
+        for (let i = 0; i < 7; i++) {
+            weekDays.push(isoFromUTCDate(addDays(mondayUTCDate, i)));
         }
-      }
-    }
 
-    return { grid, meta, absenceCount, subCandidate };
-  }
-
-  function buildWeekData(FULL_DATA, hotel, monday, profiles = []) {
-    const mondayUTCDate = mondayUTC(monday);
-    const mondayISO = isoFromUTCDate(mondayUTCDate);
-    const weekDays = [];
-    for (let i = 0; i < 7; i++) {
-      weekDays.push(isoFromUTCDate(addDays(mondayUTCDate, i)));
-    }
-
-    if (FULL_DATA && FULL_DATA.flat) {
-        const flat = FULL_DATA.flat;
-        const hotelNormTarget = normalizeHotelName(hotel);
-        const excelSource = FULL_DATA.excelSource || {};
-        
-        // 1. Filtrar datos del hotel y detectar ausencias
-        const hData = flat.filter(t => normalizeHotelName(t.hotel_id) === hotelNormTarget && weekDays.includes(t.fecha));
-        
-        const isAbsent = new Set();
-        hData.forEach(t => {
-            const tipo = (t.tipo || '').toUpperCase();
-            if (window.TurnosRules.isAbsenceType(tipo)) {
-                isAbsent.add(window.TurnosDB.normalizeString(t.empleado_id));
-            }
-        });
-
-        const replacedBy = {}; const replacing = {};
-        hData.forEach(t => {
-            const normEmpId = window.TurnosDB.normalizeString(t.empleado_id);
-            if (t.sustituto && isAbsent.has(normEmpId)) {
-                replacedBy[normEmpId] = t.sustituto;
-                replacing[window.TurnosDB.normalizeString(t.sustituto)] = t.empleado_id;
-            }
-        });
-
-        // 2. Orden basado en Excel (Igual que Admin/Index)
+        const flat = FULL_DATA?.flat || [];
+        const excelSource = FULL_DATA?.excelSource || {};
         const sourceRowsForHotel = excelSource[hotel] || [];
         const currentWeekExcelRows = sourceRowsForHotel.filter(r => r.weekStart === mondayISO);
-        const excelOrder = currentWeekExcelRows.map(r => r.empleadoId);
-        const excelRowByNorm = new Map(
-            currentWeekExcelRows.map(r => [window.TurnosDB.normalizeString(r.empleadoId), r])
-        );
-        const sourceShiftFor = (norm, idx) => excelRowByNorm.get(norm)?.values?.[idx] || "";
 
-        const rendered = new Set();
-        const empList = []; // [{ id, displayAs, isAbsent, substituteFor }]
-
-        excelOrder.forEach(id => {
-            if (rendered.has(id)) return;
-            if (isAbsent.has(id)) {
-                const sub = replacedBy[id];
-                if (sub && !rendered.has(sub)) {
-                    empList.push({ id: sub, isAbsent: false, substituteFor: id });
-                    rendered.add(sub);
-                }
-            } else if (replacing[id]) {
-                empList.push({ id, isAbsent: false, substituteFor: null });
-                rendered.add(id);
-            } else {
-                empList.push({ id, isAbsent: false, substituteFor: null });
-                rendered.add(id);
-            }
+        const rosterGrid = window.TurnosEngine.buildRosterGrid({
+            rows: flat,
+            employees: profiles,
+            dates: weekDays,
+            hotel,
+            sourceRows: currentWeekExcelRows
         });
 
-        // Añadir IDs que no están en el Excel de esta semana
-        const allIds = new Set();
-        hData.forEach(t => { if(t.empleado_id) allIds.add(t.empleado_id); if(t.sustituto) allIds.add(t.sustituto); });
-        
-        allIds.forEach(id => {
-            if (!rendered.has(id) && !isAbsent.has(id)) {
-                empList.push({ id, isAbsent: false, substituteFor: null });
-                rendered.add(id);
-            }
-        });
+        const empDetailed = rosterGrid.entries.map(entry => ({
+            id: entry.name,
+            norm: entry.norm,
+            isAbsent: entry.isAbsent
+        }));
 
-        // Final: Ausentes al final
-        isAbsent.forEach(id => {
-            if (!rendered.has(id)) {
-                empList.push({ id, isAbsent: true, substituteFor: null });
-                rendered.add(id);
-            }
-        });
-
-        // 3. Mapear turnos finales
         const turnosByEmpleado = {};
-        empList.forEach(entry => {
-            const { id: emp, substituteFor } = entry;
-            turnosByEmpleado[emp] = {};
-
-            if (substituteFor) {
-                const absenteeRow = excelRowByNorm.get(window.TurnosDB.normalizeString(substituteFor));
-                weekDays.forEach((f, idx) => {
-                    const turn = absenteeRow ? absenteeRow.values[idx] : null;
-                    turnosByEmpleado[emp][f] = {
-                        turno: turn || "",
-                        tipo: "NORMAL",
-                        vacationCoverFor: substituteFor
-                    };
-                });
-            } else {
-                const empNorm = window.TurnosDB.normalizeString(emp);
-                weekDays.forEach((f, idx) => {
-                    const direct = hData.find(t =>
-                        window.TurnosDB.normalizeString(t.empleado_id) === empNorm &&
-                        t.fecha === f
-                    );
-                    if (direct && window.TurnosRules.isCtType(direct.tipo)) {
-                        const partnerNorm = window.TurnosDB.normalizeString(direct.sustituto);
-                        const displayTurno = sourceShiftFor(partnerNorm, idx) ||
-                            (String(direct.turno || "").toUpperCase() === "CT" ? "" : direct.turno);
-                        turnosByEmpleado[emp][f] = {
-                            turno: displayTurno || direct.turno,
-                            tipo: direct.tipo,
-                            sustituto: direct.sustituto
-                        };
-                        return;
-                    }
-
-                    const swapSource = hData.find(t =>
-                        window.TurnosRules.isCtType(t.tipo) &&
-                        window.TurnosDB.normalizeString(t.sustituto) === empNorm &&
-                        t.fecha === f
-                    );
-                    if (swapSource) {
-                        const sourceNorm = window.TurnosDB.normalizeString(swapSource.empleado_id);
-                        turnosByEmpleado[emp][f] = {
-                            turno: sourceShiftFor(sourceNorm, idx) || direct?.turno || swapSource.turno,
-                            tipo: "CT",
-                            subFor: swapSource.empleado_id
-                        };
-                        return;
-                    }
-
-                    if (direct) {
-                        turnosByEmpleado[emp][f] = {
-                            turno: direct.turno,
-                            tipo: direct.tipo,
-                            sustituto: direct.sustituto
-                        };
-                    }
-                });
-            }
+        rosterGrid.entries.forEach(entry => {
+            turnosByEmpleado[entry.name] = {};
+            entry.cells.forEach((cell, idx) => {
+                turnosByEmpleado[entry.name][weekDays[idx]] = cell;
+            });
         });
 
         return {
             monday: mondayUTCDate,
-            empleados: empList.map(e => e.id),
-            empDetailed: empList, // Para que el rendering sepa quién es ausente/sustituto
+            empleados: empDetailed.map(e => e.id),
+            empDetailed,
             turnosByEmpleado
         };
     }
 
-    const schedule = (FULL_DATA && FULL_DATA.schedule) ? FULL_DATA.schedule : [];
-
-    const hotelNormTarget = normalizeHotelName(hotel);
-
-    const groups = schedule.filter(bucket =>
-      normalizeHotelName(bucket.hotel) === hotelNormTarget &&
-      normalizeDateKey(bucket.semana_lunes) === mondayISO
-    );
-
-    if (!groups.length) {
-      return {
-        monday: mondayUTCDate,
-        empleados: [],
-        turnosByEmpleado: {}
-      };
-    }
-
-    const hotelGroup = {
-      hotel: groups[0].hotel,
-      semana_lunes: mondayISO,
-      orden_empleados: [],
-      turnos: []
-    };
-
-    const seenEmp = new Set();
-    groups.forEach(g => {
-      (g.orden_empleados || []).forEach(e => {
-        if (!seenEmp.has(e)) {
-          seenEmp.add(e);
-          hotelGroup.orden_empleados.push(e);
-        }
-      });
-      (g.turnos || []).forEach(t => hotelGroup.turnos.push(t));
-    });
-
-    const { grid, meta, absenceCount, subCandidate } =
-      buildWeekGrid(hotelGroup, weekDays);
-
-    const weekAbsent = new Set(
-      Object.keys(absenceCount).filter(emp => absenceCount[emp] === weekDays.length)
-    );
-
-    let display = (hotelGroup.orden_empleados || [])
-      .map(e => weekAbsent.has(e) ? (subCandidate[e] || e) : e)
-      .filter(Boolean);
-
-    display = [...new Set(display)];
-    display = display.filter(e => !weekAbsent.has(e));
-    display.push(...Array.from(weekAbsent));
-
-    display = display.filter(emp =>
-      weekDays.some(day => grid[emp] && grid[emp][day])
-    );
-
-    const turnosByEmpleado = {};
-    display.forEach(emp => {
-      weekDays.forEach(day => {
-        const val = grid[emp] && grid[emp][day];
-        if (val) {
-          if (!turnosByEmpleado[emp]) turnosByEmpleado[emp] = {};
-          turnosByEmpleado[emp][day] = { turno: val };
-        }
-      });
-    });
-
-    return {
-      monday: mondayUTCDate,
-      empleados: display,
-      turnosByEmpleado
-    };
-  }
-
-  return { buildWeekData };
+    return { buildWeekData };
 })();

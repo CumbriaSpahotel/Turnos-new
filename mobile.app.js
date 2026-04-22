@@ -33,8 +33,10 @@
   function getDisplayInfo(item) {
     if (!item) return { label: '·', cls: 'empty', icon: '', title: '' };
     const visual = window.TurnosRules.describeCell(item);
+    let label = visual.label || item.turno || '·';
+    if (visual.key === 'v') label = 'Vac';
     return {
-      label: visual.label || item.turno || '·',
+      label: label,
       cls: visual.mobileClass,
       icon: visual.icon || '',
       title: visual.title || ''
