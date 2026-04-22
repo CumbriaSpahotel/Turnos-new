@@ -579,10 +579,38 @@ window.renderPreview = async () => {
             const bajaDate = profileEndDate(profile);
             return !bajaDate || date <= bajaDate;
         };
+        const normalizeHotelKey = (value) => String(value || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
+        const assignedHotelKeysForProfile = (profile) => {
+            const raw = [profile?.hotel_id, profile?.hoteles_asignados].filter(Boolean).join(',');
+            return new Set(raw.split(',').map(normalizeHotelKey).filter(Boolean));
+        };
+        const isSupportProfile = (profile) => {
+            const key = employeeTypeKey(profile?.tipo_personal || profile?.contrato);
+            return key === 'apoyo' || key === 'apollo';
+        };
+        const employeeCanRenderInHotel = (key, hotelName, rowHotel = '') => {
+            const profile = profileForKey(key);
+            const targetHotel = normalizeHotelKey(hotelName);
+            const rowHotelKey = normalizeHotelKey(rowHotel);
+            if (rowHotelKey && rowHotelKey !== targetHotel) return false;
+            if (!profile) return true;
+            if (isCompanyInactiveProfile(profile)) return false;
+            if (isSupportProfile(profile)) return true;
+            const assignedHotels = assignedHotelKeysForProfile(profile);
+            if (!assignedHotels.size) return true;
+            return assignedHotels.has(targetHotel);
+        };
+        const rowCanRenderInHotel = (row, hotelName) => {
+            return employeeCanRenderInHotel(normalizeEmployeeKey(row?.empleado_id), hotelName, row?.hotel_id);
+        };
         const rowHasVisibleShift = (row) => {
             const type = String(row?.tipo || 'NORMAL').toUpperCase();
             if (type.startsWith('ANULADO')) return false;
             return Boolean(String(row?.turno || '').trim()) || (type && type !== 'NORMAL');
+        };
+        const isPreviewAbsenceRow = (row) => {
+            const type = String(row?.tipo || 'NORMAL').toUpperCase();
+            return type.startsWith('VAC') || type.startsWith('BAJA') || type.startsWith('PERM');
         };
 
         data = data.filter(row => employeeCanAppearOnDate(normalizeEmployeeKey(row.empleado_id), row.fecha));
@@ -606,7 +634,7 @@ window.renderPreview = async () => {
 
         // 5. Renderizar cada Hotel
         for (const hName of hotelsToRender) {
-            const hData = data.filter(t => t.hotel_id === hName);
+            const hData = data.filter(t => normalizeHotelKey(t.hotel_id) === normalizeHotelKey(hName) && rowCanRenderInHotel(t, hName));
             if (hData.length === 0) continue;
 
             if (isWeekly) {
@@ -620,17 +648,20 @@ window.renderPreview = async () => {
                 const empList  = [];
 
                 const weekExcelOrder = new Map();
+                const weekExcelRowByKey = new Map();
                 (excelSource[hName] || [])
                     .filter(row => row.weekStart === startISO)
                     .forEach((row, idx) => {
                         const key = normalizeEmployeeKey(row.empleadoId);
                         if (key && !weekExcelOrder.has(key)) weekExcelOrder.set(key, row.rowIndex ?? idx);
+                        if (key && !weekExcelRowByKey.has(key)) weekExcelRowByKey.set(key, row);
                     });
 
-                const addEmployeeFromRow = (employeeId, date) => {
+                const addEmployeeFromRow = (employeeId, date, options = {}) => {
                     const key = normalizeEmployeeKey(employeeId);
                     if (!key || rendered.has(key)) return;
                     if (!employeeCanAppearOnDate(key, date)) return;
+                    if (!employeeCanRenderInHotel(key, hName, options.rowHotel || hName)) return;
                     const profile = profileForKey(key);
                     const displayAs = profile?.nombre || profile?.id || employeeId;
                     empList.push({
@@ -639,19 +670,39 @@ window.renderPreview = async () => {
                         displayAs,
                         isAbsent: false,
                         substituteFor: null,
-                        sourceOrder: weekExcelOrder.has(key) ? weekExcelOrder.get(key) : Number.MAX_SAFE_INTEGER
+                        sourceOrder: weekExcelOrder.has(key) ? weekExcelOrder.get(key) : Number.MAX_SAFE_INTEGER,
+                        ...options
                     });
                     rendered.add(key);
                 };
 
                 hData.forEach(t => {
                     if (!rowHasVisibleShift(t)) return;
-                    addEmployeeFromRow(t.empleado_id, t.fecha);
-                    addEmployeeFromRow(t.sustituto, t.fecha);
+                    const empKey = normalizeEmployeeKey(t.empleado_id);
+                    const subKey = normalizeEmployeeKey(t.sustituto);
+                    if (isPreviewAbsenceRow(t) && subKey) {
+                        addEmployeeFromRow(t.sustituto, t.fecha, {
+                            displayAs: t.sustituto,
+                            substituteFor: empKey,
+                            substituteForName: t.empleado_id,
+                            sourceKey: empKey,
+                            rowHotel: t.hotel_id,
+                            sourceOrder: weekExcelOrder.has(empKey) ? weekExcelOrder.get(empKey) : Number.MAX_SAFE_INTEGER
+                        });
+                        addEmployeeFromRow(t.empleado_id, t.fecha, {
+                            isAbsent: true,
+                            rowHotel: t.hotel_id,
+                            sourceOrder: Number.MAX_SAFE_INTEGER
+                        });
+                        return;
+                    }
+                    addEmployeeFromRow(t.empleado_id, t.fecha, { isAbsent: isPreviewAbsenceRow(t), rowHotel: t.hotel_id });
+                    addEmployeeFromRow(t.sustituto, t.fecha, { rowHotel: t.hotel_id });
                 });
 
                 // Ordenar por el Excel de la semana si existe; si no, por el campo 'orden' del perfil.
                 empList.sort((a, b) => {
+                    if (!!a.isAbsent !== !!b.isAbsent) return a.isAbsent ? 1 : -1;
                     const sourceDiff = (a.sourceOrder ?? Number.MAX_SAFE_INTEGER) - (b.sourceOrder ?? Number.MAX_SAFE_INTEGER);
                     if (sourceDiff !== 0) return sourceDiff;
                     const pA = profileForKey(a.key);
@@ -663,6 +714,47 @@ window.renderPreview = async () => {
 
                 if (empList.length === 0) continue;
                 const logoUrl = hName.includes('Guadiana') ? 'guadiana logo.jpg' : 'cumbria logo.jpg';
+                const sourceShiftForKey = (key, colIdx) => weekExcelRowByKey.get(key)?.values?.[colIdx] || '';
+                const ctDisplayCell = (row, colIdx, currentKey) => {
+                    const type = String(row?.tipo || '').toUpperCase();
+                    if (!type.includes('CT')) return row;
+                    const partnerKey = normalizeEmployeeKey(row.sustituto);
+                    const swappedTurno = sourceShiftForKey(partnerKey, colIdx) || (String(row.turno || '').toUpperCase() === 'CT' ? '' : row.turno);
+                    return { ...row, turno: swappedTurno || row.turno || '', tipo: 'CT', isSwap: true };
+                };
+                const cellForPreviewEntry = (entry, col, colIdx) => {
+                    if (entry.substituteFor) {
+                        const directCover = hData.find(t => normalizeEmployeeKey(t.empleado_id) === entry.key && t.fecha === col.date);
+                        const absentSource = hData.find(t => normalizeEmployeeKey(t.empleado_id) === entry.substituteFor && t.fecha === col.date);
+                        const sourceExcelRow = weekExcelRowByKey.get(entry.substituteFor);
+                        const sourceShift = sourceExcelRow?.values?.[colIdx] || '';
+                        const turno = sourceShift || directCover?.turno || absentSource?.turno || '';
+                        return turno ? {
+                            empleado_id: entry.id,
+                            fecha: col.date,
+                            turno,
+                            tipo: 'NORMAL',
+                            hotel_id: directCover?.hotel_id || absentSource?.hotel_id || hName,
+                            vacationCoverFor: entry.substituteForName
+                        } : null;
+                    }
+                    const direct = hData.find(t => normalizeEmployeeKey(t.empleado_id) === entry.key && t.fecha === col.date);
+                    const directType = String(direct?.tipo || '').toUpperCase();
+                    if (directType.includes('CT')) return ctDisplayCell(direct, colIdx, entry.key);
+
+                    const swapSource = hData.find(t =>
+                        String(t.tipo || '').toUpperCase().includes('CT') &&
+                        normalizeEmployeeKey(t.sustituto) === entry.key &&
+                        t.fecha === col.date
+                    );
+                    if (swapSource) {
+                        const sourceKey = normalizeEmployeeKey(swapSource.empleado_id);
+                        const swappedTurno = sourceShiftForKey(sourceKey, colIdx) || direct?.turno || '';
+                        return { ...(direct || swapSource), turno: swappedTurno, tipo: 'CT', sustituto: swapSource.empleado_id, isSwap: true };
+                    }
+
+                    return direct;
+                };
 
                 const hotelSection = document.createElement('div');
                 hotelSection.innerHTML = `
@@ -689,7 +781,7 @@ window.renderPreview = async () => {
                             <tbody>
                                 ${empList.map(entry => {
                                     const { id: emp, displayAs } = entry;
-                                    const empsData = data.filter(t => normalizeEmployeeKey(t.empleado_id) === entry.key);
+                                    const empsData = columns.map((c, idx) => cellForPreviewEntry(entry, c, idx)).filter(Boolean);
                                     const nights = empsData.filter(t => (t.turno||'').toLowerCase().startsWith('n')).length;
                                     const rests  = empsData.filter(t => (t.turno||'').toLowerCase().startsWith('d')).length;
 
@@ -707,7 +799,7 @@ window.renderPreview = async () => {
                                                 </div>
                                             </td>
                                             ${columns.map((c, colIdx) => {
-                                                const s = data.find(t => normalizeEmployeeKey(t.empleado_id) === entry.key && t.fecha === c.date);
+                                                const s = cellForPreviewEntry(entry, c, colIdx);
                                                 if (!s || !s.turno) return `<td style="background:#fafbfc; border-left:1px solid #f1f5f9; opacity:0.3;"><div style="width:100%; height:12px; background:#e2e8f0; border-radius:6px; max-width:60px; margin:0 auto;"></div></td>`;
                                                 
                                                 const t = (s.tipo||'').toUpperCase(); 
@@ -722,8 +814,9 @@ window.renderPreview = async () => {
                                                 else if (l.startsWith('n')) { style = 'background:#edf2ff; color:#364fc7; border:1px solid #dbe4ff;'; lbl = 'Noche'; icon = '<span style="font-size:1.1rem; margin-left:4px;">🌙</span>'; }
                                                 else if (l.startsWith('d')) { style = 'background:#fff5f5; color:#fa5252; border:1px solid #ffc9c9;'; lbl = 'Descanso'; }
                                                 
-                                                if (t.includes('CT') || s.sustituto) { 
-                                                    icon = `<span style="font-size:0.9rem; margin-left:4px;" title="Sust.: ${s.sustituto || ''}">🔄</span>`; 
+                                                if (t.includes('CT') || s.sustituto || s.isCovering) {
+                                                    const coverTitle = s.isCovering ? `Cubre a: ${s.sustituto || ''}` : `Sust.: ${s.sustituto || ''}`;
+                                                    icon = `<span style="font-size:0.9rem; margin-left:4px;" title="${escapeHtml(coverTitle)}">🔄</span>`;
                                                     style += ' box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);'; 
                                                 }
                                                 
@@ -764,7 +857,7 @@ window.renderPreview = async () => {
                 const hNorm = normH(hName);
 
                 // Aquí usamos data completa filtrada por hotel con comparación normalizada
-                const hDataFull = data.filter(t => normH(t.hotel_id) === hNorm);
+                const hDataFull = data.filter(t => normH(t.hotel_id) === hNorm && rowCanRenderInHotel(t, hName));
 
                 const cells = [];
                 for (let i = 1; i < startDow; i++) cells.push('<div class="cal2-cell cal2-empty"></div>');
@@ -1067,10 +1160,37 @@ window.renderSemana = async (inicio, fin) => {
     try {
         let data = await window.TurnosDB.fetchRango(inicio, fin);
         const profiles = await window.TurnosDB.getEmpleados();
+        const normalizeHotelKey = (value) => String(value || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
+        const profileByNorm = new Map();
+        profiles.forEach(p => {
+            [p.id, p.nombre].map(window.TurnosDB.normalizeString).filter(Boolean).forEach(key => {
+                if (!profileByNorm.has(key)) profileByNorm.set(key, p);
+            });
+        });
+        const assignedHotelKeysForProfile = (profile) => {
+            const raw = [profile?.hotel_id, profile?.hoteles_asignados].filter(Boolean).join(',');
+            return new Set(raw.split(',').map(normalizeHotelKey).filter(Boolean));
+        };
+        const canEmployeeRenderInHotel = (norm, hotelName, rowHotel = '') => {
+            const targetHotel = normalizeHotelKey(hotelName);
+            const rowHotelKey = normalizeHotelKey(rowHotel);
+            if (rowHotelKey && rowHotelKey !== targetHotel) return false;
+            const profile = profileByNorm.get(norm);
+            if (!profile) return true;
+            if (employeeStatusLabel(profile.estado_empresa, profile.activo) === 'Baja empresa') return false;
+            const typeKey = employeeTypeKey(profile.tipo_personal || profile.contrato);
+            if (typeKey === 'apoyo' || typeKey === 'apollo') return true;
+            const assignedHotels = assignedHotelKeysForProfile(profile);
+            if (!assignedHotels.size) return true;
+            return assignedHotels.has(targetHotel);
+        };
+        const canRowRenderInHotel = (row, hotelName) => {
+            return canEmployeeRenderInHotel(window.TurnosDB.normalizeString(row?.empleado_id), hotelName, row?.hotel_id);
+        };
         
         const selHotel = $('#prevHotel')?.value;
         if (selHotel && selHotel !== 'all' && selHotel !== '') {
-            data = data.filter(t => t.hotel_id === selHotel);
+            data = data.filter(t => canRowRenderInHotel(t, selHotel));
         }
         
         window.currentSemana = { inicio, fin, data };
@@ -1092,11 +1212,13 @@ window.renderSemana = async (inicio, fin) => {
 
         for (const hName of hotelsToRender) {
             const empsInThisHotel = hotelGroups[hName] || [];
-            const hShifts = data.filter(t => 
-                t.hotel_id === hName || 
-                empsInThisHotel.includes(window.TurnosDB.normalizeString(t.empleado_id)) ||
-                empsInThisHotel.includes(window.TurnosDB.normalizeString(t.sustituto))
-            );
+            const hShifts = data.filter(t => {
+                if (t.hotel_id) return canRowRenderInHotel(t, hName);
+                return (
+                    empsInThisHotel.includes(window.TurnosDB.normalizeString(t.empleado_id)) ||
+                    empsInThisHotel.includes(window.TurnosDB.normalizeString(t.sustituto))
+                );
+            });
             
             if (hShifts.length === 0 && !Object.keys(hotelGroups).includes(hName)) continue;
 
@@ -1151,17 +1273,35 @@ window.renderSemanaEnContenedorV2 = async (container, inicio, fin, hotelData, ho
     
     // --- LÃ“GICA DE FUSIÃ“N Y ORDENACIÃ“N (ESTILO V8.2 PREMIUM) ---
     const profiles = await window.TurnosDB.getEmpleados();
+    const normalizeHotelKey = (value) => String(value || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
+    const profileForNormV2 = (norm) => profiles.find(pr =>
+        window.TurnosDB.normalizeString(pr.id) === norm ||
+        window.TurnosDB.normalizeString(pr.nombre) === norm
+    );
+    const employeeCanRenderInHotelV2 = (norm, rowHotel = hotelName) => {
+        const targetHotel = normalizeHotelKey(hotelName);
+        const rowHotelKey = normalizeHotelKey(rowHotel);
+        if (rowHotelKey && rowHotelKey !== targetHotel) return false;
+        const profile = profileForNormV2(norm);
+        if (!profile) return true;
+        if (employeeStatusLabel(profile.estado_empresa, profile.activo) === 'Baja empresa') return false;
+        const typeKey = employeeTypeKey(profile.tipo_personal || profile.contrato);
+        if (typeKey === 'apoyo' || typeKey === 'apollo') return true;
+        const assignedHotels = new Set([profile.hotel_id, profile.hoteles_asignados].filter(Boolean).join(',').split(',').map(normalizeHotelKey).filter(Boolean));
+        if (!assignedHotels.size) return true;
+        return assignedHotels.has(targetHotel);
+    };
     
     // Unificar nombres usando normalización para evitar duplicados por tildes
     const empMap = new Map(); // normalized -> originalName
     hotelData.forEach(t => {
         if (t.empleado_id) {
             const norm = window.TurnosDB.normalizeString(t.empleado_id);
-            if (!empMap.has(norm)) empMap.set(norm, t.empleado_id);
+            if (!empMap.has(norm) && employeeCanRenderInHotelV2(norm, t.hotel_id)) empMap.set(norm, t.empleado_id);
         }
         if (t.sustituto) {
             const normS = window.TurnosDB.normalizeString(t.sustituto);
-            if (!empMap.has(normS)) empMap.set(normS, t.sustituto);
+            if (!empMap.has(normS) && employeeCanRenderInHotelV2(normS, t.hotel_id)) empMap.set(normS, t.sustituto);
         }
     });
     
