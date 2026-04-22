@@ -554,10 +554,38 @@ window.renderPreview = async () => {
         const endISO = window.isoDate(end);
 
         // 3. Fetch de datos
-        const data = await window.TurnosDB.fetchRangoCalculado(startISO, endISO);
+        let data = await window.TurnosDB.fetchRangoCalculado(startISO, endISO);
         const hotels = await window.TurnosDB.getHotels();
         const profiles = await window.TurnosDB.getEmpleados();
         const excelSource = await loadExcelSourceRows().catch(() => ({}));
+
+        const profileByKey = new Map();
+        profiles.forEach(p => {
+            [p.id, p.nombre].map(normalizeEmployeeKey).filter(Boolean).forEach(key => {
+                if (!profileByKey.has(key)) profileByKey.set(key, p);
+            });
+        });
+
+        const profileForKey = (key) => profileByKey.get(key) || null;
+        const isCompanyInactiveProfile = (profile) => {
+            if (!profile) return false;
+            return employeeStatusLabel(profile.estado_empresa, profile.activo) === 'Baja empresa';
+        };
+        const profileEndDate = (profile) => window.TurnosDB.normalizeDate(profile?.fecha_baja || '');
+        const employeeCanAppearOnDate = (key, date) => {
+            const profile = profileForKey(key);
+            if (!profile) return true;
+            if (isCompanyInactiveProfile(profile)) return false;
+            const bajaDate = profileEndDate(profile);
+            return !bajaDate || date <= bajaDate;
+        };
+        const rowHasVisibleShift = (row) => {
+            const type = String(row?.tipo || 'NORMAL').toUpperCase();
+            if (type.startsWith('ANULADO')) return false;
+            return Boolean(String(row?.turno || '').trim()) || (type && type !== 'NORMAL');
+        };
+
+        data = data.filter(row => employeeCanAppearOnDate(normalizeEmployeeKey(row.empleado_id), row.fecha));
         
         const hotelsToRender = hotelSel === 'all' ? hotels : [hotelSel];
         area.innerHTML = '';
@@ -586,38 +614,51 @@ window.renderPreview = async () => {
                 
                 // ── MODO SEMANAL: TABLA HORIZONTAL (OPTIMIZADO V8.3) ───────────────
                 
-                // 1. Determinar quién debe aparecer en este hotel (Anclaje por Perfil)
+                // 1. Determinar quién debe aparecer en este hotel.
+                // La lista base son turnos/ausencias reales del periodo, no todos los perfiles del hotel.
                 const rendered = new Set();
                 const empList  = [];
-                
-                // Prioridad 1: Empleados cuyo hotel principal (según perfil) es este
-                profiles.forEach(p => {
-                    const h = p.hotel_id || 'GENERAL';
-                    if (h === hName) {
-                        const key = normalizeEmployeeKey(p.id);
-                        empList.push({ id: p.nombre || p.id, key: key, displayAs: p.nombre || p.id, isAbsent: false, substituteFor: null });
-                        rendered.add(key);
-                    }
-                });
 
-                // Prioridad 2: Empleados que tienen turnos aquí y no están en otro hotel anclados
+                const weekExcelOrder = new Map();
+                (excelSource[hName] || [])
+                    .filter(row => row.weekStart === startISO)
+                    .forEach((row, idx) => {
+                        const key = normalizeEmployeeKey(row.empleadoId);
+                        if (key && !weekExcelOrder.has(key)) weekExcelOrder.set(key, row.rowIndex ?? idx);
+                    });
+
+                const addEmployeeFromRow = (employeeId, date) => {
+                    const key = normalizeEmployeeKey(employeeId);
+                    if (!key || rendered.has(key)) return;
+                    if (!employeeCanAppearOnDate(key, date)) return;
+                    const profile = profileForKey(key);
+                    const displayAs = profile?.nombre || profile?.id || employeeId;
+                    empList.push({
+                        id: profile?.id || employeeId,
+                        key,
+                        displayAs,
+                        isAbsent: false,
+                        substituteFor: null,
+                        sourceOrder: weekExcelOrder.has(key) ? weekExcelOrder.get(key) : Number.MAX_SAFE_INTEGER
+                    });
+                    rendered.add(key);
+                };
+
                 hData.forEach(t => {
-                    const key = normalizeEmployeeKey(t.empleado_id);
-                    if (!rendered.has(key)) {
-                        // Solo añadir si NO tienen un hotel principal distinto asignado
-                        const p = profiles.find(pr => normalizeEmployeeKey(pr.id) === key);
-                        if (!p || !p.hotel_id || p.hotel_id === hName || p.hotel_id === 'GENERAL') {
-                            empList.push({ id: t.empleado_id, key: key, displayAs: t.empleado_id, isAbsent: false, substituteFor: null });
-                            rendered.add(key);
-                        }
-                    }
+                    if (!rowHasVisibleShift(t)) return;
+                    addEmployeeFromRow(t.empleado_id, t.fecha);
+                    addEmployeeFromRow(t.sustituto, t.fecha);
                 });
 
-                // Ordenar por el campo 'orden' del perfil
+                // Ordenar por el Excel de la semana si existe; si no, por el campo 'orden' del perfil.
                 empList.sort((a, b) => {
-                    const pA = profiles.find(p => normalizeEmployeeKey(p.id) === a.key);
-                    const pB = profiles.find(p => normalizeEmployeeKey(p.id) === b.key);
-                    return (pA?.orden ?? 999) - (pB?.orden ?? 999);
+                    const sourceDiff = (a.sourceOrder ?? Number.MAX_SAFE_INTEGER) - (b.sourceOrder ?? Number.MAX_SAFE_INTEGER);
+                    if (sourceDiff !== 0) return sourceDiff;
+                    const pA = profileForKey(a.key);
+                    const pB = profileForKey(b.key);
+                    const orderDiff = (pA?.orden ?? 999) - (pB?.orden ?? 999);
+                    if (orderDiff !== 0) return orderDiff;
+                    return String(a.displayAs || '').localeCompare(String(b.displayAs || ''), 'es', { sensitivity: 'base' });
                 });
 
                 if (empList.length === 0) continue;
@@ -2122,10 +2163,6 @@ window.openEmpDrawer = async (name) => {
                 <div>
                     <span>Fecha baja</span><br>
                     <input type="date" class="edit-input" value="${escapeHtml(p.fecha_baja || '')}" onchange="window.setEmpDraftField('${safeId}', 'fecha_baja', this.value)">
-                </div>
-                <div>
-                    <span>Orden en cuadrante</span><br>
-                    <input type="number" class="edit-input" value="${p.orden ?? 999}" placeholder="Ej: 1" onchange="window.setEmpDraftField('${safeId}', 'orden', (this.value !== '' ? parseInt(this.value) : 999))">
                 </div>
                 <div>
                     <span>Motivo baja</span><br>
