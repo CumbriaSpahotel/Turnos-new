@@ -1,0 +1,1398 @@
+{
+  "excelRows": 107,
+  "desiredUniqueEmpDate": 105,
+  "duplicateExcel": [
+    {
+      "existing": {
+        "fecha": "2025-11-07",
+        "hotel_id": "Cumbria Spa&Hotel",
+        "empleado_id": "Cristina",
+        "sustituto": "Miriam",
+        "turno": "CT",
+        "tipo": "CT",
+        "source_row": 26
+      },
+      "duplicate": {
+        "fecha": "2025-11-07",
+        "hotel_id": "Cumbria Spa&Hotel",
+        "empleado_id": "Cristina",
+        "sustituto": "Miriam",
+        "turno": "CT",
+        "tipo": "CT",
+        "source_row": 27
+      }
+    },
+    {
+      "existing": {
+        "fecha": "2026-02-28",
+        "hotel_id": "Sercotel Guadiana",
+        "empleado_id": "Diana",
+        "sustituto": "Macarena",
+        "turno": "CT",
+        "tipo": "CT",
+        "source_row": 79
+      },
+      "duplicate": {
+        "fecha": "2026-02-28",
+        "hotel_id": "Sercotel Guadiana",
+        "empleado_id": "Diana",
+        "sustituto": "Dani",
+        "turno": "CT",
+        "tipo": "CT",
+        "source_row": 81
+      }
+    }
+  ],
+  "currentCount": 79,
+  "ok": 32,
+  "missing": [
+    {
+      "fecha": "2025-09-15",
+      "hotel_id": "Sercotel Guadiana",
+      "empleado_id": "Sergio Sánchez",
+      "sustituto": "Dani",
+      "turno": "CT",
+      "tipo": "CT",
+      "source_row": 4
+    },
+    {
+      "fecha": "2025-10-04",
+      "hotel_id": "Cumbria Spa&Hotel",
+      "empleado_id": "Cristina",
+      "sustituto": "Sergio",
+      "turno": "CT",
+      "tipo": "CT",
+      "source_row": 6
+    },
+    {
+      "fecha": "2025-10-10",
+      "hotel_id": "Sercotel Guadiana",
+      "empleado_id": "Dani",
+      "sustituto": "Macarena",
+      "turno": "CT",
+      "tipo": "CT",
+      "source_row": 10
+    },
+    {
+      "fecha": "2025-10-13",
+      "hotel_id": "Sercotel Guadiana",
+      "empleado_id": "Dani",
+      "sustituto": "Macarena",
+      "turno": "CT",
+      "tipo": "CT",
+      "source_row": 13
+    },
+    {
+      "fecha": "2025-10-16",
+      "hotel_id": "Cumbria Spa&Hotel",
+      "empleado_id": "Valentín",
+      "sustituto": "Natalio",
+      "turno": "CT",
+      "tipo": "CT",
+      "source_row": 15
+    },
+    {
+      "fecha": "2025-10-18",
+      "hotel_id": "Cumbria Spa&Hotel",
+      "empleado_id": "Valentín",
+      "sustituto": "Natalio",
+      "turno": "CT",
+      "tipo": "CT",
+      "source_row": 16
+    },
+    {
+      "fecha": "2025-10-19",
+      "hotel_id": "Cumbria Spa&Hotel",
+      "empleado_id": "Miriam",
+      "sustituto": "Valentín",
+      "turno": "CT",
+      "tipo": "CT",
+      "source_row": 19
+    },
+    {
+      "fecha": "2025-10-29",
+      "hotel_id": "Sercotel Guadiana",
+      "empleado_id": "Dani",
+      "sustituto": "Federico",
+      "turno": "CT",
+      "tipo": "CT",
+      "source_row": 22
+    },
+    {
+      "fecha": "2025-10-31",
+      "hotel_id": "Sercotel Guadiana",
+      "empleado_id": "Dani",
+      "sustituto": "Federico",
+      "turno": "CT",
+      "tipo": "CT",
+      "source_row": 24
+    },
+    {
+      "fecha": "2025-11-09",
+      "hotel_id": "Sercotel Guadiana",
+      "empleado_id": "Macarena",
+      "sustituto": "Diana",
+      "turno": "CT",
+      "tipo": "CT",
+      "source_row": 28
+    },
+    {
+      "fecha": "2025-11-12",
+      "hotel_id": "Sercotel Guadiana",
+      "empleado_id": "Dani",
+      "sustituto": "Diana",
+      "turno": "CT",
+      "tipo": "CT",
+      "source_row": 30
+    },
+    {
+      "fecha": "2025-11-13",
+      "hotel_id": "Sercotel Guadiana",
+      "empleado_id": "Diana",
+      "sustituto": "Dani",
+      "turno": "CT",
+      "tipo": "CT",
+      "source_row": 31
+    },
+    {
+      "fecha": "2025-11-16",
+      "hotel_id": "Sercotel Guadiana",
+      "empleado_id": "Diana",
+      "sustituto": "Dani",
+      "turno": "CT",
+      "tipo": "CT",
+      "source_row": 34
+    },
+    {
+      "fecha": "2025-11-25",
+      "hotel_id": "Sercotel Guadiana",
+      "empleado_id": "Diana",
+      "sustituto": "Dani",
+      "turno": "CT",
+      "tipo": "CT",
+      "source_row": 40
+    },
+    {
+      "fecha": "2025-11-26",
+      "hotel_id": "Sercotel Guadiana",
+      "empleado_id": "Diana",
+      "sustituto": "Federico",
+      "turno": "CT",
+      "tipo": "CT",
+      "source_row": 42
+    },
+    {
+      "fecha": "2025-12-04",
+      "hotel_id": "Sercotel Guadiana",
+      "empleado_id": "Macarena",
+      "sustituto": "Diana",
+      "turno": "CT",
+      "tipo": "CT",
+      "source_row": 45
+    },
+    {
+      "fecha": "2026-01-01",
+      "hotel_id": "Sercotel Guadiana",
+      "empleado_id": "Sergio Sánchez",
+      "sustituto": "Dani",
+      "turno": "CT",
+      "tipo": "CT",
+      "source_row": 53
+    },
+    {
+      "fecha": "2026-01-06",
+      "hotel_id": "Sercotel Guadiana",
+      "empleado_id": "Sergio Sánchez",
+      "sustituto": "Dani",
+      "turno": "CT",
+      "tipo": "CT",
+      "source_row": 54
+    },
+    {
+      "fecha": "2026-01-06",
+      "hotel_id": "Cumbria Spa&Hotel",
+      "empleado_id": "Isabel Hidalgo",
+      "sustituto": "Natalio",
+      "turno": "CT",
+      "tipo": "CT",
+      "source_row": 55
+    },
+    {
+      "fecha": "2026-01-07",
+      "hotel_id": "Sercotel Guadiana",
+      "empleado_id": "Diana",
+      "sustituto": "Macarena",
+      "turno": "CT",
+      "tipo": "CT",
+      "source_row": 56
+    },
+    {
+      "fecha": "2026-01-07",
+      "hotel_id": "Cumbria Spa&Hotel",
+      "empleado_id": "Cristina",
+      "sustituto": "Isabel Hidalgo",
+      "turno": "CT",
+      "tipo": "CT",
+      "source_row": 57
+    },
+    {
+      "fecha": "2026-01-10",
+      "hotel_id": "Sercotel Guadiana",
+      "empleado_id": "Diana",
+      "sustituto": "Dani",
+      "turno": "CT",
+      "tipo": "CT",
+      "source_row": 58
+    },
+    {
+      "fecha": "2026-01-14",
+      "hotel_id": "Cumbria Spa&Hotel",
+      "empleado_id": "Cristina",
+      "sustituto": "Isabel Hidalgo",
+      "turno": "CT",
+      "tipo": "CT",
+      "source_row": 59
+    },
+    {
+      "fecha": "2026-01-15",
+      "hotel_id": "Sercotel Guadiana",
+      "empleado_id": "Sergio Sánchez",
+      "sustituto": "Natalio",
+      "turno": "CT",
+      "tipo": "CT",
+      "source_row": 60
+    },
+    {
+      "fecha": "2026-01-15",
+      "hotel_id": "Cumbria Spa&Hotel",
+      "empleado_id": "Isabel Hidalgo",
+      "sustituto": "Cristina",
+      "turno": "CT",
+      "tipo": "CT",
+      "source_row": 61
+    },
+    {
+      "fecha": "2026-01-29",
+      "hotel_id": "Sercotel Guadiana",
+      "empleado_id": "Federico",
+      "sustituto": "Diana",
+      "turno": "CT",
+      "tipo": "CT",
+      "source_row": 62
+    },
+    {
+      "fecha": "2026-02-04",
+      "hotel_id": "Cumbria Spa&Hotel",
+      "empleado_id": "Miriam",
+      "sustituto": "Cristina",
+      "turno": "CT",
+      "tipo": "CT",
+      "source_row": 63
+    },
+    {
+      "fecha": "2026-02-08",
+      "hotel_id": "Sercotel Guadiana",
+      "empleado_id": "Diana",
+      "sustituto": "Dani",
+      "turno": "CT",
+      "tipo": "CT",
+      "source_row": 65
+    },
+    {
+      "fecha": "2026-02-09",
+      "hotel_id": "Sercotel Guadiana",
+      "empleado_id": "Diana",
+      "sustituto": "Dani",
+      "turno": "CT",
+      "tipo": "CT",
+      "source_row": 66
+    },
+    {
+      "fecha": "2026-02-10",
+      "hotel_id": "Sercotel Guadiana",
+      "empleado_id": "Diana",
+      "sustituto": "Dani",
+      "turno": "CT",
+      "tipo": "CT",
+      "source_row": 67
+    },
+    {
+      "fecha": "2026-02-11",
+      "hotel_id": "Sercotel Guadiana",
+      "empleado_id": "Diana",
+      "sustituto": "Dani",
+      "turno": "CT",
+      "tipo": "CT",
+      "source_row": 68
+    },
+    {
+      "fecha": "2026-02-13",
+      "hotel_id": "Sercotel Guadiana",
+      "empleado_id": "Diana",
+      "sustituto": "Dani",
+      "turno": "CT",
+      "tipo": "CT",
+      "source_row": 69
+    },
+    {
+      "fecha": "2026-02-14",
+      "hotel_id": "Cumbria Spa&Hotel",
+      "empleado_id": "Miriam",
+      "sustituto": "Cristina",
+      "turno": "CT",
+      "tipo": "CT",
+      "source_row": 70
+    },
+    {
+      "fecha": "2026-02-15",
+      "hotel_id": "Sercotel Guadiana",
+      "empleado_id": "Diana",
+      "sustituto": "Macarena",
+      "turno": "CT",
+      "tipo": "CT",
+      "source_row": 71
+    },
+    {
+      "fecha": "2026-02-16",
+      "hotel_id": "Sercotel Guadiana",
+      "empleado_id": "Diana",
+      "sustituto": "Macarena",
+      "turno": "CT",
+      "tipo": "CT",
+      "source_row": 72
+    },
+    {
+      "fecha": "2026-02-17",
+      "hotel_id": "Sercotel Guadiana",
+      "empleado_id": "Diana",
+      "sustituto": "Federico",
+      "turno": "CT",
+      "tipo": "CT",
+      "source_row": 73
+    },
+    {
+      "fecha": "2026-02-18",
+      "hotel_id": "Cumbria Spa&Hotel",
+      "empleado_id": "Cristina",
+      "sustituto": "Isabel Hidalgo",
+      "turno": "CT",
+      "tipo": "CT",
+      "source_row": 74
+    },
+    {
+      "fecha": "2026-02-21",
+      "hotel_id": "Cumbria Spa&Hotel",
+      "empleado_id": "Cristina",
+      "sustituto": "Miriam",
+      "turno": "CT",
+      "tipo": "CT",
+      "source_row": 76
+    },
+    {
+      "fecha": "2026-02-28",
+      "hotel_id": "Sercotel Guadiana",
+      "empleado_id": "Diana",
+      "sustituto": "Dani",
+      "turno": "CT",
+      "tipo": "CT",
+      "source_row": 81
+    },
+    {
+      "fecha": "2026-03-07",
+      "hotel_id": "Cumbria Spa&Hotel",
+      "empleado_id": "Cristina",
+      "sustituto": "Miriam",
+      "turno": "CT",
+      "tipo": "CT",
+      "source_row": 84
+    },
+    {
+      "fecha": "2026-03-09",
+      "hotel_id": "Sercotel Guadiana",
+      "empleado_id": "Macarena",
+      "sustituto": "Dani",
+      "turno": "CT",
+      "tipo": "CT",
+      "source_row": 85
+    },
+    {
+      "fecha": "2026-03-14",
+      "hotel_id": "Cumbria Spa&Hotel",
+      "empleado_id": "Cristina",
+      "sustituto": "Esther",
+      "turno": "CT",
+      "tipo": "CT",
+      "source_row": 87
+    },
+    {
+      "fecha": "2026-03-20",
+      "hotel_id": "Cumbria Spa&Hotel",
+      "empleado_id": "Sergio",
+      "sustituto": "Esther",
+      "turno": "CT",
+      "tipo": "CT",
+      "source_row": 90
+    },
+    {
+      "fecha": "2026-03-26",
+      "hotel_id": "Sercotel Guadiana",
+      "empleado_id": "Diana",
+      "sustituto": "Macarena",
+      "turno": "CT",
+      "tipo": "CT",
+      "source_row": 91
+    },
+    {
+      "fecha": "2026-04-10",
+      "hotel_id": "Sercotel Guadiana",
+      "empleado_id": "Diana",
+      "sustituto": "Dani",
+      "turno": "CT",
+      "tipo": "CT",
+      "source_row": 94
+    },
+    {
+      "fecha": "2026-04-18",
+      "hotel_id": "Sercotel Guadiana",
+      "empleado_id": "Dani",
+      "sustituto": "Macarena",
+      "turno": "CT",
+      "tipo": "CT",
+      "source_row": 98
+    },
+    {
+      "fecha": "2026-04-25",
+      "hotel_id": "Sercotel Guadiana",
+      "empleado_id": "Dani",
+      "sustituto": "Macarena",
+      "turno": "CT",
+      "tipo": "CT",
+      "source_row": 100
+    },
+    {
+      "fecha": "2026-04-26",
+      "hotel_id": "Sercotel Guadiana",
+      "empleado_id": "Dani",
+      "sustituto": "Macarena",
+      "turno": "CT",
+      "tipo": "CT",
+      "source_row": 101
+    },
+    {
+      "fecha": "2026-05-02",
+      "hotel_id": "Sercotel Guadiana",
+      "empleado_id": "Diana",
+      "sustituto": "Dani",
+      "turno": "CT",
+      "tipo": "CT",
+      "source_row": 102
+    },
+    {
+      "fecha": "2026-05-03",
+      "hotel_id": "Sercotel Guadiana",
+      "empleado_id": "Diana",
+      "sustituto": "Dani",
+      "turno": "CT",
+      "tipo": "CT",
+      "source_row": 103
+    },
+    {
+      "fecha": "2026-05-04",
+      "hotel_id": "Sercotel Guadiana",
+      "empleado_id": "Diana",
+      "sustituto": "Dani",
+      "turno": "CT",
+      "tipo": "CT",
+      "source_row": 104
+    },
+    {
+      "fecha": "2026-05-05",
+      "hotel_id": "Sercotel Guadiana",
+      "empleado_id": "Diana",
+      "sustituto": "Dani",
+      "turno": "CT",
+      "tipo": "CT",
+      "source_row": 105
+    },
+    {
+      "fecha": "2026-05-06",
+      "hotel_id": "Sercotel Guadiana",
+      "empleado_id": "Diana",
+      "sustituto": "Dani",
+      "turno": "CT",
+      "tipo": "CT",
+      "source_row": 106
+    },
+    {
+      "fecha": "2026-05-08",
+      "hotel_id": "Sercotel Guadiana",
+      "empleado_id": "Diana",
+      "sustituto": "Dani",
+      "turno": "CT",
+      "tipo": "CT",
+      "source_row": 107
+    },
+    {
+      "fecha": "2026-05-15",
+      "hotel_id": "Sercotel Guadiana",
+      "empleado_id": "Dani",
+      "sustituto": "Diana",
+      "turno": "CT",
+      "tipo": "CT",
+      "source_row": 108
+    }
+  ],
+  "updates": [
+    {
+      "id": "92d9a905-ba03-4aef-ae9d-3d550f212932",
+      "current": {
+        "id": "92d9a905-ba03-4aef-ae9d-3d550f212932",
+        "empleado_id": "Cristina",
+        "fecha": "2025-10-08",
+        "turno": "CT",
+        "hotel_id": "Cumbria Spa&Hotel",
+        "tipo": "CT",
+        "updated_at": "2026-04-20T23:04:01.968",
+        "updated_by": "MIGRACION_IA_CT",
+        "sustituto": null
+      },
+      "desired": {
+        "fecha": "2025-10-08",
+        "hotel_id": "Cumbria Spa&Hotel",
+        "empleado_id": "Cristina",
+        "sustituto": "Miriam",
+        "turno": "CT",
+        "tipo": "CT",
+        "source_row": 9
+      },
+      "diffs": {
+        "sustituto": {
+          "from": null,
+          "to": "Miriam"
+        }
+      }
+    },
+    {
+      "id": "96781cfb-2afc-4c18-ba8c-f2ac9dcc8f9c",
+      "current": {
+        "id": "96781cfb-2afc-4c18-ba8c-f2ac9dcc8f9c",
+        "empleado_id": "Diana",
+        "fecha": "2025-10-12",
+        "turno": "CT",
+        "hotel_id": "Sercotel Guadiana",
+        "tipo": "CT",
+        "updated_at": "2026-04-20T23:04:01.968",
+        "updated_by": "MIGRACION_IA_CT",
+        "sustituto": "Macarena"
+      },
+      "desired": {
+        "fecha": "2025-10-12",
+        "hotel_id": "Sercotel Guadiana",
+        "empleado_id": "Diana",
+        "sustituto": "Sergio Sánchez",
+        "turno": "CT",
+        "tipo": "CT",
+        "source_row": 12
+      },
+      "diffs": {
+        "sustituto": {
+          "from": "Macarena",
+          "to": "Sergio Sánchez"
+        }
+      }
+    },
+    {
+      "id": "e12200ae-5c32-4ce7-8fb8-084b85076c53",
+      "current": {
+        "id": "e12200ae-5c32-4ce7-8fb8-084b85076c53",
+        "empleado_id": "Miriam",
+        "fecha": "2025-10-18",
+        "turno": "CT",
+        "hotel_id": "Sercotel Guadiana",
+        "tipo": "CT",
+        "updated_at": "2026-04-20T23:04:01.968",
+        "updated_by": "MIGRACION_IA_CT",
+        "sustituto": "Valentín"
+      },
+      "desired": {
+        "fecha": "2025-10-18",
+        "hotel_id": "Cumbria Spa&Hotel",
+        "empleado_id": "Miriam",
+        "sustituto": "Valentín",
+        "turno": "CT",
+        "tipo": "CT",
+        "source_row": 17
+      },
+      "diffs": {
+        "hotel_id": {
+          "from": "Sercotel Guadiana",
+          "to": "Cumbria Spa&Hotel"
+        }
+      }
+    },
+    {
+      "id": "b87f241d-7c71-487e-9549-b35e151b799f",
+      "current": {
+        "id": "b87f241d-7c71-487e-9549-b35e151b799f",
+        "empleado_id": "Valentín",
+        "fecha": "2025-10-19",
+        "turno": "CT",
+        "hotel_id": "Sercotel Guadiana",
+        "tipo": "CT",
+        "updated_at": "2026-04-20T23:04:01.968",
+        "updated_by": "MIGRACION_IA_CT",
+        "sustituto": "Miriam"
+      },
+      "desired": {
+        "fecha": "2025-10-19",
+        "hotel_id": "Cumbria Spa&Hotel",
+        "empleado_id": "Valentín",
+        "sustituto": "Miriam",
+        "turno": "CT",
+        "tipo": "CT",
+        "source_row": 18
+      },
+      "diffs": {
+        "hotel_id": {
+          "from": "Sercotel Guadiana",
+          "to": "Cumbria Spa&Hotel"
+        }
+      }
+    },
+    {
+      "id": "236206fb-2d84-4530-94af-c5bba43f7cbb",
+      "current": {
+        "id": "236206fb-2d84-4530-94af-c5bba43f7cbb",
+        "empleado_id": "Macarena",
+        "fecha": "2025-10-22",
+        "turno": "CT",
+        "hotel_id": "Cumbria Spa&Hotel",
+        "tipo": "CT",
+        "updated_at": "2026-04-20T23:04:01.968",
+        "updated_by": "MIGRACION_IA_CT",
+        "sustituto": "Diana"
+      },
+      "desired": {
+        "fecha": "2025-10-22",
+        "hotel_id": "Sercotel Guadiana",
+        "empleado_id": "Macarena",
+        "sustituto": "Diana",
+        "turno": "CT",
+        "tipo": "CT",
+        "source_row": 20
+      },
+      "diffs": {
+        "hotel_id": {
+          "from": "Cumbria Spa&Hotel",
+          "to": "Sercotel Guadiana"
+        }
+      }
+    },
+    {
+      "id": "6068bb6b-1966-461e-af78-afc5b0c4f876",
+      "current": {
+        "id": "6068bb6b-1966-461e-af78-afc5b0c4f876",
+        "empleado_id": "Macarena",
+        "fecha": "2025-12-05",
+        "turno": "Muerte del Padre",
+        "hotel_id": "Sercotel Guadiana",
+        "tipo": "CT",
+        "updated_at": "2026-04-20T23:04:01.968",
+        "updated_by": "MIGRACION_IA_CT",
+        "sustituto": "Diana"
+      },
+      "desired": {
+        "fecha": "2025-12-05",
+        "hotel_id": "Sercotel Guadiana",
+        "empleado_id": "Macarena",
+        "sustituto": "Diana",
+        "turno": "CT",
+        "tipo": "CT",
+        "source_row": 46
+      },
+      "diffs": {
+        "turno": {
+          "from": "Muerte del Padre",
+          "to": "CT"
+        }
+      }
+    },
+    {
+      "id": "3cdad30c-4c26-45f5-b72b-0aaeb81e97fb",
+      "current": {
+        "id": "3cdad30c-4c26-45f5-b72b-0aaeb81e97fb",
+        "empleado_id": "Macarena",
+        "fecha": "2025-12-13",
+        "turno": "Noche",
+        "hotel_id": "Sercotel Guadiana",
+        "tipo": "CT",
+        "updated_at": "2026-04-20T23:04:01.968",
+        "updated_by": "MIGRACION_IA_CT",
+        "sustituto": "Dani"
+      },
+      "desired": {
+        "fecha": "2025-12-13",
+        "hotel_id": "Sercotel Guadiana",
+        "empleado_id": "Macarena",
+        "sustituto": "Dani",
+        "turno": "CT",
+        "tipo": "CT",
+        "source_row": 47
+      },
+      "diffs": {
+        "turno": {
+          "from": "Noche",
+          "to": "CT"
+        }
+      }
+    },
+    {
+      "id": "7fc084e1-6598-4785-8a06-f0063a27d903",
+      "current": {
+        "id": "7fc084e1-6598-4785-8a06-f0063a27d903",
+        "empleado_id": "Macarena",
+        "fecha": "2025-12-14",
+        "turno": "Noche",
+        "hotel_id": "Sercotel Guadiana",
+        "tipo": "CT",
+        "updated_at": "2026-04-20T23:04:01.968",
+        "updated_by": "MIGRACION_IA_CT",
+        "sustituto": "Dani"
+      },
+      "desired": {
+        "fecha": "2025-12-14",
+        "hotel_id": "Sercotel Guadiana",
+        "empleado_id": "Macarena",
+        "sustituto": "Dani",
+        "turno": "CT",
+        "tipo": "CT",
+        "source_row": 48
+      },
+      "diffs": {
+        "turno": {
+          "from": "Noche",
+          "to": "CT"
+        }
+      }
+    },
+    {
+      "id": "b41962cb-17d5-4a43-a7c5-97670f09fb01",
+      "current": {
+        "id": "b41962cb-17d5-4a43-a7c5-97670f09fb01",
+        "empleado_id": "Macarena",
+        "fecha": "2025-12-15",
+        "turno": "Noche",
+        "hotel_id": "Sercotel Guadiana",
+        "tipo": "CT",
+        "updated_at": "2026-04-20T23:04:01.968",
+        "updated_by": "MIGRACION_IA_CT",
+        "sustituto": "Dani"
+      },
+      "desired": {
+        "fecha": "2025-12-15",
+        "hotel_id": "Sercotel Guadiana",
+        "empleado_id": "Macarena",
+        "sustituto": "Dani",
+        "turno": "CT",
+        "tipo": "CT",
+        "source_row": 49
+      },
+      "diffs": {
+        "turno": {
+          "from": "Noche",
+          "to": "CT"
+        }
+      }
+    },
+    {
+      "id": "c122bdfd-6fcb-4236-9b3d-8c96c542e726",
+      "current": {
+        "id": "c122bdfd-6fcb-4236-9b3d-8c96c542e726",
+        "empleado_id": "Macarena",
+        "fecha": "2025-12-16",
+        "turno": "Noche",
+        "hotel_id": "Sercotel Guadiana",
+        "tipo": "CT",
+        "updated_at": "2026-04-20T23:04:01.968",
+        "updated_by": "MIGRACION_IA_CT",
+        "sustituto": "Dani"
+      },
+      "desired": {
+        "fecha": "2025-12-16",
+        "hotel_id": "Sercotel Guadiana",
+        "empleado_id": "Macarena",
+        "sustituto": "Dani",
+        "turno": "CT",
+        "tipo": "CT",
+        "source_row": 50
+      },
+      "diffs": {
+        "turno": {
+          "from": "Noche",
+          "to": "CT"
+        }
+      }
+    },
+    {
+      "id": "838e1c4b-c117-4fd7-b672-a4cd40d56e90",
+      "current": {
+        "id": "838e1c4b-c117-4fd7-b672-a4cd40d56e90",
+        "empleado_id": "Dani",
+        "fecha": "2025-12-26",
+        "turno": "CT",
+        "hotel_id": "Sercotel Guadiana",
+        "tipo": "CT",
+        "updated_at": "2026-04-20T23:04:01.968",
+        "updated_by": "MIGRACION_IA_CT",
+        "sustituto": "Macarena"
+      },
+      "desired": {
+        "fecha": "2025-12-26",
+        "hotel_id": "Sercotel Guadiana",
+        "empleado_id": "Dani",
+        "sustituto": "Diana",
+        "turno": "CT",
+        "tipo": "CT",
+        "source_row": 51
+      },
+      "diffs": {
+        "sustituto": {
+          "from": "Macarena",
+          "to": "Diana"
+        }
+      }
+    },
+    {
+      "id": "d0c6887a-ac13-4257-bd2e-a3b651bd7443",
+      "current": {
+        "id": "d0c6887a-ac13-4257-bd2e-a3b651bd7443",
+        "empleado_id": "Macarena",
+        "fecha": "2025-12-29",
+        "turno": "REHABILITACION",
+        "hotel_id": "Sercotel Guadiana",
+        "tipo": "CT",
+        "updated_at": "2026-04-20T23:04:01.968",
+        "updated_by": "MIGRACION_IA_CT",
+        "sustituto": "Diana"
+      },
+      "desired": {
+        "fecha": "2025-12-29",
+        "hotel_id": "Sercotel Guadiana",
+        "empleado_id": "Macarena",
+        "sustituto": "Diana",
+        "turno": "CT",
+        "tipo": "CT",
+        "source_row": 52
+      },
+      "diffs": {
+        "turno": {
+          "from": "REHABILITACION",
+          "to": "CT"
+        }
+      }
+    },
+    {
+      "id": "e7ab64f6-3e62-4002-8280-06b55d3d3dd7",
+      "current": {
+        "id": "e7ab64f6-3e62-4002-8280-06b55d3d3dd7",
+        "empleado_id": "Diana",
+        "fecha": "2026-02-07",
+        "turno": "CT",
+        "hotel_id": "Sercotel Guadiana",
+        "tipo": "CT",
+        "updated_at": "2026-04-20T23:04:01.968",
+        "updated_by": "MIGRACION_IA_CT",
+        "sustituto": "Macarena"
+      },
+      "desired": {
+        "fecha": "2026-02-07",
+        "hotel_id": "Sercotel Guadiana",
+        "empleado_id": "Diana",
+        "sustituto": "Dani",
+        "turno": "CT",
+        "tipo": "CT",
+        "source_row": 64
+      },
+      "diffs": {
+        "sustituto": {
+          "from": "Macarena",
+          "to": "Dani"
+        }
+      }
+    },
+    {
+      "id": "30b44316-9cf5-416b-9e80-542c75a06de5",
+      "current": {
+        "id": "30b44316-9cf5-416b-9e80-542c75a06de5",
+        "empleado_id": "Diana",
+        "fecha": "2026-03-01",
+        "turno": "CT",
+        "hotel_id": "Cumbria Spa&Hotel",
+        "tipo": "CT",
+        "updated_at": "2026-04-20T23:04:01.968",
+        "updated_by": "MIGRACION_IA_CT",
+        "sustituto": "Isabel Hidalgo"
+      },
+      "desired": {
+        "fecha": "2026-03-01",
+        "hotel_id": "Sercotel Guadiana",
+        "empleado_id": "Diana",
+        "sustituto": "Macarena",
+        "turno": "CT",
+        "tipo": "CT",
+        "source_row": 82
+      },
+      "diffs": {
+        "hotel_id": {
+          "from": "Cumbria Spa&Hotel",
+          "to": "Sercotel Guadiana"
+        },
+        "sustituto": {
+          "from": "Isabel Hidalgo",
+          "to": "Macarena"
+        }
+      }
+    },
+    {
+      "id": "0f42f9af-a6d3-4af7-b789-e17e8653ebdb",
+      "current": {
+        "id": "0f42f9af-a6d3-4af7-b789-e17e8653ebdb",
+        "empleado_id": "Cristina",
+        "fecha": "2026-03-03",
+        "turno": "CT",
+        "hotel_id": "Sercotel Guadiana",
+        "tipo": "CT",
+        "updated_at": "2026-04-20T23:04:01.968",
+        "updated_by": "MIGRACION_IA_CT",
+        "sustituto": "Isabel Hidalgo"
+      },
+      "desired": {
+        "fecha": "2026-03-03",
+        "hotel_id": "Cumbria Spa&Hotel",
+        "empleado_id": "Cristina",
+        "sustituto": "Isabel Hidalgo",
+        "turno": "CT",
+        "tipo": "CT",
+        "source_row": 83
+      },
+      "diffs": {
+        "hotel_id": {
+          "from": "Sercotel Guadiana",
+          "to": "Cumbria Spa&Hotel"
+        }
+      }
+    },
+    {
+      "id": "f8f22fe6-42ee-4888-a537-5ef469f4301a",
+      "current": {
+        "id": "f8f22fe6-42ee-4888-a537-5ef469f4301a",
+        "empleado_id": "Diana",
+        "fecha": "2026-04-06",
+        "turno": "CT",
+        "hotel_id": "Cumbria Spa&Hotel",
+        "tipo": "CT",
+        "updated_at": "2026-04-20T23:04:01.968",
+        "updated_by": "MIGRACION_IA_CT",
+        "sustituto": "Dani"
+      },
+      "desired": {
+        "fecha": "2026-04-06",
+        "hotel_id": "Sercotel Guadiana",
+        "empleado_id": "Diana",
+        "sustituto": "Macarena",
+        "turno": "CT",
+        "tipo": "CT",
+        "source_row": 93
+      },
+      "diffs": {
+        "hotel_id": {
+          "from": "Cumbria Spa&Hotel",
+          "to": "Sercotel Guadiana"
+        },
+        "sustituto": {
+          "from": "Dani",
+          "to": "Macarena"
+        }
+      }
+    },
+    {
+      "id": "ce219193-7b3d-4b1f-9385-a22fda6afd57",
+      "current": {
+        "id": "ce219193-7b3d-4b1f-9385-a22fda6afd57",
+        "empleado_id": "Miriam",
+        "fecha": "2026-04-17",
+        "turno": "",
+        "hotel_id": "Cumbria Spa&Hotel",
+        "tipo": "CT",
+        "updated_at": "2026-04-20T20:57:32.278362",
+        "updated_by": "REGULARIZA_CT_EXCEL",
+        "sustituto": "Cristina"
+      },
+      "desired": {
+        "fecha": "2026-04-17",
+        "hotel_id": "Cumbria Spa&Hotel",
+        "empleado_id": "Miriam",
+        "sustituto": "Cristina",
+        "turno": "CT",
+        "tipo": "CT",
+        "source_row": 97
+      },
+      "diffs": {
+        "turno": {
+          "from": "",
+          "to": "CT"
+        }
+      }
+    },
+    {
+      "id": "025fcd6e-db6d-4e59-8243-35171d187264",
+      "current": {
+        "id": "025fcd6e-db6d-4e59-8243-35171d187264",
+        "empleado_id": "Dani",
+        "fecha": "2026-04-19",
+        "turno": "CT",
+        "hotel_id": "Cumbria Spa&Hotel",
+        "tipo": "CT",
+        "updated_at": "2026-04-20T23:04:01.968",
+        "updated_by": "MIGRACION_IA_CT",
+        "sustituto": "Macarena"
+      },
+      "desired": {
+        "fecha": "2026-04-19",
+        "hotel_id": "Sercotel Guadiana",
+        "empleado_id": "Dani",
+        "sustituto": "Macarena",
+        "turno": "CT",
+        "tipo": "CT",
+        "source_row": 99
+      },
+      "diffs": {
+        "hotel_id": {
+          "from": "Cumbria Spa&Hotel",
+          "to": "Sercotel Guadiana"
+        }
+      }
+    }
+  ],
+  "extra": [
+    {
+      "id": "0478b84c-cc3e-47ac-ab8c-ee086bce8dc1",
+      "empleado_id": "Diana",
+      "fecha": "2025-09-19",
+      "turno": "CT",
+      "hotel_id": "Sercotel Guadiana",
+      "tipo": "CT",
+      "updated_at": "2026-04-20T23:04:01.968",
+      "updated_by": "MIGRACION_IA_CT",
+      "sustituto": "Dani"
+    },
+    {
+      "id": "1125da18-2285-445c-86ec-6abf8d1a80a5",
+      "empleado_id": "Sergio",
+      "fecha": "2025-10-04",
+      "turno": "CT",
+      "hotel_id": "Cumbria Spa&Hotel",
+      "tipo": "CT",
+      "updated_at": "2026-04-20T23:04:01.968",
+      "updated_by": "MIGRACION_IA_CT",
+      "sustituto": null
+    },
+    {
+      "id": "4888bc77-9203-4e87-b590-60f9352b63ff",
+      "empleado_id": "Dani",
+      "fecha": "2025-10-09",
+      "turno": "CT",
+      "hotel_id": "Sercotel Guadiana",
+      "tipo": "CT",
+      "updated_at": "2026-04-20T23:04:01.968",
+      "updated_by": "MIGRACION_IA_CT",
+      "sustituto": "Macarena"
+    },
+    {
+      "id": "6ae5e356-7ebf-4b69-9f7b-42e5eb9f9a6b",
+      "empleado_id": "Macarena",
+      "fecha": "2025-10-13",
+      "turno": "CT",
+      "hotel_id": "Sercotel Guadiana",
+      "tipo": "CT",
+      "updated_at": "2026-04-20T23:04:01.968",
+      "updated_by": "MIGRACION_IA_CT",
+      "sustituto": null
+    },
+    {
+      "id": "714725c9-612b-4caf-b3cb-83a27e0ad6c5",
+      "empleado_id": "Miriam",
+      "fecha": "2025-10-16",
+      "turno": "CT",
+      "hotel_id": "Cumbria Spa&Hotel",
+      "tipo": "CT",
+      "updated_at": "2026-04-20T23:04:01.968",
+      "updated_by": "MIGRACION_IA_CT",
+      "sustituto": "Natalia"
+    },
+    {
+      "id": "62c085f4-ed71-45e7-8445-aa61239f2cd6",
+      "empleado_id": "Valentín",
+      "fecha": "2025-10-17",
+      "turno": "CT",
+      "hotel_id": "Cumbria Spa&Hotel",
+      "tipo": "CT",
+      "updated_at": "2026-04-20T23:04:01.968",
+      "updated_by": "MIGRACION_IA_CT",
+      "sustituto": "Miriam"
+    },
+    {
+      "id": "1949c1aa-82b9-4b72-a761-13c0f81dad18",
+      "empleado_id": "Federico",
+      "fecha": "2025-10-31",
+      "turno": "CT",
+      "hotel_id": "Sercotel Guadiana",
+      "tipo": "CT",
+      "updated_at": "2026-04-20T23:04:01.968",
+      "updated_by": "MIGRACION_IA_CT",
+      "sustituto": "Diana"
+    },
+    {
+      "id": "ad8f157e-365b-4d65-8e9e-63cb514b1fc6",
+      "empleado_id": "Diana",
+      "fecha": "2025-11-07",
+      "turno": "CT",
+      "hotel_id": "Sercotel Guadiana",
+      "tipo": "CT",
+      "updated_at": "2026-04-20T23:04:01.968",
+      "updated_by": "MIGRACION_IA_CT",
+      "sustituto": null
+    },
+    {
+      "id": "ebf7189b-7799-4021-a310-f9703f090ded",
+      "empleado_id": "Diana",
+      "fecha": "2025-11-12",
+      "turno": "CT",
+      "hotel_id": "Sercotel Guadiana",
+      "tipo": "CT",
+      "updated_at": "2026-04-20T23:04:01.968",
+      "updated_by": "MIGRACION_IA_CT",
+      "sustituto": "Dani"
+    },
+    {
+      "id": "4fcb0059-151c-4ea4-a240-9415ad590846",
+      "empleado_id": "Diana",
+      "fecha": "2025-11-22",
+      "turno": "Comida Familiar",
+      "hotel_id": "Sercotel Guadiana",
+      "tipo": "CT",
+      "updated_at": "2026-04-20T23:04:01.968",
+      "updated_by": "MIGRACION_IA_CT",
+      "sustituto": "Dani"
+    },
+    {
+      "id": "2549f28e-2826-4623-b366-cf76b5909f12",
+      "empleado_id": "Diana",
+      "fecha": "2025-12-04",
+      "turno": "CT",
+      "hotel_id": "Sercotel Guadiana",
+      "tipo": "CT",
+      "updated_at": "2026-04-20T23:04:01.968",
+      "updated_by": "MIGRACION_IA_CT",
+      "sustituto": "Dani"
+    },
+    {
+      "id": "baef7679-ef5a-48e0-9688-9c31b40fe240",
+      "empleado_id": "Macarena",
+      "fecha": "2025-12-06",
+      "turno": "Muerte del Padre",
+      "hotel_id": "Sercotel Guadiana",
+      "tipo": "CT",
+      "updated_at": "2026-04-20T23:04:01.968",
+      "updated_by": "MIGRACION_IA_CT",
+      "sustituto": "Diana"
+    },
+    {
+      "id": "9a699f41-79df-4ba8-b695-130175e58f88",
+      "empleado_id": "Sergio Sánchez",
+      "fecha": "2026-01-05",
+      "turno": "CT",
+      "hotel_id": "Sercotel Guadiana",
+      "tipo": "CT",
+      "updated_at": "2026-04-20T23:04:01.968",
+      "updated_by": "MIGRACION_IA_CT",
+      "sustituto": "Dani"
+    },
+    {
+      "id": "c9c00662-a415-4010-954d-36119893bed2",
+      "empleado_id": "Natalio",
+      "fecha": "2026-01-28",
+      "turno": "",
+      "hotel_id": "Sercotel Guadiana",
+      "tipo": "CT",
+      "updated_at": "2026-04-22T15:34:26.7",
+      "updated_by": "DIRECCION_CAMBIOS",
+      "sustituto": "Sergio Sánchez"
+    },
+    {
+      "id": "f5675728-5870-4ef8-a2b5-f1c548d5fcf7",
+      "empleado_id": "Sergio Sánchez",
+      "fecha": "2026-01-28",
+      "turno": "",
+      "hotel_id": "Sercotel Guadiana",
+      "tipo": "CT",
+      "updated_at": "2026-04-22T15:34:26.579",
+      "updated_by": "DIRECCION_CAMBIOS",
+      "sustituto": "Natalio"
+    },
+    {
+      "id": "e523b431-3c73-4e9b-977e-d0012dddf3c1",
+      "empleado_id": "Isabel Hidalgo",
+      "fecha": "2026-02-04",
+      "turno": "Celebración cumpleaños",
+      "hotel_id": "Sercotel Guadiana",
+      "tipo": "CT",
+      "updated_at": "2026-04-20T23:04:01.968",
+      "updated_by": "MIGRACION_IA_CT",
+      "sustituto": null
+    },
+    {
+      "id": "a9e536a2-34e4-43ff-92f0-b8bd2d33f793",
+      "empleado_id": "Isabel Hidalgo",
+      "fecha": "2026-02-07",
+      "turno": "",
+      "hotel_id": "Cumbria Spa&Hotel",
+      "tipo": "CT",
+      "updated_at": "2026-04-22T15:36:00.188",
+      "updated_by": "DIRECCION_CAMBIOS",
+      "sustituto": "Natalio"
+    },
+    {
+      "id": "06b37aa0-9de9-4f71-980f-b5185465fc04",
+      "empleado_id": "Natalio",
+      "fecha": "2026-02-07",
+      "turno": "",
+      "hotel_id": "Cumbria Spa&Hotel",
+      "tipo": "CT",
+      "updated_at": "2026-04-22T15:36:00.307",
+      "updated_by": "DIRECCION_CAMBIOS",
+      "sustituto": "Isabel Hidalgo"
+    },
+    {
+      "id": "1e180d4e-e820-4935-8408-030fec09f842",
+      "empleado_id": "Dani",
+      "fecha": "2026-02-10",
+      "turno": "Conciliación familiar",
+      "hotel_id": "Sercotel Guadiana",
+      "tipo": "CT",
+      "updated_at": "2026-04-20T23:04:01.968",
+      "updated_by": "MIGRACION_IA_CT",
+      "sustituto": "Diana"
+    },
+    {
+      "id": "aa6a93e4-26c3-4861-8861-6b7845c48dd2",
+      "empleado_id": "Cristina",
+      "fecha": "2026-02-14",
+      "turno": "CT",
+      "hotel_id": "Cumbria Spa&Hotel",
+      "tipo": "CT",
+      "updated_at": "2026-04-20T23:04:01.968",
+      "updated_by": "MIGRACION_IA_CT",
+      "sustituto": "Isabel Hidalgo"
+    },
+    {
+      "id": "142c602b-2a17-4266-a77d-83cdfcb904ce",
+      "empleado_id": "Sergio",
+      "fecha": "2026-02-15",
+      "turno": "CT",
+      "hotel_id": "Cumbria Spa&Hotel",
+      "tipo": "CT",
+      "updated_at": "2026-04-20T23:04:01.968",
+      "updated_by": "MIGRACION_IA_CT",
+      "sustituto": "Natalia"
+    },
+    {
+      "id": "7ad8dc90-4d56-4c46-a096-a0bef20d9408",
+      "empleado_id": "Dani",
+      "fecha": "2026-02-19",
+      "turno": "CT",
+      "hotel_id": "Sercotel Guadiana",
+      "tipo": "CT",
+      "updated_at": "2026-04-20T23:04:01.968",
+      "updated_by": "MIGRACION_IA_CT",
+      "sustituto": "Cristina"
+    },
+    {
+      "id": "776a6e12-447c-4381-9c60-e2a3e00935dd",
+      "empleado_id": "Macarena",
+      "fecha": "2026-03-07",
+      "turno": "CT",
+      "hotel_id": "Sercotel Guadiana",
+      "tipo": "CT",
+      "updated_at": "2026-04-20T23:04:01.968",
+      "updated_by": "MIGRACION_IA_CT",
+      "sustituto": "Dani"
+    },
+    {
+      "id": "d5c3bcf4-7deb-42ba-acb8-3cf42f123f37",
+      "empleado_id": "Dani",
+      "fecha": "2026-03-09",
+      "turno": "CT",
+      "hotel_id": "Cumbria Spa&Hotel",
+      "tipo": "CT",
+      "updated_at": "2026-04-20T23:04:01.968",
+      "updated_by": "MIGRACION_IA_CT",
+      "sustituto": null
+    },
+    {
+      "id": "4c3de38d-945e-4777-811e-b5314e514b83",
+      "empleado_id": "Dani",
+      "fecha": "2026-03-14",
+      "turno": "CT",
+      "hotel_id": "Sercotel Guadiana",
+      "tipo": "CT",
+      "updated_at": "2026-04-20T23:04:01.968",
+      "updated_by": "MIGRACION_IA_CT",
+      "sustituto": "Macarena"
+    },
+    {
+      "id": "c7e91776-27d0-45dc-bcea-be8200a8bf2a",
+      "empleado_id": "Dani",
+      "fecha": "2026-03-26",
+      "turno": "CT",
+      "hotel_id": "Sercotel Guadiana",
+      "tipo": "CT",
+      "updated_at": "2026-04-20T23:04:01.968",
+      "updated_by": "MIGRACION_IA_CT",
+      "sustituto": "Macarena"
+    },
+    {
+      "id": "7c2a984a-3610-40ba-8ead-e80d6a5d0705",
+      "empleado_id": "Isabel Hidalgo",
+      "fecha": "2026-04-18",
+      "turno": "N",
+      "hotel_id": "Cumbria Spa&Hotel",
+      "tipo": "CT",
+      "updated_at": "2026-04-22T15:32:46.087",
+      "updated_by": "DIRECCION_CAMBIOS",
+      "sustituto": "Valentín"
+    },
+    {
+      "id": "fcfd8b62-b6f1-48db-9f22-592ef78e0d63",
+      "empleado_id": "Valentín",
+      "fecha": "2026-04-18",
+      "turno": "",
+      "hotel_id": "Cumbria Spa&Hotel",
+      "tipo": "CT",
+      "updated_at": "2026-04-22T15:32:45.932",
+      "updated_by": "DIRECCION_CAMBIOS",
+      "sustituto": "Isabel Hidalgo"
+    },
+    {
+      "id": "ae532acb-f25e-4947-ba97-b38ded722b33",
+      "empleado_id": "Diana",
+      "fecha": "2026-04-19",
+      "turno": "CT",
+      "hotel_id": "Sercotel Guadiana",
+      "tipo": "CT",
+      "updated_at": "2026-04-20T23:04:01.968",
+      "updated_by": "MIGRACION_IA_CT",
+      "sustituto": "Macarena"
+    }
+  ]
+}

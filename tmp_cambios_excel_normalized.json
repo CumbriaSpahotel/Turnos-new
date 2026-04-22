@@ -1,0 +1,965 @@
+[
+  {
+    "row": 2,
+    "hotel": "Sercotel Guadiana",
+    "fecha": "2025-09-08",
+    "empleado": "Diana",
+    "cambio": "Esther",
+    "sustituto": "",
+    "tipo": "C/T 🔄"
+  },
+  {
+    "row": 3,
+    "hotel": "Sercotel Guadiana",
+    "fecha": "2025-09-15",
+    "empleado": "Macarena",
+    "cambio": "Sergio Sánchez",
+    "sustituto": "",
+    "tipo": "C/T 🔄"
+  },
+  {
+    "row": 4,
+    "hotel": "Sercotel Guadiana",
+    "fecha": "2025-09-15",
+    "empleado": "Sergio Sánchez",
+    "cambio": "Dani",
+    "sustituto": "",
+    "tipo": "C/T 🔄"
+  },
+  {
+    "row": 5,
+    "hotel": "Cumbria Spa&Hotel",
+    "fecha": "2025-10-01",
+    "empleado": "Cristina",
+    "cambio": "Miriam",
+    "sustituto": "",
+    "tipo": "C/T 🔄"
+  },
+  {
+    "row": 6,
+    "hotel": "Cumbria Spa&Hotel",
+    "fecha": "2025-10-04",
+    "empleado": "Cristina",
+    "cambio": "Sergio",
+    "sustituto": "",
+    "tipo": "C/T 🔄"
+  },
+  {
+    "row": 7,
+    "hotel": "Cumbria Spa&Hotel",
+    "fecha": "2025-10-05",
+    "empleado": "Cristina",
+    "cambio": "Sergio",
+    "sustituto": "",
+    "tipo": "C/T 🔄"
+  },
+  {
+    "row": 8,
+    "hotel": "Cumbria Spa&Hotel",
+    "fecha": "2025-10-06",
+    "empleado": "Cristina",
+    "cambio": "Sergio",
+    "sustituto": "",
+    "tipo": "C/T 🔄"
+  },
+  {
+    "row": 9,
+    "hotel": "Cumbria Spa&Hotel",
+    "fecha": "2025-10-08",
+    "empleado": "Cristina",
+    "cambio": "Miriam",
+    "sustituto": "",
+    "tipo": "C/T 🔄"
+  },
+  {
+    "row": 10,
+    "hotel": "Sercotel Guadiana",
+    "fecha": "2025-10-10",
+    "empleado": "Dani",
+    "cambio": "Macarena",
+    "sustituto": "",
+    "tipo": "C/T 🔄"
+  },
+  {
+    "row": 11,
+    "hotel": "Sercotel Guadiana",
+    "fecha": "2025-10-11",
+    "empleado": "Diana",
+    "cambio": "Sergio Sánchez",
+    "sustituto": "",
+    "tipo": "C/T 🔄"
+  },
+  {
+    "row": 12,
+    "hotel": "Sercotel Guadiana",
+    "fecha": "2025-10-12",
+    "empleado": "Diana",
+    "cambio": "Sergio Sánchez",
+    "sustituto": "",
+    "tipo": "C/T 🔄"
+  },
+  {
+    "row": 13,
+    "hotel": "Sercotel Guadiana",
+    "fecha": "2025-10-13",
+    "empleado": "Dani",
+    "cambio": "Macarena",
+    "sustituto": "",
+    "tipo": "C/T 🔄"
+  },
+  {
+    "row": 14,
+    "hotel": "Cumbria Spa&Hotel",
+    "fecha": "2025-10-15",
+    "empleado": "Valentín",
+    "cambio": "Miriam",
+    "sustituto": "",
+    "tipo": "C/T 🔄"
+  },
+  {
+    "row": 15,
+    "hotel": "Cumbria Spa&Hotel",
+    "fecha": "2025-10-16",
+    "empleado": "Valentín",
+    "cambio": "Natalio",
+    "sustituto": "",
+    "tipo": "C/T 🔄"
+  },
+  {
+    "row": 16,
+    "hotel": "Cumbria Spa&Hotel",
+    "fecha": "2025-10-18",
+    "empleado": "Valentín",
+    "cambio": "Natalio",
+    "sustituto": "",
+    "tipo": "C/T 🔄"
+  },
+  {
+    "row": 17,
+    "hotel": "Cumbria Spa&Hotel",
+    "fecha": "2025-10-18",
+    "empleado": "Miriam",
+    "cambio": "Valentín",
+    "sustituto": "",
+    "tipo": "C/T 🔄"
+  },
+  {
+    "row": 18,
+    "hotel": "Cumbria Spa&Hotel",
+    "fecha": "2025-10-19",
+    "empleado": "Valentín",
+    "cambio": "Miriam",
+    "sustituto": "",
+    "tipo": "C/T 🔄"
+  },
+  {
+    "row": 19,
+    "hotel": "Cumbria Spa&Hotel",
+    "fecha": "2025-10-19",
+    "empleado": "Miriam",
+    "cambio": "Valentín",
+    "sustituto": "",
+    "tipo": "C/T 🔄"
+  },
+  {
+    "row": 20,
+    "hotel": "Sercotel Guadiana",
+    "fecha": "2025-10-22",
+    "empleado": "Macarena",
+    "cambio": "Diana",
+    "sustituto": "",
+    "tipo": "C/T 🔄"
+  },
+  {
+    "row": 21,
+    "hotel": "Sercotel Guadiana",
+    "fecha": "2025-10-28",
+    "empleado": "Dani",
+    "cambio": "Federico",
+    "sustituto": "",
+    "tipo": "C/T 🔄"
+  },
+  {
+    "row": 22,
+    "hotel": "Sercotel Guadiana",
+    "fecha": "2025-10-29",
+    "empleado": "Dani",
+    "cambio": "Federico",
+    "sustituto": "",
+    "tipo": "C/T 🔄"
+  },
+  {
+    "row": 23,
+    "hotel": "Sercotel Guadiana",
+    "fecha": "2025-10-30",
+    "empleado": "Dani",
+    "cambio": "Federico",
+    "sustituto": "",
+    "tipo": "C/T 🔄"
+  },
+  {
+    "row": 24,
+    "hotel": "Sercotel Guadiana",
+    "fecha": "2025-10-31",
+    "empleado": "Dani",
+    "cambio": "Federico",
+    "sustituto": "",
+    "tipo": "C/T 🔄"
+  },
+  {
+    "row": 25,
+    "hotel": "Sercotel Guadiana",
+    "fecha": "2025-11-06",
+    "empleado": "Federico",
+    "cambio": "Diana",
+    "sustituto": "",
+    "tipo": "C/T 🔄"
+  },
+  {
+    "row": 26,
+    "hotel": "Cumbria Spa&Hotel",
+    "fecha": "2025-11-07",
+    "empleado": "Cristina",
+    "cambio": "Miriam",
+    "sustituto": "",
+    "tipo": "C/T 🔄"
+  },
+  {
+    "row": 27,
+    "hotel": "Cumbria Spa&Hotel",
+    "fecha": "2025-11-07",
+    "empleado": "Cristina",
+    "cambio": "Miriam",
+    "sustituto": "",
+    "tipo": "C/T 🔄"
+  },
+  {
+    "row": 28,
+    "hotel": "Sercotel Guadiana",
+    "fecha": "2025-11-09",
+    "empleado": "Macarena",
+    "cambio": "Diana",
+    "sustituto": "",
+    "tipo": "C/T 🔄"
+  },
+  {
+    "row": 29,
+    "hotel": "Sercotel Guadiana",
+    "fecha": "2025-11-10",
+    "empleado": "Dani",
+    "cambio": "Diana",
+    "sustituto": "",
+    "tipo": "C/T 🔄"
+  },
+  {
+    "row": 30,
+    "hotel": "Sercotel Guadiana",
+    "fecha": "2025-11-12",
+    "empleado": "Dani",
+    "cambio": "Diana",
+    "sustituto": "",
+    "tipo": "C/T 🔄"
+  },
+  {
+    "row": 31,
+    "hotel": "Sercotel Guadiana",
+    "fecha": "2025-11-13",
+    "empleado": "Diana",
+    "cambio": "Dani",
+    "sustituto": "",
+    "tipo": "C/T 🔄"
+  },
+  {
+    "row": 32,
+    "hotel": "Sercotel Guadiana",
+    "fecha": "2025-11-14",
+    "empleado": "Diana",
+    "cambio": "Dani",
+    "sustituto": "",
+    "tipo": "C/T 🔄"
+  },
+  {
+    "row": 33,
+    "hotel": "Sercotel Guadiana",
+    "fecha": "2025-11-15",
+    "empleado": "Diana",
+    "cambio": "Dani",
+    "sustituto": "",
+    "tipo": "C/T 🔄"
+  },
+  {
+    "row": 34,
+    "hotel": "Sercotel Guadiana",
+    "fecha": "2025-11-16",
+    "empleado": "Diana",
+    "cambio": "Dani",
+    "sustituto": "",
+    "tipo": "C/T 🔄"
+  },
+  {
+    "row": 35,
+    "hotel": "Sercotel Guadiana",
+    "fecha": "2025-11-17",
+    "empleado": "Diana",
+    "cambio": "Dani",
+    "sustituto": "",
+    "tipo": "C/T 🔄"
+  },
+  {
+    "row": 36,
+    "hotel": "Sercotel Guadiana",
+    "fecha": "2025-11-18",
+    "empleado": "Diana",
+    "cambio": "Dani",
+    "sustituto": "",
+    "tipo": "C/T 🔄"
+  },
+  {
+    "row": 37,
+    "hotel": "Sercotel Guadiana",
+    "fecha": "2025-11-19",
+    "empleado": "Diana",
+    "cambio": "Dani",
+    "sustituto": "",
+    "tipo": "C/T 🔄"
+  },
+  {
+    "row": 38,
+    "hotel": "Sercotel Guadiana",
+    "fecha": "2025-11-20",
+    "empleado": "Diana",
+    "cambio": "Dani",
+    "sustituto": "",
+    "tipo": "C/T 🔄"
+  },
+  {
+    "row": 39,
+    "hotel": "Sercotel Guadiana",
+    "fecha": "2025-11-21",
+    "empleado": "Diana",
+    "cambio": "Dani",
+    "sustituto": "",
+    "tipo": "C/T 🔄"
+  },
+  {
+    "row": 40,
+    "hotel": "Sercotel Guadiana",
+    "fecha": "2025-11-25",
+    "empleado": "Diana",
+    "cambio": "Dani",
+    "sustituto": "",
+    "tipo": "C/T 🔄"
+  },
+  {
+    "row": 41,
+    "hotel": "Sercotel Guadiana",
+    "fecha": "2025-11-26",
+    "empleado": "Macarena",
+    "cambio": "Federico",
+    "sustituto": "",
+    "tipo": "C/T 🔄"
+  },
+  {
+    "row": 42,
+    "hotel": "Sercotel Guadiana",
+    "fecha": "2025-11-26",
+    "empleado": "Diana",
+    "cambio": "Federico",
+    "sustituto": "",
+    "tipo": "C/T 🔄"
+  },
+  {
+    "row": 43,
+    "hotel": "Sercotel Guadiana",
+    "fecha": "2025-11-27",
+    "empleado": "Macarena",
+    "cambio": "Diana",
+    "sustituto": "",
+    "tipo": "C/T 🔄"
+  },
+  {
+    "row": 44,
+    "hotel": "Sercotel Guadiana",
+    "fecha": "2025-11-28",
+    "empleado": "Macarena",
+    "cambio": "Diana",
+    "sustituto": "",
+    "tipo": "C/T 🔄"
+  },
+  {
+    "row": 45,
+    "hotel": "Sercotel Guadiana",
+    "fecha": "2025-12-04",
+    "empleado": "Macarena",
+    "cambio": "Diana",
+    "sustituto": "",
+    "tipo": "C/T 🔄"
+  },
+  {
+    "row": 46,
+    "hotel": "Sercotel Guadiana",
+    "fecha": "2025-12-05",
+    "empleado": "Macarena",
+    "cambio": "Diana",
+    "sustituto": "",
+    "tipo": "C/T 🔄"
+  },
+  {
+    "row": 47,
+    "hotel": "Sercotel Guadiana",
+    "fecha": "2025-12-13",
+    "empleado": "Macarena",
+    "cambio": "Dani",
+    "sustituto": "",
+    "tipo": "C/T 🔄"
+  },
+  {
+    "row": 48,
+    "hotel": "Sercotel Guadiana",
+    "fecha": "2025-12-14",
+    "empleado": "Macarena",
+    "cambio": "Dani",
+    "sustituto": "",
+    "tipo": "C/T 🔄"
+  },
+  {
+    "row": 49,
+    "hotel": "Sercotel Guadiana",
+    "fecha": "2025-12-15",
+    "empleado": "Macarena",
+    "cambio": "Dani",
+    "sustituto": "",
+    "tipo": "C/T 🔄"
+  },
+  {
+    "row": 50,
+    "hotel": "Sercotel Guadiana",
+    "fecha": "2025-12-16",
+    "empleado": "Macarena",
+    "cambio": "Dani",
+    "sustituto": "",
+    "tipo": "C/T 🔄"
+  },
+  {
+    "row": 51,
+    "hotel": "Sercotel Guadiana",
+    "fecha": "2025-12-26",
+    "empleado": "Dani",
+    "cambio": "Diana",
+    "sustituto": "",
+    "tipo": "C/T 🔄"
+  },
+  {
+    "row": 52,
+    "hotel": "Sercotel Guadiana",
+    "fecha": "2025-12-29",
+    "empleado": "Macarena",
+    "cambio": "Diana",
+    "sustituto": "",
+    "tipo": "C/T 🔄"
+  },
+  {
+    "row": 53,
+    "hotel": "Sercotel Guadiana",
+    "fecha": "2026-01-01",
+    "empleado": "Sergio Sánchez",
+    "cambio": "Dani",
+    "sustituto": "",
+    "tipo": "C/T 🔄"
+  },
+  {
+    "row": 54,
+    "hotel": "Sercotel Guadiana",
+    "fecha": "2026-01-06",
+    "empleado": "Sergio Sánchez",
+    "cambio": "Dani",
+    "sustituto": "",
+    "tipo": "C/T 🔄"
+  },
+  {
+    "row": 55,
+    "hotel": "Cumbria Spa&Hotel",
+    "fecha": "2026-01-06",
+    "empleado": "Isabel Hidalgo",
+    "cambio": "",
+    "sustituto": "Natalio",
+    "tipo": "C/T 🔄"
+  },
+  {
+    "row": 56,
+    "hotel": "Sercotel Guadiana",
+    "fecha": "2026-01-07",
+    "empleado": "Diana",
+    "cambio": "Macarena",
+    "sustituto": "",
+    "tipo": "C/T 🔄"
+  },
+  {
+    "row": 57,
+    "hotel": "Cumbria Spa&Hotel",
+    "fecha": "2026-01-07",
+    "empleado": "Cristina",
+    "cambio": "Isabel Hidalgo",
+    "sustituto": "",
+    "tipo": "C/T 🔄"
+  },
+  {
+    "row": 58,
+    "hotel": "Sercotel Guadiana",
+    "fecha": "2026-01-10",
+    "empleado": "Diana",
+    "cambio": "Dani",
+    "sustituto": "",
+    "tipo": "C/T 🔄"
+  },
+  {
+    "row": 59,
+    "hotel": "Cumbria Spa&Hotel",
+    "fecha": "2026-01-14",
+    "empleado": "Cristina",
+    "cambio": "Isabel Hidalgo",
+    "sustituto": "",
+    "tipo": "C/T 🔄"
+  },
+  {
+    "row": 60,
+    "hotel": "Sercotel Guadiana",
+    "fecha": "2026-01-15",
+    "empleado": "Sergio Sánchez",
+    "cambio": "",
+    "sustituto": "Natalio",
+    "tipo": "C/T 🔄"
+  },
+  {
+    "row": 61,
+    "hotel": "Cumbria Spa&Hotel",
+    "fecha": "2026-01-15",
+    "empleado": "Isabel Hidalgo",
+    "cambio": "Cristina",
+    "sustituto": "",
+    "tipo": "C/T 🔄"
+  },
+  {
+    "row": 62,
+    "hotel": "Sercotel Guadiana",
+    "fecha": "2026-01-29",
+    "empleado": "Federico",
+    "cambio": "Diana",
+    "sustituto": "",
+    "tipo": "C/T 🔄"
+  },
+  {
+    "row": 63,
+    "hotel": "Cumbria Spa&Hotel",
+    "fecha": "2026-02-04",
+    "empleado": "Miriam",
+    "cambio": "Cristina",
+    "sustituto": "",
+    "tipo": "C/T 🔄"
+  },
+  {
+    "row": 64,
+    "hotel": "Sercotel Guadiana",
+    "fecha": "2026-02-07",
+    "empleado": "Diana",
+    "cambio": "Dani",
+    "sustituto": "",
+    "tipo": "C/T 🔄"
+  },
+  {
+    "row": 65,
+    "hotel": "Sercotel Guadiana",
+    "fecha": "2026-02-08",
+    "empleado": "Diana",
+    "cambio": "Dani",
+    "sustituto": "",
+    "tipo": "C/T 🔄"
+  },
+  {
+    "row": 66,
+    "hotel": "Sercotel Guadiana",
+    "fecha": "2026-02-09",
+    "empleado": "Diana",
+    "cambio": "Dani",
+    "sustituto": "",
+    "tipo": "C/T 🔄"
+  },
+  {
+    "row": 67,
+    "hotel": "Sercotel Guadiana",
+    "fecha": "2026-02-10",
+    "empleado": "Diana",
+    "cambio": "Dani",
+    "sustituto": "",
+    "tipo": "C/T 🔄"
+  },
+  {
+    "row": 68,
+    "hotel": "Sercotel Guadiana",
+    "fecha": "2026-02-11",
+    "empleado": "Diana",
+    "cambio": "Dani",
+    "sustituto": "",
+    "tipo": "C/T 🔄"
+  },
+  {
+    "row": 69,
+    "hotel": "Sercotel Guadiana",
+    "fecha": "2026-02-13",
+    "empleado": "Diana",
+    "cambio": "Dani",
+    "sustituto": "",
+    "tipo": "C/T 🔄"
+  },
+  {
+    "row": 70,
+    "hotel": "Cumbria Spa&Hotel",
+    "fecha": "2026-02-14",
+    "empleado": "Miriam",
+    "cambio": "Cristina",
+    "sustituto": "",
+    "tipo": "C/T 🔄"
+  },
+  {
+    "row": 71,
+    "hotel": "Sercotel Guadiana",
+    "fecha": "2026-02-15",
+    "empleado": "Diana",
+    "cambio": "Macarena",
+    "sustituto": "",
+    "tipo": "C/T 🔄"
+  },
+  {
+    "row": 72,
+    "hotel": "Sercotel Guadiana",
+    "fecha": "2026-02-16",
+    "empleado": "Diana",
+    "cambio": "Macarena",
+    "sustituto": "",
+    "tipo": "C/T 🔄"
+  },
+  {
+    "row": 73,
+    "hotel": "Sercotel Guadiana",
+    "fecha": "2026-02-17",
+    "empleado": "Diana",
+    "cambio": "Federico",
+    "sustituto": "",
+    "tipo": "C/T 🔄"
+  },
+  {
+    "row": 74,
+    "hotel": "Cumbria Spa&Hotel",
+    "fecha": "2026-02-18",
+    "empleado": "Cristina",
+    "cambio": "Isabel Hidalgo",
+    "sustituto": "",
+    "tipo": "C/T 🔄"
+  },
+  {
+    "row": 75,
+    "hotel": "Sercotel Guadiana",
+    "fecha": "2026-02-21",
+    "empleado": "Diana",
+    "cambio": "Macarena",
+    "sustituto": "",
+    "tipo": "C/T 🔄"
+  },
+  {
+    "row": 76,
+    "hotel": "Cumbria Spa&Hotel",
+    "fecha": "2026-02-21",
+    "empleado": "Cristina",
+    "cambio": "Miriam",
+    "sustituto": "",
+    "tipo": "C/T 🔄"
+  },
+  {
+    "row": 77,
+    "hotel": "Sercotel Guadiana",
+    "fecha": "2026-02-22",
+    "empleado": "Diana",
+    "cambio": "Macarena",
+    "sustituto": "",
+    "tipo": "C/T 🔄"
+  },
+  {
+    "row": 78,
+    "hotel": "Sercotel Guadiana",
+    "fecha": "2026-02-25",
+    "empleado": "Macarena",
+    "cambio": "Federico",
+    "sustituto": "",
+    "tipo": "C/T 🔄"
+  },
+  {
+    "row": 79,
+    "hotel": "Sercotel Guadiana",
+    "fecha": "2026-02-28",
+    "empleado": "Diana",
+    "cambio": "Macarena",
+    "sustituto": "",
+    "tipo": "C/T 🔄"
+  },
+  {
+    "row": 80,
+    "hotel": "Cumbria Spa&Hotel",
+    "fecha": "2026-02-28",
+    "empleado": "Miriam",
+    "cambio": "Cristina",
+    "sustituto": "",
+    "tipo": "C/T 🔄"
+  },
+  {
+    "row": 81,
+    "hotel": "Sercotel Guadiana",
+    "fecha": "2026-02-28",
+    "empleado": "Diana",
+    "cambio": "Dani",
+    "sustituto": "",
+    "tipo": "C/T 🔄"
+  },
+  {
+    "row": 82,
+    "hotel": "Sercotel Guadiana",
+    "fecha": "2026-03-01",
+    "empleado": "Diana",
+    "cambio": "Macarena",
+    "sustituto": "",
+    "tipo": "C/T 🔄"
+  },
+  {
+    "row": 83,
+    "hotel": "Cumbria Spa&Hotel",
+    "fecha": "2026-03-03",
+    "empleado": "Cristina",
+    "cambio": "Isabel Hidalgo",
+    "sustituto": "",
+    "tipo": "C/T 🔄"
+  },
+  {
+    "row": 84,
+    "hotel": "Cumbria Spa&Hotel",
+    "fecha": "2026-03-07",
+    "empleado": "Cristina",
+    "cambio": "Miriam",
+    "sustituto": "",
+    "tipo": "C/T 🔄"
+  },
+  {
+    "row": 85,
+    "hotel": "Sercotel Guadiana",
+    "fecha": "2026-03-09",
+    "empleado": "Macarena",
+    "cambio": "Dani",
+    "sustituto": "",
+    "tipo": "C/T 🔄"
+  },
+  {
+    "row": 86,
+    "hotel": "Sercotel Guadiana",
+    "fecha": "2026-03-10",
+    "empleado": "Macarena",
+    "cambio": "Dani",
+    "sustituto": "",
+    "tipo": "C/T 🔄"
+  },
+  {
+    "row": 87,
+    "hotel": "Cumbria Spa&Hotel",
+    "fecha": "2026-03-14",
+    "empleado": "Cristina",
+    "cambio": "Esther",
+    "sustituto": "",
+    "tipo": "C/T 🔄"
+  },
+  {
+    "row": 88,
+    "hotel": "Cumbria Spa&Hotel",
+    "fecha": "2026-03-18",
+    "empleado": "Sergio",
+    "cambio": "Esther",
+    "sustituto": "",
+    "tipo": "C/T 🔄"
+  },
+  {
+    "row": 89,
+    "hotel": "Cumbria Spa&Hotel",
+    "fecha": "2026-03-19",
+    "empleado": "Sergio",
+    "cambio": "Esther",
+    "sustituto": "",
+    "tipo": "C/T 🔄"
+  },
+  {
+    "row": 90,
+    "hotel": "Cumbria Spa&Hotel",
+    "fecha": "2026-03-20",
+    "empleado": "Sergio",
+    "cambio": "Esther",
+    "sustituto": "",
+    "tipo": "C/T 🔄"
+  },
+  {
+    "row": 91,
+    "hotel": "Sercotel Guadiana",
+    "fecha": "2026-03-26",
+    "empleado": "Diana",
+    "cambio": "Macarena",
+    "sustituto": "",
+    "tipo": "C/T 🔄"
+  },
+  {
+    "row": 92,
+    "hotel": "Cumbria Spa&Hotel",
+    "fecha": "2026-04-01",
+    "empleado": "Cristina",
+    "cambio": "Miriam",
+    "sustituto": "",
+    "tipo": "C/T 🔄"
+  },
+  {
+    "row": 93,
+    "hotel": "Sercotel Guadiana",
+    "fecha": "2026-04-06",
+    "empleado": "Diana",
+    "cambio": "Macarena",
+    "sustituto": "",
+    "tipo": "C/T 🔄"
+  },
+  {
+    "row": 94,
+    "hotel": "Sercotel Guadiana",
+    "fecha": "2026-04-10",
+    "empleado": "Diana",
+    "cambio": "Dani",
+    "sustituto": "",
+    "tipo": "C/T 🔄"
+  },
+  {
+    "row": 95,
+    "hotel": "Cumbria Spa&Hotel",
+    "fecha": "2026-04-15",
+    "empleado": "Miriam",
+    "cambio": "Cristina",
+    "sustituto": "",
+    "tipo": "C/T 🔄"
+  },
+  {
+    "row": 96,
+    "hotel": "Cumbria Spa&Hotel",
+    "fecha": "2026-04-16",
+    "empleado": "Miriam",
+    "cambio": "Cristina",
+    "sustituto": "",
+    "tipo": "C/T 🔄"
+  },
+  {
+    "row": 97,
+    "hotel": "Cumbria Spa&Hotel",
+    "fecha": "2026-04-17",
+    "empleado": "Miriam",
+    "cambio": "Cristina",
+    "sustituto": "",
+    "tipo": "C/T 🔄"
+  },
+  {
+    "row": 98,
+    "hotel": "Sercotel Guadiana",
+    "fecha": "2026-04-18",
+    "empleado": "Dani",
+    "cambio": "Macarena",
+    "sustituto": "",
+    "tipo": "C/T 🔄"
+  },
+  {
+    "row": 99,
+    "hotel": "Sercotel Guadiana",
+    "fecha": "2026-04-19",
+    "empleado": "Dani",
+    "cambio": "Macarena",
+    "sustituto": "",
+    "tipo": "C/T 🔄"
+  },
+  {
+    "row": 100,
+    "hotel": "Sercotel Guadiana",
+    "fecha": "2026-04-25",
+    "empleado": "Dani",
+    "cambio": "Macarena",
+    "sustituto": "",
+    "tipo": "C/T 🔄"
+  },
+  {
+    "row": 101,
+    "hotel": "Sercotel Guadiana",
+    "fecha": "2026-04-26",
+    "empleado": "Dani",
+    "cambio": "Macarena",
+    "sustituto": "",
+    "tipo": "C/T 🔄"
+  },
+  {
+    "row": 102,
+    "hotel": "Sercotel Guadiana",
+    "fecha": "2026-05-02",
+    "empleado": "Diana",
+    "cambio": "Dani",
+    "sustituto": "",
+    "tipo": "C/T 🔄"
+  },
+  {
+    "row": 103,
+    "hotel": "Sercotel Guadiana",
+    "fecha": "2026-05-03",
+    "empleado": "Diana",
+    "cambio": "Dani",
+    "sustituto": "",
+    "tipo": "C/T 🔄"
+  },
+  {
+    "row": 104,
+    "hotel": "Sercotel Guadiana",
+    "fecha": "2026-05-04",
+    "empleado": "Diana",
+    "cambio": "Dani",
+    "sustituto": "",
+    "tipo": "C/T 🔄"
+  },
+  {
+    "row": 105,
+    "hotel": "Sercotel Guadiana",
+    "fecha": "2026-05-05",
+    "empleado": "Diana",
+    "cambio": "Dani",
+    "sustituto": "",
+    "tipo": "C/T 🔄"
+  },
+  {
+    "row": 106,
+    "hotel": "Sercotel Guadiana",
+    "fecha": "2026-05-06",
+    "empleado": "Diana",
+    "cambio": "Dani",
+    "sustituto": "",
+    "tipo": "C/T 🔄"
+  },
+  {
+    "row": 107,
+    "hotel": "Sercotel Guadiana",
+    "fecha": "2026-05-08",
+    "empleado": "Diana",
+    "cambio": "Dani",
+    "sustituto": "",
+    "tipo": "C/T 🔄"
+  },
+  {
+    "row": 108,
+    "hotel": "Sercotel Guadiana",
+    "fecha": "2026-05-15",
+    "empleado": "Dani",
+    "cambio": "Diana",
+    "sustituto": "",
+    "tipo": "C/T 🔄"
+  }
+]

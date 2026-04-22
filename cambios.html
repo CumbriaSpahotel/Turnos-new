@@ -297,7 +297,7 @@
                 empleado_id: row.empleado_id,
                 empleado_destino_id: row.sustituto || null,
                 hotel_origen: row.hotel_id,
-                observaciones: row.updated_by === 'DIRECCION_MODO_EXCEL' ? 'Cambio importado Excel' : (row.turno || 'Cambio manual'),
+                observaciones: row.updated_by === 'DIRECCION_MODO_EXCEL' ? 'Cambio importado Excel' : (row.turno || 'CT'),
                 turno_nuevo: row.turno || '',
                 is_legacy: true
             }));

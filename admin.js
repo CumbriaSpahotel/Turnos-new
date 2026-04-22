@@ -603,6 +603,7 @@ window.renderPreview = async () => {
         const rowCanRenderInHotel = (row, hotelName) => {
             return employeeCanRenderInHotel(normalizeEmployeeKey(row?.empleado_id), hotelName, row?.hotel_id);
         };
+        const rowIsCt = (row) => window.TurnosRules.isCtType(row?.tipo);
         const rowHasVisibleShift = (row) => {
             const type = String(row?.tipo || 'NORMAL').toUpperCase();
             if (type.startsWith('ANULADO')) return false;
@@ -610,7 +611,16 @@ window.renderPreview = async () => {
         };
         const isPreviewAbsenceRow = (row) => {
             const type = String(row?.tipo || 'NORMAL').toUpperCase();
-            return type.startsWith('VAC') || type.startsWith('BAJA') || type.startsWith('PERM');
+            return window.TurnosRules.isAbsenceType(type);
+        };
+        const rowBelongsToHotel = (row, hotelName, absenceMap = null) => {
+            if (normalizeHotelKey(row?.hotel_id) !== normalizeHotelKey(hotelName)) return false;
+            if (rowCanRenderInHotel(row, hotelName)) return true;
+            if (rowIsCt(row) || isPreviewAbsenceRow(row)) return false;
+            const targetKey = normalizeEmployeeKey(row?.sustituto);
+            return targetKey &&
+                employeeCanRenderInHotel(targetKey, hotelName, row?.hotel_id) &&
+                (!absenceMap || absenceMap.has(`${targetKey}|${row?.fecha}`));
         };
 
         data = data.filter(row => employeeCanAppearOnDate(normalizeEmployeeKey(row.empleado_id), row.fecha));
@@ -634,7 +644,14 @@ window.renderPreview = async () => {
 
         // 5. Renderizar cada Hotel
         for (const hName of hotelsToRender) {
-            const hData = data.filter(t => normalizeHotelKey(t.hotel_id) === normalizeHotelKey(hName) && rowCanRenderInHotel(t, hName));
+            const rawHotelData = data.filter(t => normalizeHotelKey(t.hotel_id) === normalizeHotelKey(hName));
+            const hotelAbsenceByKeyDate = new Map();
+            rawHotelData.forEach(t => {
+                if (isPreviewAbsenceRow(t) && rowCanRenderInHotel(t, hName)) {
+                    hotelAbsenceByKeyDate.set(`${normalizeEmployeeKey(t.empleado_id)}|${t.fecha}`, t);
+                }
+            });
+            const hData = rawHotelData.filter(t => rowBelongsToHotel(t, hName, hotelAbsenceByKeyDate));
             if (hData.length === 0) continue;
 
             if (isWeekly) {
@@ -661,7 +678,7 @@ window.renderPreview = async () => {
                     const key = normalizeEmployeeKey(employeeId);
                     if (!key || rendered.has(key)) return;
                     if (!employeeCanAppearOnDate(key, date)) return;
-                    if (!employeeCanRenderInHotel(key, hName, options.rowHotel || hName)) return;
+                    if (!options.forceHotel && !employeeCanRenderInHotel(key, hName, options.rowHotel || hName)) return;
                     const profile = profileForKey(key);
                     const displayAs = profile?.nombre || profile?.id || employeeId;
                     empList.push({
@@ -676,10 +693,40 @@ window.renderPreview = async () => {
                     rendered.add(key);
                 };
 
+                const absenceByKeyDate = new Map();
+                hData.forEach(t => {
+                    if (isPreviewAbsenceRow(t)) {
+                        absenceByKeyDate.set(`${normalizeEmployeeKey(t.empleado_id)}|${t.fecha}`, t);
+                    }
+                });
+                const vacationCoverTarget = (row) => {
+                    if (!row?.sustituto || rowIsCt(row) || isPreviewAbsenceRow(row)) return null;
+                    const targetKey = normalizeEmployeeKey(row.sustituto);
+                    return absenceByKeyDate.has(`${targetKey}|${row.fecha}`) ? targetKey : null;
+                };
+
                 hData.forEach(t => {
                     if (!rowHasVisibleShift(t)) return;
                     const empKey = normalizeEmployeeKey(t.empleado_id);
                     const subKey = normalizeEmployeeKey(t.sustituto);
+                    const inferredCoverTarget = vacationCoverTarget(t);
+                    if (inferredCoverTarget) {
+                        addEmployeeFromRow(t.empleado_id, t.fecha, {
+                            displayAs: t.empleado_id,
+                            substituteFor: inferredCoverTarget,
+                            substituteForName: t.sustituto,
+                            sourceKey: inferredCoverTarget,
+                            rowHotel: t.hotel_id,
+                            forceHotel: true,
+                            sourceOrder: weekExcelOrder.has(inferredCoverTarget) ? weekExcelOrder.get(inferredCoverTarget) : Number.MAX_SAFE_INTEGER
+                        });
+                        addEmployeeFromRow(t.sustituto, t.fecha, {
+                            isAbsent: true,
+                            rowHotel: t.hotel_id,
+                            sourceOrder: Number.MAX_SAFE_INTEGER
+                        });
+                        return;
+                    }
                     if (isPreviewAbsenceRow(t) && subKey) {
                         addEmployeeFromRow(t.sustituto, t.fecha, {
                             displayAs: t.sustituto,
@@ -687,6 +734,7 @@ window.renderPreview = async () => {
                             substituteForName: t.empleado_id,
                             sourceKey: empKey,
                             rowHotel: t.hotel_id,
+                            forceHotel: true,
                             sourceOrder: weekExcelOrder.has(empKey) ? weekExcelOrder.get(empKey) : Number.MAX_SAFE_INTEGER
                         });
                         addEmployeeFromRow(t.empleado_id, t.fecha, {
@@ -717,7 +765,7 @@ window.renderPreview = async () => {
                 const sourceShiftForKey = (key, colIdx) => weekExcelRowByKey.get(key)?.values?.[colIdx] || '';
                 const ctDisplayCell = (row, colIdx, currentKey) => {
                     const type = String(row?.tipo || '').toUpperCase();
-                    if (!type.includes('CT')) return row;
+                    if (!window.TurnosRules.isCtType(type)) return row;
                     const partnerKey = normalizeEmployeeKey(row.sustituto);
                     const swappedTurno = sourceShiftForKey(partnerKey, colIdx) || (String(row.turno || '').toUpperCase() === 'CT' ? '' : row.turno);
                     return { ...row, turno: swappedTurno || row.turno || '', tipo: 'CT', isSwap: true };
@@ -740,10 +788,10 @@ window.renderPreview = async () => {
                     }
                     const direct = hData.find(t => normalizeEmployeeKey(t.empleado_id) === entry.key && t.fecha === col.date);
                     const directType = String(direct?.tipo || '').toUpperCase();
-                    if (directType.includes('CT')) return ctDisplayCell(direct, colIdx, entry.key);
+                    if (window.TurnosRules.isCtType(directType)) return ctDisplayCell(direct, colIdx, entry.key);
 
                     const swapSource = hData.find(t =>
-                        String(t.tipo || '').toUpperCase().includes('CT') &&
+                        window.TurnosRules.isCtType(t.tipo) &&
                         normalizeEmployeeKey(t.sustituto) === entry.key &&
                         t.fecha === col.date
                     );
@@ -802,23 +850,11 @@ window.renderPreview = async () => {
                                                 const s = cellForPreviewEntry(entry, c, colIdx);
                                                 if (!s || !s.turno) return `<td style="background:#fafbfc; border-left:1px solid #f1f5f9; opacity:0.3;"><div style="width:100%; height:12px; background:#e2e8f0; border-radius:6px; max-width:60px; margin:0 auto;"></div></td>`;
                                                 
-                                                const t = (s.tipo||'').toUpperCase(); 
-                                                const l = (s.turno||'').toLowerCase();
-                                                let style = '', lbl = s.turno, icon = '';
-                                                
-                                                if (t.startsWith('VAC')) { style = 'background:#e0f2fe; color:#0369a1; border:1px solid #bae6fd;'; lbl = 'Vacaciones'; icon = '🏖️'; }
-                                                else if (t.startsWith('BAJA')) { style = 'background:#fef2f2; color:#b91c1c; border:1px dashed #fecdd3;'; lbl = 'Baja'; icon = '🏥'; }
-                                                else if (t.startsWith('PERM')) { style = 'background:#f3e8ff; color:#7e22ce; border:1px solid #e9d5ff;'; lbl = 'Permiso'; icon = '📋'; }
-                                                else if (l.startsWith('m')) { style = 'background:#ebfbee; color:#2f9e44; border:1px solid #d3f9d8;'; lbl = 'Mañana'; }
-                                                else if (l.startsWith('t')) { style = 'background:#fff9db; color:#f08c00; border:1px solid #fff3bf;'; lbl = 'Tarde'; }
-                                                else if (l.startsWith('n')) { style = 'background:#edf2ff; color:#364fc7; border:1px solid #dbe4ff;'; lbl = 'Noche'; icon = '<span style="font-size:1.1rem; margin-left:4px;">🌙</span>'; }
-                                                else if (l.startsWith('d')) { style = 'background:#fff5f5; color:#fa5252; border:1px solid #ffc9c9;'; lbl = 'Descanso'; }
-                                                
-                                                if (t.includes('CT') || s.sustituto || s.isCovering) {
-                                                    const coverTitle = s.isCovering ? `Cubre a: ${s.sustituto || ''}` : `Sust.: ${s.sustituto || ''}`;
-                                                    icon = `<span style="font-size:0.9rem; margin-left:4px;" title="${escapeHtml(coverTitle)}">🔄</span>`;
-                                                    style += ' box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);'; 
-                                                }
+                                                const visual = window.TurnosRules.describeCell(s);
+                                                let style = visual.adminStyle;
+                                                let lbl = visual.label || s.turno || '';
+                                                let icon = visual.icon ? `<span style="font-size:${visual.isCt ? '0.9rem' : '1.1rem'}; margin-left:4px;" title="${escapeHtml(visual.title || '')}">${visual.icon}</span>` : '';
+                                                if (visual.isCt) style += ' box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);';
                                                 
                                                 if (s.hotel_id && s.hotel_id !== hName) {
                                                     lbl = `${lbl} (${s.hotel_id.split(' ')[0]})`;
@@ -857,7 +893,14 @@ window.renderPreview = async () => {
                 const hNorm = normH(hName);
 
                 // Aquí usamos data completa filtrada por hotel con comparación normalizada
-                const hDataFull = data.filter(t => normH(t.hotel_id) === hNorm && rowCanRenderInHotel(t, hName));
+                const rawMonthHotelData = data.filter(t => normH(t.hotel_id) === hNorm);
+                const monthAbsenceByKeyDate = new Map();
+                rawMonthHotelData.forEach(t => {
+                    if (isPreviewAbsenceRow(t) && rowCanRenderInHotel(t, hName)) {
+                        monthAbsenceByKeyDate.set(`${normalizeEmployeeKey(t.empleado_id)}|${t.fecha}`, t);
+                    }
+                });
+                const hDataFull = rawMonthHotelData.filter(t => rowBelongsToHotel(t, hName, monthAbsenceByKeyDate));
 
                 const cells = [];
                 for (let i = 1; i < startDow; i++) cells.push('<div class="cal2-cell cal2-empty"></div>');
@@ -881,14 +924,11 @@ window.renderPreview = async () => {
                         // Lógica de visualización: si hay sustituto, mostrarlo
                         const displayName = subName ? `${empName} (👤 ${subName})` : empName;
 
-                        if (tipo.includes('CT')) {
+                        if (window.TurnosRules.isCtType(tipo)) {
                             groups.CT.push({ name: displayName, shift: shift.charAt(0).toUpperCase() });
-                        } else if (tipo.startsWith('VAC')) {
-                            groups.ABS.push({ name: displayName, icon: '🏖️', cls: 'vac' });
-                        } else if (tipo.startsWith('BAJA')) {
-                            groups.ABS.push({ name: displayName, icon: '🏥', cls: 'baja' });
-                        } else if (tipo.startsWith('PERM')) {
-                            groups.ABS.push({ name: displayName, icon: '📋', cls: 'perm' });
+                        } else if (window.TurnosRules.isAbsenceType(tipo)) {
+                            const visual = window.TurnosRules.describeCell(t);
+                            groups.ABS.push({ name: displayName, icon: visual.icon, cls: visual.key === 'v' ? 'vac' : visual.key });
                         } else if (shift.startsWith('m')) {
                             groups.M.push(displayName);
                         } else if (shift.startsWith('t')) {
@@ -1301,7 +1341,9 @@ window.renderSemanaEnContenedorV2 = async (container, inicio, fin, hotelData, ho
         }
         if (t.sustituto) {
             const normS = window.TurnosDB.normalizeString(t.sustituto);
-            if (!empMap.has(normS) && employeeCanRenderInHotelV2(normS, t.hotel_id)) empMap.set(normS, t.sustituto);
+            const type = String(t.tipo || 'NORMAL').toUpperCase();
+            const isAbsenceSubstitute = window.TurnosRules.isAbsenceType(type);
+            if (!empMap.has(normS) && (isAbsenceSubstitute || employeeCanRenderInHotelV2(normS, t.hotel_id))) empMap.set(normS, t.sustituto);
         }
     });
     
@@ -1313,7 +1355,7 @@ window.renderSemanaEnContenedorV2 = async (container, inicio, fin, hotelData, ho
         absenceCount[normName] = 0;
         columns.forEach(c => {
             const d = hotelData.find(s => window.TurnosDB.normalizeString(s.empleado_id) === normName && s.fecha === c.dbFecha);
-            if (d && d.tipo !== 'NORMAL' && !d.tipo.includes('CT')) absenceCount[normName]++;
+            if (d && window.TurnosRules.isAbsenceType(d.tipo)) absenceCount[normName]++;
         });
     });
 
@@ -1591,24 +1633,15 @@ function initialsFor(name) {
 }
 
 function isVacation(row) {
-    return String(row?.tipo || '').toUpperCase().startsWith('VAC');
+    return window.TurnosRules.shiftKey(row?.turno, row?.tipo) === 'v';
 }
 
 function isAbsence(row) {
-    const tipo = String(row?.tipo || '').toUpperCase();
-    return tipo.startsWith('VAC') || tipo.startsWith('BAJA') || tipo.startsWith('PERM');
+    return window.TurnosRules.isAbsenceType(row?.tipo);
 }
 
 function shiftKey(row) {
-    if (isVacation(row)) return 'v';
-    const tipo = String(row?.tipo || '').toUpperCase();
-    if (tipo.startsWith('BAJA') || tipo.startsWith('PERM')) return 'b';
-    const turno = String(row?.turno || '').toLowerCase();
-    if (turno.startsWith('m')) return 'm';
-    if (turno.startsWith('t')) return 't';
-    if (turno.startsWith('n')) return 'n';
-    if (turno.startsWith('d')) return 'd';
-    return 'x';
+    return window.TurnosRules.shiftKey(row?.turno, row?.tipo) || 'x';
 }
 
 function buildPeriods(rows) {

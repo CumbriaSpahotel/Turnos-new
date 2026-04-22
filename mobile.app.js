@@ -31,45 +31,14 @@
   }
 
   function getDisplayInfo(item) {
-    if (!item) return { label: '·', cls: 'empty', icon: '' };
-    
-    const type = String(item.tipo || 'NORMAL').toUpperCase();
-    const rawTurno = String(item.turno || '').toLowerCase();
-    
-    let cls = 'empty';
-    let label = '';
-    let icon = '';
-
-    if (type.startsWith('VAC')) {
-      cls = 'v';
-      label = 'Vacaciones';
-      icon = '🏖️';
-    } else if (type.startsWith('BAJA')) {
-      cls = 'b';
-      label = 'Baja';
-      icon = '🏥';
-    } else if (type.startsWith('PERM')) {
-      cls = 'p';
-      label = 'Permiso';
-    } else if (rawTurno.includes('mañana') || rawTurno.includes('maã±ana') || rawTurno === 'm') {
-      cls = 'm';
-      label = 'Mañana';
-    } else if (rawTurno.includes('tarde') || rawTurno === 't') {
-      cls = 't';
-      label = 'Tarde';
-    } else if (rawTurno.includes('noche') || rawTurno === 'n') {
-      cls = 'n';
-      label = 'Noche';
-      icon = '🌙';
-    } else if (rawTurno.includes('descanso') || rawTurno === 'd') {
-      cls = 'd';
-      label = 'Descanso';
-    } else {
-        label = item.turno || '·';
-    }
-
-    if (item.isSub) icon = '↔︎';
-    return { label, cls, icon };
+    if (!item) return { label: '·', cls: 'empty', icon: '', title: '' };
+    const visual = window.TurnosRules.describeCell(item);
+    return {
+      label: visual.label || item.turno || '·',
+      cls: visual.mobileClass,
+      icon: visual.icon || '',
+      title: visual.title || ''
+    };
   }
 
   const dateInput   = $("#dateInput");
@@ -200,17 +169,21 @@
                     return `
                         <div class="grid-row" style="${empIsAbsent ? 'opacity:0.5;' : ''}">
                             <div class="name-sticky">
-                                <span style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis; color:var(--primary); font-weight:800;">${escapeHtml(emp)}</span>
-                                <div class="stats" style="display:flex; gap:4px; margin-top:4px;">
-                                    <span style="background:#f8fafc; color:#64748b; padding:1px 4px; border-radius:4px; font-size:0.65rem; border:1px solid #eee;">N${n}</span>
-                                    <span style="background:#f8fafc; color:#0d6efd; padding:1px 4px; border-radius:4px; font-size:0.65rem; border:1px solid #eee;">D${dCount}</span>
+                                <span style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis; color:var(--text); font-family:'Outfit', sans-serif; font-weight:600; font-size:0.8rem; letter-spacing:0.01em; text-transform:uppercase;">${escapeHtml(emp)}</span>
+                                <div class="stats" style="display:flex; gap:5px; margin-top:3px;">
+                                    <span style="background:rgba(0,0,0,0.04); color:var(--text); padding:1px 5px; border-radius:5px; font-size:0.62rem; font-weight:700; border:1px solid rgba(0,0,0,0.05); display:flex; align-items:center; gap:3px;">
+                                        🌙 <span style="color:var(--text);">${n}</span>
+                                    </span>
+                                    <span style="background:rgba(239,68,68,0.05); padding:1px 5px; border-radius:5px; font-size:0.62rem; font-weight:700; border:1px solid rgba(239,68,68,0.1); display:flex; align-items:center; gap:3px;">
+                                        <span style="color:#ef4444;">D</span> <span style="color:var(--text);">${dCount}</span>
+                                    </span>
                                 </div>
                             </div>
                             ${dates.map(dKey => {
                                 const item = shifts[dKey];
-                                const { label, cls, icon } = getDisplayInfo(item);
-                                return `<div class="grid-cell">
-                                    <span class="badge-shift ${cls}">${escapeHtml(label)} ${icon}</span>
+                                const { label, cls, icon, title } = getDisplayInfo(item);
+                                return `<div class="grid-cell" title="${escapeHtml(title || '')}">
+                                    <span class="badge-shift ${cls}">${escapeHtml(label)}${icon ? ` ${icon}` : ''}</span>
                                 </div>`;
                             }).join('')}
                         </div>

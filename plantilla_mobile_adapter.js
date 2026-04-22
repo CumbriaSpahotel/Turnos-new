@@ -158,7 +158,7 @@ window.MobileAdapter = (function () {
         const isAbsent = new Set();
         hData.forEach(t => {
             const tipo = (t.tipo || '').toUpperCase();
-            if (tipo.startsWith('VAC') || tipo.startsWith('BAJA') || tipo.startsWith('PERM')) {
+            if (window.TurnosRules.isAbsenceType(tipo)) {
                 isAbsent.add(window.TurnosDB.normalizeString(t.empleado_id));
             }
         });
@@ -176,6 +176,10 @@ window.MobileAdapter = (function () {
         const sourceRowsForHotel = excelSource[hotel] || [];
         const currentWeekExcelRows = sourceRowsForHotel.filter(r => r.weekStart === mondayISO);
         const excelOrder = currentWeekExcelRows.map(r => r.empleadoId);
+        const excelRowByNorm = new Map(
+            currentWeekExcelRows.map(r => [window.TurnosDB.normalizeString(r.empleadoId), r])
+        );
+        const sourceShiftFor = (norm, idx) => excelRowByNorm.get(norm)?.values?.[idx] || "";
 
         const rendered = new Set();
         const empList = []; // [{ id, displayAs, isAbsent, substituteFor }]
@@ -223,14 +227,56 @@ window.MobileAdapter = (function () {
             turnosByEmpleado[emp] = {};
 
             if (substituteFor) {
-                const absenteeRow = currentWeekExcelRows.find(r => r.empleadoId === substituteFor);
+                const absenteeRow = excelRowByNorm.get(window.TurnosDB.normalizeString(substituteFor));
                 weekDays.forEach((f, idx) => {
                     const turn = absenteeRow ? absenteeRow.values[idx] : null;
-                    turnosByEmpleado[emp][f] = { turno: turn || '', tipo: 'NORMAL' };
+                    turnosByEmpleado[emp][f] = {
+                        turno: turn || "",
+                        tipo: "NORMAL",
+                        vacationCoverFor: substituteFor
+                    };
                 });
             } else {
-                hData.filter(t => t.empleado_id === emp).forEach(t => {
-                    turnosByEmpleado[emp][t.fecha] = { turno: t.turno, tipo: t.tipo, sustituto: t.sustituto };
+                const empNorm = window.TurnosDB.normalizeString(emp);
+                weekDays.forEach((f, idx) => {
+                    const direct = hData.find(t =>
+                        window.TurnosDB.normalizeString(t.empleado_id) === empNorm &&
+                        t.fecha === f
+                    );
+                    if (direct && window.TurnosRules.isCtType(direct.tipo)) {
+                        const partnerNorm = window.TurnosDB.normalizeString(direct.sustituto);
+                        const displayTurno = sourceShiftFor(partnerNorm, idx) ||
+                            (String(direct.turno || "").toUpperCase() === "CT" ? "" : direct.turno);
+                        turnosByEmpleado[emp][f] = {
+                            turno: displayTurno || direct.turno,
+                            tipo: direct.tipo,
+                            sustituto: direct.sustituto
+                        };
+                        return;
+                    }
+
+                    const swapSource = hData.find(t =>
+                        window.TurnosRules.isCtType(t.tipo) &&
+                        window.TurnosDB.normalizeString(t.sustituto) === empNorm &&
+                        t.fecha === f
+                    );
+                    if (swapSource) {
+                        const sourceNorm = window.TurnosDB.normalizeString(swapSource.empleado_id);
+                        turnosByEmpleado[emp][f] = {
+                            turno: sourceShiftFor(sourceNorm, idx) || direct?.turno || swapSource.turno,
+                            tipo: "CT",
+                            subFor: swapSource.empleado_id
+                        };
+                        return;
+                    }
+
+                    if (direct) {
+                        turnosByEmpleado[emp][f] = {
+                            turno: direct.turno,
+                            tipo: direct.tipo,
+                            sustituto: direct.sustituto
+                        };
+                    }
                 });
             }
         });

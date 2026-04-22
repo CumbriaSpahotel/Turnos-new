@@ -556,6 +556,7 @@
   <script src="virtualizer.js?v=8.5"></script>
   <script src="supabase-config.js?v=9.8"></script>
   <script src="supabase-dao.js?v=9.14"></script>
+  <script src="turnos-rules.js?v=1.1"></script>
   
   <script>
     const $ = (s) => document.querySelector(s);
@@ -613,6 +614,22 @@
     };
     const rowCanRenderInHotel = (profiles, row, hotelName) => {
         return employeeCanRenderInHotel(profiles, window.TurnosDB.normalizeString(row?.empleado_id), hotelName, row?.hotel_id);
+    };
+    const rowIsAbsence = (row) => {
+        const type = String(row?.tipo || 'NORMAL').toUpperCase();
+        return row && window.TurnosRules.isAbsenceType(type);
+    };
+    const rowIsCt = (row) => window.TurnosRules.isCtType(row?.tipo);
+    const rowBelongsToHotel = (profiles, row, hotelName, absenceMap = null) => {
+        const rowHotel = normalizeHotelKey(row?.hotel_id);
+        const targetHotel = normalizeHotelKey(hotelName);
+        if (rowHotel && rowHotel !== targetHotel) return false;
+        if (rowCanRenderInHotel(profiles, row, hotelName)) return true;
+        if (rowIsCt(row) || rowIsAbsence(row)) return false;
+        const targetKey = window.TurnosDB.normalizeString(row?.sustituto);
+        return targetKey &&
+            employeeCanRenderInHotel(profiles, targetKey, hotelName, row?.hotel_id) &&
+            (!absenceMap || absenceMap.has(`${targetKey}|${row?.fecha}`));
     };
     const EXCEL_SOURCE_FILE = 'Plantilla%20Cuadrante%20Turnos%20v.8.0.xlsx';
     const EXCEL_HOTEL_SHEETS = ['Cumbria Spa&Hotel', 'Sercotel Guadiana'];
@@ -845,10 +862,16 @@
                     });
 
                     const weekData = data.filter(t => t.fecha >= week.start && t.fecha <= week.end);
+                    const weekAbsenceByKeyDate = new Map();
+                    weekData.forEach(t => {
+                        if (rowIsAbsence(t) && rowCanRenderInHotel(profiles, t, hName)) {
+                            weekAbsenceByKeyDate.set(`${window.TurnosDB.normalizeString(t.empleado_id)}|${t.fecha}`, t);
+                        }
+                    });
                     // Si el registro trae hotel_id, ademas debe cuadrar con la ficha del empleado.
                     // El anclaje por perfil queda como fallback para filas antiguas sin hotel.
                     const hShifts = weekData.filter(t => {
-                        if (t.hotel_id) return rowCanRenderInHotel(profiles, t, hName);
+                        if (t.hotel_id) return rowBelongsToHotel(profiles, t, hName, weekAbsenceByKeyDate);
                         return (
                             employeeCanRenderInHotel(profiles, window.TurnosDB.normalizeString(t.empleado_id), hName) ||
                             employeeCanRenderInHotel(profiles, window.TurnosDB.normalizeString(t.sustituto), hName)
@@ -908,47 +931,15 @@
         
         // --- OVERRIDE RENDERER FOR PREMIUM LOOK ---
         table.renderCellContent = (cell, cellData, empName, fecha) => {
-            const type = String(cellData.tipo || 'NORMAL').toUpperCase();
-            const rawTurno = String(cellData.turno || '').toLowerCase();
-            const initial = shiftInitial(rawTurno);
-            let cls = 'v-empty', lbl = cellData.turno || '', icon = '';
+            const data = cellData || {};
+            const visual = window.TurnosRules.describeCell(data);
+            let cls = visual.publicClass;
+            let lbl = visual.label || data.turno || '';
+            const icon = visual.icon || '';
+            cell.title = visual.title || '';
 
-            cell.title = '';
-
-            if (type.startsWith('VAC')) { cls = 'v-vac'; lbl = 'Vacaciones'; icon = '🏖️'; }
-            else if (type.startsWith('BAJA')) { cls = 'v-baja'; lbl = 'Baja'; icon = '🏥'; }
-            else if (type.startsWith('PERM')) { cls = 'v-perm'; lbl = 'Permiso'; icon = '📋'; }
-            else if (initial === 'M') { cls = 'v-mañana'; lbl = 'Mañana'; icon = '☀️'; }
-            else if (initial === 'T') { cls = 'v-tarde'; lbl = 'Tarde'; icon = '🌅'; }
-            else if (initial === 'N') { cls = 'v-noche'; lbl = 'Noche'; icon = '🌙'; }
-            else if (initial === 'D') { cls = 'v-descanso'; lbl = 'Descanso'; }
-            
-            const isAbsenceType = ['VAC', 'BAJA', 'PERM'].some(prefix => type.startsWith(prefix));
-            if (type.includes('CT')) {
-                icon = '🔄';
-            } else if (cellData.sustituto && isAbsenceType) {
-                cell.title = `Sustituido por: ${cellData.sustituto}`;
-            } else if (cellData.sustituto) {
-                icon = '🔄';
-                cell.title = `Cubriendo a: ${cellData.sustituto}`;
-            } else if (cellData.isSub) {
-                icon = '🔄';
-                cell.title = `Cubriendo a: ${cellData.subFor}`;
-            } else if (cellData.coveringFor) {
-                cell.title = `Cubriendo a: ${cellData.coveringFor}`;
-            }
-
-            if (type.includes('CT')) {
-                if (cellData.sustituto) {
-                    cell.title = `Sustituido por: ${cellData.sustituto}`;
-                }
-                if (cellData.isSub) {
-                    cell.title = `Cubriendo a: ${cellData.subFor}`;
-                }
-            }
-
-            if (cellData.hotel_id && cellData.hotel_id !== hotelName) {
-                lbl = `${lbl} (${cellData.hotel_id.split(' ')[0]})`;
+            if (data.hotel_id && data.hotel_id !== hotelName) {
+                lbl = `${lbl} (${data.hotel_id.split(' ')[0]})`;
             }
 
             cell.className = `v-cell ${cls}`;
@@ -982,11 +973,11 @@
 
         // --- ORDEN DE CUADRANTE: Excel semanal como fuente de verdad, perfiles sólo como fallback ---
         const empMap = new Map(); // normalized -> displayName
-        const addEmployee = (name, fallbackName = name) => {
+        const addEmployee = (name, fallbackName = name, options = {}) => {
             if (!name) return;
             const norm = window.TurnosDB.normalizeString(name);
             if (!norm || empMap.has(norm)) return;
-            if (!employeeCanRenderInHotel(profiles, norm, hotelName, hotelName)) return;
+            if (!options.forceHotel && !employeeCanRenderInHotel(profiles, norm, hotelName, options.rowHotel || hotelName)) return;
             empMap.set(norm, fallbackName || name);
         };
 
@@ -1010,7 +1001,18 @@
         };
         const isAbsence = (row) => {
             const type = String(row?.tipo || 'NORMAL').toUpperCase();
-            return row && type !== 'NORMAL' && !type.includes('CT');
+            return row && window.TurnosRules.isAbsenceType(type);
+        };
+        const absenceByKeyDate = new Map();
+        hotelData.forEach(row => {
+            if (isAbsence(row)) {
+                absenceByKeyDate.set(`${window.TurnosDB.normalizeString(row.empleado_id)}|${row.fecha}`, row);
+            }
+        });
+        const vacationCoverTarget = (row) => {
+            if (!row?.sustituto || isAbsence(row) || rowIsCt(row)) return null;
+            const target = window.TurnosDB.normalizeString(row.sustituto);
+            return absenceByKeyDate.has(`${target}|${row.fecha}`) ? target : null;
         };
         const hasWeekDataFor = (norm) => hotelData.some(s =>
             window.TurnosDB.normalizeString(s.empleado_id) === norm ||
@@ -1023,6 +1025,13 @@
         const rowMeta = new Map();
         const absentSet = new Set();
         const replacedBy = new Map();
+        hotelData.forEach(row => {
+            const target = vacationCoverTarget(row);
+            if (!target) return;
+            addEmployee(row.empleado_id, row.empleado_id, { forceHotel: true, rowHotel: row.hotel_id });
+            absentSet.add(target);
+            if (!replacedBy.has(target)) replacedBy.set(target, row.empleado_id);
+        });
         Array.from(empMap.keys()).forEach(norm => {
             const directRows = directRowsFor(norm);
             const absenceDays = columns.filter(c => {
@@ -1036,8 +1045,9 @@
                 absentSet.add(norm);
                 directRows.forEach(row => {
                     if (!row.sustituto) return;
-                    addEmployee(row.sustituto, row.sustituto);
-                    if (!replacedBy.has(norm) && employeeCanRenderInHotel(profiles, window.TurnosDB.normalizeString(row.sustituto), hotelName, row.hotel_id)) replacedBy.set(norm, row.sustituto);
+                    if (!isAbsence(row)) return;
+                    addEmployee(row.sustituto, row.sustituto, { forceHotel: true, rowHotel: row.hotel_id });
+                    if (!replacedBy.has(norm)) replacedBy.set(norm, row.sustituto);
                 });
             }
         });
@@ -1067,7 +1077,7 @@
                     const substitute = replacedBy.get(norm);
                     const subNorm = window.TurnosDB.normalizeString(substitute);
                     if (substitute && subNorm) {
-                        addEmployee(substitute, substitute);
+                        addEmployee(substitute, substitute, { forceHotel: true });
                         pushEntry(subNorm, {
                             name: empMap.get(subNorm) || substitute,
                             substituteFor: norm,
@@ -1127,7 +1137,7 @@
 
                 const direct = hotelData.find(s => window.TurnosDB.normalizeString(s.empleado_id) === normName && s.fecha === c.dbFecha);
                 const directType = String(direct?.tipo || '').toUpperCase();
-                if (direct && directType.includes('CT')) {
+                if (direct && window.TurnosRules.isCtType(directType)) {
                     const partnerNorm = window.TurnosDB.normalizeString(direct.sustituto);
                     const sourceShift = excelRowByNorm.get(partnerNorm)?.values?.[idx];
                     const displayTurno = sourceShift || (String(direct.turno || '').toUpperCase() === 'CT' ? '' : direct.turno);
@@ -1135,7 +1145,7 @@
                 }
 
                 const swapSource = hotelData.find(s =>
-                    String(s.tipo || '').toUpperCase().includes('CT') &&
+                    window.TurnosRules.isCtType(s.tipo) &&
                     window.TurnosDB.normalizeString(s.sustituto) === normName &&
                     s.fecha === c.dbFecha
                 );
