@@ -170,7 +170,62 @@
                 const end = `${selectedYear}-12-31`;
                 const todayKey = todayISO();
 
-                let data = await window.TurnosDB.fetchTipo('VAC', start, end);
+                // FUENTE PRINCIPAL: eventos_cuadrante tipo VAC
+                const eventos = await window.TurnosDB.fetchEventos(start, end);
+                const vacEventos = eventos.filter(ev =>
+                    String(ev.tipo || '').toUpperCase().startsWith('VAC') &&
+                    (ev.estado || 'activo') !== 'anulado'
+                );
+
+                // FALLBACK LEGACY: también leer de turnos para periodos guardados antes de la migración
+                const legacyTurnos = await window.TurnosDB.fetchTipo('VAC', start, end);
+
+                // Construir períodos desde eventos (fuente prioritaria)
+                const eventoPeriods = vacEventos.map(ev => ({
+                    empId:     ev.empleado_id,
+                    hotel:     ev.hotel_origen || ev.payload?.hotel_id || '',
+                    start:     window.TurnosDB.normalizeDate(ev.fecha_inicio),
+                    end:       window.TurnosDB.normalizeDate(ev.fecha_fin || ev.fecha_inicio),
+                    days:      daysInclusive(
+                                   window.TurnosDB.normalizeDate(ev.fecha_inicio),
+                                   window.TurnosDB.normalizeDate(ev.fecha_fin || ev.fecha_inicio)
+                               ),
+                    sustituto: ev.empleado_destino_id || ev.payload?.sustituto || '',
+                    evento_id: ev.id,
+                    source:    'evento'
+                }));
+
+                // Períodos legacy (turnos) que no tienen evento equivalente
+                const legacyPeriods = []  // se construye abajo igual que antes
+                const sortedByEmp = {};
+                legacyTurnos.forEach(t => {
+                    if (!sortedByEmp[t.empleado_id]) sortedByEmp[t.empleado_id] = [];
+                    sortedByEmp[t.empleado_id].push(t);
+                });
+                Object.keys(sortedByEmp).forEach(eId => {
+                    const list = sortedByEmp[eId].sort((a,b) => a.fecha.localeCompare(b.fecha));
+                    if (!list.length) return;
+                    let cur = { empId: eId, hotel: list[0].hotel_id, start: list[0].fecha, end: list[0].fecha, days: 1, sustituto: list[0].sustituto || '', source: 'legacy' };
+                    for (let i = 1; i < list.length; i++) {
+                        const diff = (new Date(list[i].fecha + 'T12:00:00') - new Date(list[i-1].fecha + 'T12:00:00')) / 86400000;
+                        if (diff === 1 && (list[i].sustituto || '') === cur.sustituto) { cur.end = list[i].fecha; cur.days++; }
+                        else { legacyPeriods.push(cur); cur = { empId: eId, hotel: list[i].hotel_id, start: list[i].fecha, end: list[i].fecha, days: 1, sustituto: list[i].sustituto || '', source: 'legacy' }; }
+                    }
+                    legacyPeriods.push(cur);
+                });
+
+                // Fusionar: los eventos tienen prioridad, los legacy solo si no hay evento solapado
+                const allPeriods = [...eventoPeriods];
+                legacyPeriods.forEach(lp => {
+                    const hasEvento = eventoPeriods.some(ep =>
+                        window.TurnosDB.normalizeString(ep.empId) === window.TurnosDB.normalizeString(lp.empId) &&
+                        ep.start <= lp.end && ep.end >= lp.start
+                    );
+                    if (!hasEvento) allPeriods.push(lp);
+                });
+
+                let data_legacy_compat = legacyTurnos; // guardamos para compat posterior
+                let data = legacyTurnos;
                 const profiles = await window.TurnosDB.getEmpleados();
                 const profileById = new Map(profiles.map(p => [p.id, p]));
                 
@@ -183,14 +238,14 @@
 
                 // Agrupar por periodos contiguos
                 const periods = [];
-                const sortedByEmp = {};
+                const sortedByEmpList = {};
                 data.forEach(t => {
-                    if (!sortedByEmp[t.empleado_id]) sortedByEmp[t.empleado_id] = [];
-                    sortedByEmp[t.empleado_id].push(t);
+                    if (!sortedByEmpList[t.empleado_id]) sortedByEmpList[t.empleado_id] = [];
+                    sortedByEmpList[t.empleado_id].push(t);
                 });
 
-                Object.keys(sortedByEmp).forEach(eId => {
-                    const list = sortedByEmp[eId].sort((a,b) => a.fecha.localeCompare(b.fecha));
+                Object.keys(sortedByEmpList).forEach(eId => {
+                    const list = sortedByEmpList[eId].sort((a,b) => a.fecha.localeCompare(b.fecha));
                     if (list.length === 0) return;
 
                     let currentPeriod = {
@@ -225,10 +280,10 @@
                     periods.push(currentPeriod);
                 });
 
-                const uniquePeriods = Array.from(new Map(
-                    periods.map(p => [`${p.empId}|${p.hotel}|${p.start}|${p.end}|${p.sustituto || ''}`, p])
-                ).values());
-                const visiblePeriods = uniquePeriods.filter(p => {
+                // Usar allPeriods (eventos + legacy fusionados) en lugar de periods (solo legacy)
+                let visiblePeriods = allPeriods.filter(p => {
+                    if (hotel !== 'all' && p.hotel !== hotel) return false;
+                    if (emp !== 'all' && window.TurnosDB.normalizeString(p.empId) !== window.TurnosDB.normalizeString(emp)) return false;
                     if (status === 'pending') return p.end >= todayKey;
                     if (status === 'past') return p.end < todayKey;
                     return true;
@@ -365,13 +420,20 @@
             if (!ok) return;
             try {
                 setFormStatus('Anulando vacaciones...', 'info');
-                await window.TurnosDB.deleteVacacionesPeriodo({
-                    empleado_id: period.empId,
-                    fecha_inicio: period.start,
-                    fecha_fin: period.end
-                });
+                // Anular el evento en eventos_cuadrante (si existe)
+                if (period.evento_id) {
+                    await window.TurnosDB.anularEvento(period.evento_id);
+                } else {
+                    // Fallback legacy: borrar en tabla turnos
+                    await window.TurnosDB.deleteVacacionesPeriodo({
+                        empleado_id: period.empId,
+                        fecha_inicio: period.start,
+                        fecha_fin: period.end
+                    });
+                }
                 setFormStatus('Vacaciones anuladas.', 'ok');
-                if (editingPeriod && editingPeriod.empId === period.empId && editingPeriod.start === period.start && editingPeriod.end === period.end) {
+                if (editingPeriod && editingPeriod.empId === period.empId &&
+                    editingPeriod.start === period.start && editingPeriod.end === period.end) {
                     resetVacationForm();
                 }
                 await renderVacations();
@@ -384,10 +446,10 @@
             e.preventDefault();
             const btn = $('#btnCreateVac');
             const empleado_id = $('#newVacEmp').value;
-            const hotel_id = $('#newVacHotel').value;
+            const hotel_id    = $('#newVacHotel').value;
             const fecha_inicio = $('#newVacStart').value;
-            const fecha_fin = $('#newVacEnd').value;
-            const sustituto = $('#newVacSub').value || null;
+            const fecha_fin    = $('#newVacEnd').value;
+            const sustituto    = $('#newVacSub').value || null;
             const today = todayISO();
 
             if (fecha_inicio < today) {
@@ -402,16 +464,36 @@
             try {
                 btn.disabled = true;
                 btn.style.opacity = '0.6';
-                setFormStatus(editingPeriod ? 'Actualizando vacaciones en Supabase...' : 'Guardando vacaciones en Supabase...', 'info');
-                if (editingPeriod) {
+                setFormStatus(editingPeriod ? 'Actualizando vacaciones...' : 'Guardando vacaciones...', 'info');
+
+                // Si editamos, anular el evento anterior antes de crear el nuevo
+                if (editingPeriod?.evento_id) {
+                    await window.TurnosDB.anularEvento(editingPeriod.evento_id);
+                } else if (editingPeriod) {
+                    // Fallback legacy
                     await window.TurnosDB.deleteVacacionesPeriodo({
                         empleado_id: editingPeriod.empId,
                         fecha_inicio: editingPeriod.start,
                         fecha_fin: editingPeriod.end
                     });
                 }
-                const rows = await window.TurnosDB.upsertVacacionesPeriodo({ empleado_id, hotel_id, fecha_inicio, fecha_fin, sustituto });
-                setFormStatus(`${editingPeriod ? 'Actualizado' : 'Guardado'}: ${rows.length} días de vacaciones.`, 'ok');
+
+                // NUEVO: guardar como evento en eventos_cuadrante
+                const evento = await window.TurnosDB.upsertEvento({
+                    tipo: 'VAC',
+                    empleado_id,
+                    empleado_destino_id: sustituto || null,
+                    fecha_inicio,
+                    fecha_fin,
+                    hotel_origen: hotel_id,
+                    turno_nuevo: '',
+                    observaciones: sustituto ? `Sustituto: ${sustituto}` : null,
+                    estado: 'activo',
+                    payload: { hotel_id, sustituto }
+                });
+
+                const dias = daysInclusive(fecha_inicio, fecha_fin);
+                setFormStatus(`${editingPeriod ? 'Actualizado' : 'Guardado'}: ${dias} días de vacaciones (evento #${evento?.id || '?'}).`, 'ok');
                 resetVacationForm();
                 await renderVacations();
             } catch (err) {

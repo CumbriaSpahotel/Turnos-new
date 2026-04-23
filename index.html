@@ -571,8 +571,10 @@
   <script src="virtualizer.js?v=8.5"></script>
   <script src="supabase-config.js?v=9.8"></script>
   <script src="supabase-dao.js?v=9.14"></script>
-  <script src="turnos-rules.js?v=1.1"></script>
-  <script src="turnos-engine.js?v=1.2"></script>
+  <script src="turnos-rules.js?v=4.1"></script>
+  <script src="shift-resolver.js?v=4.1"></script>
+  <script src="turnos-engine.js?v=4.1"></script>
+  <script src="excel-loader.js?v=1.0"></script>
   
   <script>
     const $ = (s) => document.querySelector(s);
@@ -631,24 +633,7 @@
         }
         return weeks;
     };
-    const excelCellDate = (value) => {
-        if (!value) return null;
-        if (value instanceof Date) return localIsoDate(value);
-        if (typeof value === 'number') {
-            return localIsoDate(new Date(Math.round((value - 25569) * 86400 * 1000)));
-        }
-        const d = new Date(value);
-        return Number.isNaN(d.getTime()) ? null : localIsoDate(d);
-    };
-    const shiftFromExcel = (value) => {
-        const text = String(value || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
-        if (!text) return '';
-        if (text.startsWith('m') || text.includes('manana')) return 'M';
-        if (text.startsWith('t') || text.includes('tarde')) return 'T';
-        if (text.startsWith('n') || text.includes('noche')) return 'N';
-        if (text.startsWith('d') || text.includes('descanso')) return 'D';
-        return String(value || '').trim();
-    };
+    // excelCellDate y shiftFromExcel eliminadas — las provee window.ExcelLoader (excel-loader.js)
     const monthKeyFromDate = (dateStr) => String(dateStr || '').slice(0, 7);
     const monthLabel = (monthKey) => {
         const [year, month] = String(monthKey || '').split('-').map(Number);
@@ -784,205 +769,10 @@
         area.innerHTML = `<div style="padding:4rem; text-align:center; opacity:0.5; font-weight:700;">Sincronizando cuadrante...</div>`;
 
         try {
-            let data = await window.TurnosDB.fetchRangoCalculado(fullStartIso, fullEndIso);
+            const { rows: data, eventos } = await window.TurnosDB.fetchRangoCalculado(fullStartIso, fullEndIso);
             const profiles = await window.TurnosDB.getEmpleados();
             const hotels = await window.TurnosDB.getHotels();
-            const excelSource = await loadExcelSourceRows().catch(err => {
-                console.warn('No se pudo cargar el orden del Excel original:', err);
-const EXCEL_SOURCE_FILE = 'Plantilla%20Cuadrante%20Turnos%20v.8.0.xlsx';
-    const EXCEL_HOTEL_SHEETS = ['Cumbria Spa&Hotel', 'Sercotel Guadiana'];
-    const EXCEL_DAY_COLUMNS = [
-        { offset: 0 }, { offset: 1 }, { offset: 2 }, { offset: 3 },
-        { offset: 4 }, { offset: 5 }, { offset: 6 }
-    ];
-    const localIsoDate = (date) => {
-        if (!(date instanceof Date) || Number.isNaN(date.getTime())) return null;
-        return [
-            date.getFullYear(),
-            String(date.getMonth() + 1).padStart(2, '0'),
-            String(date.getDate()).padStart(2, '0')
-        ].join('-');
-    };
-    const isoToLocalDate = (dateStr) => new Date(`${dateStr}T12:00:00`);
-    const addDaysIso = (dateStr, days) => {
-        const date = isoToLocalDate(dateStr);
-        date.setDate(date.getDate() + days);
-        return localIsoDate(date);
-    };
-    const mondayOfIso = (dateStr) => {
-        const date = isoToLocalDate(dateStr);
-        const day = date.getDay() || 7;
-        date.setDate(date.getDate() - day + 1);
-        return localIsoDate(date);
-    };
-    const sundayOfIso = (dateStr) => addDaysIso(mondayOfIso(dateStr), 6);
-    const buildWeekRanges = (startIso, endIso) => {
-        const weeks = [];
-        let weekStart = mondayOfIso(startIso);
-        const lastWeekStart = mondayOfIso(endIso);
-        while (weekStart <= lastWeekStart) {
-            weeks.push({ start: weekStart, end: addDaysIso(weekStart, 6) });
-            weekStart = addDaysIso(weekStart, 7);
-        }
-        return weeks;
-    };
-    const excelCellDate = (value) => {
-        if (!value) return null;
-        if (value instanceof Date) return localIsoDate(value);
-        if (typeof value === 'number') {
-            return localIsoDate(new Date(Math.round((value - 25569) * 86400 * 1000)));
-        }
-        const d = new Date(value);
-        return Number.isNaN(d.getTime()) ? null : localIsoDate(d);
-    };
-    const shiftFromExcel = (value) => {
-        const text = String(value || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
-        if (!text) return '';
-        if (text.startsWith('m') || text.includes('manana')) return 'M';
-        if (text.startsWith('t') || text.includes('tarde')) return 'T';
-        if (text.startsWith('n') || text.includes('noche')) return 'N';
-        if (text.startsWith('d') || text.includes('descanso')) return 'D';
-        return String(value || '').trim();
-    };
-    const monthKeyFromDate = (dateStr) => String(dateStr || '').slice(0, 7);
-    const monthLabel = (monthKey) => {
-        const [year, month] = String(monthKey || '').split('-').map(Number);
-        if (!year || !month) return '';
-        return new Date(year, month - 1, 1).toLocaleDateString('es-ES', { month: 'long', year: 'numeric' });
-    };
-    const buildNightSummary = (groups) => {
-        const byMonth = new Map();
-
-        groups.forEach(group => {
-            group.rows.forEach(row => {
-                row.cells.forEach((cell, idx) => {
-                    if (shiftInitial(cell.turno) !== 'N') return;
-                    const month = monthKeyFromDate(group.columns[idx]?.dbFecha);
-                    if (!month) return;
-                    if (!byMonth.has(month)) byMonth.set(month, new Map());
-                    const hotels = byMonth.get(month);
-                    if (!hotels.has(group.hotel)) hotels.set(group.hotel, new Map());
-                    const employees = hotels.get(group.hotel);
-                    employees.set(row.empName, (employees.get(row.empName) || 0) + 1);
-                });
-            });
-        });
-
-        return Array.from(byMonth.entries())
-            .sort(([a], [b]) => a.localeCompare(b))
-            .map(([month, hotels]) => ({
-                month,
-                hotels: Array.from(hotels.entries())
-                    .sort(([a], [b]) => a.localeCompare(b, 'es', { sensitivity: 'base' }))
-                    .map(([hotel, employees]) => ({
-                        hotel,
-                        employees: Array.from(employees.entries())
-                            .sort(([nameA, countA], [nameB, countB]) => countB - countA || nameA.localeCompare(nameB, 'es', { sensitivity: 'base' }))
-                    }))
-            }));
-    };
-    const renderNightSummary = (groups) => {
-        const summary = buildNightSummary(groups);
-        if (!summary.length) {
-            return `
-                <section class="night-summary">
-                    <h3 class="night-summary-title">Resumen de noches</h3>
-                    <p class="night-summary-empty">No hay noches en las fechas consultadas.</p>
-                </section>
-            `;
-        }
-
-        return `
-            <section class="night-summary">
-                <h3 class="night-summary-title">Resumen de noches</h3>
-                ${summary.map(monthGroup => `
-                    <div class="night-summary-month">
-                        <h4>${escapeHtml(monthLabel(monthGroup.month))}</h4>
-                        <div class="night-summary-grid">
-                            ${monthGroup.hotels.map(hotelGroup => `
-                                <table class="night-summary-table">
-                                    <thead>
-                                        <tr>
-                                            <th>${escapeHtml(hotelGroup.hotel)}</th>
-                                            <th>Noches</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        ${hotelGroup.employees.map(([name, count]) => `
-                                            <tr>
-                                                <td>${escapeHtml(name)}</td>
-                                                <td>${count}</td>
-                                            </tr>
-                                        `).join('')}
-                                    </tbody>
-                                </table>
-                            `).join('')}
-                        </div>
-                    </div>
-                `).join('')}
-            </section>
-        `;
-    };
-    async function loadExcelSourceRows() {
-        if (window._publicExcelSourceRows) return window._publicExcelSourceRows;
-        if (!window.XLSX) return {};
-        const response = await fetch(EXCEL_SOURCE_FILE, { cache: 'no-store' });
-        if (!response.ok) throw new Error(`No se pudo leer el Excel original (${response.status})`);
-        const buffer = await response.arrayBuffer();
-        const workbook = XLSX.read(buffer, { type: 'array', cellDates: true });
-        const result = {};
-
-        EXCEL_HOTEL_SHEETS.forEach(hotel => {
-            const sheet = workbook.Sheets[hotel];
-            if (!sheet) return;
-            const matrix = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '', raw: true });
-            result[hotel] = matrix.slice(1).map((row, index) => ({
-                hotel,
-                rowIndex: index,
-                weekStart: excelCellDate(row[0]),
-                displayName: String(row[1] || '').trim(),
-                empleadoId: String(row[1] || '').trim(),
-                values: EXCEL_DAY_COLUMNS.map((_, i) => shiftFromExcel(row[i + 2]))
-            })).filter(row => row.weekStart && row.empleadoId);
-        });
-
-        window._publicExcelSourceRows = result;
-        return result;
-    }
-    
-    window.renderPublicView = async () => {
-        const area = $('#app');
-        const selHotel = $('#hotelSelect').value;
-        const rangeStr = $('#dateRange').value;
-        
-        let startIso, endIso;
-        if (rangeStr.includes(" a ")) {
-            [startIso, endIso] = rangeStr.split(" a ");
-        } else if (/^\d{4}-\d{2}-\d{2}$/.test(rangeStr)) {
-            startIso = rangeStr;
-            endIso = rangeStr;
-        } else {
-            const d = new Date();
-            const off = (d.getDay() === 0 ? -6 : 1 - d.getDay());
-            d.setDate(d.getDate() + off);
-            startIso = d.toISOString().split('T')[0];
-            const endD = new Date(d);
-            endD.setDate(endD.getDate() + 6);
-            endIso = endD.toISOString().split('T')[0];
-        }
-        if (endIso < startIso) [startIso, endIso] = [endIso, startIso];
-
-        const weeksToRender = buildWeekRanges(startIso, endIso);
-        const fullStartIso = weeksToRender[0]?.start || mondayOfIso(startIso);
-        const fullEndIso = weeksToRender[weeksToRender.length - 1]?.end || sundayOfIso(endIso);
-
-        area.innerHTML = `<div style="padding:4rem; text-align:center; opacity:0.5; font-weight:700;">Sincronizando cuadrante...</div>`;
-
-        try {
-            let data = await window.TurnosDB.fetchRangoCalculado(fullStartIso, fullEndIso);
-            const profiles = await window.TurnosDB.getEmpleados();
-            const hotels = await window.TurnosDB.getHotels();
-            const excelSource = await loadExcelSourceRows().catch(err => {
+            const excelSource = await window.ExcelLoader.loadExcelSourceRows().catch(err => {
                 console.warn('No se pudo cargar el orden del Excel original:', err);
                 return {};
             });
@@ -1028,7 +818,7 @@ const EXCEL_SOURCE_FILE = 'Plantilla%20Cuadrante%20Turnos%20v.8.0.xlsx';
                     area.appendChild(card);
                     const container = card.querySelector(`#grid-container-${safeId}`);
                     const weekExcelRows = (excelSource[hName] || []).filter(r => r.weekStart === week.start);
-                    const rendered = await renderEnContenedor(container, week.start, week.end, hShifts, hName, profiles, profilesInHotel, weekExcelRows);
+                    const rendered = await renderEnContenedor(container, week.start, week.end, hShifts, hName, profiles, profilesInHotel, weekExcelRows, eventos);
                     if (!rendered.rows.length) {
                         card.remove();
                         continue;
@@ -1044,11 +834,11 @@ const EXCEL_SOURCE_FILE = 'Plantilla%20Cuadrante%20Turnos%20v.8.0.xlsx';
             }
         } catch (e) {
             console.error(e);
-            area.innerHTML = `<div style="padding:4rem; text-align:center; color:red;">Error de conexión: ${e.message}</div>`;
+            area.innerHTML = `<div style="padding:4rem; text-align:center; color:red;">Error de conexion: ${e.message}</div>`;
         }
     };
 
-    async function renderEnContenedor(container, inicio, fin, hotelData, hotelName, profiles, profilesInHotel, weekExcelRows = []) {
+    async function renderEnContenedor(container, inicio, fin, hotelData, hotelName, profiles, profilesInHotel, weekExcelRows = [], eventos = []) {
         const columns = [];
         let curr = new Date(inicio + "T12:00:00");
         const dayNames = ['DOM','LUN','MAR','MIE','JUE','VIE','SAB'];
@@ -1067,7 +857,7 @@ const EXCEL_SOURCE_FILE = 'Plantilla%20Cuadrante%20Turnos%20v.8.0.xlsx';
         }
 
         const table = new window.VirtualTable(container, { columns, rowHeight: 76 });
-        
+
         table.renderCellContent = (cell, cellData, empName, fecha) => {
             const data = cellData || {};
             const visual = window.TurnosRules.describeCell(data);
@@ -1087,7 +877,7 @@ const EXCEL_SOURCE_FILE = 'Plantilla%20Cuadrante%20Turnos%20v.8.0.xlsx';
         table.renderRow = function(tr, rowData) {
             const tds = tr.children;
             tds[0].colSpan = 1; tds[0].style.display = '';
-            
+
             const nights = rowData.cells.filter(t => shiftInitial(t.turno) === 'N').length;
             const rests  = rowData.cells.filter(t => shiftInitial(t.turno) === 'D').length;
 
@@ -1095,7 +885,7 @@ const EXCEL_SOURCE_FILE = 'Plantilla%20Cuadrante%20Turnos%20v.8.0.xlsx';
                 <div class="employee-row">
                     <span class="employee-name">${escapeHtml(rowData.empName)}</span>
                     <div class="employee-stats" style="${rowData.showStats ? '' : 'display:none;'}">
-                        <span class="emp-badge-n" title="Noches: ${nights}">${nights}<span class="badge-icon" aria-hidden="true">🌙</span></span>
+                        <span class="emp-badge-n" title="Noches: ${nights}">${nights}<span class="badge-icon" aria-hidden="true">&#x1F319;</span></span>
                         <span class="emp-badge-d" title="Descansos: ${rests}">${rests}<span class="badge-icon" aria-hidden="true">D</span></span>
                     </div>
                 </div>
@@ -1111,6 +901,7 @@ const EXCEL_SOURCE_FILE = 'Plantilla%20Cuadrante%20Turnos%20v.8.0.xlsx';
         const rosterDates = columns.map(c => c.dbFecha);
         const rosterGrid = window.TurnosEngine.buildRosterGrid({
             rows: hotelData,
+            events: eventos,
             employees: profiles,
             dates: rosterDates,
             hotel: hotelName,
@@ -1155,7 +946,7 @@ const EXCEL_SOURCE_FILE = 'Plantilla%20Cuadrante%20Turnos%20v.8.0.xlsx';
         const isDark = document.body.classList.contains('dark-mode');
         localStorage.setItem('public-theme', isDark ? 'dark' : 'light');
         const btn = document.getElementById('themeBtn');
-        if (btn) btn.innerText = isDark ? '☀️' : '🌙';
+        if (btn) btn.innerText = isDark ? '&#x2600;&#xFE0F;' : '&#x1F319;';
     };
 
     if (localStorage.getItem('public-theme') === 'dark') {
@@ -1165,7 +956,7 @@ const EXCEL_SOURCE_FILE = 'Plantilla%20Cuadrante%20Turnos%20v.8.0.xlsx';
     document.addEventListener('DOMContentLoaded', async () => {
         const btn = document.getElementById('themeBtn');
         if (btn && document.body.classList.contains('dark-mode')) {
-            btn.innerText = '☀️';
+            btn.innerText = '&#x2600;&#xFE0F;';
         }
         _picker = flatpickr("#dateRange", {
             mode: "range",
@@ -1176,8 +967,8 @@ const EXCEL_SOURCE_FILE = 'Plantilla%20Cuadrante%20Turnos%20v.8.0.xlsx';
             onChange: () => window.renderPublicView()
         });
         const hotels = await window.TurnosDB.getHotels();
-        $('#hotelSelect').innerHTML = `<option value="">Todos los Hoteles</option>` + 
-            hotels.map(h => `<option value="${h}">${h}</option>`).join('');
+        $('#hotelSelect').innerHTML = '<option value="">Todos los Hoteles</option>' +
+            hotels.map(h => '<option value="' + h + '">' + h + '</option>').join('');
         window.goToday();
     });
   </script>

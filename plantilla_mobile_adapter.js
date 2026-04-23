@@ -39,13 +39,15 @@ window.MobileAdapter = (function () {
             weekDays.push(isoFromUTCDate(addDays(mondayUTCDate, i)));
         }
 
-        const flat = FULL_DATA?.flat || [];
+        const rows = FULL_DATA?.rows || FULL_DATA?.flat || [];
+        const events = FULL_DATA?.eventos || [];
         const excelSource = FULL_DATA?.excelSource || {};
         const sourceRowsForHotel = excelSource[hotel] || [];
         const currentWeekExcelRows = sourceRowsForHotel.filter(r => r.weekStart === mondayISO);
 
         const rosterGrid = window.TurnosEngine.buildRosterGrid({
-            rows: flat,
+            rows,
+            events,
             employees: profiles,
             dates: weekDays,
             hotel,

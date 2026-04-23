@@ -472,6 +472,10 @@
     <script src="supabase.js"></script>
     <script src="supabase-config.js?v=9.8"></script>
     <script src="supabase-dao.js?v=9.8"></script>
+    <script src="shift-resolver.js?v=3.0"></script>
+    <script src="turnos-engine.js?v=3.0"></script>
+    <script src="excel-loader.js?v=1.0"></script>
+    <script src="xlsx.full.min.js"></script>
 
     <script>
         const $ = s => document.querySelector(s);
@@ -529,20 +533,46 @@
             row.classList.add("is-loading");
 
             try {
-                // Obtenemos los turnos calculados (reales) para ese día
-                const turnosData = await window.TurnosDB.fetchRangoCalculado(date, date);
+                // Obtenemos los datos crudos
+                const { rows, eventos } = await window.TurnosDB.fetchRangoCalculado(date, date);
+                const excelSource = await window.ExcelLoader.loadExcelSourceRows().catch(() => ({}));
+                const hotelName = $("#sel_hotel").value;
+
+                // Resolvemos el estado final para ese día
+                // Para simplificar en esta vista, usamos ShiftResolver directamente
+                // Si hay Excel, lo usamos para el turno base.
+                const weekStart = getMonday(new Date(date + "T12:00:00"));
+                const weekStartIso = weekStart.toISOString().split('T')[0];
+                const dayIndex = (new Date(date + "T12:00:00").getDay() || 7) - 1;
                 
+                const hotelExcel = excelSource[hotelName] || [];
+                const weekExcel = hotelExcel.filter(r => r.weekStart === weekStartIso);
+
+                const baseRows = weekExcel.map(r => ({
+                    empleadoId: r.empleadoId,
+                    hotel: hotelName,
+                    turno: r.values[dayIndex] || ''
+                }));
+
+                const stateMap = window.ShiftResolver.resolveDay({
+                    date,
+                    employees: _emps,
+                    baseRows,
+                    events: eventos,
+                    manualOverrides: rows.filter(r => r.fecha === date && !r.evento_id)
+                });
+
                 if (solId) {
-                    const matchSol = turnosData.find(t => t.empleado_id === solId);
-                    if (matchSol) {
-                        row.querySelector(".v_origen").value = mapShiftLabel(matchSol.turno || matchSol.tipo);
+                    const state = stateMap.get(window.TurnosEngine.normalizeString(solId));
+                    if (state) {
+                        row.querySelector(".v_origen").value = mapShiftLabel(state.turnoFinal || state.estadoFinal);
                     }
                 }
 
                 if (compId) {
-                    const matchComp = turnosData.find(t => t.empleado_id === compId);
-                    if (matchComp) {
-                        row.querySelector(".v_destino").value = mapShiftLabel(matchComp.turno || matchComp.tipo);
+                    const state = stateMap.get(window.TurnosEngine.normalizeString(compId));
+                    if (state) {
+                        row.querySelector(".v_destino").value = mapShiftLabel(state.turnoFinal || state.estadoFinal);
                     }
                 }
             } catch (e) { 
@@ -551,6 +581,12 @@
                 setTimeout(() => row.classList.remove("is-loading"), 400);
             }
         };
+
+        function getMonday(d) {
+            const day = d.getDay() || 7;
+            const diff = d.getDate() - day + 1;
+            return new Date(d.setDate(diff));
+        }
 
         function mapShiftLabel(t) {
             const s = String(t || "").toUpperCase();

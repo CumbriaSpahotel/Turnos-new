@@ -34,7 +34,6 @@
     if (!item) return { label: '·', cls: 'empty', icon: '', title: '' };
     const visual = window.TurnosRules.describeCell(item);
     let label = visual.label || item.turno || '·';
-    if (visual.key === 'v') label = 'Vac';
     return {
       label: label,
       cls: visual.mobileClass,
@@ -57,31 +56,8 @@
     }[ch]));
   }
 
-  async function loadExcelSourceRows() {
-    if (window._excelSourceRows) return window._excelSourceRows;
-    try {
-        const response = await fetch('Plantilla%20Cuadrante%20Turnos%20v.8.0.xlsx', { cache: 'no-store' });
-        if (!response.ok) return {};
-        const buffer = await response.arrayBuffer();
-        const workbook = XLSX.read(buffer, { type: 'array', cellDates: true });
-        const result = {};
-        ['Cumbria Spa&Hotel', 'Sercotel Guadiana'].forEach(hotel => {
-            const sheet = workbook.Sheets[hotel];
-            if (!sheet) return;
-            const matrix = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '', raw: true });
-            result[hotel] = matrix.slice(1).map(row => ({
-                hotel,
-                weekStart: row[0] instanceof Date ? row[0].toISOString().split('T')[0] : (typeof row[0] === 'string' ? row[0].split('T')[0] : ''),
-                empleadoId: String(row[1] || '').trim(),
-                values: [0,1,2,3,4,5,6].map(i => String(row[i+2]||'').trim())
-            })).filter(r => r.weekStart && r.empleadoId);
-        });
-        window._excelSourceRows = result;
-        return result;
-    } catch(e) { 
-        return {}; 
-    }
-  }
+  // loadExcelSourceRows() delegada a excel-loader.js (window.ExcelLoader)
+  // Proporciona: conversión de fechas seriales, normalización M/T/N/D, rowIndex, displayName.
 
   window.refreshMobileView = async function() {
     if (!dateInput.value) {
@@ -95,18 +71,20 @@
 
     shiftGrid.innerHTML = `<div style="padding:40px; text-align:center; opacity:0.5; font-weight:700;">Sincronizando...</div>`;
     
-    let flatData = [];
+    let rows = [], eventos = [];
     try {
-        flatData = await window.TurnosDB.fetchRangoCalculado(startIso, endIso) || [];
+        const result = await window.TurnosDB.fetchRangoCalculado(startIso, endIso);
+        rows = result.rows || [];
+        eventos = result.eventos || [];
     } catch(e) { 
-        try { flatData = await window.TurnosDB.fetchRango(startIso, endIso) || []; } catch(e2){}
+        try { rows = await window.TurnosDB.fetchRango(startIso, endIso) || []; } catch(e2){}
     }
     
-    const excelSource = await loadExcelSourceRows();
+    const excelSource = await window.ExcelLoader.loadExcelSourceRows();
     const profiles = await window.TurnosDB.getEmpleados();
-    const data = { flat: flatData, excelSource };
+    const data = { rows, eventos, excelSource };
 
-    const hotels = Array.from(new Set(flatData.map(t => t.hotel_id))).filter(Boolean).sort();
+    const hotels = Array.from(new Set(rows.map(t => t.hotel_id))).filter(Boolean).sort();
     if (hotelSelect && hotelSelect.options.length <= 1) {
         const currentHotel = hotelSelect.value || "";
         hotelSelect.innerHTML = `<option value="">Todos los Hoteles</option>` +
@@ -132,6 +110,15 @@
     const FULL_DATA = { flat: data.flat, excelSource: data.excelSource };
     const weekData = window.MobileAdapter.buildWeekData(FULL_DATA, hotel, monday, profiles);
     if (!weekData || !weekData.empDetailed || weekData.empDetailed.length === 0) return;
+
+    // Filtro de filas vacías: idéntico al de index.html (línea 931)
+    // Elimina empleados sin ningún dato real en la semana
+    weekData.empDetailed = weekData.empDetailed.filter(entry => {
+        const shifts = weekData.turnosByEmpleado[entry.id] || {};
+        return Object.values(shifts).some(c =>
+            c && (c.turno || String(c.tipo || '').toUpperCase() !== 'NORMAL')
+        );
+    });
 
     const baseMonday = weekData.monday;
     const dates = [0,1,2,3,4,5,6].map(i => toISODateUTC(addDays(baseMonday, i)));
@@ -169,7 +156,7 @@
                     });
 
                     return `
-                        <div class="grid-row" style="${empIsAbsent ? 'opacity:0.5;' : ''}">
+                        <div class="grid-row">
                             <div class="name-sticky">
                                 <span style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis; color:var(--text); font-family:'Outfit', sans-serif; font-weight:600; font-size:0.8rem; letter-spacing:0.01em; text-transform:uppercase;">${escapeHtml(emp)}</span>
                                 <div class="stats" style="display:flex; gap:5px; margin-top:3px;">

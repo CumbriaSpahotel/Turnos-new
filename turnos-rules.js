@@ -81,11 +81,11 @@
             adminStyle: 'background:#f3f0ff; color:#7048e8; border:1px solid #d0bfff;'
         },
         ct: {
-            label: 'CT',
+            label: 'Descanso',
             icon: '🔄',
-            publicClass: 'v-empty',
-            mobileClass: 'empty',
-            adminStyle: 'background:#ffffff; color:#0f172a; border:1px solid #dbe4ff;'
+            publicClass: 'v-descanso',
+            mobileClass: 'd',
+            adminStyle: 'background:#fff5f5; color:#fa5252; border:1px solid #ffc9c9;'
         },
         empty: {
             label: '',
@@ -97,48 +97,97 @@
     };
 
     const describeCell = (cell = {}) => {
-        const type = String(cell.tipo || 'NORMAL').toUpperCase();
-        const key = shiftKey(cell.turno, type);
-        const def = definitions[key] || definitions.empty;
-        const isCt = key === 'ct' || isCtType(type);
-        const isAbsence = isAbsenceType(type);
-        let label = def.label || cell.turno || '';
-        let publicClass = def.publicClass;
-        let mobileClass = def.mobileClass;
-        let adminStyle = def.adminStyle;
-        let title = '';
-
-        if (isCt && cell.turno && String(cell.turno).toUpperCase() !== 'CT') {
-            const turnKey = shiftKey(cell.turno, 'NORMAL');
-            const turnDef = definitions[turnKey];
-            label = turnDef?.label || cell.turno;
-            publicClass = turnDef?.publicClass || publicClass;
-            mobileClass = turnDef?.mobileClass || mobileClass;
-            adminStyle = turnDef?.adminStyle || adminStyle;
+        const fs = cell._finalState;
+        
+        // Determinar clave de definición
+        let key = 'empty';
+        if (fs) {
+            key = shiftKey(fs.turnoFinal, fs.isAbsence ? fs.estadoFinal : 'NORMAL');
+        } else {
+            key = shiftKey(cell.turno, cell.tipo || 'NORMAL');
         }
 
-        if (isCt) {
-            title = cell.sustituto ? `Cambio de turno con: ${cell.sustituto}` : 'Cambio de turno';
-        } else if (isAbsence && cell.sustituto) {
-            title = `Sustituido por: ${cell.sustituto}`;
-        } else if (cell.vacationCoverFor) {
-            title = `Cubre vacaciones de: ${cell.vacationCoverFor}`;
-        } else if (cell.coveringFor) {
-            title = `Cubriendo a: ${cell.coveringFor}`;
-        } else if (cell.isSub && cell.subFor) {
-            title = `Cubriendo a: ${cell.subFor}`;
+        const def = definitions[key] || definitions.empty;
+        
+        // Estado base
+        let label       = def.label || (fs ? fs.turnoFinal : cell.turno) || '';
+        let publicClass = def.publicClass;
+        let mobileClass = def.mobileClass;
+        let adminStyle  = def.adminStyle;
+        let icon        = def.icon;
+        let title       = '';
+
+        // Prioridad de Lógica Visual si hay FinalState
+        if (fs) {
+            // 1. Label: si está trabajando, mostramos el turno. Si es ausencia, el estado.
+            if (fs.isAbsence) {
+                label = def.label; // "Vacaciones", "Baja", etc.
+            } else {
+                label = fs.turnoFinal || label;
+            }
+
+            // 2. Icono: si hay modificación (intercambio, sustitución, refuerzo), ponemos 🔄
+            if (fs.isModified) {
+                icon = '🔄';
+            }
+
+            // 3. Tooltip (Title) enriquecido
+            switch (fs.sourceReason) {
+                case 'EVENTO_VAC':
+                case 'EVENTO_BAJA':
+                case 'EVENTO_PERM':
+                    title = fs.coveredByEmployeeId ? `Ausente. Cubierto por: ${fs.coveredByEmployeeId}` : `Ausencia: ${fs.estadoFinal}`;
+                    break;
+                case 'EVENTO_SUSTITUCION':
+                    title = `Sustituyendo a: ${fs.coversEmployeeId}`;
+                    break;
+                case 'EVENTO_INTERCAMBIO':
+                    title = `Intercambio de turno con: ${fs.coveredByEmployeeId || fs.coversEmployeeId}`;
+                    break;
+                case 'EVENTO_CAMBIO_HOTEL':
+                    title = `Cambio de hotel (Destino: ${fs.hotelFinal})`;
+                    break;
+                case 'EVENTO_REFUERZO':
+                    title = `Refuerzo: ${fs.turnoFinal}`;
+                    break;
+                case 'EVENTO_ANULACION':
+                    title = `Evento anulado. Se aplica base.`;
+                    break;
+                case 'OVERRIDE_MANUAL':
+                case 'INTERCAMBIO_MANUAL':
+                    title = `Cambio manual en cuadrante`;
+                    break;
+                case 'BASE_PLANNING':
+                    title = `Planificación base Excel`;
+                    break;
+                default:
+                    title = fs.sourceReason || '';
+            }
+        } else {
+            // Lógica fallback legacy (sin motor)
+            const type = String(cell.tipo || 'NORMAL').toUpperCase();
+            const isCt = key === 'ct' || isCtType(type);
+            const isAbsence = isAbsenceType(type);
+            
+            if (isCt) {
+                icon = '🔄';
+                title = cell.sustituto ? `Cambio con: ${cell.sustituto}` : 'Cambio de turno';
+            } else if (isAbsence && cell.sustituto) {
+                title = `Sustituido por: ${cell.sustituto}`;
+            } else if (cell.coveringFor) {
+                title = `Cubriendo a: ${cell.coveringFor}`;
+            }
         }
 
         return {
             key,
-            isCt,
-            isAbsence,
             label,
-            icon: isCt ? definitions.ct.icon : def.icon,
+            icon,
             publicClass,
             mobileClass,
             adminStyle,
-            title
+            title,
+            _finalState: fs // pasamos el original por si la UI lo necesita
         };
     };
 

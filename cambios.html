@@ -156,9 +156,12 @@
                     <h1 class="page-title">Cambios de Turno</h1>
                     <p class="page-subtitle">Control de intercambios y cambios de turno</p>
                 </div>
-                <div id="syncStatus" class="status-badge-premium" style="margin-left:auto; display:flex; align-items:center; gap:8px;">
-                    <span id="syncDot" style="width:8px; height:8px; border-radius:50%; background:#ff9800;"></span>
-                    <span id="syncText">Conectando...</span>
+                <div style="display:flex; align-items:center; gap:12px; margin-left:auto;">
+                    <button class="btn active" onclick="openNewCambio()" style="background:var(--accent); color:white; border:none; border-radius:10px; padding:10px 18px; font-weight:800; cursor:pointer;">+ Nuevo Cambio</button>
+                    <div id="syncStatus" class="status-badge-premium" style="display:flex; align-items:center; gap:8px;">
+                        <span id="syncDot" style="width:8px; height:8px; border-radius:50%; background:#ff9800;"></span>
+                        <span id="syncText">Conectando...</span>
+                    </div>
                 </div>
             </header>
 
@@ -574,6 +577,82 @@
             await window.TurnosDB.upsertTurno(dest, date, turnoEmp, 'CT', hotelDest, emp, 'DIRECCION_CAMBIOS');
         }
 
+        async function openNewCambio() {
+            const existing = document.getElementById('editCambioModal');
+            if (existing) existing.remove();
+
+            const hotels  = await window.TurnosDB.getHotels();
+            const allEmps = await window.TurnosDB.getEmpleados();
+            const today   = isoToday();
+
+            const hotelOpts = hotels.map(h => `<option value="${escapeHtml(h)}">${escapeHtml(h)}</option>`).join('');
+            const empOpts   = allEmps.map(e => `<option value="${escapeHtml(e.id)}">${escapeHtml(e.nombre || e.id)}</option>`).join('');
+
+            const modal = document.createElement('div');
+            modal.id = 'editCambioModal';
+            modal.style.cssText = 'position:fixed; inset:0; z-index:9999; background:rgba(15,23,42,0.45); display:flex; align-items:center; justify-content:center; padding:24px;';
+            modal.innerHTML = `
+                <form onsubmit="saveNewCambio(event)" style="width:min(720px, 96vw); background:var(--surface); border:1px solid var(--border); border-radius:8px; box-shadow:var(--shadow-lg); padding:0; overflow:hidden;">
+                    <div style="padding:20px 22px; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center;">
+                        <h2 style="margin:0; font-size:1.2rem;">Registrar nuevo cambio</h2>
+                        <button type="button" class="mini-btn" onclick="document.getElementById('editCambioModal').remove()">Cerrar</button>
+                    </div>
+                    <div style="padding:18px 22px; display:grid; grid-template-columns:1fr 1fr 1fr; gap:14px;">
+                        <label style="font-weight:800; font-size:0.75rem;">Tipo<br>
+                            <select id="newTipo" required style="width:100%; padding:10px; border:1px solid var(--border); border-radius:8px;">
+                                <option value="CAMBIO_TURNO">Cambio de turno</option>
+                                <option value="INTERCAMBIO_TURNO">Intercambio de turno</option>
+                            </select>
+                        </label>
+                        <label style="font-weight:800; font-size:0.75rem;">Fecha<br>
+                            <input id="newFecha" type="date" required value="${today}" style="width:100%; padding:10px; border:1px solid var(--border); border-radius:8px;">
+                        </label>
+                        <label style="font-weight:800; font-size:0.75rem;">Hotel<br>
+                            <select id="newHotel" required style="width:100%; padding:10px; border:1px solid var(--border); border-radius:8px;">${hotelOpts}</select>
+                        </label>
+                        <label style="font-weight:800; font-size:0.75rem;">Empleado<br>
+                            <select id="newEmpleado" required style="width:100%; padding:10px; border:1px solid var(--border); border-radius:8px;"><option value="">Seleccionar...</option>${empOpts}</select>
+                        </label>
+                        <label style="font-weight:800; font-size:0.75rem;">Compañero (intercambio)<br>
+                            <select id="newDestino" style="width:100%; padding:10px; border:1px solid var(--border); border-radius:8px;"><option value="">Sin compañero</option>${empOpts}</select>
+                        </label>
+                        <label style="font-weight:800; font-size:0.75rem;">Turno nuevo<br>
+                            <select id="newTurnoNuevo" style="width:100%; padding:10px; border:1px solid var(--border); border-radius:8px;">
+                                <option value="">Sin especificar</option>
+                                ${['M','T','N','D'].map(t => `<option value="${t}">${t}</option>`).join('')}
+                            </select>
+                        </label>
+                        <label style="grid-column:1/-1; font-weight:800; font-size:0.75rem;">Observación<br>
+                            <textarea id="newObservaciones" style="width:100%; min-height:64px; padding:10px; border:1px solid var(--border); border-radius:8px;"></textarea>
+                        </label>
+                    </div>
+                    <div style="padding:14px 22px; border-top:1px solid var(--border); display:flex; justify-content:flex-end; gap:10px;">
+                        <button type="button" class="mini-btn" onclick="document.getElementById('editCambioModal').remove()">Cancelar</button>
+                        <button type="submit" class="mini-btn" style="background:var(--accent); color:white;">Guardar en nube</button>
+                    </div>
+                </form>
+            `;
+            document.body.appendChild(modal);
+        }
+
+        async function saveNewCambio(ev) {
+            ev.preventDefault();
+            const fecha = $('#newFecha').value;
+            await window.TurnosDB.upsertEvento({
+                tipo:                $('#newTipo').value,
+                fecha_inicio:        fecha,
+                fecha_fin:           fecha,
+                empleado_id:         $('#newEmpleado').value,
+                empleado_destino_id: $('#newDestino').value || null,
+                hotel_origen:        $('#newHotel').value,
+                turno_nuevo:         $('#newTurnoNuevo').value || null,
+                observaciones:       $('#newObservaciones').value.trim() || null,
+                estado:              'activo'
+            });
+            document.getElementById('editCambioModal')?.remove();
+            await renderSwaps();
+        }
+
         async function openEditCambio(id) {
             const event = allEvents.find(e => String(e.id) === String(id));
             if (!event) return;
@@ -646,43 +725,33 @@
 
         async function saveEditCambio(ev) {
             ev.preventDefault();
-            const id = $('#editId').value;
+            const id       = $('#editId').value;
             const original = allEvents.find(e => String(e.id) === String(id));
             if (!original) return;
+
             const payload = {
-                ...original,
-                tipo: $('#editTipo').value,
-                fecha_inicio: $('#editFechaInicio').value,
-                fecha_fin: $('#editFechaInicio').value,
-                empleado_id: $('#editEmpleado').value,
-                empleado_destino_id: $('#editDestino').value || null,
-                hotel_origen: $('#editHotelOrigen').value || null,
-                hotel_destino: null,
-                turno_nuevo: $('#editTurnoNuevo').value || null,
-                observaciones: $('#editObservaciones').value.trim() || null,
-                estado: original.estado || 'activo'
+                tipo:                  $('#editTipo').value,
+                fecha_inicio:          $('#editFechaInicio').value,
+                fecha_fin:             $('#editFechaInicio').value,
+                empleado_id:           $('#editEmpleado').value,
+                empleado_destino_id:   $('#editDestino').value || null,
+                hotel_origen:          $('#editHotelOrigen').value || null,
+                hotel_destino:         null,
+                turno_nuevo:           $('#editTurnoNuevo').value || null,
+                observaciones:         $('#editObservaciones').value.trim() || null,
+                estado:                'activo'
             };
 
-            if (usingLegacyChanges || String(id).startsWith('legacy-')) {
-                if (payload.tipo === 'INTERCAMBIO_TURNO') {
-                    await deleteLegacyCambio(original);
-                    await saveLegacyIntercambio(payload, original);
-                } else {
-                    const oldKeyChanged = original.empleado_id !== payload.empleado_id || eventDate(original) !== payload.fecha_inicio;
-                    if (oldKeyChanged) await deleteLegacyCambio(original);
-                    await window.TurnosDB.upsertTurno(
-                        payload.empleado_id,
-                        payload.fecha_inicio,
-                        payload.turno_nuevo || payload.observaciones || 'CT',
-                        'CT',
-                        payload.hotel_origen || eventHotel(original),
-                        payload.empleado_destino_id,
-                        'DIRECCION_CAMBIOS'
-                    );
-                }
-            } else {
+            if (String(id).startsWith('legacy-')) {
+                // Era un registro CT antiguo en turnos. Limpiarlo y crear evento real.
+                try { await deleteLegacyCambio(original); } catch(e) { console.warn('No se pudo limpiar legacy CT:', e); }
+                // Crear nuevo evento moderno en eventos_cuadrante
                 await window.TurnosDB.upsertEvento(payload);
+            } else {
+                // Evento ya existe en eventos_cuadrante: actualizar
+                await window.TurnosDB.upsertEvento({ ...payload, id: original.id });
             }
+
             document.getElementById('editCambioModal')?.remove();
             await renderSwaps();
         }
