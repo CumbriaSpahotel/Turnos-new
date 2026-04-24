@@ -169,68 +169,30 @@
                     else if (status === 'past') queryEnd = today;
                 }
 
-                const dataBaja = await window.TurnosDB.fetchTipo('BAJA', queryStart, queryEnd);
-                const dataPerm = await window.TurnosDB.fetchTipo('PERM', queryStart, queryEnd);
-                let data = [...dataBaja, ...dataPerm];
+                const eventos = await window.TurnosDB.fetchEventos(queryStart, queryEnd);
+                const data = eventos.filter(ev => 
+                    (String(ev.tipo || '').toUpperCase().startsWith('BAJA') || 
+                     String(ev.tipo || '').toUpperCase().startsWith('PERM')) &&
+                    (ev.estado || 'activo') !== 'anulado'
+                );
 
-                if (hotel !== 'all') data = data.filter(t => t.hotel_id === hotel);
+                if (hotel !== 'all') data = data.filter(t => (t.hotel_origen || t.payload?.hotel_id) === hotel);
                 if (emp !== 'all') {
                     const normTarget = window.TurnosDB.normalizeString(emp);
                     data = data.filter(t => window.TurnosDB.normalizeString(t.empleado_id) === normTarget);
                 }
 
-                // Si es modo 'past', filtramos manualmente los que terminan después de hoy
-                // Si es modo 'pending', filtramos los que terminaron antes de hoy
-                if (!start && status === 'past') {
-                    data = data.filter(t => t.fecha < today);
-                } else if (!start && status === 'pending') {
-                    data = data.filter(t => t.fecha >= today);
-                }
-
-                // Agrupación por periodos
-                const periods = [];
-                const sortedByEmp = {};
-                data.forEach(t => {
-                    const key = `${t.empleado_id}_${t.tipo}`;
-                    if (!sortedByEmp[key]) sortedByEmp[key] = [];
-                    sortedByEmp[key].push(t);
-                });
-
-                Object.keys(sortedByEmp).forEach(key => {
-                    const list = sortedByEmp[key].sort((a,b) => a.fecha.localeCompare(b.fecha));
-                    if (list.length === 0) return;
-
-                    let currentPeriod = {
-                        empId: list[0].empleado_id,
-                        hotel: list[0].hotel_id,
-                        tipo: list[0].tipo,
-                        start: list[0].fecha,
-                        end: list[0].fecha,
-                        days: 1
-                    };
-
-                    for (let i = 1; i < list.length; i++) {
-                        const prevDate = new Date(list[i-1].fecha + 'T12:00:00');
-                        const currDate = new Date(list[i].fecha + 'T12:00:00');
-                        const diff = (currDate - prevDate) / (1000 * 60 * 60 * 24);
-
-                        if (diff === 1) {
-                            currentPeriod.end = list[i].fecha;
-                            currentPeriod.days++;
-                        } else {
-                            periods.push(currentPeriod);
-                            currentPeriod = {
-                                empId: list[i].empleado_id,
-                                hotel: list[i].hotel_id,
-                                tipo: list[i].tipo,
-                                start: list[i].fecha,
-                                end: list[i].fecha,
-                                days: 1
-                            };
-                        }
-                    }
-                    periods.push(currentPeriod);
-                });
+                // Agrupación por periodos desde eventos
+                const periods = data.map(ev => ({
+                    id: ev.id,
+                    empId: ev.empleado_id,
+                    hotel: ev.hotel_origen || ev.payload?.hotel_id || 'General',
+                    tipo: ev.tipo,
+                    start: window.TurnosDB.normalizeDate(ev.fecha_inicio),
+                    end: window.TurnosDB.normalizeDate(ev.fecha_fin || ev.fecha_inicio),
+                    days: Math.max(1, Math.round((new Date(ev.fecha_fin || ev.fecha_inicio) - new Date(ev.fecha_inicio)) / 86400000) + 1),
+                    obs: ev.observaciones || ev.turno_nuevo || ''
+                }));
 
                 periods.sort((a,b) => b.start.localeCompare(a.start));
 
@@ -269,7 +231,7 @@
                                             <div style="font-size:0.65rem; opacity:0.5; font-weight:800;">${p.days} DÍAS TOTALES</div>
                                         </td>
                                         <td style="padding:1rem; text-align:center;">
-                                            <button class="btn" style="padding:5px 10px; font-size:0.7rem;" onclick="editPeriod('${p.empId}', '${p.start}')">Gestionar</button>
+                                            <button class="btn" style="padding:5px 10px; font-size:0.7rem;" onclick="editPeriod('${p.id}')">Gestionar</button>
                                         </td>
                                     </tr>`;
                                 }).join('')}
@@ -290,27 +252,20 @@
             const hotel = $('#mbHotel').value;
             const obs = $('#mbObs').value;
 
-            if (!emp || !dateStart || !tipo || !hotel) return alert("Tipo, Hotel, Empleado y Fecha Inicio son obligatorios.");
-
-            let current = new Date(dateStart + 'T12:00:00');
-            const end = dateEnd ? new Date(dateEnd + 'T12:00:00') : current;
-            const toInsert = [];
-
-            while (current <= end) {
-                toInsert.push({
-                    empleado_id: emp,
-                    fecha: current.toISOString().split('T')[0],
-                    turno: obs || 'M',
-                    tipo: tipo,
-                    hotel_id: hotel,
-                    updated_by: 'Admin'
-                });
-                current.setDate(current.getDate() + 1);
-            }
-
             try {
-                await window.TurnosDB.bulkUpsert(toInsert);
-                await window.TurnosDB.upsertEmpleado({ id: emp, nombre: emp, hotel_id: hotel, activo: true });
+                const cleanTipo = tipo.split(' ')[0]; // Quitar emojis
+                await window.TurnosDB.upsertEvento({
+                    id: _editingData?.id || undefined,
+                    tipo: cleanTipo,
+                    empleado_id: emp,
+                    fecha_inicio: dateStart,
+                    fecha_fin: dateEnd || dateStart,
+                    hotel_origen: hotel,
+                    turno_nuevo: obs || 'M',
+                    estado: 'activo',
+                    payload: { hotel_id: hotel }
+                });
+
                 closeModal();
                 await renderBajas();
             } catch (err) { alert("Error: " + err.message); }
@@ -318,33 +273,30 @@
 
         let _editingData = null;
 
-        async function editPeriod(empId, startDate) {
-            _editingData = { empId, startDate };
+        async function editPeriod(id) {
+            const eventos = await window.TurnosDB.fetchEventos();
+            const match = eventos.find(ev => ev.id === id);
+            if (!match) return;
+
+            _editingData = match;
             $('#modalTitle').innerText = 'Gestionar Ausencia';
             $('#btnDeleteBaja').style.display = 'block';
             
-            // Buscar datos para pre-rellenar (aproximado)
-            const today = new Date().toISOString().split('T')[0];
-            const data = await window.TurnosDB.fetchTipo('BAJA', startDate, startDate);
-            const dataP = await window.TurnosDB.fetchTipo('PERM', startDate, startDate);
-            const match = [...data, ...dataP].find(t => t.empleado_id === empId && t.fecha === startDate);
-
-            if (match) {
-                $('#mbEmp').value = match.empleado_id;
-                $('#mbDateStart').value = match.fecha;
-                $('#mbHotel').value = match.hotel_id;
-                $('#mbTipo').value = match.tipo.startsWith('BAJA') ? 'BAJA 🏥' : 'PERM 🗓️';
-                $('#mbObs').value = match.turno !== 'M' ? match.turno : '';
-            }
+            $('#mbEmp').value = match.empleado_id;
+            $('#mbDateStart').value = window.TurnosDB.normalizeDate(match.fecha_inicio);
+            $('#mbDateEnd').value = window.TurnosDB.normalizeDate(match.fecha_fin || match.fecha_inicio);
+            $('#mbHotel').value = match.hotel_origen || match.payload?.hotel_id;
+            $('#mbTipo').value = match.tipo.startsWith('BAJA') ? 'BAJA 🏥' : 'PERM 🗓️';
+            $('#mbObs').value = match.turno_nuevo || '';
 
             openModal();
         }
 
         async function deleteCurrentPeriod() {
             if (!_editingData) return;
-            if (confirm(`¿Eliminar este registro de ${_editingData.empId} del ${_editingData.startDate}?`)) {
+            if (confirm(`¿Eliminar este registro de ${_editingData.empleado_id}?`)) {
                 try {
-                    await window.TurnosDB.deleteTurno(_editingData.empId, _editingData.startDate);
+                    await window.TurnosDB.anularEvento(_editingData.id);
                     closeModal();
                     await renderBajas();
                 } catch (e) { alert("Error: " + e.message); }

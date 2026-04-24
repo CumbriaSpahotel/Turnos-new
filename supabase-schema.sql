@@ -175,3 +175,127 @@ INSERT INTO empleados (id, nombre, hotel_id)
 SELECT DISTINCT empleado_id, empleado_id, hotel_id
 FROM turnos
 ON CONFLICT (id) DO NOTHING;
+
+-- 8. TABLA TURNOS BASE
+CREATE TABLE IF NOT EXISTS turnos_base (
+  empleado_id text,
+  fecha date,
+  turno text,
+  hotel_id text,
+  PRIMARY KEY (empleado_id, fecha)
+);
+
+ALTER TABLE turnos_base ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "allow all" ON turnos_base FOR ALL USING (true);
+
+-- ══════════════════════════════════════════════
+-- 9. COLUMNA solicitud_id EN EVENTOS_CUADRANTE
+-- Vincula eventos creados automáticamente por triggers
+-- ══════════════════════════════════════════════
+
+ALTER TABLE eventos_cuadrante ADD COLUMN IF NOT EXISTS solicitud_id uuid;
+CREATE UNIQUE INDEX IF NOT EXISTS idx_evento_solicitud_fecha
+ON eventos_cuadrante (solicitud_id, fecha_inicio)
+WHERE solicitud_id IS NOT NULL;
+
+-- ══════════════════════════════════════════════
+-- 10. TRIGGER: SYNC PETICIONES → EVENTOS_CUADRANTE
+-- Cuando una petición se aprueba/rechaza/anula,
+-- el trigger crea/desactiva eventos automáticamente.
+-- ══════════════════════════════════════════════
+
+CREATE OR REPLACE FUNCTION sync_evento_desde_peticion()
+RETURNS trigger AS $$
+DECLARE
+  fecha_item jsonb;
+  fecha_val  date;
+BEGIN
+
+  -- CASO 1: APROBADA → crear evento(s) activo(s)
+  IF NEW.estado = 'aprobada' AND (OLD.estado IS NULL OR OLD.estado IS DISTINCT FROM 'aprobada') THEN
+
+    -- Las peticiones almacenan fechas como JSON array: [{fecha, origen, destino, nota}]
+    IF NEW.fechas IS NOT NULL AND jsonb_array_length(NEW.fechas) > 0 THEN
+      FOR fecha_item IN SELECT * FROM jsonb_array_elements(NEW.fechas)
+      LOOP
+        fecha_val := (fecha_item->>'fecha')::date;
+
+        -- Evitar duplicados por solicitud_id + fecha
+        IF NOT EXISTS (
+          SELECT 1 FROM eventos_cuadrante
+          WHERE solicitud_id = NEW.id
+            AND fecha_inicio = fecha_val
+        ) THEN
+          INSERT INTO eventos_cuadrante (
+            tipo,
+            empleado_id,
+            empleado_destino_id,
+            fecha_inicio,
+            fecha_fin,
+            turno_nuevo,
+            estado,
+            solicitud_id,
+            observaciones,
+            payload,
+            created_at,
+            updated_at,
+            updated_by
+          ) VALUES (
+            CASE WHEN NEW.companero IS NOT NULL AND NEW.companero <> ''
+              THEN 'INTERCAMBIO_TURNO'
+              ELSE 'CAMBIO_TURNO'
+            END,
+            NEW.solicitante,
+            NULLIF(NEW.companero, ''),
+            fecha_val,
+            fecha_val,
+            fecha_item->>'destino',
+            'activo',
+            NEW.id,
+            COALESCE(NEW.observaciones, 'Aprobado automáticamente'),
+            jsonb_build_object('peticion_id', NEW.id, 'original_data', fecha_item),
+            now(),
+            now(),
+            'TRIGGER_SYNC'
+          );
+        ELSE
+          -- Si ya existe, reactivar
+          UPDATE eventos_cuadrante
+          SET estado = 'activo', updated_at = now(), updated_by = 'TRIGGER_SYNC'
+          WHERE solicitud_id = NEW.id AND fecha_inicio = fecha_val;
+        END IF;
+      END LOOP;
+    END IF;
+
+  END IF;
+
+  -- CASO 2: RECHAZADA / ANULADA → desactivar eventos
+  IF NEW.estado IN ('rechazada', 'anulada')
+    AND (OLD.estado IS NULL OR OLD.estado IS DISTINCT FROM NEW.estado) THEN
+
+    UPDATE eventos_cuadrante
+    SET estado = 'anulado', updated_at = now(), updated_by = 'TRIGGER_SYNC'
+    WHERE solicitud_id = NEW.id;
+
+  END IF;
+
+  -- CASO 3: Volver a PENDIENTE desde aprobada → desactivar también
+  IF NEW.estado = 'pendiente' AND OLD.estado = 'aprobada' THEN
+
+    UPDATE eventos_cuadrante
+    SET estado = 'anulado', updated_at = now(), updated_by = 'TRIGGER_SYNC'
+    WHERE solicitud_id = NEW.id;
+
+  END IF;
+
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Crear trigger (idempotente)
+DROP TRIGGER IF EXISTS trigger_sync_evento_desde_peticion ON peticiones_cambio;
+
+CREATE TRIGGER trigger_sync_evento_desde_peticion
+AFTER UPDATE ON peticiones_cambio
+FOR EACH ROW
+EXECUTE FUNCTION sync_evento_desde_peticion();

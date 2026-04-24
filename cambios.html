@@ -224,7 +224,6 @@
     <script>
         const $ = (s) => document.querySelector(s);
         let allEvents = [];
-        let usingLegacyChanges = false;
 
         const changeTypes = new Set(['INTERCAMBIO_TURNO', 'CAMBIO_TURNO']);
         const typeLabel = {
@@ -264,47 +263,7 @@
             return window.TurnosDB.normalizeString(value || '').replace(/\s+/g, ' ');
         }
 
-        function legacySwapKey(row) {
-            const a = normalizeKey(row.empleado_id);
-            const b = normalizeKey(row.sustituto);
-            const first = a < b ? a : b;
-            const second = a < b ? b : a;
-            return [row.fecha, first, second].join('|');
-        }
 
-        function mapLegacyChanges(rows) {
-            const grouped = new Map();
-            (rows || []).forEach(row => {
-                if (!row.sustituto) {
-                    const id = `legacy-${row.empleado_id}-${row.fecha}`;
-                    if (!grouped.has(id)) grouped.set(id, row);
-                    return;
-                }
-                const key = legacySwapKey(row);
-                const current = grouped.get(key);
-                if (!current) {
-                    grouped.set(key, row);
-                    return;
-                }
-                const currentUpdated = String(current.updated_at || '');
-                const rowUpdated = String(row.updated_at || '');
-                if (rowUpdated < currentUpdated) grouped.set(key, row);
-            });
-
-            return Array.from(grouped.values()).map(row => ({
-                id: row.sustituto ? `legacy-${legacySwapKey(row)}` : `legacy-${row.empleado_id}-${row.fecha}`,
-                tipo: row.sustituto ? 'INTERCAMBIO_TURNO' : 'CAMBIO_TURNO',
-                estado: 'activo',
-                fecha_inicio: row.fecha,
-                fecha_fin: row.fecha,
-                empleado_id: row.empleado_id,
-                empleado_destino_id: row.sustituto || null,
-                hotel_origen: row.hotel_id,
-                observaciones: row.updated_by === 'DIRECCION_MODO_EXCEL' ? 'Cambio importado Excel' : (row.turno || 'CT'),
-                turno_nuevo: row.turno || '',
-                is_legacy: true
-            }));
-        }
 
         async function empleadosDeHotel(hotel, selectedNames = []) {
             const selectedKeys = new Set(selectedNames.filter(Boolean).map(normalizeKey));
@@ -358,33 +317,14 @@
         async function loadEvents() {
             if (!window.supabase) return [];
             
-            // 1. Cargar eventos modernos
             const { data: events, error } = await window.supabase
                 .from('eventos_cuadrante')
                 .select('*')
                 .order('fecha_inicio', { ascending: false });
             
-            if (error) console.warn("Error cargando eventos modernos:", error);
+            if (error) console.warn("Error cargando eventos:", error);
 
-            // 2. Cargar registros históricos (tipo CT) de la tabla turnos
-            const legacyData = await window.TurnosDB.fetchTipo('CT', '2024-01-01', '2030-12-31');
-            
-            const legacyMapped = mapLegacyChanges(legacyData || []);
-
-            // 3. Fusionar evitando duplicados si el evento ya existe para esa petición
-            const combined = [...(events || [])];
-            
-            // Solo añadir legacy si no hay un evento moderno que lo cubra (por fecha y empleado)
-            legacyMapped.forEach(leg => {
-                const alreadyHasEvent = combined.some(e => 
-                    e.empleado_id === leg.empleado_id && 
-                    eventDate(e) === leg.fecha_inicio &&
-                    (e.estado || 'activo') !== 'anulado'
-                );
-                if (!alreadyHasEvent) combined.push(leg);
-            });
-
-            return combined.filter(e => changeTypes.has(String(e.tipo || '').toUpperCase()) || e.is_legacy);
+            return (events || []).filter(e => changeTypes.has(String(e.tipo || '').toUpperCase()));
         }
 
         function applyFilters(events) {
@@ -503,15 +443,7 @@
                 renderStats(allEvents);
                 renderNext(allEvents);
                 renderTable();
-                const syncText = $('#syncText');
-                const syncDot = $('#syncDot');
-                if (usingLegacyChanges) {
-                    window.cloudStatusOverride = { state: 'warn', text: 'Supabase conectado - modo historico CT' };
-                    window.setCloudStatus?.('warn', 'Supabase conectado - modo historico CT');
-                } else {
-                    window.cloudStatusOverride = null;
-                    window.setCloudStatus?.('ok', 'Supabase conectado');
-                }
+                window.setCloudStatus?.('ok', 'Supabase conectado');
             } catch (err) {
                 body.innerHTML = `<tr><td colspan="6" style="color:#c62828; padding:2rem; text-align:center;">Error: ${escapeHtml(err.message)}</td></tr>`;
             }
@@ -519,63 +451,11 @@
 
         async function anularCambio(id) {
             if (!confirm('Anular este cambio de turno?')) return;
-            const original = allEvents.find(e => String(e.id) === String(id));
-            if (usingLegacyChanges || String(id).startsWith('legacy-')) {
-                await deleteLegacyCambio(original);
-            } else {
-                await window.TurnosDB.anularEvento(id);
-            }
+            await window.TurnosDB.anularEvento(id);
             await renderSwaps();
         }
 
-        async function deleteLegacyCambio(event) {
-            if (!event) return;
-            const date = eventDate(event);
-            const { error } = await window.supabase
-                .from('turnos')
-                .delete()
-                .eq('empleado_id', event.empleado_id)
-                .eq('fecha', date)
-                .eq('tipo', 'CT');
-            if (error) throw error;
-            if (event.empleado_destino_id) {
-                const { error: errorDest } = await window.supabase
-                    .from('turnos')
-                    .delete()
-                    .eq('empleado_id', event.empleado_destino_id)
-                    .eq('fecha', date)
-                    .eq('tipo', 'CT');
-                if (errorDest) throw errorDest;
-            }
-        }
 
-        async function fetchTurnoDia(empleadoId, fecha) {
-            const { data, error } = await window.supabase
-                .from('turnos')
-                .select('*')
-                .eq('empleado_id', empleadoId)
-                .eq('fecha', fecha)
-                .limit(1);
-            if (error) throw error;
-            return (data || [])[0] || null;
-        }
-
-        async function saveLegacyIntercambio(payload, original) {
-            const emp = payload.empleado_id;
-            const dest = payload.empleado_destino_id;
-            const date = payload.fecha_inicio;
-            if (!emp || !dest) throw new Error('Un intercambio necesita dos empleados.');
-
-            const rowEmp = await fetchTurnoDia(emp, date);
-            const rowDest = await fetchTurnoDia(dest, date);
-            const turnoEmp = rowEmp?.turno || payload.turno_original || '';
-            const turnoDest = rowDest?.turno || payload.turno_nuevo || '';
-            const hotelEmp = rowEmp?.hotel_id || payload.hotel_origen || eventHotel(original);
-            const hotelDest = rowDest?.hotel_id || payload.hotel_origen || eventHotel(original);
-
-            await window.TurnosDB.upsertTurno(emp, date, turnoDest, 'CT', hotelEmp, dest, 'DIRECCION_CAMBIOS');
-            await window.TurnosDB.upsertTurno(dest, date, turnoEmp, 'CT', hotelDest, emp, 'DIRECCION_CAMBIOS');
-        }
 
         async function openNewCambio() {
             const existing = document.getElementById('editCambioModal');
@@ -742,15 +622,7 @@
                 estado:                'activo'
             };
 
-            if (String(id).startsWith('legacy-')) {
-                // Era un registro CT antiguo en turnos. Limpiarlo y crear evento real.
-                try { await deleteLegacyCambio(original); } catch(e) { console.warn('No se pudo limpiar legacy CT:', e); }
-                // Crear nuevo evento moderno en eventos_cuadrante
-                await window.TurnosDB.upsertEvento(payload);
-            } else {
-                // Evento ya existe en eventos_cuadrante: actualizar
-                await window.TurnosDB.upsertEvento({ ...payload, id: original.id });
-            }
+            await window.TurnosDB.upsertEvento({ ...payload, id: original.id });
 
             document.getElementById('editCambioModal')?.remove();
             await renderSwaps();
@@ -778,7 +650,7 @@
             });
 
             renderSwaps().then(() => {
-                if (!window.supabase || usingLegacyChanges) return;
+                if (!window.supabase) return;
                 window.supabase
                     .channel('changes_realtime')
                     .on('postgres_changes', { event: '*', schema: 'public', table: 'eventos_cuadrante' }, renderSwaps)

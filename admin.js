@@ -377,6 +377,11 @@ window.createPuestosPreviewModel = ({
         return String(id || '').trim().toLowerCase();
     };
 
+    const normalizarEmpleado = (nombre) => {
+        if (!nombre) return '';
+        return String(nombre).trim().toLowerCase();
+    };
+
     const sourceRowsByWeek = new Map();
     const puestosMap = new Map();
 
@@ -433,11 +438,14 @@ window.createPuestosPreviewModel = ({
     const basePorEmpleado = Object.create(null);
     const baseAssignmentsByEmployeeDate = new Map();
 
-    const normalizeDateValue = (value) => {
-        if (!value) return '';
-        if (window.TurnosDB?.normalizeDate) return window.TurnosDB.normalizeDate(value);
-        if (value instanceof Date) return value.toISOString().split('T')[0];
-        return String(value).split('T')[0];
+    const normalizeDateValue = (val) => {
+        if (!val) return '';
+        return String(val).trim().split(/[T ]/)[0];
+    };
+
+    const mismaFecha = (d1, d2) => {
+        if (!d1 || !d2) return false;
+        return normalizeDateValue(d1) === normalizeDateValue(d2);
     };
 
     const normalizeEventType = (value) => {
@@ -536,7 +544,7 @@ window.createPuestosPreviewModel = ({
         if (!employeeNorm || !fecha) return [];
         return (eventsByEmployee.get(employeeNorm) || []).filter((evento, index, source) => {
             if ((evento?.estado || 'activo') === 'anulado') return false;
-            if (source.findIndex(item => item?.id === evento?.id && item?.fecha_inicio === evento?.fecha_inicio) !== index) return false;
+            if (source.findIndex(item => item?.id === evento?.id && mismaFecha(item?.fecha_inicio, evento?.fecha_inicio)) !== index) return false;
             return isDateInRange(fecha, evento?.fecha_inicio, evento?.fecha_fin);
         });
     };
@@ -696,8 +704,9 @@ window.createPuestosPreviewModel = ({
 
     const getBaseAssignmentsForEmployeeDate = (empleadoId, fecha) => {
         const employeeNorm = normalizarId(empleadoId);
-        if (!employeeNorm || !fecha) return [];
-        return baseAssignmentsByEmployeeDate.get(`${employeeNorm}|${fecha}`) || [];
+        const dateNorm = normalizeDateValue(fecha);
+        if (!employeeNorm || !dateNorm) return [];
+        return baseAssignmentsByEmployeeDate.get(`${employeeNorm}|${dateNorm}`) || [];
     };
 
     const getPrimaryBaseAssignmentForEmployeeDate = (empleadoId, fecha) =>
@@ -705,8 +714,11 @@ window.createPuestosPreviewModel = ({
 
     const getTurnoBaseDeEmpleado = (empleadoId, fecha) => {
         const employeeNorm = normalizarId(empleadoId);
-        if (!employeeNorm || !fecha) return null;
-        return basePorEmpleado[employeeNorm]?.[fecha] ?? null;
+        const dateNorm = normalizeDateValue(fecha);
+        if (!employeeNorm || !dateNorm) return 'D';
+        const turno = basePorEmpleado[employeeNorm]?.[dateNorm];
+        if (!turno) return 'D';
+        return turno;
     };
 
     const getIncidencia = (titularId, fecha) => {
@@ -914,9 +926,9 @@ window.createPuestosPreviewModel = ({
                 resultado.turno = cambio.nuevo_turno;
             } else if (String(cambio.tipo || '').includes('INTERCAMBIO')) {
                 const realEmpleadoId = cobertura?.empleado_id || titularAsignado.id || '';
-                const realEmpleadoNorm = canonicalEmployeeId(realEmpleadoId);
-                const empleadoANorm = canonicalEmployeeId(cambio.empleado_a);
-                const empleadoBNorm = canonicalEmployeeId(cambio.empleado_b);
+                const realEmpleadoNorm = normalizarEmpleado(realEmpleadoId);
+                const empleadoANorm = normalizarEmpleado(cambio.empleado_a);
+                const empleadoBNorm = normalizarEmpleado(cambio.empleado_b);
 
                 if (realEmpleadoNorm && empleadoANorm && realEmpleadoNorm === empleadoANorm) {
                     const turnoIntercambiado = getTurnoBaseDeEmpleado(cambio.empleado_b, fecha);
@@ -1000,13 +1012,21 @@ window.createPuestosPreviewModel = ({
 
     const resolverCambioFinal = (empleadoId, fecha, turnoActual) => {
         const cambio = getCambioTurno(empleadoId, fecha, { turnoBase: turnoActual });
+        
+        console.log(`[DIAGNOSTICO resolverTurnoFinal]`, {
+            empleadoActual: empleadoId,
+            fecha: fecha,
+            eventoEncontrado: cambio ? (cambio.tipo || cambio.event?.tipo || 'CAMBIO') : null,
+            turnoBasePropio: turnoActual
+        });
+
         if (!cambio) return { turno: turnoActual, cambio: false, detalle: null };
 
         const tipoCambio = String(cambio.tipo || cambio.event?.tipo || '').toUpperCase();
         if (tipoCambio.includes('INTERCAMBIO')) {
-            const empleadoNorm = normalizarId(empleadoId);
-            const empleadoANorm = normalizarId(cambio.empleado_a);
-            const empleadoBNorm = normalizarId(cambio.empleado_b);
+            const empleadoNorm = normalizarEmpleado(empleadoId);
+            const empleadoANorm = normalizarEmpleado(cambio.empleado_a);
+            const empleadoBNorm = normalizarEmpleado(cambio.empleado_b);
             let otroEmpleado = null;
 
             if (empleadoNorm === empleadoANorm) {
@@ -1027,6 +1047,8 @@ window.createPuestosPreviewModel = ({
             }
 
             const turnoIntercambiado = getTurnoBaseDeEmpleado(otroEmpleado, fecha);
+            
+            console.log(`[DIAGNOSTICO resolverTurnoFinal] turnoBaseCompañero: ${turnoIntercambiado} (compañero: ${otroEmpleado})`);
 
             if (turnoIntercambiado) {
                 return {
@@ -1062,7 +1084,19 @@ window.createPuestosPreviewModel = ({
         return { turno: turnoActual, cambio: false, detalle: cambio };
     };
 
+    const getOtroEmpleado = (evento, empleadoId) => {
+        const a = canonicalEmployeeId(evento.empleado_a || evento.empleado_id);
+        const b = canonicalEmployeeId(evento.empleado_b || getEventDestinationId(evento) || evento.empleado_destino_id);
+        const actual = canonicalEmployeeId(empleadoId);
+
+        if (actual === a) return evento.empleado_b || getEventDestinationId(evento) || evento.empleado_destino_id;
+        if (actual === b) return evento.empleado_a || evento.empleado_id;
+
+        return null;
+    };
+
     const resolverTurnoFinal = (empleadoId, fecha) => {
+        const eventosActivos = getActiveEventsForEmployeeDate(empleadoId, fecha);
         const baseAssignments = getBaseAssignmentsForEmployeeDate(empleadoId, fecha);
         const coverageAssignments = getCoverageAssignmentsForEmployeeDate(empleadoId, fecha);
         const resultados = [];
@@ -1161,17 +1195,63 @@ window.createPuestosPreviewModel = ({
             }
         }
 
+        // ── INTERCAMBIO FINAL (última regla, no sobreescribible) ──
+        const intercambio = eventosActivos.find(e =>
+            String(e.tipo || '').toUpperCase() === 'INTERCAMBIO_TURNO'
+        );
+        if (intercambio) {
+            const empNorm = canonicalEmployeeId(empleadoId);
+            const evtA = canonicalEmployeeId(intercambio.empleado_id || intercambio.empleado_a);
+            const evtB = canonicalEmployeeId(intercambio.empleado_destino_id || intercambio.empleado_b);
+
+            let otro = null;
+            if (empNorm === evtA) {
+                otro = intercambio.empleado_destino_id || intercambio.empleado_b;
+            } else if (empNorm === evtB) {
+                otro = intercambio.empleado_id || intercambio.empleado_a;
+            }
+
+            if (otro) {
+                const turnoOtro = getTurnoBaseDeEmpleado(otro, fecha);
+
+                if (resultados.length > 0) {
+                    resultados[0].turno = turnoOtro;
+                    resultados[0].turno_base = getTurnoBaseDeEmpleado(empleadoId, fecha);
+                    resultados[0].cambio = true;
+                } else {
+                    resultados.push({
+                        turno: turnoOtro,
+                        turno_base: getTurnoBaseDeEmpleado(empleadoId, fecha),
+                        titular: getEmployeeName(empleadoId),
+                        real: getEmployeeName(empleadoId),
+                        incidencia: null,
+                        puesto_id: '',
+                        hotel_id: hotel,
+                        fecha,
+                        titular_id: empleadoId,
+                        real_id: empleadoId,
+                        rol: 'titular',
+                        cambio: true,
+                        sin_cubrir: false,
+                        cubierto_por: '',
+                        sustituye_a: null
+                    });
+                }
+            }
+        }
+
         return resultados;
     };
 
     const buildEmployeeResult = (empleadoId, fecha) => {
         const employeeNorm = canonicalEmployeeId(empleadoId);
-        if (!employeeNorm || !fecha) return null;
+        const dateNorm = normalizeDateValue(fecha);
+        if (!employeeNorm || !dateNorm) return null;
 
-        const cacheKey = `${employeeNorm}|${fecha}`;
+        const cacheKey = `${employeeNorm}|${dateNorm}`;
         if (employeeDayCache.has(cacheKey)) return employeeDayCache.get(cacheKey);
 
-        const matches = resolverTurnoFinal(empleadoId, fecha);
+        const matches = resolverTurnoFinal(empleadoId, dateNorm);
 
         let result = null;
         if (matches.length > 1) {
@@ -2047,12 +2127,15 @@ window.populateEmployees = async () => {
     area.innerHTML = '<div style="padding:4rem; text-align:center;"><i class="fas fa-spinner fa-spin"></i> Cargando empleados...</div>';
     
     try {
-        // Rango de 30 días para estadísticas
+        // Rango de 30 días pasados y 7 días futuros para estadísticas y estado
+        const today = new Date();
         const end = new Date();
+        end.setDate(today.getDate() + 7);
         const start = new Date();
-        start.setDate(end.getDate() - 30);
+        start.setDate(today.getDate() - 30);
         const startISO = window.isoDate(start) || start.toISOString().split('T')[0];
         const endISO = window.isoDate(end) || end.toISOString().split('T')[0];
+        const todayISO = window.isoDate(today) || today.toISOString().split('T')[0];
 
         const { rows, eventos } = await window.TurnosDB.fetchRangoCalculado(startISO, endISO);
         const profilesResult = await window.TurnosDB.getEmpleados();
@@ -2118,14 +2201,17 @@ window.populateEmployees = async () => {
                     if (cell.tipo && cell.tipo !== 'NORMAL' && cell.tipo !== 'CT') label = cell.tipo;
                     
                     const cls = window.TurnosRules ? window.TurnosRules.shiftKey(label, cell.tipo) : '';
-                    if (['m', 't', 'n', 'v', 'd', 'b'].includes(cls)) s[cls]++;
-                    else s.x++;
+                    if (date <= todayISO) {
+                        if (['m', 't', 'n', 'v', 'd', 'b'].includes(cls)) s[cls]++;
+                        else s.x++;
+                    }
 
                     s.history.push({
                         fecha: date,
                         turno: label,
                         cls: cls,
-                        original: cell.turno || ''
+                        original: cell.turno || '',
+                        cell: cell
                     });
                 });
             });
@@ -2151,6 +2237,23 @@ window.populateEmployees = async () => {
                 const totalWork = s.m + s.t + s.n;
                 const hue = Math.abs(empName.length * 137.5) % 360; 
                 
+                const futureShifts = s.history.filter(h => h.fecha >= todayISO).sort((a,b) => a.fecha.localeCompare(b.fecha));
+                const currentState = futureShifts[0] || { cls: 'x', turno: '—', cell: {} };
+                const nextWorkingShift = futureShifts.find(h => ['m', 't', 'n'].includes(h.cls)) || null;
+
+                let stateText = 'Activo';
+                if (currentState.cls === 'v') stateText = 'Vacaciones';
+                else if (currentState.cls === 'b') stateText = 'Baja';
+
+                let substituteText = '';
+                if (currentState.cell?.cambio || currentState.cell?.real !== currentState.cell?.titular) {
+                    const rId = currentState.cell?.real_id || currentState.cell?.real;
+                    if (rId && (rId === p.id || rId === empName)) substituteText = `<span style="color:#f59e0b; font-size:0.85em; font-weight:600; margin-left:4px;">(Sustituto)</span>`;
+                    else if (rId) substituteText = `<span style="color:#3b82f6; font-size:0.85em; font-weight:600; margin-left:4px;">(Ausente)</span>`;
+                }
+
+                const nextDate = nextWorkingShift ? new Date(nextWorkingShift.fecha).toLocaleDateString('es-ES', {day:'2-digit', month:'2-digit'}) : '';
+
                 return `
                 <div class="emp-card-premium" onclick="window.openEmpDrawer('${empName.replace(/'/g, "\\'")}')">
                     <div class="ep-gradient" style="background: linear-gradient(135deg, hsl(${hue}, 70%, 65%), hsl(${hue}, 70%, 45%))"></div>
@@ -2159,19 +2262,17 @@ window.populateEmployees = async () => {
                             <div class="ep-avatar" style="background: hsl(${hue}, 70%, 95%); color: hsl(${hue}, 70%, 30%)">${initials}</div>
                         </div>
                         <div class="ep-info">
-                            <h3 class="ep-name">${empName}</h3>
-                            <p class="ep-role">${p.puesto || 'Cargando...'}</p>
+                            <h3 class="ep-name">${empName} <span style="opacity:0.5; font-size:0.75em; font-weight:normal;">&middot; #${p.id || 'N/A'}</span></h3>
+                            <p class="ep-role">${p.puesto || 'Personal'} <span style="margin-left:5px; font-weight:700; opacity:0.9; font-size:0.9em;" class="color-${currentState.cls}">${stateText}</span>${substituteText}</p>
                         </div>
                         <div class="ep-stats">
-                            <div class="ep-stat"><span class="ep-label">M</span><span class="ep-val">${s.m}</span></div>
-                            <div class="ep-stat"><span class="ep-label">T</span><span class="ep-val">${s.t}</span></div>
-                            <div class="ep-stat"><span class="ep-label">N</span><span class="ep-val">${s.n}</span></div>
-                            <div class="ep-stat highlight"><span class="ep-label">V</span><span class="ep-val">${s.v}</span></div>
+                            <div class="ep-stat"><span class="ep-label">Hoy</span><span class="ep-val color-${currentState.cls}" style="font-size:0.9rem;">${currentState.turno}</span></div>
+                            <div class="ep-stat"><span class="ep-label">Próximo</span><span class="ep-val ${nextWorkingShift ? 'color-' + nextWorkingShift.cls : ''}" style="font-size:0.9rem;">${nextWorkingShift ? nextWorkingShift.turno + ' (' + nextDate + ')' : '—'}</span></div>
                         </div>
                         <div class="ep-footer">
-                             <div class="ep-progress-label">Actividad 30 días</div>
-                             <div class="ep-progress-bar"><div class="ep-progress-fill" style="width:${Math.min(100, (totalWork/30)*100)}%; background:hsl(${hue}, 70%, 50%)"></div></div>
-                             <div class="ep-total">${totalWork} turnos totales</div>
+                             ${totalWork > 0 ? `<div class="ep-progress-label">Actividad 30 días</div>` : ''}
+                             ${totalWork > 0 ? `<div class="ep-progress-bar"><div class="ep-progress-fill" style="width:${Math.min(100, (totalWork/30)*100)}%; background:hsl(${hue}, 70%, 50%)"></div></div>` : ''}
+                             ${totalWork > 0 ? `<div class="ep-total">${totalWork} turnos totales</div>` : ''}
                         </div>
                     </div>
                 </div>`;
@@ -2250,6 +2351,7 @@ window.openEmpDrawer = (name) => {
             </div>
         </div>
 
+        ${s.history.length > 0 ? `
         <div class="drawer-section-title" style="margin-top:2rem;">HISTORIAL DE TURNOS</div>
         <div class="history-list">
             ${s.history.slice(0, 15).map(h => `
@@ -2264,7 +2366,8 @@ window.openEmpDrawer = (name) => {
                     <div class="hi-type"><span class="turno-pill turno-${h.cls}" style="padding:2px 6px; font-size:9px;">${h.cls.toUpperCase()}</span></div>
                 </div>
             `).join('')}
-            ${s.history.length === 0 ? '<div style="padding:2rem; text-align:center; opacity:0.3; font-size:0.8rem;">No hay historial disponible</div>' : ''}
+        </div>
+        ` : ''}
         </div>
     `;
 };
