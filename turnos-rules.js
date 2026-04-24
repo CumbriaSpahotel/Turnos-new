@@ -81,11 +81,11 @@
             adminStyle: 'background:#f3f0ff; color:#7048e8; border:1px solid #d0bfff;'
         },
         ct: {
-            label: 'Descanso',
+            label: 'Cambio',
             icon: '🔄',
-            publicClass: 'v-descanso',
-            mobileClass: 'd',
-            adminStyle: 'background:#fff5f5; color:#fa5252; border:1px solid #ffc9c9;'
+            publicClass: 'v-cambio',
+            mobileClass: 'ct',
+            adminStyle: 'background:#fff9db; color:#f08c00; border:1px solid #ffec99;'
         },
         empty: {
             label: '',

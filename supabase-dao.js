@@ -115,7 +115,11 @@ window.TurnosDB = {
             return data || [];
 
         } catch (err) {
-            console.error("DAO Error (fetchRango):", err);
+            console.error("[ADMIN ERROR] DAO fetchRango", {
+                message: err.message,
+                stack: err.stack,
+                range: { inicio: i, fin: f }
+            });
             this.updateUISyncStatus('error');
             const fallback = window.localforage ? await window.localforage.getItem(cacheKey) : null;
             return fallback ? fallback.raw : [];
@@ -197,7 +201,11 @@ window.TurnosDB = {
             this.updateUISyncStatus('ok');
             return data;
         } catch (err) {
-            console.error("DAO Error (upsertEvento):", err);
+            console.error("[ADMIN ERROR] DAO upsertEvento", {
+                message: err.message,
+                stack: err.stack,
+                evento: evento
+            });
             this.updateUISyncStatus('error');
             throw err;
         }
@@ -576,36 +584,49 @@ window.TurnosDB = {
         try {
             if (!empData.id) throw new Error("ID de empleado obligatorio");
             
-            // Intentar guardado completo
-            const { error } = await client.from('empleados').upsert({
-                ...empData,
-                updated_at: new Date().toISOString()
+            // Whitelist de columnas seguras (estandarizadas para FASE DE ESTABILIZACIÓN)
+            const EMPLEADO_COLUMNS = [
+                'id',
+                'nombre',
+                'hotel_id',
+                'puesto',
+                'tipo',
+                'estado',
+                'activo',
+                'fecha_baja',
+                'telefono',
+                'email',
+                'notas',
+                'orden'
+            ];
+
+            const payload = {};
+            EMPLEADO_COLUMNS.forEach(col => {
+                if (empData[col] !== undefined) {
+                    payload[col] = empData[col];
+                }
             });
 
+            // Si el estado no es Baja, nos aseguramos de que fecha_baja sea null
+            if (payload.estado !== 'Baja') {
+                payload.fecha_baja = null;
+            }
+
+            payload.updated_at = new Date().toISOString();
+
+            if (window.DEBUG_MODE === true) {
+                console.log('[UPSERT EMPLEADO PAYLOAD]', payload);
+            }
+
+            const { error } = await client.from('empleados').upsert(payload);
+
             if (error) {
-                // Si el error es por columna inexistente (400), intentamos guardado básico
-                if (error.status === 400 || error.code === 'PGRST100' || error.code === 'PGRST204') {
-                    const basicFields = new Set(['id', 'nombre', 'hotel_id', 'orden', 'activo']);
-                    const hasFichaFields = Object.keys(empData).some(key => !basicFields.has(key));
-                    if (hasFichaFields) {
-                        const el = document.getElementById('syncHelp');
-                        if (el) el.style.display = 'inline';
-                        throw new Error("Supabase no tiene las columnas nuevas de ficha o no ha recargado el esquema. Ejecuta el bloque ALTER TABLE de supabase-schema.sql y recarga la página.");
-                    }
-                    console.warn("Schema mismatch detectado en upsertEmpleado. Reintentando guardado básico...");
-                    const safeData = {
-                        id: empData.id,
-                        nombre: empData.nombre,
-                        hotel_id: empData.hotel_id,
-                        activo: empData.activo,
-                        updated_at: new Date().toISOString()
-                    };
-                    Object.keys(safeData).forEach(key => safeData[key] === undefined && delete safeData[key]);
-                    const { error: err2 } = await client.from('empleados').upsert(safeData);
-                    if (err2) throw err2;
-                } else {
-                    throw error;
+                console.error("DAO Error (upsertEmpleado detail):", error);
+                // Si el error es 400 o similar, es probable que falten columnas
+                if (error.status === 400 || error.code === 'PGRST100' || error.code === '42703') {
+                    throw new Error(`Error al guardar ficha: Supabase rechaza el payload. Es probable que falten columnas nuevas (ej. puesto, tipo, notas) o el esquema no se haya refrescado.`);
                 }
+                throw error;
             }
         } catch (err) {
             console.error("DAO Error (upsertEmpleado):", err);
@@ -632,17 +653,99 @@ window.TurnosDB = {
             // Watchdog cada 30 segundos
             if (!window._watchdogTimer) {
                 window._watchdogTimer = setInterval(async () => {
-                    if (!window.realtimeActivo && this._channel) {
+                    if (window.DEBUG_MODE === true) {
                         console.warn("DAO Watchdog: Re-inicializando canal...");
-                        await client.removeChannel(this._channel);
-                        this._channel = null;
-                        this.initRealtime();
                     }
+                    await client.removeChannel(this._channel);
+                    this._channel = null;
+                    this.initRealtime();
                 }, 30000);
             }
         } catch (err) {
             console.error("DAO Error (Realtime):", err);
             this._channel = null;
         }
+    },
+
+    // --- AUDITORÍA Y PUBLICACIONES ---
+    async insertLog(logData) {
+        const client = window.supabase;
+        try {
+            const { data: { session } } = await client.auth.getSession();
+            const { data, error } = await client
+                .from('publicaciones_log')
+                .insert([{
+                    ...logData,
+                    usuario: logData.usuario || session?.user?.email || 'WEB_ADMIN'
+                }])
+                .select()
+                .single();
+            if (error) throw error;
+            return data;
+        } catch (err) {
+            console.error("[ADMIN ERROR] DAO insertLog", {
+                message: err.message,
+                stack: err.stack,
+                logData: logData
+            });
+            throw err;
+        }
+    },
+
+    async fetchLogs(limit = 20) {
+        const client = window.supabase;
+        try {
+            const { data, error } = await client
+                .from('publicaciones_log')
+                .select('*')
+                .order('fecha', { ascending: false })
+                .limit(limit);
+            if (error) throw error;
+            return data || [];
+        } catch (err) {
+            console.error("[ADMIN ERROR] DAO fetchLogs", {
+                message: err.message,
+                stack: err.stack,
+                context: 'fetchLogs'
+            });
+            return [];
+        }
+    },
+
+    async updateLog(id, updateData) {
+        const client = window.supabase;
+        try {
+            const { error } = await client
+                .from('publicaciones_log')
+                .update(updateData)
+                .eq('id', id);
+            if (error) throw error;
+        } catch (err) {
+            console.error("[ADMIN ERROR] DAO updateLog", {
+                message: err.message,
+                stack: err.stack,
+                id,
+                updateData
+            });
+            throw err;
+        }
+    },
+
+    async getLog(id) {
+        const client = window.supabase;
+        try {
+            const { data, error } = await client
+                .from('publicaciones_log')
+                .select('*')
+                .eq('id', id)
+                .single();
+            if (error) throw error;
+            return data;
+        } catch (err) {
+            console.error("DAO Error (getLog):", err);
+            throw err;
+        }
     }
 };
+
+window.dao = window.TurnosDB;

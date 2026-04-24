@@ -299,3 +299,20 @@ CREATE TRIGGER trigger_sync_evento_desde_peticion
 AFTER UPDATE ON peticiones_cambio
 FOR EACH ROW
 EXECUTE FUNCTION sync_evento_desde_peticion();
+
+-- 11. SISTEMA DE AUDITORÍA Y PUBLICACIONES
+CREATE TABLE IF NOT EXISTS publicaciones_log (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  fecha timestamptz DEFAULT now(),
+  usuario text,
+  cambios_totales integer DEFAULT 0,
+  empleados_afectados integer DEFAULT 0,
+  resumen_json jsonb DEFAULT '{}'::jsonb,
+  cambios_detalle_json jsonb DEFAULT '[]'::jsonb, -- Trazabilidad: [{empleado_id, fecha, anterior, nuevo}]
+  estado text DEFAULT 'ok',
+  revertida boolean DEFAULT false
+);
+
+ALTER TABLE publicaciones_log ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "allow all" ON publicaciones_log;
+CREATE POLICY "allow all" ON publicaciones_log FOR ALL USING (true);
