@@ -900,14 +900,383 @@ window.renderCambiosTurno = async () => {
     }
 };
 
-window.renderVacationsModule = () => {
+window.renderVacationsModule = async () => {
     const container = document.getElementById('vacations-content');
-    if (container) container.innerHTML = '<div class="glass-panel" style="padding:40px; text-align:center;"><p>Módulo de Vacaciones integrado próximamente.</p><button class="btn-premium" onclick="window.location.href=\'vacaciones.html\'">Ir a Vista Clásica</button></div>';
+    if (!container) return;
+
+    // Estado local para filtros
+    if (!window._vacationFilters) {
+        window._vacationFilters = {
+            hotel: 'all',
+            search: '',
+            estado: 'activo'
+        };
+    }
+
+    container.innerHTML = `
+        <div class="glass-panel" style="padding: 24px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+                <div>
+                    <h2 style="margin: 0; font-size: 1.5rem; color: var(--text);">Gestión de Vacaciones</h2>
+                    <p style="margin: 4px 0 0; font-size: 0.85rem; color: var(--text-dim);">Control centralizado de periodos de descanso</p>
+                </div>
+                <button class="btn-premium" onclick="window.openVacationModal()" style="display: flex; align-items: center; gap: 8px;">
+                    <i class="fas fa-plus"></i> Nueva Vacación
+                </button>
+            </div>
+
+            <div class="filters-bar" style="display: flex; gap: 16px; margin-bottom: 24px; padding: 16px; background: rgba(0,0,0,0.03); border-radius: 12px;">
+                <div style="flex: 1;">
+                    <label style="display: block; font-size: 0.7rem; font-weight: 700; color: var(--text-dim); text-transform: uppercase; margin-bottom: 6px;">Buscar Empleado</label>
+                    <input type="text" id="vac-search" class="input-premium" placeholder="Nombre..." value="${window._vacationFilters.search}" 
+                        oninput="window._vacationFilters.search = this.value; window.renderVacationsTable();" style="width: 100%;">
+                </div>
+                <div style="width: 200px;">
+                    <label style="display: block; font-size: 0.7rem; font-weight: 700; color: var(--text-dim); text-transform: uppercase; margin-bottom: 6px;">Hotel</label>
+                    <select id="vac-hotel" class="input-premium" onchange="window._vacationFilters.hotel = this.value; window.renderVacationsTable();" style="width: 100%;">
+                        <option value="all">Todos los Hoteles</option>
+                        ${(window._employeeLineHotels || []).map(h => `<option value="${h}" ${window._vacationFilters.hotel === h ? 'selected' : ''}>${h}</option>`).join('')}
+                    </select>
+                </div>
+                <div style="width: 150px;">
+                    <label style="display: block; font-size: 0.7rem; font-weight: 700; color: var(--text-dim); text-transform: uppercase; margin-bottom: 6px;">Estado</label>
+                    <select id="vac-estado" class="input-premium" onchange="window._vacationFilters.estado = this.value; window.renderVacationsTable();" style="width: 100%;">
+                        <option value="activo" ${window._vacationFilters.estado === 'activo' ? 'selected' : ''}>Activos</option>
+                        <option value="all" ${window._vacationFilters.estado === 'all' ? 'selected' : ''}>Todos</option>
+                    </select>
+                </div>
+            </div>
+
+            <div id="vacations-table-container">
+                <div style="padding: 40px; text-align: center; opacity: 0.5;">
+                    <i class="fas fa-spinner fa-spin fa-2x"></i>
+                    <p style="margin-top: 12px;">Cargando vacaciones...</p>
+                </div>
+            </div>
+        </div>
+    `;
+
+    window.renderVacationsTable();
 };
 
-window.renderAbsencesModule = () => {
+window.renderVacationsTable = async () => {
+    const tableContainer = document.getElementById('vacations-table-container');
+    if (!tableContainer) return;
+
+    try {
+        const events = await window.TurnosDB.fetchEventos();
+        let vacations = events.filter(ev => window.normalizeTipo(ev.tipo) === 'VAC');
+
+        // Aplicar filtros
+        const filters = window._vacationFilters;
+        if (filters.hotel !== 'all') {
+            vacations = vacations.filter(v => v.hotel === filters.hotel || v.hotel_origen === filters.hotel);
+        }
+        if (filters.search) {
+            const s = window.employeeNorm(filters.search);
+            vacations = vacations.filter(v => window.employeeNorm(v.empleado_id).includes(s) || window.employeeNorm(v.nombre).includes(s));
+        }
+        // fetchEventos ya filtra anulados por defecto, pero si filters.estado es 'all' y queremos verlos, tendríamos que haberlos traído.
+        // Como fetchEventos usa .neq('estado', 'anulado'), para ver todos necesitamos un método que no filtre.
+        // Por ahora, el filtro 'all' solo mostrará lo que trajo fetchEventos (activos/pendientes).
+
+        if (vacations.length === 0) {
+            tableContainer.innerHTML = `
+                <div style="padding: 60px; text-align: center; background: rgba(0,0,0,0.02); border: 2px dashed var(--border); border-radius: 12px;">
+                    <i class="fas fa-umbrella-beach fa-3x" style="opacity: 0.2; margin-bottom: 16px;"></i>
+                    <p style="margin: 0; font-weight: 600; color: var(--text-dim);">No hay vacaciones registradas con estos filtros.</p>
+                </div>
+            `;
+            return;
+        }
+
+        // Ordenar por fecha inicio desc
+        vacations.sort((a, b) => String(b.fecha_inicio).localeCompare(String(a.fecha_inicio)));
+
+        tableContainer.innerHTML = `
+            <table class="table-premium" style="width: 100%; border-collapse: collapse; font-size: 0.85rem;">
+                <thead>
+                    <tr style="text-align: left; border-bottom: 2px solid var(--border);">
+                        <th style="padding: 16px 12px;">Empleado</th>
+                        <th style="padding: 16px 12px;">Periodo</th>
+                        <th style="padding: 16px 12px;">Hotel</th>
+                        <th style="padding: 16px 12px;">Sustituto</th>
+                        <th style="padding: 16px 12px;">Estado</th>
+                        <th style="padding: 16px 12px; text-align: right;">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${vacations.map(v => {
+                        const isCristina = window.employeeNorm(v.empleado_id).includes('cristina');
+                        return `
+                        <tr style="border-bottom: 1px solid var(--border); transition: background 0.2s;" onmouseover="this.style.background='rgba(0,0,0,0.01)'" onmouseout="this.style.background='transparent'">
+                            <td style="padding: 16px 12px;">
+                                <div style="display: flex; align-items: center; gap: 10px;">
+                                    ${window.employeeAvatar(v.nombre || v.empleado_id)}
+                                    <strong>${v.nombre || v.empleado_id}</strong>
+                                </div>
+                            </td>
+                            <td style="padding: 16px 12px;">
+                                <div style="display: flex; flex-direction: column;">
+                                    <span>${window.employeeEventDateRange(v)}</span>
+                                    <span style="font-size: 0.75rem; color: var(--text-dim);">${v.observaciones || ''}</span>
+                                </div>
+                            </td>
+                            <td style="padding: 16px 12px; color: var(--text-dim);">${v.hotel || v.hotel_origen || '—'}</td>
+                            <td style="padding: 16px 12px;">
+                                ${v.sustituto || v.sustituto_id ? `<span class="badge" style="background:#fef3c7; color:#92400e; border:1px solid #fde68a;">${v.sustituto || v.sustituto_id}</span>` : '<span style="opacity:0.3">—</span>'}
+                            </td>
+                            <td style="padding: 16px 12px;">
+                                <span class="badge" style="background: ${v.estado === 'activo' ? '#dcfce7; color:#166534;' : '#f1f5f9; color:#475569;'}">
+                                    ${v.estado || 'activo'}
+                                </span>
+                            </td>
+                            <td style="padding: 16px 12px; text-align: right;">
+                                <button class="btn-icon" title="Anular" onclick="window.anularVacacion('${v.id}')" style="color: #ef4444; background: #fee2e2; border-radius: 8px; padding: 6px; border: none; cursor: pointer; margin-left: 4px;">
+                                    <i class="fas fa-trash-alt"></i>
+                                </button>
+                            </td>
+                        </tr>`;
+                    }).join('')}
+                </tbody>
+            </table>
+        `;
+    } catch (err) {
+        tableContainer.innerHTML = `<div class="alert error">Error al cargar listado: ${err.message}</div>`;
+    }
+};
+
+window.openVacationModal = (vacation = null) => {
+    let modal = document.getElementById('vacationModal');
+    if (modal) modal.remove();
+
+    modal = document.createElement('div');
+    modal.id = 'vacationModal';
+    modal.className = 'drawer-overlay open';
+    modal.style.zIndex = '10000';
+    
+    const emps = (window.empleadosGlobales || []).sort((a,b) => a.nombre.localeCompare(b.nombre));
+    const hotels = window._employeeLineHotels || [];
+
+    modal.innerHTML = `
+        <div class="glass-panel" style="position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 450px; max-width: 95%; padding: 32px; border-radius: 20px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);">
+            <h3 style="margin: 0 0 24px; font-size: 1.25rem;">${vacation ? 'Editar Vacación' : 'Nueva Vacación'}</h3>
+            
+            <form id="vac-form" style="display: flex; flex-direction: column; gap: 16px;">
+                <div>
+                    <label class="label-premium">Empleado</label>
+                    <select id="form-vac-emp" class="input-premium" required style="width: 100%;">
+                        <option value="">Seleccionar empleado...</option>
+                        ${emps.map(e => `<option value="${e.id}" data-hotel="${e.hotel_id}">${e.nombre}</option>`).join('')}
+                    </select>
+                </div>
+                
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                    <div>
+                        <label class="label-premium">Desde</label>
+                        <input type="date" id="form-vac-inicio" class="input-premium" required style="width: 100%;">
+                    </div>
+                    <div>
+                        <label class="label-premium">Hasta</label>
+                        <input type="date" id="form-vac-fin" class="input-premium" required style="width: 100%;">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="label-premium">Sustituto (Opcional)</label>
+                    <select id="form-vac-sust" class="input-premium" style="width: 100%;">
+                        <option value="">Ninguno</option>
+                        ${emps.map(e => `<option value="${e.id}">${e.nombre}</option>`).join('')}
+                    </select>
+                </div>
+
+                <div>
+                    <label class="label-premium">Observaciones</label>
+                    <textarea id="form-vac-obs" class="input-premium" style="width: 100%; height: 80px;"></textarea>
+                </div>
+
+                <div style="display: flex; gap: 12px; margin-top: 12px;">
+                    <button type="button" class="btn-premium" onclick="document.getElementById('vacationModal').remove()" style="flex: 1; background: #f1f5f9; color: #475569; border: 1px solid #e2e8f0;">Cancelar</button>
+                    <button type="submit" class="btn-premium" style="flex: 2;">Guardar Vacación</button>
+                </div>
+            </form>
+        </div>
+    `;
+
+    document.body.appendChild(modal);
+
+    const form = document.getElementById('vac-form');
+    form.onsubmit = async (e) => {
+        e.preventDefault();
+        const empId = document.getElementById('form-vac-emp').value;
+        const empOption = document.getElementById('form-vac-emp').selectedOptions[0];
+        const hotelId = empOption.dataset.hotel;
+        const nombre = empOption.text;
+        
+        const payload = {
+            tipo: 'VAC',
+            empleado_id: empId,
+            nombre: nombre,
+            hotel: hotelId,
+            hotel_origen: hotelId,
+            fecha_inicio: document.getElementById('form-vac-inicio').value,
+            fecha_fin: document.getElementById('form-vac-fin').value,
+            sustituto_id: document.getElementById('form-vac-sust').value,
+            sustituto: document.getElementById('form-vac-sust').selectedOptions[0].text === 'Ninguno' ? null : document.getElementById('form-vac-sust').selectedOptions[0].text,
+            observaciones: document.getElementById('form-vac-obs').value,
+            estado: 'activo'
+        };
+
+        try {
+            window.addLog(`Guardando vacación para ${nombre}...`, 'info');
+            await window.TurnosDB.upsertEvento(payload);
+            window.addLog(`Vacación guardada con éxito.`, 'ok');
+            
+            // Recargar datos globales
+            window.eventosActivos = await window.TurnosDB.fetchEventos();
+            
+            modal.remove();
+            window.renderVacationsTable();
+            
+            // Si hay otros módulos abiertos que dependen de esto, se refrescarán al navegar o al forzar
+            if (window._employeeProfileId) window.openEmpDrawer(window._employeeProfileId);
+        } catch (err) {
+            alert(`Error al guardar: ${err.message}`);
+        }
+    };
+};
+
+window.anularVacacion = async (id) => {
+    if (!confirm('¿Seguro que deseas anular este periodo de vacaciones?')) return;
+
+    try {
+        window.addLog(`Anulando vacación ${id}...`, 'info');
+        // El DAO no tiene un update parcial explícito para estado, pero upsertEvento puede usarse si tenemos el objeto completo.
+        // Pero fetchEventos ya trajo el objeto.
+        const events = await window.TurnosDB.fetchEventos();
+        const vac = events.find(e => String(e.id) === String(id));
+        if (!vac) throw new Error("No se encontró el registro.");
+
+        await window.TurnosDB.upsertEvento({ ...vac, estado: 'anulado' });
+        window.addLog(`Vacación anulada.`, 'ok');
+        
+        window.eventosActivos = await window.TurnosDB.fetchEventos();
+        window.renderVacationsTable();
+        if (window._employeeProfileId) window.openEmpDrawer(window._employeeProfileId);
+    } catch (err) {
+        alert(`Error al anular: ${err.message}`);
+    }
+};
+
+window.renderAbsencesModule = async () => {
     const container = document.getElementById('absences-content');
-    if (container) container.innerHTML = '<div class="glass-panel" style="padding:40px; text-align:center;"><p>Módulo de Bajas integrado próximamente.</p><button class="btn-premium" onclick="window.location.href=\'bajas.html\'">Ir a Vista Clásica</button></div>';
+    if (!container) return;
+
+    container.innerHTML = `
+        <div class="glass-panel" style="padding: 24px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+                <div>
+                    <h2 style="margin: 0; font-size: 1.5rem; color: var(--text);">Gestión de Ausencias y Bajas</h2>
+                    <p style="margin: 4px 0 0; font-size: 0.85rem; color: var(--text-dim);">Registro de IT, permisos y ausencias justificadas</p>
+                </div>
+                <button class="btn-premium" onclick="window.openAbsenceModal()" style="display: flex; align-items: center; gap: 8px; background: #f43f5e;">
+                    <i class="fas fa-plus"></i> Nueva Baja/Permiso
+                </button>
+            </div>
+
+            <div id="absences-table-container">
+                <div style="padding: 40px; text-align: center; opacity: 0.5;">
+                    <i class="fas fa-spinner fa-spin fa-2x"></i>
+                    <p style="margin-top: 12px;">Cargando ausencias...</p>
+                </div>
+            </div>
+        </div>
+    `;
+
+    window.renderAbsencesTable();
+};
+
+window.renderAbsencesTable = async () => {
+    const tableContainer = document.getElementById('absences-table-container');
+    if (!tableContainer) return;
+
+    try {
+        const events = await window.TurnosDB.fetchEventos();
+        const absences = events.filter(ev => ['BAJA', 'PERMISO', 'PERM'].includes(window.normalizeTipo(ev.tipo)));
+
+        if (absences.length === 0) {
+            tableContainer.innerHTML = `<div style="padding: 40px; text-align: center; opacity: 0.5;">No hay ausencias activas registradas.</div>`;
+            return;
+        }
+
+        absences.sort((a, b) => String(b.fecha_inicio).localeCompare(String(a.fecha_inicio)));
+
+        tableContainer.innerHTML = `
+            <table class="table-premium" style="width: 100%; border-collapse: collapse; font-size: 0.85rem;">
+                <thead>
+                    <tr style="text-align: left; border-bottom: 2px solid var(--border);">
+                        <th style="padding: 16px 12px;">Empleado</th>
+                        <th style="padding: 16px 12px;">Tipo</th>
+                        <th style="padding: 16px 12px;">Periodo</th>
+                        <th style="padding: 16px 12px; text-align: right;">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${absences.map(a => `
+                        <tr style="border-bottom: 1px solid var(--border);">
+                            <td style="padding: 16px 12px;"><strong>${a.nombre || a.empleado_id}</strong></td>
+                            <td style="padding: 16px 12px;"><span class="badge" style="background:#fee2e2; color:#b91c1c;">${a.tipo}</span></td>
+                            <td style="padding: 16px 12px;">${window.employeeEventDateRange(a)}</td>
+                            <td style="padding: 16px 12px; text-align: right;">
+                                <button class="btn-icon" onclick="window.anularVacacion('${a.id}')" style="color: #ef4444;"><i class="fas fa-trash-alt"></i></button>
+                            </td>
+                        </tr>
+                    `).join('')}
+                </tbody>
+            </table>
+        `;
+    } catch (err) {
+        tableContainer.innerHTML = `<div class="alert error">Error: ${err.message}</div>`;
+    }
+};
+
+window.openAbsenceModal = () => {
+    // Reutilizamos el modal de vacaciones con ajustes mínimos de tipo
+    window.openVacationModal();
+    const title = document.querySelector('#vacationModal h3');
+    if (title) title.textContent = 'Nueva Baja / Permiso';
+    const form = document.getElementById('vac-form');
+    // Inyectar selector de tipo
+    const typeDiv = document.createElement('div');
+    typeDiv.innerHTML = `
+        <label class="label-premium">Tipo de Ausencia</label>
+        <select id="form-abs-type" class="input-premium" style="width: 100%;">
+            <option value="BAJA">Baja Médica (IT)</option>
+            <option value="PERMISO">Permiso Retribuido</option>
+            <option value="OTRO">Otro</option>
+        </select>
+    `;
+    form.insertBefore(typeDiv, form.firstChild);
+    
+    // Sobrescribir el submit
+    form.onsubmit = async (e) => {
+        e.preventDefault();
+        const empOption = document.getElementById('form-vac-emp').selectedOptions[0];
+        const payload = {
+            tipo: document.getElementById('form-abs-type').value,
+            empleado_id: document.getElementById('form-vac-emp').value,
+            nombre: empOption.text,
+            hotel: empOption.dataset.hotel,
+            fecha_inicio: document.getElementById('form-vac-inicio').value,
+            fecha_fin: document.getElementById('form-vac-fin').value,
+            observaciones: document.getElementById('form-vac-obs').value,
+            estado: 'activo'
+        };
+        await window.TurnosDB.upsertEvento(payload);
+        window.eventosActivos = await window.TurnosDB.fetchEventos();
+        document.getElementById('vacationModal').remove();
+        window.renderAbsencesTable();
+    };
 };
 
 window.ADMIN_EXCEL_STORAGE_KEY = 'turnosweb_admin_excel_base_v1';
