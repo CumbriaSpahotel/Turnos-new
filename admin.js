@@ -1,5 +1,5 @@
 // ==========================================
-// 1. NÚCLEO Y CONFIGURACIÓN GLOBAL
+// 1. N�aCLEO Y CONFIGURACI�N GLOBAL
 // ==========================================
 window.parsedData = null;
 window.$ = (s) => document.querySelector(s);
@@ -244,9 +244,9 @@ window.buildEmployeeProfileModel = (empleadoId, fechaReferencia) => {
 
     const refISO = String(fechaReferencia || window.isoDate(new Date())).slice(0, 10);
     const mode = 'month';
-    const eventos = window.eventosActivos || [];
-    const baseIndex = window._lastBaseIndex;
-    
+    const eventos = window.eventosGlobales || window.eventosActivos || [];
+    let baseIndex = null;
+
     const emp = {
         id: profile.id,
         nombre: profile.nombre,
@@ -261,6 +261,34 @@ window.buildEmployeeProfileModel = (empleadoId, fechaReferencia) => {
         notas: profile.notas,
         activo: profile.activo
     };
+
+    const excelSource = window._adminExcelEditableRows || window._adminExcelBaseOriginalRows || null;
+    if (excelSource) {
+        try {
+            const hotelRows = excelSource[emp.hotel] || [];
+            const baseRowsFlat = [];
+            hotelRows.forEach(sRow => {
+                if (!sRow?.empleadoId || !Array.isArray(sRow.values) || !sRow.weekStart) return;
+                const fechasSemana = window.getFechasSemana ? window.getFechasSemana(sRow.weekStart) : [];
+                sRow.values.forEach((turno, idx) => {
+                    const fecha = fechasSemana[idx];
+                    if (fecha) baseRowsFlat.push({ empleadoId: sRow.empleadoId, fecha, turno: turno || null });
+                });
+            });
+            if (baseRowsFlat.length > 0 && window.buildIndices) {
+                const built = window.buildIndices(window.empleadosGlobales || [], [], baseRowsFlat);
+                baseIndex = built.baseIndex;
+            }
+        } catch (e) {
+            if (window.DEBUG_MODE === true) {
+                console.warn('[FICHA BASEINDEX ERROR]', { empleadoId, hotel: emp.hotel, error: e?.message });
+            }
+        }
+    }
+    // Fallback: usar _lastBaseIndex si no se pudo construir uno propio
+    if (!baseIndex && window._lastBaseIndex) {
+        baseIndex = window._lastBaseIndex;
+    }
 
     const condicionesRaw = window.calcularCondicionesEmpleado(emp.id);
     const condiciones = condicionesRaw || DEFAULT_CONDICIONES;
@@ -838,8 +866,8 @@ window.switchSection = (id) => {
     if (id === 'excel') window.renderExcelView();
     if (id === 'home') window.renderDashboard();
     if (id === 'changes') window.renderCambiosTurno();
-    if (id === 'vacations') window.renderVacationsModule();
-    if (id === 'absences') window.renderAbsencesModule();
+    if (id === 'vacations') window.location.href = 'vacaciones.html';
+    if (id === 'bajas' || id === 'absences') window.location.href = 'bajas.html';
 };
 
 window.renderCambiosTurno = async () => {
@@ -884,7 +912,7 @@ window.renderCambiosTurno = async () => {
                             <td style="padding: 12px 8px;">${c.fecha_inicio}</td>
                             <td style="padding: 12px 8px;"><span class="badge" style="background: #e2e8f0;">${c.tipo}</span></td>
                             <td style="padding: 12px 8px;"><strong>${c.empleado_id}</strong></td>
-                            <td style="padding: 12px 8px; font-size: 0.75rem;">${c.observaciones || c.turno_nuevo || '—'}</td>
+                            <td style="padding: 12px 8px; font-size: 0.75rem;">${c.observaciones || c.turno_nuevo || '�'}</td>
                         </tr>
                     `).join('')}
                 </tbody>
@@ -1022,9 +1050,9 @@ window.renderVacationsTable = async () => {
                                     <span style="font-size: 0.75rem; color: var(--text-dim);">${v.observaciones || ''}</span>
                                 </div>
                             </td>
-                            <td style="padding: 16px 12px; color: var(--text-dim);">${v.hotel || v.hotel_origen || '—'}</td>
+                            <td style="padding: 16px 12px; color: var(--text-dim);">${v.hotel || v.hotel_origen || '�'}</td>
                             <td style="padding: 16px 12px;">
-                                ${v.sustituto || v.sustituto_id ? `<span class="badge" style="background:#fef3c7; color:#92400e; border:1px solid #fde68a;">${v.sustituto || v.sustituto_id}</span>` : '<span style="opacity:0.3">—</span>'}
+                                ${v.sustituto || v.sustituto_id ? `<span class="badge" style="background:#fef3c7; color:#92400e; border:1px solid #fde68a;">${v.sustituto || v.sustituto_id}</span>` : '<span style="opacity:0.3">�</span>'}
                             </td>
                             <td style="padding: 16px 12px;">
                                 <span class="badge" style="background: ${v.estado === 'activo' ? '#dcfce7; color:#166534;' : '#f1f5f9; color:#475569;'}">
@@ -1469,7 +1497,7 @@ window.getMonday = (date) => {
 };
 
 // ==========================================
-// 2. EXCEL SOURCE LOADER — delegado a excel-loader.js
+// 2. EXCEL SOURCE LOADER � delegado a excel-loader.js
 // ==========================================
 // La función loadExcelSourceRows() la provee window.ExcelLoader (excel-loader.js).
 // window._sharedExcelSourceRows es la caché compartida con index y mobile.
@@ -1561,10 +1589,12 @@ window.createPuestosPreviewModel = ({
     eventos = [],
     employees = []
 } = {}) => {
-    // 1. Construir baseRows para el índice
+    // 1. INICIALIZACIÓN DE DATOS BASE
     const baseRowsFlat = [];
     const puestosMap = new Map();
-    
+    const ausenciaSustitucionMap = new Map(); // normSustitutoId -> [{ titularId, normTitular, fi, ff }]
+
+    // A) Construir baseRows y puestos para el índice
     sourceRows.forEach(sRow => {
         const puestoId = window.buildPuestoId(hotel, sRow.rowIndex);
         if (!puestosMap.has(puestoId)) {
@@ -1595,15 +1625,61 @@ window.createPuestosPreviewModel = ({
         });
     });
 
+    // B) Construir mapa de sustituciones por ausencia (VAC, BAJA, PERMISO, FORMACION)
+    eventos.forEach(ev => {
+        const tipo = window.normalizeTipo(ev.tipo);
+        if (!['VAC', 'BAJA', 'PERM', 'PERMISO', 'FORMACION'].includes(tipo)) return;
+        if (window.normalizeEstado(ev.estado) === 'anulado') return;
+
+        const sustitutoRaw = ev.empleado_destino_id || ev.sustituto_id ||
+            ev.sustituto || ev.payload?.sustituto_id || ev.payload?.sustituto;
+        if (!sustitutoRaw) return;
+
+        const titularRaw = ev.empleado_id;
+        if (!titularRaw) return;
+
+        const normSust = window.normalizeId(sustitutoRaw);
+        const normTitular = window.normalizeId(titularRaw);
+        const fi = window.normalizeDate(ev.fecha_inicio);
+        const ff = window.normalizeDate(ev.fecha_fin || ev.fecha_inicio);
+
+        const normTitularChk = window.normalizeId(titularRaw);
+        const titularRowMatch = sourceRows.find(r => {
+            const normRow = window.normalizeId(r.empleadoId);
+            return normRow === normTitularChk ||
+                   normRow.includes(normTitularChk) ||
+                   normTitularChk.includes(normRow);
+        });
+        if (!titularRowMatch) return;
+
+        const titularIdReal = titularRowMatch.empleadoId;
+        const normTitularReal = window.normalizeId(titularIdReal);
+
+        if (!ausenciaSustitucionMap.has(normSust)) {
+            ausenciaSustitucionMap.set(normSust, []);
+        }
+        ausenciaSustitucionMap.get(normSust).push({
+            titularId: titularIdReal,
+            normTitular: normTitularReal,
+            sustitutoRaw,
+            fi,
+            ff
+        });
+    });
+
+    // 2. CONSTRUIR ÍNDICE GLOBAL (con visibilidad de sustituciones)
     const { baseIndex } = window.buildIndices(employees, eventos, baseRowsFlat);
+    baseIndex.ausenciaSustitucionMap = ausenciaSustitucionMap;
     window._lastBaseIndex = baseIndex;
+    window._lastEventos = eventos; // Para debugging
 
     const puestos = Array.from(puestosMap.values()).sort((a, b) => a.rowIndex - b.rowIndex);
+
+    // 3. FUNCIONES DE RESOLUCIÓN
 
     const getCelda = (puestoId, fecha) => {
         const puesto = puestosMap.get(puestoId);
         if (!puesto) return null;
-        
         const asig = puesto.asignaciones[fecha];
         if (!asig) return null;
 
@@ -1652,13 +1728,168 @@ window.createPuestosPreviewModel = ({
         });
     };
 
+    const getTurnoEmpleadoExtended = (empleadoId, fecha) => {
+        const normEmpId = window.normalizeId(empleadoId);
+        if (ausenciaSustitucionMap.has(normEmpId)) {
+            const coberturas = ausenciaSustitucionMap.get(normEmpId);
+            for (const cob of coberturas) {
+                if (fecha >= cob.fi && fecha <= cob.ff) {
+                    const titularRow = sourceRows.find(r => window.normalizeId(r.empleadoId) === cob.normTitular);
+                    const dateIdx = dates.indexOf(fecha);
+                    const turnoBase = (titularRow && dateIdx !== -1) ? (titularRow.values[dateIdx] || null) : null;
+                    const profile = employees.find(e => window.normalizeId(e.id) === normEmpId || window.normalizeId(e.nombre) === normEmpId);
+                    
+                    const res = window.resolveEmployeeDay({
+                        empleado: profile || { id: empleadoId, nombre: empleadoId },
+                        empleadoId,
+                        hotel,
+                        fecha,
+                        turnoBase,
+                        eventos,
+                        baseIndex
+                    });
+
+                    return {
+                        ...res,
+                        turno: res.incidencia ? res.turno : (turnoBase || res.turno),
+                        turnoFinal: res.incidencia ? res.turno : (turnoBase || res.turno),
+                        rol: 'sustituto',
+                        sustitucion: true,
+                        titular: cob.titularId
+                    };
+                }
+            }
+        }
+        return getTurnoEmpleado(empleadoId, fecha);
+    };
+
     const getEmployees = () => {
-        const emps = new Map();
-        sourceRows.forEach(r => {
-            const norm = window.normalizeId(r.empleadoId);
-            emps.set(norm, { employee_id: r.empleadoId, displayName: r.displayName || r.empleadoId });
+        const operativeRows = [];
+        const deferredRows = [];
+        const usedAsSust = new Set();
+        const handledTitulars = new Set();
+
+        const coverageLookup = new Map();
+        ausenciaSustitucionMap.forEach((coberturas, normSust) => {
+            coberturas.forEach(cob => {
+                const isVisible = dates.some(d => d >= cob.fi && d <= cob.ff);
+                if (isVisible) coverageLookup.set(cob.normTitular, { normSust, rawSust: cob.sustitutoRaw });
+            });
         });
-        return Array.from(emps.values());
+
+        sourceRows.forEach(r => {
+            const normTitular = window.normalizeId(r.empleadoId);
+            if (handledTitulars.has(normTitular)) return;
+            const coverage = coverageLookup.get(normTitular);
+
+            if (coverage) {
+                const { normSust, rawSust } = coverage;
+                if (!usedAsSust.has(normSust)) {
+                    const empProfile = employees.find(e => window.normalizeId(e.id) === normSust || window.normalizeId(e.nombre) === normSust);
+                    operativeRows.push({
+                        hotel,
+                        hotel_id: hotel,
+                        puesto: `Puesto ${String((r.rowIndex || 0) + 1).padStart(2, '0')}`,
+                        posicionId: r.rowIndex,
+                        orden: r.rowIndex,
+                        ordenOriginal: r.rowIndex,
+                        employee_id: rawSust,
+                        empleadoId: rawSust,
+                        nombre: empProfile?.nombre || rawSust,
+                        empleado: empProfile?.nombre || rawSust,
+                        displayName: empProfile?.nombre || rawSust,
+                        empleadoMostrado: empProfile?.nombre || rawSust,
+                        empleadoReal: rawSust,
+                        titularAusente: null,
+                        sustitutoDe: r.empleadoId,
+                        esCoberturaAusencia: true,
+                        esAusenteInformativo: false,
+                        _originalTitularId: r.empleadoId
+                    });
+                    usedAsSust.add(normSust);
+                }
+                deferredRows.push({
+                    hotel,
+                    hotel_id: hotel,
+                    puesto: 'Ausente',
+                    posicionId: r.rowIndex,
+                    orden: r.rowIndex,
+                    ordenOriginal: r.rowIndex,
+                    employee_id: r.empleadoId,
+                    empleadoId: r.empleadoId,
+                    nombre: r.displayName || r.empleadoId,
+                    empleado: r.displayName || r.empleadoId,
+                    displayName: r.displayName || r.empleadoId,
+                    empleadoMostrado: r.displayName || r.empleadoId,
+                    empleadoReal: r.empleadoId,
+                    titularAusente: r.empleadoId,
+                    sustitutoDe: null,
+                    esCoberturaAusencia: false,
+                    esAusenteInformativo: true
+                });
+                handledTitulars.add(normTitular);
+            } else {
+                if (!usedAsSust.has(normTitular)) {
+                    operativeRows.push({
+                        hotel,
+                        hotel_id: hotel,
+                        puesto: `Puesto ${String((r.rowIndex || 0) + 1).padStart(2, '0')}`,
+                        posicionId: r.rowIndex,
+                        orden: r.rowIndex,
+                        ordenOriginal: r.rowIndex,
+                        employee_id: r.empleadoId,
+                        empleadoId: r.empleadoId,
+                        nombre: r.displayName || r.empleadoId,
+                        empleado: r.displayName || r.empleadoId,
+                        displayName: r.displayName || r.empleadoId,
+                        empleadoMostrado: r.displayName || r.empleadoId,
+                        empleadoReal: r.empleadoId,
+                        titularAusente: null,
+                        sustitutoDe: null,
+                        esCoberturaAusencia: false,
+                        esAusenteInformativo: false
+                    });
+                    handledTitulars.add(normTitular);
+                }
+            }
+        });
+
+        ausenciaSustitucionMap.forEach((coberturas, normSust) => {
+            if (usedAsSust.has(normSust)) return;
+            const hasActive = coberturas.some(cob => dates.some(d => d >= cob.fi && d <= cob.ff));
+            if (hasActive) {
+                const empProfile = employees.find(e => window.normalizeId(e.id) === normSust || window.normalizeId(e.nombre) === normSust);
+                const rawSust = coberturas[0].sustitutoRaw;
+                operativeRows.push({ 
+                    hotel, 
+                    hotel_id: hotel,
+                    puesto: 'Personal Apoyo', 
+                    employee_id: rawSust,
+                    empleadoId: rawSust,
+                    nombre: empProfile?.nombre || rawSust,
+                    displayName: empProfile?.nombre || rawSust,
+                    empleadoMostrado: empProfile?.nombre || rawSust, 
+                    empleadoReal: rawSust, 
+                    esCoberturaAusencia: true, 
+                    esAusenteInformativo: false 
+                });
+                usedAsSust.add(normSust);
+            }
+        });
+
+        operativeRows.sort((a, b) => (a.ordenOriginal ?? 999) - (b.ordenOriginal ?? 999));
+        const finalRows = [...operativeRows, ...deferredRows];
+        
+        // Diagnóstico DEBUG
+        if (window.DEBUG_MODE) {
+            console.log('[GET_EMPLOYEES_SAMPLE]', finalRows.slice(0, 3).map(r => ({
+                id: r.employee_id,
+                name: r.nombre,
+                display: r.displayName
+            })));
+        }
+        
+        return finalRows;
     };
 
     return {
@@ -1667,26 +1898,57 @@ window.createPuestosPreviewModel = ({
         puestos,
         getPuesto: (id) => puestosMap.get(id),
         getCelda,
-        getTurnoEmpleado,
+        getTurnoEmpleado: getTurnoEmpleadoExtended,
         getEmployees,
         getEmpleadosVisibles: (start, end) => getEmployees(),
-        estaDeVacaciones: (empId, fechas) => (fechas || []).some(f => getTurnoEmpleado(empId, f).incidencia === 'VAC'),
+        estaDeVacaciones: (empId, fechas) => (fechas || []).some(f => getTurnoEmpleadoExtended(empId, f).incidencia === 'VAC'),
         ordenarEmpleados: (emps) => emps,
         getEmployeeName: (id) => employees.find(e => window.normalizeId(e.id) === window.normalizeId(id) || window.normalizeId(e.nombre) === window.normalizeId(id))?.nombre || id
     };
 };
 
+// --- DIAGNÓSTICO DEL MODELO (Solicitado por el usuario) ---
+window.debugPreviewModel = () => {
+    const models = Object.values(window._previewPuestosModels || {});
+    if (!models.length) {
+        console.warn("[DEBUG_PREVIEW] No hay modelos activos en window._previewPuestosModels");
+        return null;
+    }
+    
+    // Tomar el primer modelo como referencia o agrupar
+    const report = {
+        hoteles: [...new Set(models.map(m => m.hotel))],
+        empleadosPorHotel: {},
+        baseIndexKeys: window._lastBaseIndex ? window._lastBaseIndex.porEmpleadoFecha.size : 0,
+        eventos: window._lastEventos ? window._lastEventos.length : 0
+    };
+    
+    models.forEach(m => {
+        if (!report.empleadosPorHotel[m.hotel]) {
+            const emps = m.getEmployees();
+            report.empleadosPorHotel[m.hotel] = emps.map(e => e.displayName || e.employee_id);
+        }
+    });
+    
+    console.log("[DEBUG_PREVIEW_REPORT]", report);
+    if (window._lastBaseIndex) {
+        console.log("[BASE_INDEX_SAMPLE]", Array.from(window._lastBaseIndex.porEmpleadoFecha.keys()).slice(0, 10));
+    }
+    
+    return report;
+};
+
 window.buildPuestoCellTitle = (celda) => {
     const parts = [
         `Puesto: ${celda.puesto_id}`,
-        `Base: ${celda.turno_base || '—'}`,
-        `Titular: ${celda.titular || '—'}`
+        `Base: ${celda.turno_base || '�'}`,
+        `Titular: ${celda.titular || '�'}`
     ];
 
     if (celda.incidencia) parts.push(`Incidencia: ${celda.incidencia}`);
     if (celda.real && celda.real !== celda.titular) parts.push(`Real: ${celda.real}`);
     if (celda.cambio && celda.turno !== celda.turno_base) {
-        parts.push(`Cambio: ${celda.turno_base || '—'} -> ${celda.turno || '—'}`);
+        parts.push(`Cambio: ${celda.turno_base || '�'} -> ${celda.turno || '�'}`);
     }
 
     return parts.join('\n');
@@ -1715,7 +1977,7 @@ window.renderPuestoCell = (celda) => {
     return `
         <div title="${escapeHtml(window.buildPuestoCellTitle(celda))}" style="display:flex; flex-direction:column; gap:6px; min-height:82px; padding:10px 8px; border-radius:12px; background:#ffffff;">
             <div style="display:inline-flex; align-items:center; justify-content:center; padding:8px 6px; border-radius:10px; font-size:0.8rem; font-weight:800; ${def.adminStyle || 'background:#f8fafc; color:#1e293b; border:1px solid #e2e8f0;'}">
-                ${escapeHtml(celda.turno || celda.turno_base || '—')}
+                ${escapeHtml(celda.turno || celda.turno_base || '�')}
             </div>
             <div style="font-size:0.73rem; line-height:1.25; color:#334155; font-weight:700;">
                 ${escapeHtml(celda.titular || 'Sin titular')}${celda.incidencia ? ` <span style="color:#b45309;">(${escapeHtml(celda.incidencia)})</span>` : ''}
@@ -1808,7 +2070,7 @@ window.detectarErrores = (previewModel) => {
                 });
             }
 
-            // --- 5. REACTIVAR DETECCIÓN DE ERROR REAL ---
+            // --- 5. REACTIVAR DETECCI�N DE ERROR REAL ---
             if (celda.incidencia && celda.turno && celda.turno !== celda.incidencia) {
                 const empleadoKey = celda.titular_id || celda.titular || '';
                 const fechaNormalizada = String(fecha || '').slice(0, 10);
@@ -1910,19 +2172,19 @@ window.validarPreviewModel = (previewModel) => {
 };
 
 window.getTurnoEmpleadoLabel = (turnoEmpleado) => {
-    if (!turnoEmpleado) return '—';
+    if (!turnoEmpleado) return '�';
     if (turnoEmpleado.conflicto) return 'Conflicto';
     if (turnoEmpleado.incidencia === 'VAC') return 'Vacaciones';
     if (turnoEmpleado.incidencia === 'BAJA') return 'Baja';
     if (turnoEmpleado.incidencia === 'PERM') return 'Permiso';
 
     const key = window.TurnosRules?.shiftKey(turnoEmpleado.turno || '', 'NORMAL') || '';
-    return window.TurnosRules?.definitions?.[key]?.label || turnoEmpleado.turno || '—';
+    return window.TurnosRules?.definitions?.[key]?.label || turnoEmpleado.turno || '�';
 };
 
 window.renderEmpleadoRowHeader = (employee, { showVacationIcon = false } = {}) => `
     <div style="display:flex; flex-direction:column; gap:4px;">
-        <span style="font-weight:800; color:#0f172a; font-size:0.82rem;">${escapeHtml(employee?.displayName || employee?.employee_id || 'Empleado')}${showVacationIcon && employee?.isOnVacationVisibleRange ? ' 🏖️' : ''}</span>
+        <span style="font-weight:800; color:#0f172a; font-size:0.82rem;">${escapeHtml(employee?.displayName || employee?.employee_id || 'Empleado')}${showVacationIcon && employee?.isOnVacationVisibleRange ? ' �x�️' : ''}</span>
     </div>
 `;
 
@@ -1972,7 +2234,7 @@ window.renderEmpleadoCell = (turnoEmpleado) => {
 
         if (cellData.incidencia === 'VAC') return 'VAC';
         if (cellData.incidencia === 'BAJA') return 'BAJA';
-        if (cellData.incidencia === 'PERM') return 'PERM';
+        if (cellData.incidencia === 'PERM' || cellData.incidencia === 'PERMISO') return 'PERM';
 
         const candidateStates = [
             cellData._celda?._realState,
@@ -2014,7 +2276,7 @@ window.renderEmpleadoCell = (turnoEmpleado) => {
         || (
             turnoVisible
             && turnoBaseVisible
-            && !['VAC', 'BAJA', 'PERM'].includes(turnoVisible)
+            && !['VAC', 'BAJA', 'PERM', 'PERMISO'].includes(turnoVisible)
             && turnoVisible !== turnoBaseVisible
         )
     );
@@ -2022,11 +2284,11 @@ window.renderEmpleadoCell = (turnoEmpleado) => {
     const getTurnoLabel = (turno) => {
         const normalized = normalizeTurnoCode(turno);
         const key = window.TurnosRules?.shiftKey(normalized, 'NORMAL') || '';
-        return window.TurnosRules?.definitions?.[key]?.label || normalized || '—';
+        return window.TurnosRules?.definitions?.[key]?.label || normalized || ' ';
     };
 
     const getIncidenciaLabel = (incidencia) => {
-        if (incidencia === 'VAC') return 'Vacaciones 🏖️';
+        if (incidencia === 'VAC') return 'Vacaciones';
         if (incidencia === 'BAJA') return 'Baja';
         if (incidencia === 'PERM') return 'Permiso';
         return incidencia || '';
@@ -2034,7 +2296,7 @@ window.renderEmpleadoCell = (turnoEmpleado) => {
 
     const getTurnoDisplayLine = (turno) => {
         const turnoLabel = getTurnoLabel(turno);
-        return `${escapeHtml(turnoLabel)}${hayCambio ? ' 🔄' : ''}`;
+        return `${escapeHtml(turnoLabel)}${data?.intercambio ? ' 🔄 ' : ''}`;
     };
 
     const getVisualStyle = () => {
@@ -2050,7 +2312,7 @@ window.renderEmpleadoCell = (turnoEmpleado) => {
         if (data.incidencia === 'BAJA') {
             return 'background:#fee2e2; color:#b91c1c; border:1px solid #fca5a5;';
         }
-        if (data.incidencia === 'PERM') {
+        if (data.incidencia === 'PERM' || data.incidencia === 'PERMISO') {
             return 'background:#ffedd5; color:#9a3412; border:1px solid #fdba74;';
         }
 
@@ -2096,19 +2358,9 @@ window.renderEmpleadoCell = (turnoEmpleado) => {
         );
     }
 
-    if (data.incidencia === 'VAC') {
-        const incidenciaLabel = getIncidenciaLabel(data.incidencia);
-        return buildContainer(incidenciaLabel, [escapeHtml(incidenciaLabel)]);
-    }
-
-    if (data.incidencia === 'BAJA') {
-        const incidenciaLabel = getIncidenciaLabel(data.incidencia);
-        return buildContainer(incidenciaLabel, [escapeHtml(incidenciaLabel)]);
-    }
-
-    if (data.incidencia === 'PERM') {
-        const incidenciaLabel = getIncidenciaLabel(data.incidencia);
-        return buildContainer(incidenciaLabel, [escapeHtml(incidenciaLabel)]);
+    if (['VAC', 'BAJA', 'PERM', 'PERMISO', 'FORMACION'].includes(data.incidencia)) {
+        const finalCellHtml = window.renderTurnoContent ? window.renderTurnoContent(data.incidencia) : escapeHtml(data.incidencia);
+        return buildContainer(data.incidencia, [finalCellHtml]);
     }
 
     if (!turnoVisible) {
@@ -2118,14 +2370,15 @@ window.renderEmpleadoCell = (turnoEmpleado) => {
     if (hasSustitucion) {
         const turnoLabel = getTurnoLabel(turnoVisible);
         const turnoDisplayLine = getTurnoDisplayLine(turnoVisible);
-        const details = `(Sustituye a ${escapeHtml(data.titular || '—')})`;
+        const details = `(Sustituye a ${escapeHtml(data.titular || ' ')})`;
         return buildContainer(turnoLabel, [turnoDisplayLine], `
             <div style="font-size:0.7rem; color:#475569; text-align:center;">${details}</div>
         `);
     }
 
-    const turnoLabel = getTurnoLabel(turnoVisible);
-    return buildContainer(turnoLabel, [getTurnoDisplayLine(turnoVisible)]);
+    const turnoLabelRaw = getTurnoLabel(turnoVisible);
+    const finalCellHtml = window.renderTurnoContent ? window.renderTurnoContent(turnoVisible, { intercambio: !!data.intercambio }) : escapeHtml(turnoLabelRaw);
+    return buildContainer(turnoLabelRaw, [finalCellHtml]);
 };
 
 window.navigatePreview = (dir) => {
@@ -2170,13 +2423,33 @@ window.renderPreview = async () => {
         const startISO = window.isoDate(start);
         const endISO = window.isoDate(end);
 
-        let { rows: data, eventos } = await window.TurnosDB.fetchRangoCalculado(startISO, endISO);
+        // Cargar eventos con rango extendido ±90 días para capturar periodos largos
+        // (ej. VAC Cristina 20/04�03/05 debe estar visible al ver semana 20/04 O 27/04)
+        const extStart = new Date(start); extStart.setDate(extStart.getDate() - 90);
+        const extEnd   = new Date(end);   extEnd.setDate(extEnd.getDate() + 90);
+        const extStartISO = window.isoDate(extStart);
+        const extEndISO   = window.isoDate(extEnd);
+
+        let { rows: data } = await window.TurnosDB.fetchRangoCalculado(startISO, endISO);
+        // Fetch de eventos con ventana ampliada para no perder periodos VAC/BAJA largos
+        const eventosAmpliados = await window.TurnosDB.fetchEventos(extStartISO, extEndISO);
+        const eventos = eventosAmpliados;
+
+        // Guardar como global para que ficha, dashboard y módulos secundarios lo usen
+        window.eventosGlobales = eventosAmpliados;
+        window.eventosActivos  = eventosAmpliados; // compatibilidad con código anterior
+
         if (window.DEBUG_MODE === true) {
-            console.log('[CT SAMPLE]', eventos.filter(e =>
-                window.normalizeTipo(e.tipo) === 'CT' ||
-                String(e.tipo || '').toUpperCase().includes('INTERCAMBIO')
-            ).slice(0, 10));
+            console.log('[GLOBAL EVENTOS]', window.eventosGlobales?.length);
+            console.log('[ACTIVOS EVENTOS]', window.eventosActivos?.length);
+            console.log('[EVENTOS CRISTINA]', (window.eventosGlobales || []).filter(e =>
+                JSON.stringify(e).toLowerCase().includes('cristina')
+            ));
+            console.log('[EVENTOS VAC]', (window.eventosGlobales || []).filter(e =>
+                String(e.tipo || '').toUpperCase().includes('vac')
+            ));
         }
+
         const hotels = await window.TurnosDB.getHotels();
         const profiles = await window.TurnosDB.getEmpleados();
         const excelSource = await window.loadAdminExcelSourceRows();
@@ -2212,7 +2485,6 @@ window.renderPreview = async () => {
                 employees: profiles
             });
 
-            window.eventosActivos = eventos;
             window.empleadosGlobales = profiles;
 
             previewModel.puestos.forEach(puesto => {
@@ -2310,17 +2582,17 @@ window.renderPreview = async () => {
 
                     const badge = (list, cls, defaultIcon) => {
                         if (!list.length) return '';
-                        const names = list.map(item => `<span title="${escapeHtml(item.title || '')}">${escapeHtml(item.name)}${item.icon === '🔄' ? '🔄' : ''}</span>`).join(' · ');
+                        const names = list.map(item => `<span title="${escapeHtml(item.title || '')}">${escapeHtml(item.name)}${item.icon === '�x' ? '�x' : ''}</span>`).join(' · ');
                         return `<div class="cal2-group cal2-${cls}"><span class="cal2-icon">${defaultIcon}</span><span class="cal2-names">${names}</span></div>`;
                     };
 
                     cells.push(`<div class="cal2-cell">
                         <div class="cal2-daynum">${new Date(dateKey + 'T12:00:00').getDate()}</div>
                         <div class="cal2-content">
-                            ${badge(groups.M,'m','☀️')}
-                            ${badge(groups.T,'t','🌤️')}
-                            ${badge(groups.N,'n','🌙')}
-                            ${badge(groups.D,'d','😴')}
+                            ${badge(groups.M,'m','�ܬ️')}
+                            ${badge(groups.T,'t','�xR�️')}
+                            ${badge(groups.N,'n','�xR"')}
+                            ${badge(groups.D,'d','�xܴ')}
                             ${groups.ABS.map(a => `<div class="cal2-group cal2-${a.cls}" title="${escapeHtml(a.title || '')}"><span class="cal2-icon">${a.icon}</span><span class="cal2-names">${a.name}</span></div>`).join('')}
                         </div>
                     </div>`);
@@ -2335,7 +2607,7 @@ window.renderPreview = async () => {
                         <span>${hName}</span>
                         <span style="font-size:0.75rem; color:#94a3b8; font-weight:400;">Resolución Motor V3</span>
                     </div>
-                    <div class="cal2-header"><div>LUN</div><div>MAR</div><div>MIÉ</div><div>JUE</div><div>VIE</div><div>SÁB</div><div>DOM</div></div>
+                    <div class="cal2-header"><div>LUN</div><div>MAR</div><div>MI�0</div><div>JUE</div><div>VIE</div><div>SÁB</div><div>DOM</div></div>
                     <div class="cal2-grid">${cells.join('')}</div>
                 </div>`;
                 area.appendChild(hotelSection);
@@ -2418,6 +2690,62 @@ function escapeHtml(value) {
     return String(value ?? '').replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
 }
 
+// ==========================================
+// DIAGN�STICO VAC � llamar desde consola o con DEBUG_MODE=true
+// ==========================================
+window.debugVacCristina = (fechaTest = '2026-04-20') => {
+    const eventos = window.eventosActivos || [];
+
+    const todosCristina = eventos.filter(e =>
+        JSON.stringify(e).toLowerCase().includes('cristina')
+    );
+    const todosVAC = eventos.filter(e =>
+        String(e.tipo || '').toUpperCase().includes('VAC')
+    );
+    const todosCumbria = eventos.filter(e =>
+        JSON.stringify(e).toLowerCase().includes('cumbria')
+    );
+
+    console.group('[VAC DEBUG DIAGN�STICO]');
+    console.log('[VAC DEBUG TODOS EVENTOS] Total:', eventos.length);
+    console.log('[VAC DEBUG CRISTINA]', todosCristina);
+    console.log('[VAC DEBUG TIPO VAC]', todosVAC);
+    console.log('[VAC DEBUG CUMBRIA]', todosCumbria);
+    console.groupEnd();
+
+    // Test directo del motor para Cristina
+    if (window.resolveEmployeeDay) {
+        const profile = (window.empleadosGlobales || []).find(e =>
+            window.normalizeId(e.id || '').includes('cristina') ||
+            window.normalizeId(e.nombre || '').includes('cristina')
+        ) || { id: 'Cristina', nombre: 'Cristina', hotel_id: 'Cumbria Spa&Hotel' };
+
+        const testResult = window.resolveEmployeeDay({
+            empleado: profile,
+            empleadoId: profile.id || 'Cristina',
+            hotel: profile.hotel_id || 'Cumbria Spa&Hotel',
+            fecha: fechaTest,
+            turnoBase: 'D',
+            eventos,
+            baseIndex: window._lastBaseIndex || null
+        });
+        console.log(`[TEST CRISTINA VAC ${fechaTest}]`, testResult);
+        console.log('[INTERPRETACI�N]',
+            testResult.incidencia === 'VAC' || testResult.turno === 'VAC'
+                ? '�S& Motor resuelve VAC correctamente'
+                : todosCristina.length === 0
+                    ? '�R PROBLEMA DE DATOS: no hay eventos de Cristina en eventosActivos �  fallo en fetch/query'
+                    : todosVAC.filter(e => JSON.stringify(e).toLowerCase().includes('cristina')).length === 0
+                        ? '�R PROBLEMA DE MATCHING: hay eventos de Cristina pero ninguno de tipo VAC �  posible discrepancia campo tipo'
+                        : '�a�️ PROBLEMA DE MOTOR/RENDER: el evento VAC existe y matchea pero resolveEmployeeDay no lo aplica'
+        );
+        return testResult;
+    } else {
+        console.warn('[debugVacCristina] resolveEmployeeDay no disponible');
+        return null;
+    }
+};
+
 function fmtDateLegacy(date) {
     if (!date) return '-';
     const d = new Date(date);
@@ -2426,7 +2754,7 @@ function fmtDateLegacy(date) {
 window.fmtDateLegacy = fmtDateLegacy;
 
 // ==========================================
-// 6. GESTIÓN DE EMPLEADOS Y PERSONAL (RESTORED)
+// 6. GESTI�N DE EMPLEADOS Y PERSONAL (RESTORED)
 // ==========================================
 window.populateEmployees = async () => {
     const area = $('#employeesContent'); if (!area) return;
@@ -2444,7 +2772,14 @@ window.populateEmployees = async () => {
         const todayISO = window.isoDate(today) || today.toISOString().split('T')[0];
 
         const { rows, eventos } = await window.TurnosDB.fetchRangoCalculado(startISO, endISO);
-        window.eventosActivos = eventos;
+        // Usar eventosGlobales si Vista Previa ya los cargó con rango ampliado;
+        // si no, usar los propios (rango hoy-30 a hoy+7)
+        if (!window.eventosGlobales || window.eventosGlobales.length === 0) {
+            window.eventosGlobales = eventos;
+            window.eventosActivos = eventos;
+        } else {
+            window.eventosActivos = window.eventosGlobales;
+        }
         
         const profilesResult = await window.TurnosDB.getEmpleados();
         window.empleadosGlobales = profilesResult;
@@ -2507,7 +2842,7 @@ window.populateEmployees = async () => {
                     // entry.displayAs trae el nombre normalizado pero visualmente correcto
                     const s = getStat(entry.displayAs || entry.id || entry.norm, hName);
                     
-                    let label = cell.turno || '—';
+                    let label = cell.turno || '�';
                     if (cell.tipo && cell.tipo !== 'NORMAL' && cell.tipo !== 'CT') label = cell.tipo;
                     
                     const cls = window.TurnosRules ? window.TurnosRules.shiftKey(label, cell.tipo) : '';
@@ -2548,7 +2883,7 @@ window.populateEmployees = async () => {
                 const hue = Math.abs(empName.length * 137.5) % 360; 
                 
                 const futureShifts = s.history.filter(h => h.fecha >= todayISO).sort((a,b) => a.fecha.localeCompare(b.fecha));
-                const currentState = futureShifts[0] || { cls: 'x', turno: '—', cell: {} };
+                const currentState = futureShifts[0] || { cls: 'x', turno: '�', cell: {} };
                 const nextWorkingShift = futureShifts.find(h => ['m', 't', 'n'].includes(h.cls)) || null;
 
                 let stateText = 'Activo';
@@ -2577,7 +2912,7 @@ window.populateEmployees = async () => {
                         </div>
                         <div class="ep-stats">
                             <div class="ep-stat"><span class="ep-label">Hoy</span><span class="ep-val color-${currentState.cls}" style="font-size:0.9rem;">${currentState.turno}</span></div>
-                            <div class="ep-stat"><span class="ep-label">Próximo</span><span class="ep-val ${nextWorkingShift ? 'color-' + nextWorkingShift.cls : ''}" style="font-size:0.9rem;">${nextWorkingShift ? nextWorkingShift.turno + ' (' + nextDate + ')' : '—'}</span></div>
+                            <div class="ep-stat"><span class="ep-label">Próximo</span><span class="ep-val ${nextWorkingShift ? 'color-' + nextWorkingShift.cls : ''}" style="font-size:0.9rem;">${nextWorkingShift ? nextWorkingShift.turno + ' (' + nextDate + ')' : '�'}</span></div>
                         </div>
                         <div class="ep-footer">
                              ${totalWork > 0 ? `<div class="ep-progress-label">Actividad 30 días</div>` : ''}
@@ -2589,7 +2924,7 @@ window.populateEmployees = async () => {
             }).join('');
             return `<div class="emp-hotel-section">
                 <div class="section-title-premium">
-                    <span class="stp-icon">🏨</span>
+                    <span class="stp-icon">�x��</span>
                     <h2>${hotel}</h2>
                     <span class="stp-count">${emps.length} empleados activos</span>
                 </div>
@@ -2727,7 +3062,7 @@ window.renderEmployeeLine = (line) => {
             <span class="el-text">${escapeHtml(line.puesto)}</span>
             <span class="el-pill type">${escapeHtml(line.tipo || 'Fijo')}</span>
             <span class="emp-line-status emp-line-status-${status.cls}">${escapeHtml(status.label)}</span>
-            <span>${line.turnoHoy ? window.employeeShiftBadge(line.turnoHoy.turno, line.turnoHoy.cambio ? '🔄' : '') : window.employeeShiftBadge('')}</span>
+            <span>${line.turnoHoy ? window.employeeShiftBadge(line.turnoHoy.turno, line.turnoHoy.cambio ? '�x' : '') : window.employeeShiftBadge('')}</span>
             <span>${line.proximoTurno ? window.employeeShiftBadge(line.proximoTurno.turno, nextDate) : window.employeeShiftBadge('')}</span>
             <span class="emp-line-actions" onclick="event.stopPropagation()">
                 <button type="button" onclick="window.openEmpDrawer('${id}')">Ficha</button>
@@ -2894,7 +3229,7 @@ window.renderEmployeeHistoryItem = (h) => `
     <div class="history-item compact">
         <div class="hi-date"><span class="hi-day">${new Date(`${h.fecha}T12:00:00`).toLocaleDateString('es-ES', {day:'2-digit'})}</span><span class="hi-month">${new Date(`${h.fecha}T12:00:00`).toLocaleDateString('es-ES', {month:'short'}).replace('.','').toUpperCase()}</span></div>
         <div class="hi-info"><div class="sc-label">${window.employeeShiftBadge(h.turno || '')}</div></div>
-        <div class="hi-type">${h.cell?.cambio ? '<span class="emp-change-icon">🔄</span>' : ''}</div>
+        <div class="hi-type">${h.cell?.cambio ? '<span class="emp-change-icon">�x</span>' : ''}</div>
     </div>
 `;
 
@@ -2968,24 +3303,34 @@ window.detectarConflictosOperativos = async (fecha, hotel) => {
         }
 
         // B. Regla de Jornada Progresiva (5d/6d/7+)
+        // Solo cuenta como trabajo: cls 'm' (Mañana), 't' (Tarde), 'n' (Noche).
+        // '�', D, VAC, BAJA, PERM no son trabajo.
+        const WORK_CLS = new Set(['m', 't', 'n']);
+        const esTurnoLaboral = (h) => WORK_CLS.has(h?.cls);
+
         let workedDays = 0;
-        if (info && info.turno && info.turno !== 'D') {
+        if (info && esTurnoLaboral({ cls: window.TurnosRules?.shiftKey(info.turno || '', 'NORMAL') })) {
             const history = emp.history || [];
             const sortedHistory = [...history].sort((a, b) => b.fecha.localeCompare(a.fecha));
             const before = sortedHistory.filter(h => h.fecha < fecha).slice(0, 8);
             
             workedDays = 1;
+            const diasContados = [fecha];
             for (const h of before) {
-                if (h.turno && h.turno !== 'D') workedDays++;
-                else break;
+                if (esTurnoLaboral(h)) {
+                    workedDays++;
+                    diasContados.push(h.fecha);
+                } else {
+                    break; // cadena rota: parar
+                }
             }
 
             if (workedDays >= 7) {
-                groupedConflicts.CRITICAL.push({ type: 'JORNADA', severity: 'CRITICAL', empId, title: 'Riesgo Laboral Extremo', desc: `${emp.nombre} lleva ${workedDays} días seguidos.`, suggestion: 'Bloquear jornada y asignar descanso hoy.' });
+                groupedConflicts.CRITICAL.push({ type: 'JORNADA', severity: 'CRITICAL', empId, title: 'Riesgo Laboral Extremo', desc: `${emp.nombre} lleva ${workedDays} días laborales seguidos (${diasContados.slice(0,3).join(', ')}...).`, suggestion: 'Bloquear jornada y asignar descanso hoy.' });
             } else if (workedDays === 6) {
-                groupedConflicts.WARNING.push({ type: 'JORNADA', severity: 'WARNING', empId, title: 'Exceso de Jornada', desc: `${emp.nombre} lleva 6 días trabajando.`, suggestion: 'Programar descanso mañana.' });
+                groupedConflicts.WARNING.push({ type: 'JORNADA', severity: 'WARNING', empId, title: 'Exceso de Jornada', desc: `${emp.nombre} lleva 6 días laborales: ${diasContados.join(', ')}.`, suggestion: 'Programar descanso mañana.' });
             } else if (workedDays === 5) {
-                groupedConflicts.INFO.push({ type: 'JORNADA', severity: 'INFO', empId, title: 'Próximo a límite (5d)', desc: `${emp.nombre} cumplirá 5 días seguidos hoy.`, suggestion: 'Sugerido descanso en 48h.' });
+                groupedConflicts.INFO.push({ type: 'JORNADA', severity: 'INFO', empId, title: 'Próximo a límite (5d)', desc: `${emp.nombre} cumplirá 5 días laborales hoy.`, suggestion: 'Sugerido descanso en 48h.' });
             }
         }
     }
@@ -3106,7 +3451,7 @@ window.showPublishPreview = async () => {
     modal.innerHTML = `
         <div class="drawer-content" style="max-width: 800px; padding: 0; border-radius: 24px; overflow: hidden; background: #f8fafc;">
             <header style="padding: 24px 32px; background: #0f172a; color: white;">
-                <h2 style="margin: 0; font-size: 1.25rem;">🚀 Publicar cambios en Supabase</h2>
+                <h2 style="margin: 0; font-size: 1.25rem;">�xa� Publicar cambios en Supabase</h2>
                 <p style="margin: 4px 0 0 0; font-size: 0.85rem; opacity: 0.8;">Revisa las diferencias antes de confirmar la subida definitiva.</p>
             </header>
             
@@ -3192,7 +3537,7 @@ window.validatePublishChanges = (changes) => {
         // 3. Turnos inválidos
         c.row.values.forEach((v, idx) => {
             const vNorm = String(v || '').toUpperCase().trim();
-            if (vNorm && !validShifts.has(vNorm) && !vNorm.includes('🏖️')) {
+            if (vNorm && !validShifts.has(vNorm) && !vNorm.includes('�x�️')) {
                 // Permitimos valores que no estén en el set si son descriptivos, 
                 // pero alertamos si parecen basura
                 if (vNorm.length > 10) errors.push(`Turno sospechoso en ${c.weekStart} (${c.displayName}): ${vNorm}`);
@@ -3215,7 +3560,7 @@ window.publishToSupabase = async () => {
         const changes = window.getExcelDiff();
         if (changes.length === 0) throw new Error('No hay cambios para publicar.');
 
-        // --- 1. VALIDACIÓN PRE-PUBLICACIÓN Y CONFLICTOS ---
+        // --- 1. VALIDACI�N PRE-PUBLICACI�N Y CONFLICTOS ---
         const validationErrors = window.validatePublishChanges ? window.validatePublishChanges(changes) : [];
         
         // Detección de conflictos operativos
@@ -3223,8 +3568,8 @@ window.publishToSupabase = async () => {
         const criticalConflicts = conflicts.filter(c => c.severity === 'CRITICAL');
         
         if (validationErrors.length > 0 || criticalConflicts.length > 0) {
-            let msg = '⚠️ AVISO DE INTEGRIDAD / CONFLICTOS:\n\n';
-            if (validationErrors.length > 0) msg += `- ERRORES TÉCNICOS: ${validationErrors.length} detectados.\n`;
+            let msg = '�a�️ AVISO DE INTEGRIDAD / CONFLICTOS:\n\n';
+            if (validationErrors.length > 0) msg += `- ERRORES T�0CNICOS: ${validationErrors.length} detectados.\n`;
             if (criticalConflicts.length > 0) msg += `- CONFLICTOS OPERATIVOS: ${criticalConflicts.length} detectados.\n`;
             
             msg += '\nSe recomienda resolver estos puntos, pero puede continuar si es consciente de los riesgos.';
@@ -3460,7 +3805,7 @@ window.renderDashboard = async () => {
             }
         }
 
-        // --- 4. ESTADO DE SINCRONIZACIÓN ---
+        // --- 4. ESTADO DE SINCRONIZACI�N ---
         const syncStatus = window.TurnosDB._channel?.status || (window.realtimeActivo ? 'ok' : 'connecting');
         if ($('#sync-cloud-status')) {
             $('#sync-cloud-status').textContent = (syncStatus === 'ok' || syncStatus === 'SUBSCRIBED') ? 'ACTIVO' : 'RECONECTANDO';
@@ -3502,3 +3847,4 @@ document.addEventListener('DOMContentLoaded', () => {
     setTimeout(window.renderDashboard, 1000);
     if (window.TurnosDB?.initRealtime) window.TurnosDB.initRealtime();
 });
+

@@ -69,9 +69,10 @@
                     <input type="text" id="bjRange" class="btn" placeholder="📅 Rango de fechas..." style="background:var(--bg3); color:var(--text); border:1px solid var(--border); border-radius:10px; padding:7px 15px; width:220px;">
                 </div>
                 <select id="bjStatus" class="btn" style="background:var(--bg3); color:var(--text); border:1px solid var(--border); border-radius:10px; padding:7px 15px;" onchange="renderBajas()">
-                    <option value="pending">Solo Pendientes</option>
-                    <option value="past">Solo Pasados</option>
-                    <option value="all">Todos los registros</option>
+                    <option value="pending">Activos (en curso)</option>
+                    <option value="finalizados">Finalizados</option>
+                    <option value="anulados">Anulados</option>
+                    <option value="all" selected>Todos los registros</option>
                 </select>
                 <button class="btn" style="background:var(--accent); color:white; font-weight:700; border-radius:10px; padding:8px 18px;" onclick="openModal()">+ Nueva Baja/Permiso</button>
             </div>
@@ -121,8 +122,12 @@
                     <input type="date" id="mbDateEnd" style="width:100%; padding:12px; border-radius:12px; background:var(--bg3); border:1px solid var(--border); color:var(--text);">
                 </div>
                 <div style="grid-column: span 2;">
-                    <label style="font-size:0.65rem; font-weight:800; color:var(--text-dim); text-transform:uppercase; display:block; margin-bottom:5px;">Turno Original / Notas</label>
-                    <input type="text" id="mbObs" placeholder="Ej: Mañana (Cita Hospital)" style="width:100%; padding:12px; border-radius:12px; background:var(--bg3); border:1px solid var(--border); color:var(--text);">
+                    <label style="font-size:0.65rem; font-weight:800; color:var(--text-dim); text-transform:uppercase; display:block; margin-bottom:5px;">Sustituto (Opcional)</label>
+                    <input type="text" id="mbSustituto" placeholder="Nombre del sustituto" style="width:100%; padding:12px; border-radius:12px; background:var(--bg3); border:1px solid var(--border); color:var(--text);">
+                </div>
+                <div style="grid-column: span 2;">
+                    <label style="font-size:0.65rem; font-weight:800; color:var(--text-dim); text-transform:uppercase; display:block; margin-bottom:5px;">Motivo / Observaciones</label>
+                    <textarea id="mbObs" placeholder="Causa de la ausencia o notas adicionales..." style="width:100%; padding:12px; border-radius:12px; background:var(--bg3); border:1px solid var(--border); color:var(--text); min-height:80px;"></textarea>
                 </div>
             </div>
             <div style="display:flex; flex-direction:column; gap:10px; margin-top:25px;">
@@ -145,59 +150,61 @@
         
         async function renderBajas() {
             const area = $('#bjContent');
-            if (!area || !window.TurnosDB) return;
+            if (!area || !window.TurnosDB?.fetchBajasPermisos) return;
 
             try {
-                const hotel = $('#bjHotel')?.value || 'all';
-                const emp = $('#bjEmp')?.value || 'all';
-                const status = $('#bjStatus')?.value || 'pending';
+                const hotel  = $('#bjHotel')?.value  || 'all';
+                const emp    = $('#bjEmp')?.value    || 'all';
+                const status = $('#bjStatus')?.value || 'all';
                 const rangeStr = $('#bjRange')?.value || '';
-                
-                let start = null, end = null;
-                if (rangeStr.includes(" a ")) {
-                    [start, end] = rangeStr.split(" a ");
+
+                let fechaInicio = null, fechaFin = null;
+                if (rangeStr.includes(' a ')) {
+                    [fechaInicio, fechaFin] = rangeStr.split(' a ');
                 }
 
-                const today = new Date().toISOString().split('T')[0];
-                
-                // Si no hay rango manual, filtramos según el selector de estado
-                let queryStart = start;
-                let queryEnd = end;
-                
-                if (!start) {
-                    if (status === 'pending') queryStart = today;
-                    else if (status === 'past') queryEnd = today;
-                }
+                // FUENTE SEGURA: usa fetchBajasPermisos del DAO
+                // Nunca borra físicamente. Estado null = activo.
+                const data = await window.TurnosDB.fetchBajasPermisos({
+                    hotel:        hotel !== 'all'  ? hotel : null,
+                    empleado:     emp   !== 'all'  ? emp   : null,
+                    estadoFiltro: status,
+                    fechaInicio,
+                    fechaFin
+                });
 
-                const eventos = await window.TurnosDB.fetchEventos(queryStart, queryEnd);
-                const data = eventos.filter(ev => 
-                    (String(ev.tipo || '').toUpperCase().startsWith('BAJA') || 
-                     String(ev.tipo || '').toUpperCase().startsWith('PERM')) &&
-                    (ev.estado || 'activo') !== 'anulado'
-                );
-
-                if (hotel !== 'all') data = data.filter(t => (t.hotel_origen || t.payload?.hotel_id) === hotel);
-                if (emp !== 'all') {
-                    const normTarget = window.TurnosDB.normalizeString(emp);
-                    data = data.filter(t => window.TurnosDB.normalizeString(t.empleado_id) === normTarget);
-                }
-
-                // Agrupación por periodos desde eventos
-                const periods = data.map(ev => ({
-                    id: ev.id,
-                    empId: ev.empleado_id,
-                    hotel: ev.hotel_origen || ev.payload?.hotel_id || 'General',
-                    tipo: ev.tipo,
-                    start: window.TurnosDB.normalizeDate(ev.fecha_inicio),
-                    end: window.TurnosDB.normalizeDate(ev.fecha_fin || ev.fecha_inicio),
-                    days: Math.max(1, Math.round((new Date(ev.fecha_fin || ev.fecha_inicio) - new Date(ev.fecha_inicio)) / 86400000) + 1),
-                    obs: ev.observaciones || ev.turno_nuevo || ''
-                }));
+                const periods = data.map(ev => {
+                    const sustituto = ev.empleado_destino_id || ev.sustituto_id || 
+                                     ev.sustituto || ev.payload?.sustituto_id || 
+                                     ev.payload?.sustituto || ev.payload?.sustituto_nombre || 
+                                     ev.payload?.empleado_sustituto || '—';
+                    const motivo = ev.observaciones || ev.payload?.observacion || 
+                                  ev.payload?.observaciones || ev.payload?.motivo || 
+                                  ev.payload?.descripcion || ev.payload?.notas || '—';
+                    return {
+                        id:    ev.id,
+                        empId: ev.empleado_id,
+                        hotel: ev.hotel_origen || ev.payload?.hotel_id || 'General',
+                        tipo:  ev.tipo,
+                        estado: ev.estado || 'activo',
+                        start: window.TurnosDB.normalizeDate(ev.fecha_inicio),
+                        end:   window.TurnosDB.normalizeDate(ev.fecha_fin || ev.fecha_inicio),
+                        days:  Math.max(1, Math.round(
+                            (new Date(window.TurnosDB.normalizeDate(ev.fecha_fin || ev.fecha_inicio))
+                            - new Date(window.TurnosDB.normalizeDate(ev.fecha_inicio))) / 86400000
+                        ) + 1),
+                        sustituto,
+                        obs: motivo
+                    };
+                });
 
                 periods.sort((a,b) => b.start.localeCompare(a.start));
 
                 if (periods.length === 0) {
-                    area.innerHTML = `<div style="padding:4rem; text-align:center; opacity:0.3; background:var(--surface); border-radius:15px; border:1px solid var(--border);">No hay registros de bajas o permisos para los filtros actuales.</div>`;
+                    const msg = status === 'all'
+                        ? 'No hay registros de bajas o permisos en el historial.'
+                        : 'No hay registros de bajas o permisos para los filtros actuales.';
+                    area.innerHTML = `<div style="padding:4rem; text-align:center; opacity:0.3; background:var(--surface); border-radius:15px; border:1px solid var(--border);">${msg}</div>`;
                     return;
                 }
 
@@ -210,7 +217,10 @@
                                     <th style="padding:1rem; text-align:left; font-size:0.7rem; color:var(--text-dim); text-transform:uppercase;">Empleado</th>
                                     <th style="padding:1rem; text-align:left; font-size:0.7rem; color:var(--text-dim); text-transform:uppercase;">Hotel</th>
                                     <th style="padding:1rem; text-align:center; font-size:0.7rem; color:var(--text-dim); text-transform:uppercase;">Periodo</th>
+                                    <th style="padding:1rem; text-align:left; font-size:0.7rem; color:var(--text-dim); text-transform:uppercase;">Sustituto</th>
+                                    <th style="padding:1rem; text-align:left; font-size:0.7rem; color:var(--text-dim); text-transform:uppercase;">Motivo</th>
                                     <th style="padding:1rem; text-align:center; font-size:0.7rem; color:var(--text-dim); text-transform:uppercase;">Estado</th>
+                                    <th style="padding:1rem; text-align:center; font-size:0.7rem; color:var(--text-dim); text-transform:uppercase;">Acciones</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -220,18 +230,26 @@
                                     return `
                                     <tr style="border-top:1px solid var(--border);">
                                         <td style="padding:1rem;">
-                                            <span style="${badgeClass} padding:5px 12px; border-radius:12px; font-weight:800; font-size:0.7rem;">
-                                                ${p.tipo}
-                                            </span>
+                                            <div style="display:flex; align-items:center; gap:8px;">
+                                                <span style="${badgeClass} padding:5px 12px; border-radius:12px; font-weight:800; font-size:0.7rem; display:flex; align-items:center; gap:5px;">
+                                                    ${window.cleanTurnoLabel ? window.cleanTurnoLabel(p.tipo) : p.tipo}
+                                                    <span style="font-size:1rem;">${window.getTurnoIcon ? window.getTurnoIcon(p.tipo) : ''}</span>
+                                                </span>
+                                            </div>
                                         </td>
                                         <td style="padding:1rem; font-weight:700;">${p.empId}</td>
                                         <td style="padding:1rem; font-size:0.85rem; color:var(--text-dim);">${p.hotel}</td>
                                         <td style="padding:1rem; text-align:center;">
                                             <div style="font-weight:600; font-size:0.9rem;">${window.TurnosDB.fmtDateLegacy(p.start)} — ${window.TurnosDB.fmtDateLegacy(p.end)}</div>
-                                            <div style="font-size:0.65rem; opacity:0.5; font-weight:800;">${p.days} DÍAS TOTALES</div>
+                                            <div style="font-size:0.65rem; opacity:0.5; font-weight:800;">${p.days} DÍAS</div>
+                                        </td>
+                                        <td style="padding:1rem; font-size:0.85rem; font-weight:600;">${p.sustituto}</td>
+                                        <td style="padding:1rem; font-size:0.75rem; color:var(--text-dim); max-width:200px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${p.obs}">${p.obs}</td>
+                                        <td style="padding:1rem; text-align:center;">
+                                            <span style="font-size:0.7rem; padding:3px 8px; border-radius:8px; ${p.estado === 'anulado' ? 'background:rgba(239,68,68,0.1);color:#f87171;' : 'background:rgba(16,185,129,0.1);color:#10b981;'}; font-weight:700;">${p.estado === 'anulado' ? 'ANULADO' : 'ACTIVO'}</span>
                                         </td>
                                         <td style="padding:1rem; text-align:center;">
-                                            <button class="btn" style="padding:5px 10px; font-size:0.7rem;" onclick="editPeriod('${p.id}')">Gestionar</button>
+                                            ${p.estado !== 'anulado' ? `<button class="btn" style="padding:5px 10px; font-size:0.7rem;" onclick="editPeriod('${p.id}')">Gestionar</button>` : '<span style="opacity:0.4;font-size:0.7rem;">Anulado</span>'}
                                         </td>
                                     </tr>`;
                                 }).join('')}
@@ -250,7 +268,8 @@
             const dateEnd = $('#mbDateEnd').value;
             const tipo = $('#mbTipo').value;
             const hotel = $('#mbHotel').value;
-            const obs = $('#mbObs').value;
+            const sust = $('#mbSustituto').value.trim();
+            const obs = $('#mbObs').value.trim();
 
             try {
                 const cleanTipo = tipo.split(' ')[0]; // Quitar emojis
@@ -258,12 +277,18 @@
                     id: _editingData?.id || undefined,
                     tipo: cleanTipo,
                     empleado_id: emp,
+                    empleado_destino_id: sust || null,
                     fecha_inicio: dateStart,
                     fecha_fin: dateEnd || dateStart,
                     hotel_origen: hotel,
-                    turno_nuevo: obs || 'M',
+                    observaciones: obs,
                     estado: 'activo',
-                    payload: { hotel_id: hotel }
+                    payload: { 
+                        hotel_id: hotel,
+                        sustituto_nombre: sust || null,
+                        observacion: obs || null
+                    },
+                    updated_at: new Date().toISOString()
                 });
 
                 closeModal();
@@ -287,19 +312,34 @@
             $('#mbDateEnd').value = window.TurnosDB.normalizeDate(match.fecha_fin || match.fecha_inicio);
             $('#mbHotel').value = match.hotel_origen || match.payload?.hotel_id;
             $('#mbTipo').value = match.tipo.startsWith('BAJA') ? 'BAJA 🏥' : 'PERM 🗓️';
-            $('#mbObs').value = match.turno_nuevo || '';
+            
+            const sust = match.empleado_destino_id || match.sustituto_id || 
+                         match.sustituto || match.payload?.sustituto_id || 
+                         match.payload?.sustituto || match.payload?.sustituto_nombre || 
+                         match.payload?.empleado_sustituto || '';
+            const obs = match.observaciones || match.payload?.observacion || 
+                        match.payload?.observaciones || match.payload?.motivo || 
+                        match.payload?.descripcion || match.payload?.notas || '';
+            
+            $('#mbSustituto').value = sust === '—' ? '' : sust;
+            $('#mbObs').value = obs === '—' ? '' : obs;
 
             openModal();
         }
 
         async function deleteCurrentPeriod() {
             if (!_editingData) return;
-            if (confirm(`¿Eliminar este registro de ${_editingData.empleado_id}?`)) {
+            if (confirm(`¿Anular el registro de ${_editingData.empleado_id}? El registro quedará marcado como anulado pero NO se borrará.`)) {
                 try {
-                    await window.TurnosDB.anularEvento(_editingData.id);
+                    // REGLA PERMANENTE: solo anular, nunca borrar físicamente
+                    if (window.TurnosDB.anularBajaPermiso) {
+                        await window.TurnosDB.anularBajaPermiso(_editingData.id, 'Anulado desde panel admin');
+                    } else {
+                        await window.TurnosDB.anularEvento(_editingData.id);
+                    }
                     closeModal();
                     await renderBajas();
-                } catch (e) { alert("Error: " + e.message); }
+                } catch (e) { alert('Error al anular: ' + e.message); }
             }
         }
 
@@ -312,6 +352,7 @@
                 $('#mbDateStart').value = '';
                 $('#mbDateEnd').value = '';
                 $('#mbTipo').value = '';
+                $('#mbSustituto').value = '';
                 $('#mbObs').value = '';
             }
             $('#modalBaja').style.display = 'flex';

@@ -153,7 +153,7 @@ window.TurnosDB = {
                 let q = client
                     .from('eventos_cuadrante')
                     .select('*')
-                    .neq('estado', 'anulado');
+                    .or('estado.is.null,estado.neq.anulado');
 
                 if (i && f) {
                     q = q.lte('fecha_inicio', f).or(`fecha_fin.is.null,fecha_fin.gte.${i}`);
@@ -367,6 +367,114 @@ window.TurnosDB = {
         // La tabla legacy `vacaciones` no existe en todos los despliegues.
         // La fuente activa son los turnos/eventos calculados con tipo VAC.
         return this.fetchTipo('VAC', inicio, fin);
+    },
+
+    // ──────────────────────────────────────────────────────────────────────
+    // fetchBajasPermisos — Fuente segura y completa para el módulo de Bajas
+    // REGLA: nunca filtra registros históricos por defecto.
+    // REGLA: los registros anulados se muestran si el usuario los pide.
+    // ──────────────────────────────────────────────────────────────────────
+    async fetchBajasPermisos({ hotel = null, empleado = null, estadoFiltro = 'activos', fechaInicio = null, fechaFin = null } = {}) {
+        const client = window.supabase;
+        const TIPOS_BAJA = ['BAJA', 'PERM', 'PERMISO']; // unificado: acepta ambas variantes
+        const ESTADO_ANULADO = /^(anulad|rechazad|cancelad)/i;
+
+        try {
+            // Rango base: 3 años atrás hasta 2 años adelante para historial completo
+            const hoy = new Date().toISOString().split('T')[0];
+            const baseStart = fechaInicio || (() => {
+                const d = new Date(); d.setFullYear(d.getFullYear() - 3); return d.toISOString().split('T')[0];
+            })();
+            const baseEnd = fechaFin || (() => {
+                const d = new Date(); d.setFullYear(d.getFullYear() + 2); return d.toISOString().split('T')[0];
+            })();
+
+            // Fetch amplio — el filtrado de estado se hace en cliente para no perder histórico
+            let q = client
+                .from('eventos_cuadrante')
+                .select('*')
+                .or('estado.is.null,estado.neq.anulado') // base: traer todo excepto anulados explícitos
+                .in('tipo', TIPOS_BAJA)
+                .lte('fecha_inicio', baseEnd);
+
+            // Si el usuario pide anulados o todos, traer también los anulados
+            if (estadoFiltro === 'anulados' || estadoFiltro === 'all') {
+                // Re-query sin filtro de estado para incluir anulados
+                q = client
+                    .from('eventos_cuadrante')
+                    .select('*')
+                    .in('tipo', TIPOS_BAJA)
+                    .lte('fecha_inicio', baseEnd);
+            }
+
+            if (fechaInicio) q = q.gte('fecha_inicio', fechaInicio);
+
+            const { data, error } = await q.order('fecha_inicio', { ascending: false });
+            if (error) throw error;
+
+            let resultado = data || [];
+
+            // Filtros en cliente (no destructivos)
+            if (estadoFiltro === 'activos') {
+                resultado = resultado.filter(ev => {
+                    if (ESTADO_ANULADO.test(ev.estado || '')) return false;
+                    const fin = this.normalizeDate(ev.fecha_fin || ev.fecha_inicio);
+                    return fin >= hoy;
+                });
+            } else if (estadoFiltro === 'finalizados') {
+                resultado = resultado.filter(ev => {
+                    if (ESTADO_ANULADO.test(ev.estado || '')) return false;
+                    const fin = this.normalizeDate(ev.fecha_fin || ev.fecha_inicio);
+                    return fin < hoy;
+                });
+            } else if (estadoFiltro === 'anulados') {
+                resultado = resultado.filter(ev => ESTADO_ANULADO.test(ev.estado || ''));
+            }
+            // estadoFiltro === 'all': devuelve todo sin filtrar estado
+
+            // Filtros opcionales de hotel y empleado
+            if (hotel) resultado = resultado.filter(ev =>
+                (ev.hotel_origen || ev.payload?.hotel_id) === hotel
+            );
+            if (empleado) {
+                const normEmp = this.normalizeString(empleado);
+                resultado = resultado.filter(ev =>
+                    this.normalizeString(ev.empleado_id) === normEmp
+                );
+            }
+
+            return resultado;
+        } catch (err) {
+            console.error('DAO Error (fetchBajasPermisos):', err);
+            return [];
+        }
+    },
+
+    // ──────────────────────────────────────────────────────────────────────
+    // anularBajaPermiso — NEVER DELETE. Solo UPDATE estado='anulado'.
+    // ──────────────────────────────────────────────────────────────────────
+    async anularBajaPermiso(id, motivo = '') {
+        if (!id) throw new Error('ID requerido para anular baja/permiso');
+        // BLOQUEO: si alguien intenta llamar a delete sobre bajas/permisos,
+        // esta función es el punto de entrada correcto.
+        const client = window.supabase;
+        const payload = {
+            estado: 'anulado',
+            updated_at: new Date().toISOString()
+        };
+        if (motivo) payload.observaciones = `[ANULADO] ${motivo}`;
+
+        const { error } = await client
+            .from('eventos_cuadrante')
+            .update(payload)
+            .eq('id', id);
+
+        if (error) {
+            console.error('DAO Error (anularBajaPermiso):', error);
+            throw error;
+        }
+        if (window.localforage) await window.localforage.clear();
+        this.updateUISyncStatus('ok');
     },
 
     // --- ESCRITURA ---

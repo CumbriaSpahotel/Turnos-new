@@ -172,9 +172,26 @@
 
                 // FUENTE PRINCIPAL: eventos_cuadrante tipo VAC
                 const eventos = await window.TurnosDB.fetchEventos(start, end);
+
+                // DEBUG DIAGNÓSTICO (activo solo con DEBUG_MODE=true)
+                if (window.DEBUG_MODE === true) {
+                    console.log('[VAC DEBUG TODOS EVENTOS]', eventos);
+                    console.log('[VAC DEBUG CRISTINA]', eventos.filter(e =>
+                        JSON.stringify(e).toLowerCase().includes('cristina')
+                    ));
+                    console.log('[VAC DEBUG TIPO VAC]', eventos.filter(e =>
+                        String(e.tipo || '').toUpperCase().includes('VAC')
+                    ));
+                    console.log('[VAC DEBUG CUMBRIA]', eventos.filter(e =>
+                        JSON.stringify(e).toLowerCase().includes('cumbria')
+                    ));
+                }
+
+                // Estados excluidos (anulado/rechazado/cancelado en cualquier variante)
+                const ESTADO_EXCLUIDO = /^(anulad|rechazad|cancelad)/i;
                 const vacEventos = eventos.filter(ev =>
                     String(ev.tipo || '').toUpperCase().startsWith('VAC') &&
-                    (ev.estado || 'activo') !== 'anulado'
+                    !ESTADO_EXCLUIDO.test(ev.estado || '')
                 );
 
                 // FALLBACK LEGACY: también leer de turnos para periodos guardados antes de la migración
