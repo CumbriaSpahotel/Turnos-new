@@ -20,6 +20,79 @@ console.log("[ShiftResolver] Iniciando carga v5.0...");
             .toLowerCase();
     };
 
+    /**
+     * Detecta si un empleado es ocasional, de apoyo, refuerzo, etc.
+     * Basado en múltiples campos de texto y tags.
+     */
+    window.isEmpleadoOcasionalOApoyo = (emp) => {
+        if (!emp) return false;
+        
+        // Flags explícitos y booleanos
+        if (emp.excludeCounters || 
+            emp.tipo_trabajador === 'apoyo' || 
+            emp.es_apoyo === true || 
+            emp.apoyo === true || 
+            emp.occasional === true || 
+            emp.eventual === true) return true;
+
+        const text = [
+            emp.tipo,
+            emp.puesto,
+            emp.categoria,
+            emp.rol,
+            emp.notas,
+            Array.isArray(emp.tags) ? emp.tags.join(' ') : emp.tags,
+            emp.tipo_personal
+        ].filter(Boolean).join(' ');
+
+        const normalizedText = window.normalizeId(text);
+        
+        // El regex busca palabras clave normalizadas (normalizeId quita tildes)
+        // SUSTITUTO NO debe ser motivo de ocultación aquí si es sustituto operativo
+        return /apoyo|ocasional|eventual|refuerzo|extra|personal de apoyo|trabajador ocasional/.test(normalizedText);
+    };
+
+    /**
+     * TAREA CODEX: Determina si se deben mostrar los chips de recuentos (noches/descansos).
+     * Regla: Se ocultan para personal de apoyo/ocasional PURO.
+     * Se MUESTRAN para personal de plantilla O sustitutos operativos (coberturas).
+     */
+    window.shouldShowEmployeeCounters = (emp, row) => {
+        if (!emp) return true;
+        
+        // 1. Detección de Apoyo/Ocasional estructural
+        const isSupport = window.isEmpleadoOcasionalOApoyo?.(emp) || (row && row.excludeCounters === true);
+        
+        // 2. Detección de Cobertura Operativa (Miriam cubriendo a alguien)
+        // Se considera cobertura operativa si el row o algún día tiene metadatos de sustitución
+        const hasOperationalData = (row) => {
+            if (!row) return false;
+            // Verificación en la raíz de la fila
+            if (row.esCoberturaAusencia || row.titular_cubierto || row.sustituyeA || row.origen === 'sustitucion') return true;
+            // Verificación en los días (formato snapshot)
+            if (row.dias) {
+                return Object.values(row.dias).some(d => d.titular_cubierto || d.origen === 'sustitucion' || d.origen === 'vacaciones');
+            }
+            // Verificación en cells (formato renderRow admin)
+            if (row.cells) {
+                return row.cells.some(c => c.titular || c.sustituyeA || c.tipo === 'VAC' || c.origen === 'sustitucion');
+            }
+            return false;
+        };
+
+        const isOperationalCover = hasOperationalData(row);
+
+        // REGLA FINAL:
+        // Si es una cobertura operativa principal (Miriam cubriendo vacaciones), SIEMPRE mostrar chips
+        if (isOperationalCover) return true;
+        
+        // Si es personal de apoyo puro (y no es cobertura operativa), OCULTAR chips
+        if (isSupport) return false;
+        
+        // Por defecto (plantilla regular), MOSTRAR chips
+        return true;
+    };
+
     window.normalizeDate = (value) => {
         if (!value) return '';
         if (value instanceof Date) {
@@ -98,15 +171,36 @@ console.log("[ShiftResolver] Iniciando carga v5.0...");
         return f >= fi && f <= ff;
     };
 
-    window.eventoPerteneceAEmpleado = (evento, empleadoId) => {
+    window.getEventoHotel = (evento = {}) => {
+        return evento.hotel || evento.hotel_id || evento.hotel_origen || evento.hotel_destino ||
+            evento.payload?.hotel || evento.payload?.hotel_id || evento.payload?.hotel_origen || '';
+    };
+
+    window.eventoPerteneceAHotel = (evento, hotel) => {
+        const eventHotel = window.normalizeId(window.getEventoHotel(evento));
+        const rowHotel = window.normalizeId(hotel);
+        const matches = !!eventHotel && !!rowHotel && eventHotel === rowHotel;
+        if (!matches && window.DEBUG_MODE === true) {
+            console.warn('[MATCH HOTEL DESCARTADO]', {
+                eventoHotel: eventHotel || '(sin hotel)',
+                filaHotel: rowHotel || '(sin hotel)',
+                evento
+            });
+        }
+        return matches;
+    };
+
+    window.eventoPerteneceAEmpleado = (evento, empleadoId, context = {}) => {
         const target = window.normalizeId(empleadoId);
         if (!target) return false;
+
+        if (context.hotel && !window.eventoPerteneceAHotel(evento, context.hotel)) return false;
 
         const tipo = window.normalizeTipo(evento.tipo);
 
         // Para ausencias (VAC, BAJA, PERMISO): solo el TITULAR es el portador de la incidencia.
         // El sustituto (empleado_destino_id) NO hereda la ausencia — hereda el turno via lógica separada.
-        const esAusencia = ['VAC', 'BAJA', 'PERMISO'].includes(tipo);
+        const esAusencia = ['VAC', 'BAJA', 'PERMISO', 'PERM', 'FORMACION', 'FORM'].includes(tipo);
 
         // Campos del titular (siempre aplicables)
         const candidatosTitular = [
@@ -146,10 +240,19 @@ console.log("[ShiftResolver] Iniciando carga v5.0...");
         // Paso 2: fallback seguro por subcadena — solo si hay exactamente 1 candidato inequívoco
         // Cubre el caso: evento.empleado_id = "cristina garcia", target = "cristina" (o viceversa)
         if (target.length >= 3) {
-            const coincidentes = candidatos.filter(c =>
-                c && c.length >= 3 && (c.includes(target) || target.includes(c))
-            );
-            if (coincidentes.length === 1) return true;
+            const coincidentes = [];
+            if (window.DEBUG_MODE === true) {
+                const parciales = candidatos.filter(c => c && c.length >= 3 && (c.includes(target) || target.includes(c)));
+                if (parciales.length) {
+                    console.warn('[MATCH EMPLEADO AMBIGUO]', {
+                        empleadoFila: target,
+                        candidatosEvento: candidatos,
+                        parciales,
+                        hotel: context.hotel || null,
+                        razon: 'Sin match exacto; no se aplica fallback por substring entre empleados.'
+                    });
+                }
+            }
             // Si hay múltiples coincidencias parciales, no resolver (ambiguo)
         }
 
@@ -241,14 +344,26 @@ console.log("[ShiftResolver] Iniciando carga v5.0...");
 
             if (candidatos.length === 1) {
                 // Solo un candidato: resolución inequívoca
-                res = tryGet(candidatos[0]);
-                if (res !== null) return res;
+                if (window.DEBUG_MODE === true) {
+                    console.warn('[BASE ALIAS AMBIGUO]', {
+                        empleadoId: normId,
+                        fecha: date,
+                        candidatos,
+                        razon: 'Sin match exacto; no se aplica fallback por substring entre empleados.'
+                    });
+                }
             } else if (candidatos.length > 1 && window.DEBUG_MODE === true) {
                 console.warn('[BASE ALIAS AMBIGUO]', { empleadoId: normId, fecha: date, candidatos });
             }
         }
 
         return null;
+    };
+
+    window.getTurnoOperativoBase = (empleadoId, fecha, context = {}) => {
+        const baseIndex = context.baseIndex || context;
+        const turno = window.getTurnoBaseDeEmpleado(empleadoId, fecha, baseIndex);
+        return turno === null || turno === undefined || String(turno).trim() === '' ? null : turno;
     };
 
 
@@ -328,7 +443,9 @@ console.log("[ShiftResolver] Iniciando carga v5.0...");
         // 1. Buscar eventos aplicables
         const eventosActivos = eventos.filter(ev => {
             if (window.normalizeEstado(ev.estado) === 'anulado') return false;
-            return window.eventoAplicaEnFecha(ev, date) && window.eventoPerteneceAEmpleado(ev, empId);
+            return window.eventoAplicaEnFecha(ev, date) &&
+                window.eventoPerteneceAHotel(ev, hotel) &&
+                window.eventoPerteneceAEmpleado(ev, empId, { hotel });
         });
 
         if (eventosActivos.length > 0) {
@@ -372,7 +489,7 @@ console.log("[ShiftResolver] Iniciando carga v5.0...");
                 
                 const otroId = window.getOtroEmpleadoDelCambio(ev, empId);
                 if (otroId) {
-                    const otroTurnoBase = window.getTurnoBaseDeEmpleado(otroId, date, baseIndex);
+                    const otroTurnoBase = window.getTurnoOperativoBase(otroId, date, { baseIndex });
                     result.turno = otroTurnoBase || '—';
                 } else {
                     result.turno = ev.turno_nuevo || result.turno;
@@ -410,7 +527,7 @@ console.log("[ShiftResolver] Iniciando carga v5.0...");
                         ev.empleado_id, ev.empleado_a_id, ev.empleado,
                         ev.empleado_nombre, ev.nombre, ev.titular
                     ].filter(Boolean).map(window.normalizeId);
-                    const matchEmp = window.eventoPerteneceAEmpleado(ev, empId);
+                    const matchEmp = window.eventoPerteneceAEmpleado(ev, empId, { hotel });
                     console.log('[VAC MATCH INPUT]', {
                         tipoOriginal: ev.tipo,
                         tipoNormalizado: window.normalizeTipo(ev.tipo),
@@ -653,6 +770,7 @@ console.log("[ShiftResolver] Iniciando carga v5.0...");
         if (up === 'BAJA' || up.startsWith('BAJ')) return '\uD83E\uDD12';       // 🤒
         if (up.startsWith('PER'))                return '\uD83D\uDDD3\uFE0F'; // 🗓️
         if (up.startsWith('FOR'))                return '\uD83C\uDF93';         // 🎓
+        if (up === 'N' || up === 'NOCHE')        return '\uD83C\uDF19';
         // El icono de intercambio SOLO para CT real, no para sustitución por ausencia
         if (flags.intercambio) return '\uD83D\uDD03'; // 🔃
         return '';
@@ -678,6 +796,16 @@ console.log("[ShiftResolver] Iniciando carga v5.0...");
         console.log("Empleado Visible:", res.empleadoNombre);
         console.log("Empleado Real (ID):", res.empleadoId);
         console.log("Hotel:", hotel);
+        console.table((eventos || [])
+            .filter(ev => window.eventoAplicaEnFecha(ev, fecha))
+            .map(ev => ({
+                tipo: window.normalizeTipo(ev.tipo),
+                hotelEvento: window.getEventoHotel(ev) || '(sin hotel)',
+                titular: ev.empleado_id || ev.titular_id || ev.titular || '',
+                sustituto: ev.empleado_destino_id || ev.sustituto_id || ev.sustituto || '',
+                matchHotel: window.eventoPerteneceAHotel(ev, hotel),
+                matchEmpleado: window.eventoPerteneceAEmpleado(ev, empleado, { hotel })
+            })));
         console.log("Posición/Titular Cubierto:", res.sustituyeA || 'Ninguno (Titular)');
         console.log("Evento Ausencia:", res.incidencia || 'No');
         console.log("Evento CT:", res.intercambio ? 'Sí' : 'No');
@@ -700,14 +828,17 @@ console.log("[ShiftResolver] Iniciando carga v5.0...");
      */
     window.renderTurnoContent = (turno, flags = {}) => {
         const label = window.cleanTurnoLabel(turno);
-        const icon  = window.getTurnoIcon(turno, flags);
+        const icons = [];
+        const turnoIcon = window.getTurnoIcon(turno, {});
+        if (turnoIcon) icons.push(turnoIcon);
+        if (flags.intercambio) icons.push('\uD83D\uDD03');
         
         // El label nunca debe contener iconos.
-        // El icono va en un span separado con aria-hidden.
+        // Los iconos van en spans separados con aria-hidden.
         let html = `<span class="turno-label">${label}</span>`;
-        if (icon) {
+        [...new Set(icons)].forEach(icon => {
             html += ` <span class="turno-icon" aria-hidden="true">${icon}</span>`;
-        }
+        });
         return html;
     };
 

@@ -3,76 +3,105 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TurnosWeb — Bandeja</title>
+    <title>Bandeja de Mensajes — TurnosWeb</title>
     <link rel="stylesheet" href="admin.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
     <style>
+        :root {
+            --accent: #0ea5e9;
+            --accent-hover: #0284c7;
+            --bg: #f8fafc;
+            --surface: #ffffff;
+            --text: #0f172a;
+            --text-dim: #64748b;
+            --border: #e2e8f0;
+            --shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
+            --radius: 16px;
+        }
+
         .nav-item.active { background: var(--accent-dim); color: var(--accent); border-right: 3px solid var(--accent); }
         
         .message-card {
-            background: var(--bg2);
+            background: white;
             border: 1px solid var(--border);
-            border-radius: 15px;
-            padding: 1.2rem;
-            margin-bottom: 1rem;
-            transition: 0.2s;
+            border-radius: 20px;
+            padding: 1.5rem;
+            margin-bottom: 1.25rem;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             display: flex;
-            gap: 1.2rem;
+            gap: 1.5rem;
             align-items: flex-start;
             position: relative;
+            box-shadow: var(--shadow);
         }
-        .message-card.unread { border-left: 4px solid var(--accent); background: rgba(var(--accent-rgb), 0.03); }
-        .message-card:hover { transform: translateX(5px); box-shadow: 0 5px 15px rgba(0,0,0,0.05); }
+        .message-card.unread { border-left: 5px solid var(--accent); background: rgba(14, 165, 233, 0.02); }
+        .message-card:hover { transform: translateX(8px); box-shadow: 0 15px 30px -5px rgba(0, 0, 0, 0.1); }
 
         .msg-icon {
-            width: 45px;
-            height: 45px;
-            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            border-radius: 14px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 1.2rem;
+            font-size: 1.4rem;
             flex-shrink: 0;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
         }
-        .msg-icon.info { background: rgba(33, 150, 243, 0.1); color: #2196f3; }
-        .msg-icon.aviso { background: rgba(255, 152, 0, 0.1); color: #ff9800; }
-        .msg-icon.urgente { background: rgba(244, 67, 54, 0.1); color: #f44336; }
+        .msg-icon.info { background: #e0f2fe; color: #0ea5e9; }
+        .msg-icon.aviso { background: #fff7ed; color: #f97316; }
+        .msg-icon.urgente { background: #fef2f2; color: #ef4444; }
 
         .msg-content { flex-grow: 1; }
-        .msg-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 5px; }
-        .msg-title { font-weight: 700; font-family: 'Outfit', sans-serif; font-size: 1rem; }
-        .msg-meta { font-size: 0.75rem; color: var(--text-dim); }
-        .msg-body { font-size: 0.9rem; color: var(--text); line-height: 1.4; }
+        .msg-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; }
+        .msg-title { font-weight: 800; font-family: 'Outfit', sans-serif; font-size: 1.1rem; color: var(--text); }
+        .msg-meta { font-size: 0.75rem; color: var(--text-dim); font-weight: 600; }
+        .msg-body { font-size: 0.95rem; color: var(--text); line-height: 1.6; margin: 10px 0; }
 
-        .msg-actions { display: flex; gap: 8px; margin-top: 10px; }
+        .msg-actions { display: flex; gap: 10px; margin-top: 15px; }
         .btn-msg {
-            background: transparent;
+            background: white;
             border: 1px solid var(--border);
-            padding: 5px 10px;
-            border-radius: 8px;
+            padding: 6px 14px;
+            border-radius: 10px;
             font-size: 0.8rem;
+            font-weight: 700;
             cursor: pointer;
             transition: 0.2s;
             color: var(--text-dim);
+            display: flex;
+            align-items: center;
+            gap: 6px;
         }
-        .btn-msg:hover { background: var(--bg3); color: var(--text); }
-        .btn-delete:hover { border-color: #f44336; color: #f44336; background: rgba(244, 67, 54, 0.05); }
+        .btn-msg:hover { background: var(--bg); color: var(--text); border-color: var(--accent); }
+        .btn-delete:hover { border-color: #ef4444; color: #ef4444; background: #fff1f2; }
 
         .stats-bar {
             display: flex;
-            gap: 1rem;
-            margin-bottom: 2rem;
+            gap: 1.5rem;
+            margin-bottom: 2.5rem;
         }
         .stat-pill {
-            background: var(--bg2);
-            padding: 10px 20px;
-            border-radius: 12px;
+            background: white;
+            padding: 12px 24px;
+            border-radius: 16px;
             border: 1px solid var(--border);
             display: flex;
             align-items: center;
-            gap: 10px;
-            font-weight: 600;
+            gap: 12px;
+            box-shadow: var(--shadow);
+        }
+        .stat-val { font-family: 'Outfit', sans-serif; font-size: 1.5rem; font-weight: 800; color: var(--text); }
+        .stat-label { font-size: 0.75rem; font-weight: 700; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.05em; }
+
+        .emisor-tag {
+            font-size: 0.75rem;
+            font-weight: 800;
+            color: var(--accent);
+            background: rgba(14, 165, 233, 0.1);
+            padding: 4px 10px;
+            border-radius: 6px;
         }
     </style>
 </head>
@@ -112,35 +141,33 @@
                     <h1 class="page-title">Bandeja de Mensajes</h1>
                     <p class="page-subtitle">Comunicaciones, alertas y notificaciones del personal</p>
                 </div>
-                <div id="syncStatus" class="status-badge-premium" style="margin-left:auto; display:flex; align-items:center; gap:8px;">
-                    <span id="syncDot" style="width:8px; height:8px; border-radius:50%; background:#ff9800;"></span>
-                    <span id="syncText">Conectando...</span>
+                <div id="syncStatus" class="status-badge-premium" style="margin-left:auto;">
                 </div>
             </header>
 
             <div class="stats-bar">
                 <div class="stat-pill">
-                    <span id="unreadCount" style="color:var(--accent); font-size:1.2rem;">0</span>
-                    <span style="font-size:0.8rem; opacity:0.7;">Mensajes Sin Leer</span>
+                    <span class="stat-val" id="unreadCount" style="color:var(--accent);">0</span>
+                    <span class="stat-label">Sin Leer</span>
                 </div>
                 <div class="stat-pill">
-                    <span id="totalCount" style="font-size:1.2rem;">0</span>
-                    <span style="font-size:0.8rem; opacity:0.7;">Total Recibidos</span>
+                    <span class="stat-val" id="totalCount">0</span>
+                    <span class="stat-label">Total</span>
                 </div>
-                <button onclick="handleClearAll()" class="btn-msg" style="margin-left:auto; height:fit-content; align-self:center;">🗑️ Vaciar Bandeja</button>
+                <button onclick="handleClearAll()" class="btn-msg" style="margin-left:auto; height:fit-content; align-self:center; padding:10px 20px;">🗑️ Vaciar Bandeja</button>
             </div>
 
-            <div id="messagesList" class="glass-panel" style="min-height:500px; padding:2rem;">
-                <div style="text-align:center; opacity:0.5; padding:5rem;">
-                    📭 No hay mensajes en la bandeja.
+            <div id="messagesList" style="min-height:500px;">
+                <div style="text-align:center; opacity:0.3; padding:10rem;">
+                    <i class="fas fa-spinner fa-spin fa-2x"></i>
                 </div>
             </div>
         </section>
     </main>
 
     <script src="supabase.js"></script>
-    <script src="supabase-dao.js?v=10.0"></script>
-    <script src="supabase-config.js?v=10.0"></script>
+    <script src="supabase-dao.js?v=11.1"></script>
+    <script src="supabase-config.js?v=11.1"></script>
     <script>
         const $ = (s) => document.querySelector(s);
         
@@ -154,8 +181,10 @@
 
                 if (data.length === 0) {
                     list.innerHTML = `
-                        <div style="text-align:center; opacity:0.5; padding:5rem;">
-                            📭 Bandeja de entrada vacía.
+                        <div class="glass-panel" style="text-align:center; opacity:0.5; padding:5rem; border-radius:24px;">
+                            <div style="font-size:3rem; margin-bottom:1rem;">📭</div>
+                            <h3 style="font-family:'Outfit', sans-serif;">Bandeja de entrada vacía</h3>
+                            <p>No hay mensajes ni notificaciones por el momento.</p>
                         </div>`;
                     return;
                 }
@@ -170,13 +199,13 @@
                                 <span class="msg-title">${msg.asunto || 'Sin Asunto'}</span>
                                 <span class="msg-meta">${new Date(msg.created_at).toLocaleString('es-ES')}</span>
                             </div>
-                            <div style="margin-bottom:8px;">
-                                <span style="font-size:0.75rem; font-weight:700; color:var(--accent);">${msg.emisor}</span>
-                                ${msg.hotel_id ? `<span style="font-size:0.7rem; opacity:0.5; margin-left:5px;">@ ${msg.hotel_id}</span>` : ''}
+                            <div style="margin-bottom:8px; display:flex; align-items:center; gap:10px;">
+                                <span class="emisor-tag">${msg.emisor}</span>
+                                ${msg.hotel_id ? `<span style="font-size:0.75rem; font-weight:700; color:var(--text-dim); opacity:0.6;">@ ${msg.hotel_id}</span>` : ''}
                             </div>
                             <div class="msg-body">${msg.cuerpo}</div>
                             <div class="msg-actions">
-                                ${!msg.leido ? `<button class="btn-msg" onclick="handleMarkRead('${msg.id}')">👁️ Marcar como leído</button>` : ''}
+                                ${!msg.leido ? `<button class="btn-msg" onclick="handleMarkRead('${msg.id}')">👁️ Marcar leído</button>` : ''}
                                 <button class="btn-msg btn-delete" onclick="handleDelete('${msg.id}')">🗑️ Eliminar</button>
                             </div>
                         </div>
@@ -185,7 +214,7 @@
 
             } catch (err) {
                 console.error(err);
-                list.innerHTML = `<div style="color:#ff5252; padding:2rem; text-align:center;">Error: ${err.message}</div>`;
+                list.innerHTML = `<div class="alert error">Error: ${err.message}</div>`;
             }
         }
 
@@ -212,7 +241,6 @@
 
         async function handleClearAll() {
             if (!confirm("¿Estás seguro de vaciar toda la bandeja de mensajes?")) return;
-            // Podríamos implementar un clearMessages en el DAO si fuera necesario
             alert("Opción no habilitada por seguridad. Elimine uno a uno.");
         }
 
@@ -225,25 +253,20 @@
             const savedTheme = localStorage.getItem('turnosweb_theme') || 'light';
             if (savedTheme === 'light') document.body.classList.add('light-mode');
             
-            // Watchdog de conexión para asegurar carga
             const checkConnect = setInterval(() => {
                 if (window.TurnosDB && window.supabase) {
                     clearInterval(checkConnect);
-                    
                     if (!window.TurnosDB.client) window.TurnosDB.client = window.supabase;
-                    
                     fetchMessages();
 
-                    window.supabase
-                        .channel('mensajes_changes')
+                    window.supabase.channel('mensajes_changes')
                         .on('postgres_changes', { event: '*', schema: 'public', table: 'mensajes' }, () => {
                             fetchMessages();
-                        })
-                        .subscribe();
+                        }).subscribe();
                 }
             }, 300);
         });
     </script>
-    <script src="sync-status.js?v=10.0"></script>
+    <script src="sync-status.js?v=11.1"></script>
 </body>
 </html>

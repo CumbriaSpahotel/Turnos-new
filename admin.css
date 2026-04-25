@@ -1223,6 +1223,141 @@ input, select, textarea { color: var(--text); }
   padding: 4px;
 }
 
+/* Vista Previa compacta: solo densidad visual, sin cambios funcionales */
+#previewContent {
+  margin-top: -4px;
+}
+
+#section-preview .page-header {
+  margin-bottom: 12px !important;
+  padding-bottom: 10px !important;
+}
+
+#section-preview .page-title {
+  font-size: 1.55rem !important;
+  line-height: 1.1 !important;
+}
+
+#section-preview .header-controls {
+  gap: 8px !important;
+}
+
+#section-preview .header-controls .btn,
+#section-preview .header-controls input,
+#section-preview .header-controls select {
+  min-height: 32px !important;
+  padding: 5px 11px !important;
+  border-radius: 8px !important;
+  font-size: 0.76rem !important;
+}
+
+#section-preview .header-controls button[id^="btnPrev"],
+#section-preview .header-controls button[id^="btnNext"] {
+  width: 32px !important;
+  padding: 5px 8px !important;
+  font-size: 0.9rem !important;
+}
+
+#section-preview .btn-group .btn {
+  padding: 5px 12px !important;
+}
+
+#previewContent > div {
+  margin-bottom: 1.15rem !important;
+}
+
+#previewContent .glass-panel {
+  border-radius: 12px !important;
+}
+
+#previewContent .glass-panel > div:first-child {
+  padding: 10px 16px !important;
+  gap: 10px !important;
+}
+
+#previewContent .glass-panel > div:first-child img {
+  width: 30px !important;
+  height: 30px !important;
+}
+
+#previewContent .glass-panel > div:first-child h2 {
+  font-size: 0.98rem !important;
+  line-height: 1.15 !important;
+}
+
+#previewContent .glass-panel > div:first-child h2 span {
+  font-size: 0.74rem !important;
+}
+
+.preview-table-premium {
+  font-size: 0.78rem !important;
+}
+
+.preview-table-premium th {
+  padding: 8px 10px !important;
+  min-width: 116px !important;
+  line-height: 1.15 !important;
+}
+
+.preview-table-premium th:first-child {
+  width: 176px !important;
+  min-width: 176px !important;
+  padding: 9px 16px !important;
+}
+
+.preview-table-premium th div:first-child {
+  font-size: 0.58rem !important;
+  line-height: 1.05 !important;
+}
+
+.preview-table-premium th div:last-child {
+  font-size: 0.68rem !important;
+  line-height: 1.1 !important;
+}
+
+.preview-table-premium tbody tr {
+  height: 52px !important;
+}
+
+.preview-table-premium td {
+  padding: 4px 5px !important;
+}
+
+.preview-table-premium td:first-child {
+  width: 176px !important;
+  min-width: 176px !important;
+  padding: 7px 16px !important;
+}
+
+.preview-table-premium td:first-child span {
+  font-size: 0.76rem !important;
+  line-height: 1.15 !important;
+}
+
+.preview-table-premium td > div {
+  min-height: 48px !important;
+  padding: 5px 4px !important;
+  gap: 3px !important;
+  border-radius: 8px !important;
+}
+
+.preview-table-premium td > div > div:first-child {
+  gap: 2px !important;
+}
+
+.preview-table-premium td > div > div:first-child > div {
+  padding: 5px 5px !important;
+  border-radius: 8px !important;
+  font-size: 0.68rem !important;
+  line-height: 1.1 !important;
+  min-height: 28px !important;
+}
+
+.preview-table-premium .turno-label,
+.preview-table-premium .turno-icon {
+  line-height: 1 !important;
+}
+
 .emp-cell {
   background: #f8fafc !important;
   color: #1e293b;

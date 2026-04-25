@@ -18,7 +18,19 @@ window.TurnosDB = {
     normalizeDate(d) {
         if (!d) return null;
         if (d instanceof Date) return d.toISOString().split('T')[0];
-        if (typeof d === 'string' && d.includes('T')) return d.split('T')[0];
+        if (typeof d === 'string') {
+            if (d.includes('T')) return d.split('T')[0];
+            // Soporte para DD/MM/YYYY
+            if (d.includes('/')) {
+                const parts = d.split('/');
+                if (parts.length === 3) {
+                    const day = parts[0].padStart(2, '0');
+                    const month = parts[1].padStart(2, '0');
+                    const year = parts[2].length === 2 ? '20' + parts[2] : parts[2];
+                    return `${year}-${month}-${day}`;
+                }
+            }
+        }
         return d;
     },
 
@@ -236,7 +248,7 @@ window.TurnosDB = {
 
             const { error } = await client
                 .from('peticiones_cambio')
-                .update({ estado, updated_at: new Date().toISOString() })
+                .update({ estado })
                 .eq('id', id);
             if (error) throw error;
             this.updateUISyncStatus('ok');
@@ -247,10 +259,32 @@ window.TurnosDB = {
         }
     },
 
+    async savePeticionCambio(payload) {
+        const client = window.supabase;
+        try {
+            const { error } = await client
+                .from('peticiones_cambio')
+                .insert([payload]);
+            if (error) throw error;
+            this.updateUISyncStatus('ok');
+        } catch (err) {
+            console.error("DAO Error (savePeticionCambio):", err);
+            this.updateUISyncStatus('error');
+            throw err;
+        }
+    },
+
     async anularEventosPeticion(peticionId) {
         const client = window.supabase;
         try {
-            // Buscar eventos en eventos_cuadrante que tengan este peticion_id en su payload
+            // Buscar eventos en eventos_cuadrante que tengan esta solicitud vinculada.
+            const byColumn = await client
+                .from('eventos_cuadrante')
+                .update({ estado: 'anulado', updated_at: new Date().toISOString() })
+                .eq('solicitud_id', peticionId);
+
+            if (byColumn.error) console.warn("DAO Aviso (anularEventosPeticion solicitud_id):", byColumn.error.message);
+
             const { error } = await client
                 .from('eventos_cuadrante')
                 .update({ estado: 'anulado', updated_at: new Date().toISOString() })
@@ -277,6 +311,7 @@ window.TurnosDB = {
                     fecha_inicio: f.fecha,
                     fecha_fin: f.fecha,
                     turno_nuevo: f.destino,
+                    solicitud_id: peticion.id,
                     observaciones: `Aprobado desde Solicitudes: ${peticion.observaciones || ''}`,
                     payload: { peticion_id: peticion.id, original_data: f }
                 });
@@ -328,6 +363,21 @@ window.TurnosDB = {
             if (error) throw error;
         } catch (err) {
             console.error("DAO Error (eliminarMensaje):", err);
+            throw err;
+        }
+    },
+
+    async saveMensaje(payload) {
+        const client = window.supabase;
+        try {
+            const { error } = await client
+                .from('mensajes')
+                .insert([payload]);
+            if (error) throw error;
+            this.updateUISyncStatus('ok');
+        } catch (err) {
+            console.error("DAO Error (saveMensaje):", err);
+            this.updateUISyncStatus('error');
             throw err;
         }
     },
@@ -705,7 +755,8 @@ window.TurnosDB = {
                 'telefono',
                 'email',
                 'notas',
-                'orden'
+                'orden',
+                'id_interno'
             ];
 
             const payload = {};
@@ -793,9 +844,13 @@ window.TurnosDB = {
         } catch (err) {
             console.error("[ADMIN ERROR] DAO insertLog", {
                 message: err.message,
-                stack: err.stack,
+                code: err.code,
                 logData: logData
             });
+            // Si es un error de columna faltante en el cache del schema, no bloqueamos la publicación
+            if (err.code === 'PGRST204') {
+                return null;
+            }
             throw err;
         }
     },
@@ -852,6 +907,152 @@ window.TurnosDB = {
         } catch (err) {
             console.error("DAO Error (getLog):", err);
             throw err;
+        }
+    },
+
+    // --- ARQUITECTURA DE SNAPSHOTS (PUBLICACIÓN FINAL - v12.0) ---
+    
+    async publishCuadranteSnapshot(params) {
+        const { semanaInicio: rawStart, semanaFin: rawEnd, hotel, snapshot, resumen, usuario } = params;
+        const semanaInicio = this.normalizeDate(rawStart);
+        const semanaFin = this.normalizeDate(rawEnd);
+        const client = window.supabase;
+        try {
+            // 1. Obtener versión actual para esta semana/hotel
+            const { data: prevs } = await client
+                .from('publicaciones_cuadrante')
+                .select('version')
+                .eq('semana_inicio', semanaInicio)
+                .eq('hotel', hotel)
+                .order('version', { ascending: false })
+                .limit(1);
+            
+            const nextVersion = (prevs && prevs[0]?.version) ? prevs[0].version + 1 : 1;
+
+            // 3. Insertar nuevo snapshot activo
+            const { data: newSnap, error: snapErr } = await client
+                .from('publicaciones_cuadrante')
+                .insert([{
+                    semana_inicio: semanaInicio,
+                    semana_fin: semanaFin,
+                    hotel: hotel,
+                    snapshot_json: snapshot,
+                    resumen: resumen,
+                    publicado_por: usuario || 'ADMIN',
+                    version: nextVersion,
+                    estado: 'activo'
+                }])
+                .select()
+                .single();
+            
+            if (snapErr) throw snapErr;
+
+            // 2. Marcar snapshots anteriores como 'reemplazado'
+            // Se hace después del insert para asegurar que el nuevo ya existe.
+            // Se usa el ID del nuevo para excluirlo del update.
+            const { error: upErr } = await client
+                .from('publicaciones_cuadrante')
+                .update({ estado: 'reemplazado', updated_at: new Date().toISOString() })
+                .eq('semana_inicio', semanaInicio)
+                .eq('hotel', hotel)
+                .eq('estado', 'activo')
+                .neq('id', newSnap.id);
+
+            if (upErr) {
+                console.warn("[SNAPSHOT VERSIONING ERROR] No se pudo desactivar la versión anterior (RLS Update Error). La deduplicación en cliente se encargará de mostrar la más reciente.", upErr);
+            }
+
+            // 4. Registrar en log de auditoría (publicaciones_log)
+            try {
+                await this.insertLog({
+                    cambios_totales: resumen?.emps || 0,
+                    empleados_afectados: resumen?.emps || 0,
+                    resumen_json: {
+                        accion: 'publicar_snapshot_cuadrante',
+                        semana_inicio: semanaInicio,
+                        semana_fin: semanaFin,
+                        hotel: hotel,
+                        version: nextVersion,
+                        id_publicacion_cuadrante: newSnap.id,
+                        resumen: resumen
+                    },
+                    cambios_detalle_json: [],
+                    estado: 'ok',
+                    usuario: usuario || 'ADMIN'
+                });
+            } catch (logErr) {
+                console.warn("DAO: Error al registrar log de auditoría (no bloqueante):", logErr.message);
+            }
+
+            return true;
+        } catch (err) {
+            console.error("DAO Error (publishCuadranteSnapshot):", err);
+            throw err;
+        }
+    },
+
+    async loadPublishedSchedule(params, maybeSemanaFin, maybeHotel) {
+        const { semanaInicio: rawStart, semanaFin: rawEnd, hotel } = (typeof params === 'object' && params !== null)
+            ? params
+            : { semanaInicio: params, semanaFin: maybeSemanaFin, hotel: maybeHotel };
+        
+        const semanaInicio = this.normalizeDate(rawStart);
+        const semanaFin = this.normalizeDate(rawEnd);
+        const client = window.supabase;
+        try {
+            let query = client
+                .from('publicaciones_cuadrante')
+                .select('*')
+                .eq('estado', 'activo');
+            
+            if (semanaInicio) query = query.gte('semana_fin', semanaInicio);
+            if (semanaFin) query = query.lte('semana_inicio', semanaFin);
+            if (hotel) query = query.eq('hotel', hotel);
+            query = query.order('semana_inicio', { ascending: true }).order('hotel', { ascending: true });
+
+            const { data, error } = await query;
+            
+            if (error) throw error;
+            if (!data || data.length === 0) {
+                return { ok: false, reason: "NO_PUBLICATION", message: "No hay cuadrante publicado para esta semana." };
+            }
+
+            // DEDUPLICACIÓN DEFENSA SECUNDARIA
+            const deduped = [];
+            const seenHotels = new Set();
+            
+            // Ordenamos por versión desc y fecha desc
+            const sortedData = [...data].sort((a, b) => {
+                if (b.version !== a.version) return b.version - a.version;
+                return new Date(b.fecha_publicacion) - new Date(a.fecha_publicacion);
+            });
+
+            for (const d of sortedData) {
+                const hName = String(d.hotel || '').toUpperCase();
+                if (hName.includes('TEST') || hName.includes('MOCK') || hName.includes('SAMPLE')) {
+                    continue;
+                }
+
+                if (!seenHotels.has(d.hotel)) {
+                    deduped.push({
+                        hotel: d.hotel,
+                        semanaInicio: d.semana_inicio,
+                        semanaFin: d.semana_fin,
+                        version: d.version,
+                        data: d.snapshot_json
+                    });
+                    seenHotels.add(d.hotel);
+                }
+            }
+
+            return {
+                ok: true,
+                source: "published_snapshot",
+                snapshots: deduped
+            };
+        } catch (err) {
+            console.error("DAO Error (loadPublishedSchedule):", err);
+            return { ok: false, reason: "ERROR", message: err.message };
         }
     }
 };

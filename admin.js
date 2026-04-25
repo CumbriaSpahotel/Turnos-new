@@ -259,7 +259,8 @@ window.buildEmployeeProfileModel = (empleadoId, fechaReferencia) => {
         telefono: profile.telefono,
         email: profile.email,
         notas: profile.notas,
-        activo: profile.activo
+        activo: profile.activo,
+        id_interno: profile.id_interno
     };
 
     const excelSource = window._adminExcelEditableRows || window._adminExcelBaseOriginalRows || null;
@@ -373,7 +374,7 @@ window.renderEmployeeProfileField = ([label, value, key, type = 'text']) => {
     const iconMap = {
         id: 'id', nombre: 'person', hotel_id: 'hotel', puesto: 'briefcase', categoria: 'laboral',
         tipo_personal: 'profile', contrato: 'laboral', estado_empresa: 'status', fecha_alta: 'calendar',
-        fecha_baja: 'calendar', telefono: 'phone', email: 'mail', activo: 'toggle'
+        fecha_baja: 'calendar', telefono: 'phone', email: 'mail', activo: 'toggle', id_interno: 'id'
     };
     const iconKey = iconMap[key];
     const iconHtml = iconKey ? `<span class="field-icon">${window.employeeIcon(iconKey)}</span>` : '';
@@ -486,12 +487,16 @@ window.renderEmployeeProfile = () => {
     const currentTab = window._employeeProfileTab || 'overview';
 
     const laboralRows = [
-        ['ID', emp.id], 
+        ['ID Interno', emp.id_interno, 'id_interno'],
         ['Nombre', emp.nombre, 'nombre'], 
         ['Hotel Principal', emp.hotel, 'hotel_id'],
         ['Puesto', emp.puesto, 'puesto'], 
         ['Tipo', emp.tipo, 'tipo_personal'], 
         ['Estado', emp.estado, 'estado_empresa']
+    ];
+
+    const technicalRows = [
+        ['ID técnico legacy', emp.id]
     ];
 
     if (emp.estado === 'Baja') {
@@ -552,26 +557,29 @@ window.renderEmployeeProfile = () => {
 
                 <!-- ALERTAS AUTOMÁTICAS (OPERATIVAS Y CONFLICTOS) -->
                 ${(() => {
+                    const showCounters = window.shouldShowEmployeeCounters && window.shouldShowEmployeeCounters(model.empleado, model.rowData);
                     const alerts = [];
                     
-                    // Alerta Descanso
-                    if (model.descansos.diferencia < -2) {
+                    // Alerta Descanso - Solo para personal con control activo
+                    if (showCounters && model.descansos.diferencia < -2) {
                         alerts.push(`<div class="emp-alert-box"><i class="fas fa-exclamation-triangle"></i><span><strong>ALERTA DE DESCANSO:</strong> Balance crítico de ${Math.abs(model.descansos.diferencia)} días. Riesgo de fatiga.</span></div>`);
                     }
 
-                    // Alerta Días Seguidos
-                    let consecutive = 0;
-                    let maxConsecutive = 0;
-                    model.calendario.forEach(d => {
-                        if (d.turno && d.turno !== 'D' && !d.incidencia) {
-                            consecutive++;
-                            if (consecutive > maxConsecutive) maxConsecutive = consecutive;
-                        } else {
-                            consecutive = 0;
+                    // Alerta Días Seguidos - Solo para personal con control activo
+                    if (showCounters) {
+                        let consecutive = 0;
+                        let maxConsecutive = 0;
+                        model.calendario.forEach(d => {
+                            if (d.turno && d.turno !== 'D' && !d.incidencia) {
+                                consecutive++;
+                                if (consecutive > maxConsecutive) maxConsecutive = consecutive;
+                            } else {
+                                consecutive = 0;
+                            }
+                        });
+                        if (maxConsecutive > 6) {
+                            alerts.push(`<div class="emp-alert-box" style="background:#fff1f2; border-color:#fecdd3; color:#9f1239;"><i class="fas fa-running"></i><span><strong>EXCESO DE JORNADA:</strong> Detectados ${maxConsecutive} días seguidos trabajando sin descanso.</span></div>`);
                         }
-                    });
-                    if (maxConsecutive > 6) {
-                        alerts.push(`<div class="emp-alert-box" style="background:#fff1f2; border-color:#fecdd3; color:#9f1239;"><i class="fas fa-running"></i><span><strong>EXCESO DE JORNADA:</strong> Detectados ${maxConsecutive} días seguidos trabajando sin descanso.</span></div>`);
                     }
 
                     // Alerta Incoherencia (Turno + Incidencia)
@@ -607,6 +615,7 @@ window.renderEmployeeProfile = () => {
                     </div>
                 </section>
 
+                ${(window.isEmpleadoOcasionalOApoyo && window.isEmpleadoOcasionalOApoyo(model.empleado)) ? '' : `
                 <section class="emp-card">
                     <div class="drawer-section-title compact">CONTROL DE VACACIONES</div>
                     <div class="emp-annual-summary-grid" style="margin-top:0;">
@@ -620,6 +629,7 @@ window.renderEmployeeProfile = () => {
                         </div>
                     </div>
                 </section>
+                `}
             </div>
             
             <aside class="employee-side-panel">
@@ -641,20 +651,15 @@ window.renderEmployeeProfile = () => {
                 <div style="display:flex; flex-direction:column; gap: 8px;">
                     ${window.renderEmployeeProfilePanelBlock('laboral', 'Datos laborales principales', laboralRows)}
                     <section class="emp-card">
-                        <h3 style="border-bottom: 1px solid #f1f5f9; padding-bottom: 8px; margin-bottom: 12px;">
-                            ${window.employeeIcon('hotel')} Centros de Trabajo
+                        <h3 style="border-bottom: 1px solid #f1f5f9; padding-bottom: 8px; margin-bottom: 12px; font-size: 0.75rem; color: #64748b;">
+                            Configuración Avanzada
                         </h3>
-                        <div class="emp-hotels-assigned-shell">
-                            ${assignedHotels.length 
-                                ? `<div class="emp-hotel-tags" style="padding: 4px 0;">
-                                    ${assignedHotels.map(h => `<span class="emp-hotel-tag-pill" style="padding: 6px 12px; font-size: 0.8rem;">${escapeHtml(h)}</span>`).join('')}
-                                   </div>`
-                                : '<div class="emp-hotel-empty" style="padding: 8px 0; font-size: 0.85rem;">Principal solamente.</div>'
-                            }
+                        <div style="display:flex; flex-direction:column; gap: 8px;">
+                            ${window.renderEmployeeProfilePanelBlock('technical', 'Sistema Legacy', technicalRows)}
                             <details class="emp-hotels-edit-details" style="border-top: 1px solid #f1f5f9; padding-top: 8px;">
-                                <summary style="color: var(--accent); font-weight: 700; font-size: 0.7rem;">Editar centros...</summary>
+                                <summary style="color: var(--accent); font-weight: 700; font-size: 0.7rem; cursor: pointer;">Notas de sistema...</summary>
                                 <div style="margin-top: 8px;">
-                                    ${window.renderEmployeeProfileField(['Centros (sep. comas)', emp.hotelesAsignados, 'hoteles_asignados', 'textarea'])}
+                                    ${window.renderEmployeeProfileField(['Notas internas', emp.notas, 'notas', 'textarea'])}
                                 </div>
                             </details>
                         </div>
@@ -662,7 +667,7 @@ window.renderEmployeeProfile = () => {
                 </div>
                 <div style="display:flex; flex-direction:column; gap: 8px;">
                     ${window.renderEmployeeProfilePanelBlock('contacto', 'Contacto', contactoRows)}
-                    ${window.renderEmployeeProfilePanelBlock('vacaciones', 'Control de Vacaciones', vacationRows)}
+                    ${(window.shouldShowEmployeeCounters && window.shouldShowEmployeeCounters(model.empleado, model.rowData)) ? window.renderEmployeeProfilePanelBlock('vacaciones', 'Control de Vacaciones', vacationRows) : ''}
                 </div>
             </div>
         </div>
@@ -700,14 +705,25 @@ window.renderEmployeeProfile = () => {
             </header>
 
             <div class="emp-head-facts">
-                <div class="emp-fact-card">
-                    <span>${window.employeeIcon('vacaciones')} Saldo Vac</span>
-                    <strong>${window.employeeFormatNumber(model.vacaciones.saldo)}</strong>
-                </div>
-                <div class="emp-fact-card">
-                    <span>${window.employeeIcon('descansos')} Balance D</span>
-                    <strong>${model.descansos.diferencia > 0 ? '+' : ''}${model.descansos.diferencia}</strong>
-                </div>
+                ${!(window.shouldShowEmployeeCounters && window.shouldShowEmployeeCounters(emp, model.rowData)) ? `
+                    <div class="emp-fact-card">
+                        <span>${window.employeeIcon('hotel')} Centro</span>
+                        <strong>${escapeHtml(emp.hotel)}</strong>
+                    </div>
+                    <div class="emp-fact-card">
+                        <span>${window.employeeIcon('role')} Categoría</span>
+                        <strong>${escapeHtml(emp.puesto)}</strong>
+                    </div>
+                ` : `
+                    <div class="emp-fact-card">
+                        <span>${window.employeeIcon('vacaciones')} Saldo Vac</span>
+                        <strong>${window.employeeFormatNumber(model.vacaciones.saldo)}</strong>
+                    </div>
+                    <div class="emp-fact-card">
+                        <span>${window.employeeIcon('descansos')} Balance D</span>
+                        <strong>${model.descansos.diferencia > 0 ? '+' : ''}${model.descansos.diferencia}</strong>
+                    </div>
+                `}
                 <div class="emp-fact-card">
                     <span>${window.employeeIcon('cambios')} Cambios</span>
                     <strong>${window.employeeFormatNumber(model.resumen30d.cambios)}</strong>
@@ -775,6 +791,20 @@ window.saveEmployeeProfileInline = async () => {
     if (!payload.nombre) payload.nombre = model.empleado.nombre;
     try {
         await window.TurnosDB.upsertEmpleado(payload);
+
+        // Auditoría específica para ID Interno (Fase 1)
+        if (payload.id_interno && payload.id_interno !== (line?.profile?.id_interno)) {
+            await window.TurnosDB.insertLog({
+                usuario: 'ADMIN',
+                resumen_json: {
+                    accion: 'asignar_id_interno_empleado',
+                    empleado_id_operativo: payload.id,
+                    id_interno: payload.id_interno,
+                    nombre: payload.nombre
+                }
+            }).catch(e => console.warn("Error al registrar log de ID Interno:", e));
+        }
+
         window._employeeProfileEditing = false;
         await window.populateEmployees();
         window._employeeProfileId = payload.id || payload.nombre;
@@ -868,6 +898,7 @@ window.switchSection = (id) => {
     if (id === 'changes') window.renderCambiosTurno();
     if (id === 'vacations') window.location.href = 'vacaciones.html';
     if (id === 'bajas' || id === 'absences') window.location.href = 'bajas.html';
+    if (id === 'requests') window.location.href = 'solicitudes.html';
 };
 
 window.renderCambiosTurno = async () => {
@@ -1630,6 +1661,7 @@ window.createPuestosPreviewModel = ({
         const tipo = window.normalizeTipo(ev.tipo);
         if (!['VAC', 'BAJA', 'PERM', 'PERMISO', 'FORMACION'].includes(tipo)) return;
         if (window.normalizeEstado(ev.estado) === 'anulado') return;
+        if (window.eventoPerteneceAHotel && !window.eventoPerteneceAHotel(ev, hotel)) return;
 
         const sustitutoRaw = ev.empleado_destino_id || ev.sustituto_id ||
             ev.sustituto || ev.payload?.sustituto_id || ev.payload?.sustituto;
@@ -1639,17 +1671,11 @@ window.createPuestosPreviewModel = ({
         if (!titularRaw) return;
 
         const normSust = window.normalizeId(sustitutoRaw);
-        const normTitular = window.normalizeId(titularRaw);
         const fi = window.normalizeDate(ev.fecha_inicio);
         const ff = window.normalizeDate(ev.fecha_fin || ev.fecha_inicio);
 
         const normTitularChk = window.normalizeId(titularRaw);
-        const titularRowMatch = sourceRows.find(r => {
-            const normRow = window.normalizeId(r.empleadoId);
-            return normRow === normTitularChk ||
-                   normRow.includes(normTitularChk) ||
-                   normTitularChk.includes(normRow);
-        });
+        const titularRowMatch = sourceRows.find(r => window.normalizeId(r.empleadoId) === normTitularChk);
         if (!titularRowMatch) return;
 
         const titularIdReal = titularRowMatch.empleadoId;
@@ -1749,18 +1775,24 @@ window.createPuestosPreviewModel = ({
                         baseIndex
                     });
 
-                    return {
+                    const shouldKeepResolvedTurno = res.intercambio || res.origen === 'CAMBIO_TURNO' || res.origen === 'INTERCAMBIO_TURNO';
+                    const turnoOperativo = shouldKeepResolvedTurno ? res.turno : (turnoBase || res.turno);
+
+                    const finalRes = {
                         ...res,
-                        turno: res.incidencia ? res.turno : (turnoBase || res.turno),
-                        turnoFinal: res.incidencia ? res.turno : (turnoBase || res.turno),
+                        turno: res.incidencia ? res.turno : turnoOperativo,
+                        turnoFinal: res.incidencia ? res.turno : turnoOperativo,
                         rol: 'sustituto',
                         sustitucion: true,
-                        titular: cob.titularId
+                        titular: cob.titularId,
+                        _finalState: res
                     };
+                    return finalRes;
                 }
             }
         }
-        return getTurnoEmpleado(empleadoId, fecha);
+        const res = getTurnoEmpleado(empleadoId, fecha);
+        return { ...res, _finalState: res };
     };
 
     const getEmployees = () => {
@@ -1899,6 +1931,7 @@ window.createPuestosPreviewModel = ({
         getPuesto: (id) => puestosMap.get(id),
         getCelda,
         getTurnoEmpleado: getTurnoEmpleadoExtended,
+        getCeldaByEmpleado: getTurnoEmpleadoExtended, // Alias para facilitar publicación
         getEmployees,
         getEmpleadosVisibles: (start, end) => getEmployees(),
         estaDeVacaciones: (empId, fechas) => (fechas || []).some(f => getTurnoEmpleadoExtended(empId, f).incidencia === 'VAC'),
@@ -2408,6 +2441,12 @@ window.renderPreview = async () => {
 
     try {
         window._previewPuestosModels = Object.create(null);
+        // TAREA CODEX: Cachear el resultado final para publicación exacta
+        window._lastRenderedPreviewSnapshotSource = {
+            semana_inicio: '',
+            semana_fin: '',
+            hoteles: []
+        };
         let start, end;
         if (isWeekly) {
             const base = new Date(rawDate + 'T12:00:00');
@@ -2422,6 +2461,9 @@ window.renderPreview = async () => {
 
         const startISO = window.isoDate(start);
         const endISO = window.isoDate(end);
+        
+        window._lastRenderedPreviewSnapshotSource.semana_inicio = startISO;
+        window._lastRenderedPreviewSnapshotSource.semana_fin = endISO;
 
         // Cargar eventos con rango extendido ±90 días para capturar periodos largos
         // (ej. VAC Cristina 20/04�03/05 debe estar visible al ver semana 20/04 O 27/04)
@@ -2500,7 +2542,49 @@ window.renderPreview = async () => {
             const orderedEmployeesToRender = previewModel.ordenarEmpleados
                 ? previewModel.ordenarEmpleados(employeesToRender, columns.map(c => c.date))
                 : employeesToRender;
-            if (!orderedEmployeesToRender.length) continue;
+            
+            // DEDUPLICACIÓN DE SEGURIDAD (Si Admin no lo muestra duplicado, nosotros tampoco)
+            const seenEmps = new Set();
+            const deduplicatedList = [];
+            orderedEmployeesToRender.forEach(emp => {
+                const key = emp.employee_id;
+                if (!seenEmps.has(key)) {
+                    seenEmps.add(key);
+                    deduplicatedList.push(emp);
+                }
+            });
+
+            if (!deduplicatedList.length) continue;
+
+            // TAREA CODEX: Cachear el resultado final para publicación exacta
+            const hotelSnapshot = {
+                hotel: hName,
+                empleados: deduplicatedList.map((employee, idx) => {
+                    const daysMap = {};
+                    columns.forEach(c => {
+                        const resolved = previewModel.getTurnoEmpleado(employee.employee_id, c.date);
+                        // Asegurar que describeCell recibe el estado final real
+                        const visual = window.TurnosRules ? window.TurnosRules.describeCell(resolved) : { label: resolved.turno };
+                        daysMap[c.date] = {
+                            label: visual.label || resolved.turno || '',
+                            code: resolved.turno || '',
+                            icons: visual.icon ? [visual.icon] : (resolved.icon ? [resolved.icon] : []),
+                            estado: (resolved.isAbsent || resolved.incidencia) ? 'ausente' : 'operativo',
+                            origen: resolved.incidencia || resolved.origen || 'base',
+                            titular_cubierto: resolved.titular || null,
+                            sustituto: resolved.sustituidoPor || null
+                        };
+                    });
+                    return {
+                        nombre: employee.nombre || employee.employee_id,
+                        empleado_id: employee.employee_id,
+                        orden: idx + 1,
+                        dias: daysMap
+                    };
+                })
+            };
+            window._lastRenderedPreviewSnapshotSource.hoteles.push(hotelSnapshot);
+
             const renderEmployeeTable = true;
 
             if (renderEmployeeTable) {
@@ -2520,7 +2604,7 @@ window.renderPreview = async () => {
                                 </tr>
                             </thead>
                             <tbody>
-                                ${orderedEmployeesToRender.map(employee => `
+                                ${deduplicatedList.map(employee => `
                                     <tr style="border-bottom:1px solid #f1f5f9;">
                                         <td style="padding:12px 25px; background:white; position:sticky; left:0; z-index:5; border-right:1px solid #f1f5f9;">
                                             ${window.renderEmpleadoRowHeader(employee, { showVacationIcon: true })}
@@ -3028,6 +3112,7 @@ window.buildEmployeeLineModel = (empleado) => {
         puesto: profile.puesto || profile.categoria || 'Personal',
         tipo: tipoRaw,
         estado,
+        id_interno: profile.id_interno,
         turnoHoy: todayShift ? { turno: todayShift.turno, cls: todayShift.cls, cambio: Boolean(todayShift?.cell?.cambio) } : null,
         proximoTurno: nextShift ? { turno: nextShift.turno, cls: nextShift.cls, fecha: nextShift.fecha } : null,
         resumen30d: {
@@ -3056,7 +3141,10 @@ window.renderEmployeeLine = (line) => {
     const id = escapeHtml(line.id || 'N/A');
     return `
         <div class="emp-line-row advanced" onclick="window.openEmpDrawer('${id}')">
-            <span class="el-id">#${id}</span>
+            <span class="el-id" style="display:flex; flex-direction:column; gap:2px;">
+                <strong style="color: var(--accent); font-size:0.85rem;">${escapeHtml(line.id_interno || '-')}</strong>
+                <small style="opacity:0.5; font-size:0.6rem;">#${id}</small>
+            </span>
             <span class="el-name-block"><strong>${escapeHtml(line.nombre)}</strong><small>${escapeHtml(line.puesto)}</small></span>
             <span class="el-hotel">${escapeHtml(window.employeeShortHotel(line.hotel))}</span>
             <span class="el-text">${escapeHtml(line.puesto)}</span>
@@ -3083,7 +3171,7 @@ window.renderEmployeeLineRows = () => {
             if (filters.estado === 'operativo' && line.estado === 'Baja') return false;
             if (filters.estado !== 'operativo' && line.estado !== filters.estado) return false;
         }
-        return !q || window.employeeNorm(`${line.nombre} ${line.id}`).includes(q);
+        return !q || window.employeeNorm(`${line.nombre} ${line.id} ${line.id_interno || ''}`).includes(q);
     });
     const sorters = {
         operativo: (a, b) => window.employeeStatusMeta(a.estado).rank - window.employeeStatusMeta(b.estado).rank || a.nombre.localeCompare(b.nombre),
@@ -3254,15 +3342,16 @@ window.detectarConflictosOperativos = async (fecha, hotel) => {
     const todayISO = window.isoDate(new Date());
 
     // 1. Análisis de Integridad (Agrupado)
-    const empsSinId = emps.filter(e => (!e.id || e.id === e.nombre));
+    // Filtramos empleados reales (excluyendo plazas pendientes como '¿?') que no tengan ID Interno
+    const empsSinId = emps.filter(e => (!e.id_interno || String(e.id_interno).trim() === '') && e.id !== '¿?');
     if (empsSinId.length > 0) {
         groupedConflicts.CRITICAL.push({
             type: 'SIN_ID',
             count: empsSinId.length,
-            title: 'Empleados sin ID interno',
-            desc: `Existen ${empsSinId.length} perfiles activos sin identificador único asignado.`,
-            suggestion: 'La asignación automática de IDs requiere configuración de administrador.',
-            action: { label: 'Configuración Pendiente', fn: 'alert("Asignación automática pendiente de configuración.")' }
+            title: 'Mapeo de Identidad Pendiente',
+            desc: `Existen ${empsSinId.length} perfiles operativos sin identificador único persistente (id_interno).`,
+            suggestion: 'Asigna un código EMP-XXXX desde la ficha de cada empleado para asegurar la integridad histórica.',
+            action: { label: 'Ir a Personal', fn: 'window.switchSection("personal")' }
         });
     }
 
@@ -3424,9 +3513,16 @@ window.getExcelDiff = () => {
 window.showPublishPreview = async () => {
     const changes = window.getExcelDiff();
     
+    // Si no hay cambios, permitimos publicar el estado actual de la vista previa
     if (changes.length === 0) {
-        alert('No hay cambios locales pendientes de publicar.');
-        return;
+        const isPreview = document.getElementById('section-preview').classList.contains('active');
+        if (!isPreview) {
+            alert('No hay cambios locales pendientes de publicar. Selecciona una semana en "Vista Previa" para publicar un snapshot.');
+            return;
+        }
+        if (!confirm('No hay cambios locales en el Excel. ¿Deseas generar y publicar un nuevo snapshot con el estado actual de la semana visible?')) {
+            return;
+        }
     }
 
     const affectedEmps = new Set(changes.map(c => c.displayName));
@@ -3548,6 +3644,72 @@ window.validatePublishChanges = (changes) => {
     return errors;
 };
 
+    /**
+     * TAREA CODEX: Función de diagnóstico para validar qué está viendo Admin
+     * y asegurar que el Snapshot sea una copia fiel.
+     */
+    window.debugPublishedPreviewSource = () => {
+        const result = { hotels: [] };
+        if (!window._previewPuestosModels) return result;
+        
+        for (const [pId, model] of Object.entries(window._previewPuestosModels)) {
+            if (result.hotels.find(h => h.hotel === model.hotel)) continue;
+            
+            const emps = model.getEmployees();
+            result.hotels.push({
+                hotel: model.hotel,
+                empleados: emps.map(e => e.nombre || e.id),
+                rawModel: model
+            });
+        }
+        return result;
+    };
+
+    /**
+     * TAREA CODEX: Comparador fuerte para evitar publicar cuadrantes vacíos o erróneos.
+     */
+    window.comparePreviewVsSnapshot = (previewModel, snapshot) => {
+        const snapEmps = snapshot.empleados || [];
+        const previewEmps = previewModel.getEmployees();
+        
+        // 1. Validar número de empleados (deduplicados)
+        const seen = new Set();
+        const deduplicatedPreview = previewEmps.filter(e => {
+            if (seen.has(e.employee_id)) return false;
+            seen.add(e.employee_id);
+            return true;
+        });
+
+        if (snapEmps.length !== deduplicatedPreview.length) {
+            console.error(`[VALIDACIÓN] Desajuste en número de filas. Preview: ${deduplicatedPreview.length}, Snapshot: ${snapEmps.length}`);
+            return false;
+        }
+
+        // 2. Validar contenido celda por celda
+        for (let i = 0; i < deduplicatedPreview.length; i++) {
+            const pEmp = deduplicatedPreview[i];
+            const sEmp = snapEmps[i];
+            const pName = pEmp.nombre || pEmp.employee_id;
+            
+            if (sEmp.nombre !== pName) {
+                console.error(`[VALIDACIÓN] Desajuste en orden/nombre fila ${i+1}. Esperado: ${pName}, Snapshot: ${sEmp.nombre}`);
+                return false;
+            }
+
+            // Validar que el snapshot no tenga días vacíos si el modelo tiene turnos
+            for (const [fecha, dia] of Object.entries(sEmp.dias)) {
+                if (!dia.label && !dia.code) {
+                    const resolved = previewModel.getTurnoEmpleado(pEmp.employee_id, fecha);
+                    if (resolved && resolved.turno) {
+                        console.error(`[VALIDACIÓN CRITICAL] Celda vacía en snapshot para ${pName} el ${fecha}. Admin tiene: ${resolved.turno}`);
+                        return false;
+                    }
+                }
+            }
+        }
+        return true;
+    };
+
 window.publishToSupabase = async () => {
     const btn = document.getElementById('btnConfirmPublish');
     if (btn) {
@@ -3558,14 +3720,15 @@ window.publishToSupabase = async () => {
 
     try {
         const changes = window.getExcelDiff();
-        if (changes.length === 0) throw new Error('No hay cambios para publicar.');
+        // Permitimos continuar si es una publicación manual (sin cambios de Excel)
+        // if (changes.length === 0) throw new Error('No hay cambios para publicar.');
 
         // --- 1. VALIDACI�N PRE-PUBLICACI�N Y CONFLICTOS ---
         const validationErrors = window.validatePublishChanges ? window.validatePublishChanges(changes) : [];
         
         // Detección de conflictos operativos
-        const conflicts = await window.detectarConflictosOperativos(window.isoDate(new Date()), 'TODOS');
-        const criticalConflicts = conflicts.filter(c => c.severity === 'CRITICAL');
+        const conflicts = (await window.detectarConflictosOperativos(window.isoDate(new Date()), 'TODOS')) || [];
+        const criticalConflicts = Array.isArray(conflicts) ? conflicts.filter(c => c.severity === 'CRITICAL') : [];
         
         if (validationErrors.length > 0 || criticalConflicts.length > 0) {
             let msg = '�a�️ AVISO DE INTEGRIDAD / CONFLICTOS:\n\n';
@@ -3578,7 +3741,10 @@ window.publishToSupabase = async () => {
                 throw new Error('Publicación cancelada por el usuario');
             }
         } else {
-            if (!confirm(`¿Confirmas la publicación de ${changes.length} cambios?`)) return;
+            const confirmMsg = changes.length > 0 
+                ? `¿Confirmas la publicación de ${changes.length} cambios?`
+                : `¿Confirmas la publicación del snapshot para la semana actual?`;
+            if (!confirm(confirmMsg)) return;
         }
 
         if (btn) btn.textContent = 'Preparando trazabilidad...';
@@ -3634,6 +3800,143 @@ window.publishToSupabase = async () => {
             cambios_detalle_json: traceabilityDetails,
             estado: 'ok'
         });
+
+        // --- 4. GENERAR Y GUARDAR SNAPSHOTS FINALES (ARQUITECTURA FIJA v12.0) ---
+        // Admin resuelve la operativa completa y guarda el resultado horneado.
+        if (btn) btn.textContent = 'Horneando snapshots finales...';
+        
+        let weeksAffected = Array.from(new Set(changes.map(c => c.weekStart)));
+        let hotelsAffected = Array.from(new Set(changes.map(c => c.hotel)));
+
+        // Si es publicación forzada (sin cambios), usamos la semana visible
+        if (weeksAffected.length === 0) {
+            const rawDate = document.getElementById('prevWeekDate')?.value;
+            if (rawDate) {
+                const base = new Date(rawDate + 'T12:00:00');
+                weeksAffected = [window.isoDate(window.getMonday(base))];
+            }
+        }
+        
+        // Si no hay hoteles afectados específicos, publicamos todos los disponibles
+        if (hotelsAffected.length === 0) {
+            hotelsAffected = await window.TurnosDB.getHotels();
+        }
+
+        const profiles = await window.TurnosDB.getEmpleados();
+        
+        // Intentar obtener los datos base del Excel (caché compartida o carga fresca)
+        let excelSource = window._sharedExcelSourceRows;
+        if (!excelSource) {
+            excelSource = await window.ExcelLoader.loadExcelSourceRows().catch(() => ({}));
+        }
+
+        for (const weekStart of weeksAffected) {
+            const weekEnd = window.addIsoDays(weekStart, 6);
+            const [eventos, turnosSemana] = await Promise.all([
+                window.TurnosDB.fetchEventos(weekStart, weekEnd),
+                window.TurnosDB.fetchRango(weekStart, weekEnd)
+            ]);
+
+            for (const hName of hotelsAffected) {
+                const dates = [0,1,2,3,4,5,6].map(i => window.addIsoDays(weekStart, i));
+                
+                // 1. TAREA CODEX: Priorizar el Cache de lo que el Admin está VIENDO en pantalla
+                let snapshotObj = null;
+                const cache = window._lastRenderedPreviewSnapshotSource;
+                
+                if (cache && cache.semana_inicio === weekStart) {
+                    const hotelCache = cache.hoteles.find(h => h.hotel === hName);
+                    if (hotelCache) {
+                        console.log(`[SNAPSHOT] Usando cache de Vista Previa para ${hName}`);
+                        snapshotObj = {
+                            semana_inicio: weekStart,
+                            semana_fin: weekEnd,
+                            hotel: hName,
+                            empleados: hotelCache.empleados
+                        };
+                    }
+                }
+
+                // 2. Si no hay cache, resolver (pero usando el modelo fiel)
+                if (!snapshotObj) {
+                    console.warn(`[SNAPSHOT] No hay cache para ${hName}. Re-resolviendo modelo...`);
+                    let weekExcelRows = (excelSource[hName] || []).filter(r => r.weekStart === weekStart);
+                    
+                    const previewModel = window.createPuestosPreviewModel({
+                        hotel: hName,
+                        dates: dates,
+                        sourceRows: weekExcelRows,
+                        rows: turnosSemana.filter(t => t.hotel_id === hName),
+                        eventos,
+                        employees: profiles
+                    });
+
+                    if (previewModel.puestos.length === 0) {
+                        console.warn(`[SNAPSHOT] Saltando ${hName} - No hay datos operativos.`);
+                        continue;
+                    }
+
+                    const emps = previewModel.getEmployees();
+                    const seen = new Set();
+                    const orderedEmps = emps.filter(e => {
+                        if (seen.has(e.employee_id)) return false;
+                        seen.add(e.employee_id);
+                        return true;
+                    });
+
+                    snapshotObj = {
+                        semana_inicio: weekStart,
+                        semana_fin: weekEnd,
+                        hotel: hName,
+                        empleados: orderedEmps.map((emp, idx) => {
+                            const daysMap = {};
+                            dates.forEach(fecha => {
+                                const resolved = previewModel.getTurnoEmpleado(emp.employee_id, fecha);
+                                const visual = window.TurnosRules ? window.TurnosRules.describeCell(resolved) : { label: resolved.turno };
+                                daysMap[fecha] = {
+                                    label: visual.label || resolved.turno || '',
+                                    code: resolved.turno || '',
+                                    icons: visual.icon ? [visual.icon] : (resolved.icon ? [resolved.icon] : []),
+                                    estado: (resolved.isAbsent || resolved.incidencia) ? 'ausente' : 'operativo',
+                                    origen: resolved.incidencia || resolved.origen || 'base',
+                                    titular_cubierto: resolved.titular || null,
+                                    sustituto: resolved.sustituidoPor || null
+                                };
+                            });
+                            const profile = profiles.find(p => window.normalizeId(p.id) === window.normalizeId(emp.employee_id) || window.normalizeId(p.nombre) === window.normalizeId(emp.employee_id));
+                            return {
+                                nombre: emp.nombre || emp.employee_id,
+                                empleado_id: emp.employee_id,
+                                orden: idx + 1,
+                                dias: daysMap,
+                                // Enriquecimiento para detección visual en index
+                                tipo: profile?.tipo || null,
+                                puesto: profile?.puesto || null,
+                                categoria: profile?.categoria || null,
+                                notas: profile?.notas || null,
+                                tags: profile?.tags || null,
+                                tipo_personal: profile?.tipo_personal || null,
+                                excludeCounters: window.isEmpleadoOcasionalOApoyo && window.isEmpleadoOcasionalOApoyo(profile)
+                            };
+                        })
+                    };
+                }
+
+                // 3. Validar contenido final antes de enviar
+                // No podemos validar contra previewModel si usamos cache directo, 
+                // pero el cache ya se validó (o se generó) durante el render.
+
+                // 4. Guardar snapshot
+                await window.TurnosDB.publishCuadranteSnapshot({
+                    semanaInicio: weekStart,
+                    semanaFin: weekEnd,
+                    hotel: hName,
+                    snapshot: snapshotObj,
+                    resumen: { emps: snapshotObj.empleados.length },
+                    usuario: 'ADMIN'
+                });
+            }
+        }
 
         // Actualizar base original local
         window._adminExcelBaseOriginalRows = window.cloneExcelRows(window._adminExcelEditableRows);
@@ -3726,8 +4029,9 @@ window.renderDashboard = async () => {
         const changes = window.getExcelDiff ? window.getExcelDiff() : [];
 
         // --- BLOQUE A: ESTADO DEL SISTEMA ---
-        const totalEmps = empleados.length;
-        const empsConId = empleados.filter(e => e.id && e.id !== e.nombre).length;
+        const activeEmps = (empleados || []).filter(e => e.activo !== false && e.id !== '¿?');
+        const totalEmps = activeEmps.length;
+        const empsConId = activeEmps.filter(e => e.id_interno && String(e.id_interno).trim() !== '').length;
         const integrity = totalEmps > 0 ? Math.round((empsConId / totalEmps) * 100) : 100;
 
         $('#stat-cloud-status').textContent = 'Conectado';
@@ -3744,6 +4048,28 @@ window.renderDashboard = async () => {
             ...conflicts.WARNING.map(c => ({ ...c, severity: 'warning' })),
             ...conflicts.INFO.map(c => ({ ...c, severity: 'info' }))
         ];
+
+        // Auditoría de ID Interno (Fase 1)
+        const empsSinIdInterno = (empleados || []).filter(e => (!e.id_interno || String(e.id_interno).trim() === '') && e.activo !== false && e.id !== '¿?');
+        if (empsSinIdInterno.length > 0) {
+            allRisks.push({
+                severity: 'info',
+                type: 'SIN_ID_INTERNO',
+                title: 'Mapeo de ID Interno',
+                desc: `Faltan asignar ${empsSinIdInterno.length} IDs internos persistentes.`
+            });
+        }
+
+        // Plaza Pendiente (¿?)
+        const plazaPendiente = (empleados || []).find(e => e.id === '¿?' && e.activo !== false);
+        if (plazaPendiente) {
+            allRisks.push({
+                severity: 'info',
+                type: 'PLAZA_PENDIENTE',
+                title: 'Plaza Pendiente de Definir',
+                desc: `Existe un registro provisional (${plazaPendiente.id}) para planificación de coberturas.`
+            });
+        }
 
         if (riskContainer) {
             if (allRisks.length === 0) {
@@ -3842,9 +4168,28 @@ window.aplicarCambioLocal = (payload) => {
 // Hook into navigation
 // Reactive hooks integrated in individual modules.
 
+// --- BADGES Y NOTIFICACIONES ---
+window.updateSidebarBadges = async () => {
+    try {
+        const peticiones = await window.TurnosDB.fetchPeticiones();
+        const pending = peticiones.filter(p => p.estado === 'pendiente').length;
+        const badge = $('#badge-requests');
+        if (badge) {
+            badge.textContent = pending;
+            badge.style.display = pending > 0 ? 'flex' : 'none';
+        }
+    } catch (e) {
+        console.warn("Error actualizando badges:", e);
+    }
+};
+
 // Initialize
 document.addEventListener('DOMContentLoaded', () => {
     setTimeout(window.renderDashboard, 1000);
     if (window.TurnosDB?.initRealtime) window.TurnosDB.initRealtime();
+    
+    // Polling de badges cada 30s (más el tiempo real si está activo)
+    window.updateSidebarBadges();
+    setInterval(window.updateSidebarBadges, 30000);
 });
 

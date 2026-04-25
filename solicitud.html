@@ -3,713 +3,813 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Solicitud de Cambio de Turno — TurnosWeb Premium</title>
-    <link rel="icon" type="image/png" href="favicon.png">
-    <link rel="stylesheet" href="admin.css">
+    <title>Solicitud de Cambio de Turno — TurnosWeb</title>
+    <link rel="stylesheet" href="flatpickr.min.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
     <style>
         :root {
-            --primary: #6366f1;
-            --primary-light: #818cf8;
-            --accent: #10b981;
-            --surface: rgba(255, 255, 255, 0.95);
-            --bg-page: #f1f5f9;
-            --text-main: #1e293b;
-            --text-muted: #64748b;
-            --glass: rgba(255, 255, 255, 0.7);
-            --border: rgba(0, 0, 0, 0.08);
+            --accent: #0ea5e9;
+            --accent-hover: #0284c7;
+            --bg: #f8fafc;
+            --surface: #ffffff;
+            --text: #0f172a;
+            --text-dim: #64748b;
+            --border: #e2e8f0;
+            --shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
+            --radius: 16px;
         }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
 
         body {
-            font-family: 'Inter', sans-serif;
-            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
-            margin: 0;
-            min-height: 100vh;
-            color: var(--text-main);
+            background: var(--bg);
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            color: var(--text);
+            line-height: 1.5;
+            padding: 2rem 1rem;
         }
 
-        .ct-wrapper {
-            padding: 1rem;
-            max-width: 850px;
+        .main-container {
+            max-width: 1200px;
             margin: 0 auto;
         }
 
-        .ct-container {
-            background: var(--surface);
-            backdrop-filter: blur(12px);
-            border-radius: 24px;
-            border: 1px solid var(--border);
-            box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.1);
-            overflow: hidden;
-            animation: slideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1);
-        }
-
-        @keyframes slideUp {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        .ct-header {
-            padding: 2.5rem 2rem;
-            text-align: center;
-            background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+        /* --- Header Premium --- */
+        .premium-header {
+            background: #1e293b;
             color: white;
+            border-radius: var(--radius);
+            padding: 2.5rem;
+            margin-bottom: 2rem;
             position: relative;
+            overflow: hidden;
+            box-shadow: var(--shadow);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
         }
 
-        .ct-logo {
-            width: 60px;
-            height: 60px;
-            margin: 0 auto 1rem;
-            display: block;
-            object-fit: contain;
-            filter: drop-shadow(0 4px 10px rgba(255,255,255,0.1));
-        }
-
-        .ct-header::after {
+        .premium-header::before {
             content: '';
             position: absolute;
-            bottom: 0; left: 0; right: 0;
-            height: 6px;
-            background: linear-gradient(90deg, var(--primary), var(--accent));
+            top: -50%;
+            right: -10%;
+            width: 400px;
+            height: 400px;
+            background: radial-gradient(circle, rgba(14, 165, 233, 0.15) 0%, transparent 70%);
+            pointer-events: none;
         }
 
-        .ct-header h1 {
+        .header-content { position: relative; z-index: 1; }
+        
+        .header-top { display: flex; align-items: center; gap: 1rem; margin-bottom: 0.5rem; }
+        .back-btn {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            font-weight: 600;
+            transition: 0.2s;
+            text-decoration: none;
+        }
+        .back-btn:hover { background: rgba(255, 255, 255, 0.2); transform: translateX(-3px); }
+
+        .page-title {
             font-family: 'Outfit', sans-serif;
-            font-size: 2rem;
+            font-size: 2.5rem;
             font-weight: 800;
-            margin: 0;
+            line-height: 1;
+            margin-bottom: 0.5rem;
             letter-spacing: -0.02em;
-            background: linear-gradient(to right, #fff, #cbd5e1);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
         }
 
-        .ct-header p {
-            font-size: 0.95rem;
+        .page-subtitle {
+            font-size: 1rem;
+            color: #94a3b8;
+            font-weight: 500;
+        }
+
+        .header-quotes {
+            text-align: right;
+            max-width: 400px;
+            font-style: italic;
             opacity: 0.8;
-            margin-top: 6px;
-            font-weight: 400;
+            font-size: 0.9rem;
+            line-height: 1.4;
+            color: #cbd5e1;
         }
 
-        .ct-body {
-            padding: 2rem 3rem;
+        /* --- Layout Grid --- */
+        .form-layout {
+            display: grid;
+            grid-template-columns: 1fr 380px;
+            gap: 2rem;
         }
 
-        @media (max-width: 768px) {
-            .ct-body { padding: 2rem 1.5rem; }
+        @media (max-width: 1024px) {
+            .form-layout { grid-template-columns: 1fr; }
         }
 
-        legend {
+        .card {
+            background: var(--surface);
+            border-radius: var(--radius);
+            padding: 2rem;
+            box-shadow: var(--shadow);
+            border: 1px solid var(--border);
+            margin-bottom: 2rem;
+        }
+
+        .section-title {
             font-family: 'Outfit', sans-serif;
-            font-size: 0.8rem;
-            font-weight: 800;
-            text-transform: uppercase;
-            letter-spacing: 0.15em;
-            color: var(--primary);
+            font-size: 1.25rem;
+            font-weight: 700;
             margin-bottom: 1.5rem;
             display: flex;
             align-items: center;
-            gap: 12px;
+            gap: 0.75rem;
+            color: var(--text);
+        }
+
+        .section-title span {
+            width: 32px;
+            height: 32px;
+            background: rgba(14, 165, 233, 0.1);
+            color: var(--accent);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 8px;
+            font-size: 1rem;
+        }
+
+        /* --- Fields --- */
+        .field-group { margin-bottom: 1.5rem; }
+        .field-label {
+            display: block;
+            font-size: 0.85rem;
+            font-weight: 700;
+            color: var(--text-dim);
+            margin-bottom: 0.5rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .input-control, .select-control, .textarea-control {
             width: 100%;
+            padding: 0.75rem 1rem;
+            border-radius: 12px;
+            border: 2px solid var(--border);
+            font-family: inherit;
+            font-size: 1rem;
+            transition: 0.2s;
+            outline: none;
+            background: #f8fafc;
         }
 
-        legend::after {
-            content: '';
-            height: 1px;
-            background: var(--border);
-            flex: 1;
+        .input-control:focus, .select-control:focus, .textarea-control:focus {
+            border-color: var(--accent);
+            background: white;
+            box-shadow: 0 0 0 4px rgba(14, 165, 233, 0.1);
         }
 
-        .input-grid {
+        .grid-2 {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 1rem;
-            margin-bottom: 1rem;
+            gap: 1.5rem;
         }
 
-        .field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 1.2rem; }
-        .field label { font-size: 0.85rem; font-weight: 600; color: var(--text-muted); padding-left: 4px; }
-
-        select, input[type="text"], input[type="date"], textarea {
-            background: #f8fafc;
-            border: 2px solid #e2e8f0;
-            border-radius: 14px;
-            padding: 12px;
-            font-size: 0.95rem;
-            color: var(--text-main);
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            font-family: inherit;
+        /* --- Agreement Card --- */
+        .agreement-card {
+            background: #f0f9ff;
+            border: 1px solid #bae6fd;
+            border-radius: var(--radius);
+            padding: 1.5rem;
+            display: flex;
+            gap: 1.25rem;
+            align-items: flex-start;
         }
 
-        select:focus, input:focus, textarea:focus {
-            outline: none;
-            border-color: var(--primary);
+        .agreement-icon {
+            font-size: 1.5rem;
             background: white;
-            box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1);
-            transform: translateY(-1px);
+            width: 48px;
+            height: 48px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            flex-shrink: 0;
         }
 
-        select:disabled {
-            background: #f1f5f9;
-            cursor: not-allowed;
-            opacity: 0.7;
+        .agreement-text h4 {
+            font-weight: 800;
+            color: #0369a1;
+            margin-bottom: 0.25rem;
+        }
+
+        .agreement-text p {
+            font-size: 0.85rem;
+            color: #0ea5e9;
+            font-weight: 500;
+        }
+
+        /* --- Shift List --- */
+        .shift-table {
+            width: 100%;
+            border-collapse: collapse;
         }
 
         .shift-row {
-            background: #f8fafc;
-            border: 2px solid #e2e8f0;
-            border-radius: 18px;
-            padding: 1.5rem;
-            margin-bottom: 1.2rem;
-            position: relative;
-            transition: 0.3s;
-        }
-
-        .shift-row:hover {
-            border-color: var(--primary-light);
-            box-shadow: 0 8px 20px -10px rgba(0,0,0,0.05);
-        }
-
-        .shift-grid {
             display: grid;
-            grid-template-columns: 1.1fr 1fr 1fr 1.4fr auto;
+            grid-template-columns: 140px 1fr 40px 1fr 50px;
+            align-items: center;
             gap: 1rem;
-            align-items: flex-end;
-        }
-
-        .shift-title {
-            position: absolute;
-            top: -12px; left: 24px;
-            background: white;
-            padding: 4px 12px;
-            border-radius: 8px;
-            border: 1px solid #e2e8f0;
-            font-size: 0.75rem;
-            font-weight: 700;
-            color: var(--text-muted);
-        }
-
-        .btn-delete {
-            background: #ffe4e6;
-            color: #e11d48;
-            border: none;
-            width: 48px; height: 48px;
-            border-radius: 14px;
-            cursor: pointer;
+            padding: 1.25rem;
+            border-bottom: 1px solid var(--border);
             transition: 0.2s;
-            display: flex; align-items: center; justify-content: center;
         }
-        .btn-delete:hover { background: #e11d48; color: white; transform: rotate(90deg); }
+
+        .shift-row:last-child { border-bottom: none; }
+        .shift-row:hover { background: #f8fafc; }
+
+        .row-date { font-weight: 700; color: var(--text); }
+        .row-origen { font-weight: 500; color: var(--text-dim); font-size: 0.9rem; }
+        .row-arrow { text-align: center; color: var(--accent); opacity: 0.5; font-size: 1.2rem; }
 
         .btn-add-date {
-            background: white;
-            color: var(--primary);
-            border: 2px dashed #cbd5e1;
-            padding: 1.25rem;
             width: 100%;
-            border-radius: 18px;
-            cursor: pointer;
+            padding: 1rem;
+            background: #f1f5f9;
+            border: 2px dashed var(--border);
+            border-radius: 12px;
+            color: var(--text-dim);
             font-weight: 700;
-            margin: 1rem 0 3rem 0;
-            transition: all 0.3s;
-            display: flex; align-items: center; justify-content: center; gap: 10px;
+            cursor: pointer;
+            transition: 0.2s;
+            margin-top: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
         }
         .btn-add-date:hover {
-            border-color: var(--primary);
-            background: rgba(99, 102, 241, 0.05);
-            color: var(--primary);
-            padding-left: 2rem;
+            background: #e2e8f0;
+            border-color: var(--text-dim);
+            color: var(--text);
         }
 
-        .agreement-card {
-            background: #f0fdf9;
-            border: 2px solid #ccfbf1;
-            padding: 1.25rem 1.5rem;
-            border-radius: 16px;
-            display: flex;
-            gap: 1rem;
-            align-items: center;
+        .btn-remove-row {
+            background: none;
+            border: none;
+            color: #ef4444;
             cursor: pointer;
-            transition: 0.3s;
-            margin-top: 0.5rem;
+            opacity: 0.5;
+            transition: 0.2s;
+            padding: 8px;
+            border-radius: 8px;
         }
-        .agreement-card:hover { border-color: var(--accent); background: #f0fdf9; }
-        .agreement-card input { width: 22px; height: 22px; accent-color: var(--accent); cursor: pointer; }
-        .agreement-card span { font-weight: 500; font-size: 0.85rem; color: #065f46; line-height: 1.4; }
+        .btn-remove-row:hover { opacity: 1; background: #fee2e2; }
 
-        .form-actions { margin-top: 2rem; }
+        /* --- Sidebar & Footer --- */
+        .sidebar-card {
+            position: sticky;
+            top: 2rem;
+        }
 
         .btn-submit {
-            background: linear-gradient(135deg, var(--primary) 0%, #4f46e5 100%);
+            width: 100%;
+            padding: 1.25rem;
+            background: var(--accent);
             color: white;
             border: none;
-            padding: 1.2rem 2rem;
-            width: 100%;
-            border-radius: 16px;
-            font-weight: 800;
-            font-size: 1rem;
-            letter-spacing: 0.05em;
-            text-transform: uppercase;
-            cursor: pointer;
-            box-shadow: 0 15px 30px -10px rgba(79, 70, 229, 0.4);
-            transition: all 0.3s;
-            display: flex; align-items: center; justify-content: center; gap: 12px;
-        }
-        .btn-submit:hover { transform: translateY(-3px); box-shadow: 0 25px 50px -12px rgba(79, 70, 229, 0.5); }
-        .btn-submit:active { transform: translateY(0); }
-        .btn-submit:disabled { background: #cbd5e1; box-shadow: none; cursor: not-allowed; transform: none; }
-
-        .btn-secondary {
-            background: #ffffff;
-            color: var(--text-main);
-            border: 2px solid #e2e8f0;
-            padding: 1.2rem 2rem;
-            border-radius: 20px;
-            font-weight: 700;
-            font-size: 1rem;
-            cursor: pointer;
-            transition: all 0.3s;
-            display: flex; align-items: center; justify-content: center; gap: 10px;
-            width: 100%;
-        }
-        .btn-secondary:hover { background: #f8fafc; border-color: #cbd5e1; transform: translateY(-2px); }
-
-        .btn-back {
-            position: absolute;
-            top: 2rem; left: 2rem;
-            background: rgba(255,255,255,0.1);
-            color: white;
-            border: 1px solid rgba(255,255,255,0.2);
-            padding: 0.8rem 1.2rem;
             border-radius: 12px;
-            text-decoration: none;
-            font-size: 0.85rem;
-            font-weight: 600;
-            backdrop-filter: blur(8px);
-            transition: 0.3s;
-            display: flex; align-items: center; gap: 8px;
-            z-index: 10;
+            font-size: 1.1rem;
+            font-weight: 800;
+            cursor: pointer;
+            transition: 0.2s;
+            box-shadow: 0 4px 14px 0 rgba(14, 165, 233, 0.39);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
         }
-        .btn-back:hover { background: rgba(255,255,255,0.2); transform: translateX(-5px); }
+        .btn-submit:hover { background: var(--accent-hover); transform: translateY(-2px); box-shadow: 0 6px 20px rgba(14, 165, 233, 0.4); }
+        .btn-submit:active { transform: translateY(0); }
+        .btn-submit:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
 
-        .loading-dot {
-            width: 8px; height: 8px; background: white; border-radius: 50%;
-            animation: pulse 1s infinite alternate;
-        }
-        @keyframes pulse { from { opacity: 0.3; transform: scale(0.8); } to { opacity: 1; transform: scale(1.2); } }
-
-        #success-screen {
-            display: none;
+        .footer-note {
+            margin-top: 1.5rem;
+            font-size: 0.75rem;
+            color: var(--text-dim);
             text-align: center;
-            padding: 5rem 2rem;
-            animation: fadeIn 0.8s ease-out;
+            line-height: 1.4;
         }
-        .success-icon {
-            width: 100px; height: 100px;
-            background: #dcfce7; color: #166534;
-            border-radius: 50%;
-            display: flex; align-items: center; justify-content: center;
-            font-size: 3rem; margin: 0 auto 2.5rem;
-            box-shadow: 0 10px 30px rgba(22, 101, 52, 0.2);
+
+        /* --- Success Modal --- */
+        #success-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(15, 23, 42, 0.9);
+            backdrop-filter: blur(8px);
+            z-index: 10000;
+            display: none;
+            align-items: center;
+            justify-content: center;
         }
-        .success-content h2 { font-family: 'Outfit', sans-serif; font-size: 2.5rem; font-weight: 800; color: #064e3b; margin: 0 0 1rem; }
-        .success-content p { color: #065f46; font-size: 1.1rem; max-width: 400px; margin: 0 auto 3rem; line-height: 1.6; }
 
-        .fade-in { animation: fadeIn 0.4s ease-out; }
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-
-        .shift-detecting {
-            position: absolute;
-            right: 15px; bottom: 15px;
-            font-size: 0.7rem;
-            color: var(--primary);
-            font-weight: 700;
-            display: flex; align-items: center; gap: 5px;
+        .success-card {
+            background: white;
+            padding: 3rem;
+            border-radius: 24px;
+            text-align: center;
+            max-width: 450px;
+            transform: scale(0.9);
             opacity: 0;
-            transition: 0.3s;
+            transition: 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
         }
-        .is-loading .shift-detecting { opacity: 1; }
 
-        @media (max-width: 768px) {
-            .input-grid, .shift-grid { grid-template-columns: 1fr; }
-            .ct-header { padding: 3rem 1.5rem; }
-            .ct-header h1 { font-size: 2rem; }
-            .shift-grid .field:nth-child(2),
-            .shift-grid .field:nth-child(3) { grid-column: span 1; }
+        #success-overlay.active { display: flex; }
+        #success-overlay.active .success-card { transform: scale(1); opacity: 1; }
+
+        .success-icon {
+            font-size: 4rem;
+            margin-bottom: 1.5rem;
         }
+
+        .success-title {
+            font-family: 'Outfit', sans-serif;
+            font-size: 1.75rem;
+            font-weight: 800;
+            margin-bottom: 1rem;
+        }
+
+        .success-text { color: var(--text-dim); margin-bottom: 2rem; }
+
+        .btn-close {
+            background: var(--accent);
+            color: white;
+            border: none;
+            padding: 1rem 2rem;
+            border-radius: 12px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .btn-close:hover { background: var(--accent-hover); }
+
+        /* Loading Spinner */
+        .spinner {
+            width: 24px;
+            height: 24px;
+            border: 3px solid rgba(255,255,255,0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 0.8s linear infinite;
+            display: none;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
     </style>
 </head>
 <body>
-    <div class="ct-wrapper">
-        <div class="ct-container">
-            <header class="ct-header">
-                <a href="index.html" class="btn-back">
-                    <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M15 19l-7-7 7-7"></path></svg>
-                    Volver
-                </a>
-                <img src="Logo.png" class="ct-logo" alt="Logo">
-                <div style="font-size: 0.7rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.3em; margin-bottom: 0.5rem; color: var(--primary-light);">Oficial</div>
-                <h1>Cambio de Turno</h1>
-                <p id="hotel-labels">Sercotel Guadiana & Cumbria Spa&Hotel</p>
-            </header>
 
-            <div class="ct-body">
-                <form id="form-solicitud">
-                    <fieldset style="border:none; padding:0; margin:0;">
-                        <legend>01. CONFIGURACIÓN</legend>
-                        
-                        <div class="field" style="max-width: 350px;">
-                            <label>Centro de Trabajo</label>
-                            <select id="sel_hotel" required>
-                                <option value="">— Seleccione Hotel —</option>
-                                <option value="Sercotel Guadiana">Sercotel Guadiana</option>
-                                <option value="Cumbria Spa&Hotel">Cumbria Spa&Hotel</option>
+    <div class="main-container">
+        <!-- Header -->
+        <header class="premium-header">
+            <div class="header-content">
+                <div class="header-top">
+                    <a href="index.html" class="back-btn">← Volver</a>
+                    <span class="page-subtitle">Formulario de Solicitud</span>
+                </div>
+                <h1 class="page-title">Cambio de Turno</h1>
+                <p class="page-subtitle">Sercotel Guadiana & Cumbria Spa&Hotel</p>
+            </div>
+            <div class="header-quotes">
+                <p>"El relevo no es un fin, sino una transición de la excelencia."</p>
+                <p style="margin-top: 0.5rem; font-weight: 700; color: white;">¡Juntos sumamos, dentro y fuera de turno!</p>
+            </div>
+        </header>
+
+        <div class="form-layout">
+            <!-- Columna Principal -->
+            <div class="form-main">
+                
+                <!-- Sección 1: Configuración -->
+                <div class="card">
+                    <h2 class="section-title"><span>1</span> Configuración General</h2>
+                    
+                    <div class="field-group">
+                        <label class="field-label">Centro de Trabajo</label>
+                        <select id="sel_hotel" name="centro_trabajo" class="select-control" onchange="loadEmployees()">
+                            <option value="Sercotel Guadiana">Sercotel Guadiana</option>
+                            <option value="Cumbria Spa&Hotel">Cumbria Spa&Hotel</option>
+                        </select>
+                    </div>
+
+                    <div class="grid-2">
+                        <div class="field-group">
+                            <label class="field-label">Solicitante (Tú)</label>
+                            <select id="solicitante" name="solicitante" class="select-control" onchange="autoFillShifts()">
+                                <option value="">Cargando empleados...</option>
                             </select>
                         </div>
-
-                        <div class="input-grid">
-                            <div class="field">
-                                <label>Persona Solicitante</label>
-                                <select id="sel_solicitante" required disabled>
-                                    <option value="">— Seleccione Hotel —</option>
-                                </select>
-                            </div>
-                            <div class="field">
-                                <label>Compañero/a que acepta</label>
-                                <select id="sel_companero" required disabled>
-                                    <option value="">— Seleccione Hotel —</option>
-                                </select>
-                            </div>
+                        <div class="field-group">
+                            <label class="field-label">Compañero (Acepta el cambio)</label>
+                            <select id="companero" name="companero_acepta" class="select-control" onchange="autoFillShifts()">
+                                <option value="">Cargando empleados...</option>
+                            </select>
                         </div>
-
-                        <label class="agreement-card">
-                            <input type="checkbox" id="check_acuerdo" required>
-                            <span>Confirmamos que este intercambio de turnos es de mutuo acuerdo y se realiza de forma voluntaria por ambas partes.</span>
-                        </label>
-                    </fieldset>
-
-                    <fieldset style="border:none; padding:0; margin:2.5rem 0 0 0;">
-                        <legend>02. DETALLES DE LOS TURNOS</legend>
-                        
-                        <div id="items_container">
-                            <!-- Template de Fila -->
-                            <div class="shift-row fade-in">
-                                <div class="shift-title">INTERCAMBIO #1</div>
-                                <div class="shift-grid">
-                                    <div class="field">
-                                        <label>Fecha</label>
-                                        <input type="date" class="v_fecha" required onchange="window.autoFillShifts(this)">
-                                    </div>
-                                    <div class="field">
-                                        <label>Mi Turno Actual</label>
-                                        <select class="v_origen" required>
-                                            <option value="">—</option>
-                                            <option>Mañana</option>
-                                            <option>Tarde</option>
-                                            <option>Noche</option>
-                                            <option>Descanso</option>
-                                        </select>
-                                    </div>
-                                    <div class="field">
-                                        <label>Turno Recibido</label>
-                                        <select class="v_destino" required>
-                                            <option value="">—</option>
-                                            <option>Mañana</option>
-                                            <option>Tarde</option>
-                                            <option>Noche</option>
-                                            <option>Descanso</option>
-                                        </select>
-                                    </div>
-                                    <div class="field">
-                                        <label>Notas / Motivo</label>
-                                        <input type="text" class="v_nota" placeholder="Opcional...">
-                                    </div>
-                                    <button type="button" class="btn-delete" title="Quitar fecha" onclick="quitarFila(this)">
-                                        <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12"></path></svg>
-                                    </button>
-                                </div>
-                                <div class="shift-detecting">
-                                    <div class="loading-dot"></div> Detectando turnos...
-                                </div>
-                            </div>
-                        </div>
-
-                        <button type="button" class="btn-add-date" onclick="nuevaFila()">
-                            <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"></path></svg>
-                            AÑADIR OTRA FECHA
-                        </button>
-
-                        <div class="field">
-                            <label>Comentarios Adicionales</label>
-                            <textarea id="obs" rows="3" placeholder="Información extra para administración..."></textarea>
-                        </div>
-                    </fieldset>
-
-                    <div class="form-actions">
-                        <button type="submit" id="btn_submit" class="btn-submit">
-                            ENVIAR SOLICITUD A REVISIÓN
-                        </button>
                     </div>
-                </form>
 
-                <div id="success-screen">
-                    <div class="success-icon">✓</div>
-                    <div class="success-content">
-                        <h2>¡Solicitud Enviada!</h2>
-                        <p>Tu petición ha sido registrada correctamente. Te avisaremos cuando sea procesada por la administración.</p>
-                        <div style="display: flex; flex-direction: column; gap: 1rem; max-width: 350px; margin: 0 auto;">
-                            <button class="btn-submit" style="padding:1.2rem 2rem;" onclick="location.reload()">REALIZAR OTRA PETICIÓN</button>
-                            <button class="btn-secondary" onclick="window.location.href='index.html'">VOLVER AL CUADRANTE</button>
+                    <div class="agreement-card">
+                        <div class="agreement-icon">🤝</div>
+                        <div class="agreement-text">
+                            <h4>Acuerdo Mutuo de Colaboración</h4>
+                            <p>Esta solicitud confirma que ambas partes han acordado el intercambio de forma voluntaria para garantizar la operatividad del servicio.</p>
                         </div>
+                    </div>
+                </div>
+
+                <!-- Sección 2: Turnos -->
+                <div class="card">
+                    <h2 class="section-title"><span>2</span> Fechas y Turnos</h2>
+                    
+                    <div id="shifts-container">
+                        <!-- Las filas se añaden aquí -->
+                    </div>
+
+                    <button class="btn-add-date" onclick="addShiftRow()">
+                        <span>+</span> Añadir otra fecha al mismo cambio
+                    </button>
+                </div>
+
+                <!-- Sección 3: Motivo -->
+                <div class="card">
+                    <h2 class="section-title"><span>3</span> Motivo del Cambio</h2>
+                    <div class="field-group" style="margin-bottom: 0;">
+                        <label class="field-label">Observaciones generales para administración</label>
+                        <textarea id="nota_peticion" name="comentarios" class="textarea-control" rows="3" placeholder="Explica brevemente el motivo de este cambio..."></textarea>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Columna Sidebar -->
+            <div class="form-sidebar">
+                <div class="card sidebar-card">
+                    <h2 class="section-title">Finalizar</h2>
+                    <p style="font-size: 0.85rem; color: var(--text-dim); margin-bottom: 1.5rem;">
+                        Revisa los datos antes de enviar. Una vez enviada, la solicitud llegará a Administración para su validación final.
+                    </p>
+                    
+                    <button id="btn_enviar" class="btn-submit" onclick="submitForm()">
+                        <span class="spinner" id="submit-spinner"></span>
+                        <span id="submit-text">Enviar Solicitud</span>
+                    </button>
+
+                    <div class="footer-note">
+                        Al enviar, declaras que el cambio es de mutuo acuerdo y no afecta negativamente a la calidad del servicio al cliente.
                     </div>
                 </div>
             </div>
         </div>
     </div>
 
+    <!-- Overlay de Éxito -->
+    <div id="success-overlay">
+        <div class="success-card">
+            <div class="success-icon">🚀</div>
+            <h2 class="success-title">¡Solicitud Enviada!</h2>
+            <p class="success-text">Tu petición ha sido registrada correctamente. Te avisaremos cuando sea revisada por el equipo de administración.</p>
+            <button class="btn-close" onclick="window.location.href='index.html'">Volver al Inicio</button>
+        </div>
+    </div>
+
     <script src="supabase.js"></script>
-    <script src="supabase-config.js?v=9.8"></script>
-    <script src="supabase-dao.js?v=9.8"></script>
-    <script src="shift-resolver.js?v=3.0"></script>
-    <script src="turnos-engine.js?v=3.0"></script>
-    <script src="excel-loader.js?v=1.0"></script>
+    <script src="supabase-config.js"></script>
+    <script src="supabase-dao.js?v=11.1"></script>
+    <script src="shift-resolver.js?v=11.1"></script>
+    <script src="excel-loader.js?v=11.1"></script>
     <script src="xlsx.full.min.js"></script>
+    <script src="flatpickr.js"></script>
+    <script src="flatpickr_es.js"></script>
 
     <script>
-        const $ = s => document.querySelector(s);
+        const $ = (s) => document.querySelector(s);
+        const $$ = (s) => document.querySelectorAll(s);
+
         let _emps = [];
+        let _baseRows = [];
 
-        async function startup() {
-            try {
-                _emps = await window.TurnosDB.getEmpleados();
-                $("#sel_hotel").addEventListener("change", populateEmployeeDrops);
-                $("#sel_solicitante").addEventListener("change", reTriggerAllFills);
-                $("#sel_companero").addEventListener("change", reTriggerAllFills);
-            } catch (e) {
-                console.error("Error al conectar con DB:", e);
-                alert("Error de conexión. Por favor avisar a administración.");
-            }
-        }
-
-        function populateEmployeeDrops() {
-            const h = $("#sel_hotel").value;
-            const s1 = $("#sel_solicitante");
-            const s2 = $("#sel_companero");
-
-            if (!h) {
-                s1.disabled = s2.disabled = true;
-                return;
+        // Inicialización
+        document.addEventListener('DOMContentLoaded', async () => {
+            // Esperar a que Supabase esté listo (supabase-config.js lo inicializa)
+            let retry = 0;
+            while(!window.supabase && retry < 20) {
+                await new Promise(r => setTimeout(r, 100));
+                retry++;
             }
 
-            const hotelKey = h.toLowerCase().includes('cumbria') ? 'cumbria' : 'guadiana';
-            const filtered = _emps.filter(e => {
-                const hotelVal = (e.hotel_id || "").toLowerCase();
-                return e.activo !== false && hotelVal.includes(hotelKey);
-            }).sort((a,b) => a.nombre.localeCompare(b.nombre));
-
-            const options = `<option value="">— Seleccione Empleado —</option>` + 
-                            filtered.map(e => `<option value="${e.id}">${e.nombre}</option>`).join('');
-            
-            s1.innerHTML = s2.innerHTML = options;
-            s1.disabled = s2.disabled = false;
-        }
-
-        function reTriggerAllFills() {
-            document.querySelectorAll(".v_fecha").forEach(input => {
-                if (input.value) window.autoFillShifts(input);
-            });
-        }
-
-        window.autoFillShifts = async (input) => {
-            const row = input.closest(".shift-row");
-            const solId = $("#sel_solicitante").value;
-            const compId = $("#sel_companero").value;
-            const date = input.value;
-            
-            if (!date || (!solId && !compId)) return;
-
-            row.classList.add("is-loading");
-
-            try {
-                // Obtenemos los datos crudos
-                const { rows, eventos } = await window.TurnosDB.fetchRangoCalculado(date, date);
-                const excelSource = await window.ExcelLoader.loadExcelSourceRows().catch(() => ({}));
-                const hotelName = $("#sel_hotel").value;
-
-                // Resolvemos el estado final para ese día
-                // Para simplificar en esta vista, usamos ShiftResolver directamente
-                // Si hay Excel, lo usamos para el turno base.
-                const weekStart = getMonday(new Date(date + "T12:00:00"));
-                const weekStartIso = weekStart.toISOString().split('T')[0];
-                const dayIndex = (new Date(date + "T12:00:00").getDay() || 7) - 1;
-                
-                const hotelExcel = excelSource[hotelName] || [];
-                const weekExcel = hotelExcel.filter(r => r.weekStart === weekStartIso);
-
-                const baseRows = weekExcel.map(r => ({
-                    empleadoId: r.empleadoId,
-                    hotel: hotelName,
-                    turno: r.values[dayIndex] || ''
-                }));
-
-                const stateMap = window.ShiftResolver.resolveDay({
-                    date,
-                    employees: _emps,
-                    baseRows,
-                    events: eventos,
-                    manualOverrides: rows.filter(r => r.fecha === date && !r.evento_id)
-                });
-
-                if (solId) {
-                    const state = stateMap.get(window.TurnosEngine.normalizeString(solId));
-                    if (state) {
-                        row.querySelector(".v_origen").value = mapShiftLabel(state.turnoFinal || state.estadoFinal);
-                    }
-                }
-
-                if (compId) {
-                    const state = stateMap.get(window.TurnosEngine.normalizeString(compId));
-                    if (state) {
-                        row.querySelector(".v_destino").value = mapShiftLabel(state.turnoFinal || state.estadoFinal);
-                    }
-                }
-            } catch (e) { 
-                console.warn("AutoFill Error:", e); 
-            } finally {
-                setTimeout(() => row.classList.remove("is-loading"), 400);
-            }
-        };
-
-        function getMonday(d) {
-            const day = d.getDay() || 7;
-            const diff = d.getDate() - day + 1;
-            return new Date(d.setDate(diff));
-        }
-
-        function mapShiftLabel(t) {
-            const s = String(t || "").toUpperCase();
-            if (s.startsWith('M')) return 'Mañana';
-            if (s.startsWith('T')) return 'Tarde';
-            if (s.startsWith('N')) return 'Noche';
-            if (s.startsWith('D')) return 'Descanso';
-            if (s.includes('VAC') || s.includes('BAJA') || s.includes('PERM')) return 'Descanso';
-            return 'Mañana'; 
-        }
-
-        function nuevaFila() {
-            const container = $("#items_container");
-            const count = document.querySelectorAll(".shift-row").length + 1;
-            
-            const div = document.createElement("div");
-            div.className = "shift-row fade-in";
-            div.innerHTML = `
-                <div class="shift-title">INTERCAMBIO #${count}</div>
-                <div class="shift-grid">
-                    <div class="field">
-                        <label>Fecha</label>
-                        <input type="date" class="v_fecha" required onchange="window.autoFillShifts(this)">
-                    </div>
-                    <div class="field">
-                        <label>Mi Turno Actual</label>
-                        <select class="v_origen" required>
-                            <option value="">—</option>
-                            <option>Mañana</option>
-                            <option>Tarde</option>
-                            <option>Noche</option>
-                            <option>Descanso</option>
-                        </select>
-                    </div>
-                    <div class="field">
-                        <label>Turno Recibido</label>
-                        <select class="v_destino" required>
-                            <option value="">—</option>
-                            <option>Mañana</option>
-                            <option>Tarde</option>
-                            <option>Noche</option>
-                            <option>Descanso</option>
-                        </select>
-                    </div>
-                    <div class="field">
-                        <label>Notas / Motivo</label>
-                        <input type="text" class="v_nota" placeholder="Opcional...">
-                    </div>
-                    <button type="button" class="btn-delete" title="Quitar fecha" onclick="quitarFila(this)">
-                        <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12"></path></svg>
-                    </button>
-                </div>
-                <div class="shift-detecting">
-                    <div class="loading-dot"></div> Detectando turnos...
-                </div>
-            `;
-            container.appendChild(div);
-        }
-
-        function quitarFila(btn) {
-            const all = document.querySelectorAll(".shift-row");
-            if (all.length > 1) {
-                const row = btn.closest(".shift-row");
-                row.style.opacity = '0';
-                row.style.transform = 'translateX(20px)';
-                setTimeout(() => {
-                    row.remove();
-                    // Renumerar títulos
-                    document.querySelectorAll(".shift-row").forEach((r, i) => {
-                        r.querySelector(".shift-title").textContent = `INTERCAMBIO #${i+1}`;
-                    });
-                }, 300);
-            }
-        }
-
-        $("#form-solicitud").addEventListener("submit", async (e) => {
-            e.preventDefault();
-            const btn = $("#btn_submit");
-            const hotel = $("#sel_hotel").value;
-            const sol = $("#sel_solicitante").value;
-            const comp = $("#sel_companero").value;
-            
-            if (sol === comp) return alert("No puedes realizar un intercambio contigo mismo/a.");
-            
-            btn.disabled = true;
-            btn.innerHTML = `<div class="loading-dot"></div> ENVIANDO...`;
-
-            const items = [];
-            document.querySelectorAll(".shift-row").forEach(row => {
-                items.push({
-                    fecha: row.querySelector(".v_fecha").value,
-                    origen: row.querySelector(".v_origen").value,
-                    destino: row.querySelector(".v_destino").value,
-                    nota: row.querySelector(".v_nota").value
-                });
-            });
-
-            const payload = {
-                hotel: hotel,
-                solicitante: sol,
-                companero: comp,
-                fechas: items,
-                observaciones: $("#obs").value,
-                estado: 'pendiente'
-            };
-
-            try {
-                const { error } = await window.supabase.from('peticiones_cambio').insert([payload]);
-                if (error) throw error;
-                
-                $("#form-solicitud").style.display = "none";
-                $("#success-screen").style.display = "block";
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-
-            } catch (err) {
-                console.error(err);
-                alert("Error técnico al enviar: " + err.message);
-                btn.disabled = false;
-                btn.innerHTML = `ENVIAR SOLICITUD A REVISIÓN`;
-            }
+            await loadEmployees();
+            addShiftRow(); // Añadir la primera fila por defecto
         });
 
-        document.addEventListener("DOMContentLoaded", startup);
+        async function loadEmployees() {
+            const hotel = $("#sel_hotel").value;
+            const solSelect = $("#solicitante");
+            const compSelect = $("#companero");
+
+            try {
+                // Si no tenemos empleados cargados, los traemos
+                if (_emps.length === 0) {
+                    _emps = await window.TurnosDB.getEmpleados();
+                }
+
+                // Filtrar por hotel (Robusto: normaliza y compara)
+                const hotelEmps = _emps.filter(e => {
+                    if (!e.hotel_id) return true; // Global o sin asignar
+                    const hDb = window.normalizeId(e.hotel_id);
+                    const hSel = window.normalizeId(hotel);
+                    // Coincidencia si uno contiene al otro (p.ej. "Guadiana" en "Sercotel Guadiana")
+                    return hDb.includes(hSel) || hSel.includes(hDb);
+                });
+
+                if (window.DEBUG_MODE === true) {
+                    console.log("[SOLICITUD EMPLEADOS RAW]", _emps.length);
+                    console.log("[SOLICITUD HOTEL SELECTED]", hotel);
+                    console.log("[SOLICITUD EMPLEADOS FILTRADOS]", hotelEmps.length, hotelEmps.map(e => e.nombre));
+                }
+
+                const selects = [solSelect, compSelect];
+                selects.forEach(sel => {
+                    const currentVal = sel.value;
+                    let html = '<option value="">Selecciona nombre...</option>';
+                    
+                    hotelEmps.sort((a,b) => a.nombre.localeCompare(b.nombre)).forEach(e => {
+                        html += `<option value="${e.id}" ${e.id === currentVal ? 'selected' : ''}>${e.nombre}</option>`;
+                    });
+                    
+                    sel.innerHTML = html;
+                });
+
+            } catch (err) {
+                console.error("Error cargando empleados:", err);
+                solSelect.innerHTML = '<option value="">Error al cargar</option>';
+                compSelect.innerHTML = '<option value="">Error al cargar</option>';
+            }
+        }
+
+        function addShiftRow() {
+            const container = $("#shifts-container");
+            const id = Date.now();
+            
+            const row = document.createElement("div");
+            row.className = "shift-row";
+            row.id = `row-${id}`;
+            row.innerHTML = `
+                <div class="row-date-box">
+                    <input type="text" class="input-control row-date-picker" placeholder="Fecha..." onchange="autoFillShifts()">
+                </div>
+                <div class="row-origen" data-val="">—</div>
+                <div class="row-arrow">→</div>
+                <div class="row-destino-box">
+                    <select class="select-control row-destino">
+                        <option value="—">—</option>
+                        <option value="Mañana">Mañana</option>
+                        <option value="Tarde">Tarde</option>
+                        <option value="Noche">Noche</option>
+                        <option value="Descanso">Descanso</option>
+                    </select>
+                </div>
+                <div class="row-actions">
+                    <button class="btn-remove-row" onclick="removeRow(${id})" title="Quitar fecha">✕</button>
+                </div>
+            `;
+            
+            container.appendChild(row);
+            
+            flatpickr(row.querySelector(".row-date-picker"), {
+                locale: "es",
+                dateFormat: "Y-m-d",
+                altInput: true,
+                altFormat: "D j M",
+                disableMobile: true,
+                onChange: () => autoFillShifts()
+            });
+        }
+
+        function removeRow(id) {
+            const rows = $$(".shift-row");
+            if (rows.length > 1) {
+                $(`#row-${id}`).remove();
+            } else {
+                alert("Debes incluir al menos una fecha.");
+            }
+        }
+
+        async function autoFillShifts() {
+            const solId = $("#solicitante").value;
+            const hotelName = $("#sel_hotel").value;
+            if (!solId) return;
+
+            const rows = $$(".shift-row");
+            const dates = Array.from(rows).map(r => r.querySelector(".row-date-picker").value).filter(Boolean);
+            if (dates.length === 0) return;
+
+            const sorted = [...dates].sort();
+            const start = sorted[0];
+            const end = sorted[sorted.length - 1];
+
+            try {
+                const { rows: dbRows, eventos } = await window.TurnosDB.fetchRangoCalculado(start, end);
+                
+                if (_baseRows.length === 0) {
+                    const excelData = await window.ExcelLoader.loadExcelSourceRows().catch(() => ({}));
+                    _baseRows = excelData[hotelName] || [];
+                }
+
+                const { baseIndex } = window.ShiftResolver.buildIndices(_emps, eventos, _baseRows);
+
+                rows.forEach(row => {
+                    const dateInput = row.querySelector(".row-date-picker");
+                    const date = dateInput.value;
+                    if (!date) return;
+
+                    const res = window.ShiftResolver.resolveEmployeeDay({
+                        empleadoId: solId,
+                        hotel: hotelName,
+                        fecha: date,
+                        eventos: eventos,
+                        baseIndex: baseIndex
+                    });
+
+                    const labelEl = row.querySelector(".row-origen");
+                    const turnoActual = res.turnoFinal || res.turno || "—";
+                    
+                    let cleanLabel = turnoActual;
+                    if (window.employeeShiftLabel) {
+                        cleanLabel = window.employeeShiftLabel(res);
+                    } else if (turnoActual === 'M') cleanLabel = "Mañana";
+                    else if (turnoActual === 'T') cleanLabel = "Tarde";
+                    else if (turnoActual === 'N') cleanLabel = "Noche";
+                    else if (turnoActual === 'D') cleanLabel = "Descanso";
+                    
+                    labelEl.textContent = cleanLabel;
+                    labelEl.dataset.val = cleanLabel;
+                });
+
+            } catch (e) {
+                console.error("Error autofill:", e);
+            }
+        }
+
+        async function submitForm() {
+            const btn = $("#btn_enviar");
+            const spinner = $("#submit-spinner");
+            const txt = $("#submit-text");
+            
+            const solId = $("#solicitante").value;
+            const compId = $("#companero").value;
+            const hotel = $("#sel_hotel").value;
+            const notaGeneral = $("#nota_peticion").value;
+
+            if (!solId) return alert("Selecciona quién solicita el cambio.");
+            
+            const solName = _emps.find(e => e.id === solId)?.nombre;
+            const compName = compId ? _emps.find(e => e.id === compId)?.nombre : "";
+
+            const fechasArr = [];
+            let valid = true;
+            
+            $$(".shift-row").forEach(row => {
+                const date = row.querySelector(".row-date-picker").value;
+                const origen = row.querySelector(".row-origen").dataset.val;
+                const destino = row.querySelector(".row-destino").value;
+                
+                if (!date) valid = false;
+                if (destino === "—") valid = false;
+
+                if (date && destino !== "—") {
+                    fechasArr.push({
+                        fecha: date,
+                        origen: origen,
+                        destino: destino,
+                        nota: ""
+                    });
+                }
+            });
+
+            if (!valid || fechasArr.length === 0) {
+                return alert("Por favor, completa todas las fechas y turnos de destino.");
+            }
+
+            try {
+                btn.disabled = true;
+                spinner.style.display = "inline-block";
+                txt.textContent = "Enviando...";
+
+                const payload = {
+                    hotel: hotel,
+                    solicitante: solName,
+                    companero: compName,
+                    fechas: fechasArr,
+                    observaciones: notaGeneral,
+                    estado: 'pendiente'
+                };
+
+                const savedRequest = await window.TurnosDB.savePeticionCambio(payload);
+                const requestId = savedRequest?.id || 'ID_N/A';
+
+                // --- NOTIFICACIÓN AUTOMÁTICA EN BANDEJA ---
+                try {
+                    await window.TurnosDB.saveMensaje({
+                        emisor: solName,
+                        asunto: 'Nueva solicitud de cambio',
+                        cuerpo: `${solName} ha solicitado un cambio para el centro ${hotel}. ID: ${requestId}`,
+                        tipo: 'info',
+                        hotel_id: hotel
+                    });
+                } catch (msgErr) {
+                    console.warn("No se pudo enviar la notificación de mensaje interna.", msgErr);
+                }
+
+                // --- ENVÍO A FORMSPREE (EMAIL) ---
+                let emailSent = true;
+                try {
+                    const FORMSPREE_ENDPOINT = "https://formspree.io/f/xvgawqya";
+                    
+                    // Construir el detalle para el email
+                    let detalleEmail = `NUEVA SOLICITUD DE CAMBIO (TurnosWeb)\n`;
+                    detalleEmail += `--------------------------------------\n`;
+                    detalleEmail += `SOLICITANTE: ${solName}\n`;
+                    detalleEmail += `COMPAÑERO: ${compName || 'N/A'}\n`;
+                    detalleEmail += `CENTRO: ${hotel}\n`;
+                    detalleEmail += `ID SOLICITUD: ${requestId}\n\n`;
+                    detalleEmail += `FECHAS SOLICITADAS:\n`;
+                    
+                    fechasArr.forEach(f => {
+                        detalleEmail += `- ${f.fecha}: De ${f.origen} a ${f.destino}\n`;
+                    });
+
+                    detalleEmail += `\nOBSERVACIONES:\n${notaGeneral || 'Ninguna'}`;
+
+                    const formData = {
+                        "Centro": hotel,
+                        "Solicitante": solName,
+                        "Companero": compName,
+                        "ID_Solicitud": requestId,
+                        "Detalle_Intercambio": detalleEmail,
+                        "Observaciones": notaGeneral,
+                        "_subject": `Solicitud Turno: ${solName} / ${compName || 'N/A'}`,
+                        "Fecha_Envio": new Date().toLocaleString()
+                    };
+
+                    const fsResponse = await fetch(FORMSPREE_ENDPOINT, {
+                        method: "POST",
+                        body: JSON.stringify(formData),
+                        headers: { 
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json' 
+                        }
+                    });
+
+                    if (!fsResponse.ok) {
+                        emailSent = false;
+                        console.warn("Formspree respondió con error.");
+                    }
+                } catch (fsErr) {
+                    emailSent = false;
+                    console.error("Error enviando a Formspree:", fsErr);
+                }
+                
+                // --- MOSTRAR RESULTADO ---
+                if (!emailSent) {
+                    // Aviso de éxito parcial
+                    $(".success-icon").textContent = "⚠️";
+                    $(".success-title").textContent = "Solicitud Guardada";
+                    $(".success-text").textContent = "Tu petición se registró correctamente en el sistema, pero hubo un problema al enviar el email de notificación a administración. No te preocupes, ellos la verán en su panel.";
+                } else {
+                    // Éxito total
+                    $(".success-icon").textContent = "🚀";
+                    $(".success-title").textContent = "¡Solicitud Enviada!";
+                    $(".success-text").textContent = "Tu petición ha sido registrada correctamente. Te avisaremos cuando sea revisada por el equipo de administración.";
+                }
+
+                $("#success-overlay").classList.add("active");
+                
+            } catch (e) {
+                alert("Error crítico al guardar solicitud: " + e.message);
+                btn.disabled = false;
+                spinner.style.display = "none";
+                txt.textContent = "Enviar Solicitud";
+            }
+        }
+
     </script>
 </body>
 </html>

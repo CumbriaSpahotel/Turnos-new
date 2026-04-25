@@ -1,0 +1,8 @@
+{
+  "hotel": "Sercotel Guadiana",
+  "solicitante": "Test Reject",
+  "companero": "Macarena",
+  "fechas": [{"fecha": "2026-04-26", "origen": "Tarde", "destino": "Descanso"}],
+  "observaciones": "Prueba de rechazo",
+  "estado": "pendiente"
+}

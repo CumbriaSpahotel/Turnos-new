@@ -1,4 +1,4 @@
-/* mobile.app.js (V3.1 Premium - Admin Standard) */
+/* mobile.app.js (V3.2 Premium - Admin Standard) */
 (function () {
   const $  = (s, root = document) => root.querySelector(s);
   const $$ = (s, root = document) => Array.from(root.querySelectorAll(s));
@@ -19,25 +19,106 @@
     return [date.getUTCFullYear(), pad(date.getUTCMonth() + 1), pad(date.getUTCDate())].join("-");
   }
 
-  function addDays(date, n) {
-    const d = new Date(date.getTime());
-    d.setUTCDate(d.getUTCDate() + n);
-    return d;
-  }
-
   function logoFor(hotel) {
     if ((hotel || "").toLowerCase().includes("guadiana")) return "guadiana logo.jpg";
     return "cumbria logo.jpg";
   }
 
+  /**
+   * Helper visual compartido para vista pública/móvil
+   */
+  function getPublicCellDisplay(cell, options = {}) {
+    const compact = !!options.compact;
+    const rawLabel = String(cell?.label || cell?.displayLabel || '').trim();
+    const code = String(cell?.code || cell?.tipo || '').toUpperCase().trim();
+
+    let label = rawLabel;
+
+    // Normalización a nombres completos primero
+    if (!label || ['M','T','N','D','VAC','BAJA','PERM','PERMISO','FORM'].includes(label.toUpperCase())) {
+        const key = label.toUpperCase() || code;
+        label = {
+            M: 'Mañana',
+            T: 'Tarde',
+            N: 'Noche',
+            D: 'Descanso',
+            VAC: 'Vacaciones',
+            BAJA: 'Baja',
+            PERM: 'Permiso',
+            PERMISO: 'Permiso',
+            FORM: 'Formación'
+        }[key] || label || '—';
+    }
+
+    const icons = new Set();
+    const origen = String(cell?.origen || cell?.source || cell?.tipo_evento || '').toLowerCase();
+    const explicitIcons = Array.isArray(cell?.icons) ? cell.icons : [];
+
+    explicitIcons.forEach(i => {
+        if (['🌙','🏖️','🗓️','🤒','🎓','🔄'].includes(i)) icons.add(i);
+    });
+
+    if (/noche/i.test(label) || code === 'N') icons.add('🌙');
+    if (/vacaciones/i.test(label) || code === 'VAC') icons.add('🏖️');
+    if (/permiso/i.test(label) || code === 'PERM' || code === 'PERMISO') icons.add('🗓️');
+    if (/baja/i.test(label) || code === 'BAJA') icons.add('🤒');
+    if (/formaci/i.test(label) || code === 'FORM') icons.add('🎓');
+
+    const isRealChange =
+        (origen.includes('ct') ||
+         origen.includes('cambio') ||
+         origen.includes('intercambio') ||
+         String(cell?.tipo_evento || '').toUpperCase().includes('INTERCAMBIO') ||
+         String(cell?.tipo_evento || '').toUpperCase() === 'CT') &&
+        !origen.includes('sustitucion') &&
+        !origen.includes('vacaciones') &&
+        !origen.includes('ausencia');
+
+    if (isRealChange) icons.add('🔄');
+
+    const absenceCodes = ['VAC', 'BAJA', 'PERM', 'PERMISO', 'FORM'];
+    const isAbsence = absenceCodes.includes(code)
+        || /vacaciones|baja|permiso|formaci/i.test(label);
+
+    if (isAbsence) {
+        icons.delete('🔄');
+    }
+
+    // Eliminar iconos decorativos no deseados en Mañana/Tarde/Descanso
+    if (label === 'Mañana') { icons.delete('☀️'); icons.delete('🌞'); icons.delete('🌅'); }
+    if (label === 'Tarde')  { icons.delete('☀️'); icons.delete('🌞'); icons.delete('🌅'); }
+    if (label === 'Descanso' && !isRealChange) { icons.delete('🔄'); }
+
+    // Si es compacto (móvil), convertir label completo a código corto
+    if (compact) {
+        const compactMap = {
+            'Mañana': 'M',
+            'Tarde': 'T',
+            'Noche': 'N',
+            'Descanso': 'D',
+            'Vacaciones': 'VAC',
+            'Baja': 'BAJA',
+            'Permiso': 'PERM',
+            'Formación': 'FORM'
+        };
+        label = compactMap[label] || label;
+    }
+
+    return {
+        label,
+        icons: Array.from(icons),
+        text: label === '—' ? '—' : `${label}${icons.size ? ' ' + Array.from(icons).join(' ') : ''}`
+    };
+  }
+
   function getDisplayInfo(item) {
     if (!item) return { label: '·', cls: 'empty', icon: '', title: '' };
+    const display = getPublicCellDisplay(item, { compact: true });
     const visual = window.TurnosRules.describeCell(item);
-    let label = visual.label || item.turno || '·';
     return {
-      label: label,
+      label: display.text,
       cls: visual.mobileClass,
-      icon: visual.icon || '',
+      icon: '',
       title: visual.title || ''
     };
   }
@@ -56,76 +137,51 @@
     }[ch]));
   }
 
-  // loadExcelSourceRows() delegada a excel-loader.js (window.ExcelLoader)
-  // Proporciona: conversión de fechas seriales, normalización M/T/N/D, rowIndex, displayName.
-
   window.refreshMobileView = async function() {
     if (!dateInput.value) {
         dateInput.value = toISODateUTC(mondayOf(new Date()));
     }
-
     const startIso = dateInput.value;
     const dEnd = new Date(startIso + "T12:00:00");
     dEnd.setDate(dEnd.getDate() + 6);
     const endIso = toISODateUTC(dEnd);
-
-    shiftGrid.innerHTML = `<div style="padding:40px; text-align:center; opacity:0.5; font-weight:700;">Sincronizando...</div>`;
-    
-    let rows = [], eventos = [];
+    shiftGrid.innerHTML = `<div style="padding:40px; text-align:center; opacity:0.5; font-weight:700;">Cargando publicación...</div>`;
     try {
-        const result = await window.TurnosDB.fetchRangoCalculado(startIso, endIso);
-        rows = result.rows || [];
-        eventos = result.eventos || [];
+        const result = await window.TurnosDB.loadPublishedSchedule({
+            semanaInicio: startIso,
+            semanaFin: endIso,
+            hotel: hotelSelect.value || null
+        });
+        if (!result.ok) {
+            shiftGrid.innerHTML = `<div style="padding:40px; text-align:center; opacity:0.6; color:var(--muted); font-weight:600;"><div style="font-size:2.5rem; margin-bottom:10px;">📅</div>${result.message}</div>`;
+            return;
+        }
+        const hotelVal = hotelSelect.value || "";
+        shiftGrid.innerHTML = "";
+        for (const snap of result.snapshots) {
+            if (hotelVal && snap.hotel !== hotelVal) continue;
+            await renderSnapshotTable(snap.hotel, snap.data, shiftGrid);
+        }
+        if (shiftGrid.innerHTML === "") {
+            shiftGrid.innerHTML = `<div style="padding:40px; text-align:center; opacity:0.5; color:var(--muted);">No hay cuadrantes publicados para los filtros seleccionados.</div>`;
+        }
     } catch(e) { 
-        try { rows = await window.TurnosDB.fetchRango(startIso, endIso) || []; } catch(e2){}
-    }
-    
-    const excelSource = await window.ExcelLoader.loadExcelSourceRows();
-    const profiles = await window.TurnosDB.getEmpleados();
-    const data = { rows, eventos, excelSource };
-
-    const hotels = Array.from(new Set(rows.map(t => t.hotel_id))).filter(Boolean).sort();
-    if (hotelSelect && hotelSelect.options.length <= 1) {
-        const currentHotel = hotelSelect.value || "";
-        hotelSelect.innerHTML = `<option value="">Todos los Hoteles</option>` +
-            hotels.map(h => `<option value="${escapeHtml(h)}">${escapeHtml(h)}</option>`).join("");
-        hotelSelect.value = hotels.includes(currentHotel) ? currentHotel : "";
-    }
-
-    const hotelVal = hotelSelect.value || "";
-    const mondayD = new Date(startIso + "T12:00:00");
-    shiftGrid.innerHTML = "";
-
-    const hotelsToRender = hotelVal ? [hotelVal] : (hotels.length ? hotels : ['Cumbria Spa&Hotel', 'Sercotel Guadiana']);
-    for (const h of hotelsToRender) {
-        await renderTable(h, mondayD, data, shiftGrid, profiles);
-    }
-    
-    if (shiftGrid.innerHTML === "") {
-        shiftGrid.innerHTML = `<div style="padding:40px; text-align:center; opacity:0.5; color:var(--muted);">No hay turnos registrados en la nube.</div>`;
+        console.error("Error en vista móvil:", e);
+        shiftGrid.innerHTML = `<div style="padding:40px; text-align:center; color:#ef4444;">Error de conexión. Reintente.</div>`;
     }
   };
 
-  async function renderTable(hotel, monday, data, container, profiles) {
-    const FULL_DATA = { flat: data.flat, excelSource: data.excelSource };
-    const weekData = window.MobileAdapter.buildWeekData(FULL_DATA, hotel, monday, profiles);
-    if (!weekData || !weekData.empDetailed || weekData.empDetailed.length === 0) return;
-
-    // Filtro de filas vacías: idéntico al de index.html (línea 931)
-    // Elimina empleados sin ningún dato real en la semana
-    weekData.empDetailed = weekData.empDetailed.filter(entry => {
-        const shifts = weekData.turnosByEmpleado[entry.id] || {};
-        return Object.values(shifts).some(c =>
-            c && (c.turno || String(c.tipo || '').toUpperCase() !== 'NORMAL')
-        );
-    });
-
-    const baseMonday = weekData.monday;
-    const dates = [0,1,2,3,4,5,6].map(i => toISODateUTC(addDays(baseMonday, i)));
-
+  async function renderSnapshotTable(hotel, snapshotData, container) {
+    const empleados = snapshotData.empleados || [];
+    const semanaInicio = snapshotData.semana_inicio;
+    const dates = [];
+    let curr = new Date(semanaInicio + "T12:00:00");
+    for (let i = 0; i < 7; i++) {
+        dates.push(toISODateUTC(curr));
+        curr.setUTCDate(curr.getUTCDate() + 1);
+    }
     const section = document.createElement("div");
     section.className = "hotel-card";
-    
     section.innerHTML = `
         <div class="hotel-info">
             <img src="${escapeHtml(logoFor(hotel))}" alt="">
@@ -137,50 +193,38 @@
                 ${dates.map((d, i) => {
                     const dayObj = new Date(d + 'T12:00:00');
                     const dayLabel = `${dayObj.getUTCDate()}/${monthNames[dayObj.getUTCMonth()]}/${dayObj.getUTCFullYear().toString().slice(-2)}`;
-                    return `<div class="grid-th">
-                        <span>${weekdayLong[dayObj.getUTCDay()]}</span><br>
-                        <span style="opacity:0.6; font-size:0.75rem; font-weight:500;">${dayLabel}</span>
-                    </div>`;
+                    return `<div class="grid-th"><span>${weekdayLong[dayObj.getUTCDay()]}</span><br><span style="opacity:0.6; font-size:0.75rem; font-weight:500;">${dayLabel}</span></div>`;
                 }).join('')}
             </div>
             <div class="grid-body">
-                ${(weekData.empDetailed || []).map(entry => {
-                    const { id: emp, isAbsent: empIsAbsent } = entry;
-                    const shifts = weekData.turnosByEmpleado[emp] || {};
-                    
+                ${empleados.sort((a,b) => a.orden - b.orden).map(emp => {
+                    const empName = emp.nombre;
+                    const daysMap = emp.dias || {};
                     let n = 0, dCount = 0;
-                    Object.values(shifts).forEach(s => {
-                        const t = (s.turno||'').toLowerCase();
-                        if (t.startsWith('n')) n++;
-                        if (t.startsWith('d')) dCount++;
+                    dates.forEach(f => {
+                        const d = daysMap[f] || {};
+                        const c = (d.code || '').toLowerCase();
+                        if (c.startsWith('n')) n++;
+                        if (c.startsWith('d')) dCount++;
                     });
-
                     return `
                         <div class="grid-row">
                             <div class="name-sticky">
-                                <span style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis; color:var(--text); font-family:'Outfit', sans-serif; font-weight:600; font-size:0.8rem; letter-spacing:0.01em; text-transform:uppercase;">${escapeHtml(emp)}</span>
-                                <div class="stats" style="display:flex; gap:5px; margin-top:3px;">
-                                    <span style="background:rgba(0,0,0,0.04); color:var(--text); padding:1px 5px; border-radius:5px; font-size:0.62rem; font-weight:700; border:1px solid rgba(0,0,0,0.05); display:flex; align-items:center; gap:3px;">
-                                        🌙 <span style="color:var(--text);">${n}</span>
-                                    </span>
-                                    <span style="background:rgba(239,68,68,0.05); padding:1px 5px; border-radius:5px; font-size:0.62rem; font-weight:700; border:1px solid rgba(239,68,68,0.1); display:flex; align-items:center; gap:3px;">
-                                        <span style="color:#ef4444;">D</span> <span style="color:var(--text);">${dCount}</span>
-                                    </span>
-                                </div>
+                                <span style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis; color:var(--text); font-family:'Outfit', sans-serif; font-weight:600; font-size:0.8rem; letter-spacing:0.01em;">${escapeHtml(empName)}</span>
                             </div>
-                            ${dates.map(dKey => {
-                                const item = shifts[dKey];
-                                const { label, cls, icon, title } = getDisplayInfo(item);
-                                return `<div class="grid-cell" title="${escapeHtml(title || '')}">
-                                    <span class="badge-shift ${cls}">${escapeHtml(label)}${icon ? ` ${icon}` : ''}</span>
+                            ${dates.map(f => {
+                                const day = daysMap[f] || {};
+                                const display = getPublicCellDisplay(day, { compact: true });
+                                const visual = window.TurnosRules.describeCell(day);
+                                return `<div class="grid-cell" title="${escapeHtml(day.titular_cubierto ? 'Cubriendo a ' + day.titular_cubierto : '')}">
+                                    <span class="badge-shift ${visual.mobileClass}">${escapeHtml(display.text)}</span>
                                 </div>`;
                             }).join('')}
                         </div>
                     `;
                 }).join('')}
             </div>
-        </div>
-    `;
+        </div>`;
     container.appendChild(section);
   }
 
@@ -190,6 +234,5 @@
     dateInput.value = toISODateUTC(mondayOf(d));
     window.refreshMobileView();
   };
-
   window.initMobileSunc = async function() { await window.refreshMobileView(); };
 })();

@@ -74,7 +74,7 @@
                     <option value="anulados">Anulados</option>
                     <option value="all" selected>Todos los registros</option>
                 </select>
-                <button class="btn" style="background:var(--accent); color:white; font-weight:700; border-radius:10px; padding:8px 18px;" onclick="openModal()">+ Nueva Baja/Permiso</button>
+                <button id="btnNuevaBajaPermiso" class="btn" style="background:var(--accent); color:white; font-weight:700; border-radius:10px; padding:8px 18px;" onclick="window.openBajaPermisoModal()">+ Nueva Baja/Permiso</button>
             </div>
             <div id="syncStatus" class="status-badge-premium" style="margin-left:20px; display:flex; align-items:center; gap:8px;">
                 <span id="syncDot" style="width:8px; height:8px; border-radius:50%; background:#ff9800;"></span>
@@ -91,8 +91,10 @@
     </main>
 
     <!-- MODAL NUEVA BAJA -->
-    <div id="modalBaja" class="drawer-overlay" style="display:none; align-items:center; justify-content:center; padding:1rem; z-index:9999;" onclick="closeModal()">
+    <div id="modalBaja" class="drawer-overlay" style="display:none; align-items:center; justify-content:center; padding:1rem; z-index:9999;" onclick="window.closeBajaPermisoModal()">
         <div class="glass" style="width:100%; max-width:480px; padding:2rem; border-radius:24px; position:relative; background:var(--bg2); border:1px solid var(--border); box-shadow:var(--shadow-lg);" onclick="event.stopPropagation()">
+            <button type="button" aria-label="Cerrar" onclick="window.closeBajaPermisoModal()" style="position:absolute; top:14px; right:14px; width:32px; height:32px; border:none; border-radius:999px; background:var(--bg3); color:var(--text); cursor:pointer; font-weight:900;">x</button>
+            <div id="mbError" style="display:none; margin-bottom:12px; padding:10px 12px; border-radius:10px; background:#fee2e2; color:#991b1b; font-size:0.82rem; font-weight:700;"></div>
             <h2 id="modalTitle" style="margin-bottom:1.5rem; font-size:1.4rem; color:var(--text); font-weight:800;">Añadir Baja o Permiso</h2>
             <div style="display:grid; grid-template-columns: 1fr 1fr; gap:15px;">
                 <div style="grid-column: span 2;">
@@ -118,8 +120,12 @@
                     <input type="date" id="mbDateStart" style="width:100%; padding:12px; border-radius:12px; background:var(--bg3); border:1px solid var(--border); color:var(--text);">
                 </div>
                 <div>
-                    <label style="font-size:0.65rem; font-weight:800; color:var(--text-dim); text-transform:uppercase; display:block; margin-bottom:5px;">Fecha Fin (Opcional)</label>
+                    <label style="font-size:0.65rem; font-weight:800; color:var(--text-dim); text-transform:uppercase; display:block; margin-bottom:5px;">Fecha Fin</label>
                     <input type="date" id="mbDateEnd" style="width:100%; padding:12px; border-radius:12px; background:var(--bg3); border:1px solid var(--border); color:var(--text);">
+                </div>
+                <div style="grid-column: span 2;">
+                    <label style="font-size:0.65rem; font-weight:800; color:var(--text-dim); text-transform:uppercase; display:block; margin-bottom:5px;">Estado</label>
+                    <input type="text" id="mbEstado" value="activo" disabled style="width:100%; padding:12px; border-radius:12px; background:var(--bg3); border:1px solid var(--border); color:var(--text-dim);">
                 </div>
                 <div style="grid-column: span 2;">
                     <label style="font-size:0.65rem; font-weight:800; color:var(--text-dim); text-transform:uppercase; display:block; margin-bottom:5px;">Sustituto (Opcional)</label>
@@ -133,8 +139,8 @@
             <div style="display:flex; flex-direction:column; gap:10px; margin-top:25px;">
                 <button id="btnDeleteBaja" class="btn" style="background:#fee2e2; color:#b91c1c; font-weight:700; border-radius:12px; display:none;" onclick="deleteCurrentPeriod()">Eliminar este registro</button>
                 <div style="display:flex; gap:12px;">
-                    <button class="btn" style="flex:1;" onclick="closeModal()">Cancelar</button>
-                    <button class="btn" style="flex:1; background:var(--accent); color:white; font-weight:700;" onclick="saveManualBaja()">Guardar Registro</button>
+                    <button class="btn" style="flex:1;" onclick="window.closeBajaPermisoModal()">Cancelar</button>
+                    <button id="btnSaveBajaPermiso" class="btn" style="flex:1; background:var(--accent); color:white; font-weight:700;" onclick="window.saveBajaPermiso()">Guardar</button>
                 </div>
             </div>
         </div>
@@ -262,38 +268,137 @@
             }
         }
 
-        async function saveManualBaja() {
-            const emp = $('#mbEmp').value.trim();
-            const dateStart = $('#mbDateStart').value;
-            const dateEnd = $('#mbDateEnd').value;
-            const tipo = $('#mbTipo').value;
+        function setModalError(message) {
+            const box = $('#mbError');
+            if (!box) return;
+            box.textContent = message || '';
+            box.style.display = message ? 'block' : 'none';
+        }
+
+        function canonicalBajaTipo(value) {
+            const raw = String(value || '').toUpperCase();
+            if (raw.startsWith('BAJA')) return 'BAJA';
+            if (raw.startsWith('PERM')) return 'PERMISO';
+            return '';
+        }
+
+        function buildBajaPermisoPayload() {
+            const tipo = canonicalBajaTipo($('#mbTipo').value);
+            const empleado = $('#mbEmp').value.trim();
             const hotel = $('#mbHotel').value;
-            const sust = $('#mbSustituto').value.trim();
-            const obs = $('#mbObs').value.trim();
+            const fechaInicio = $('#mbDateStart').value;
+            const fechaFin = $('#mbDateEnd').value;
+            const sustituto = $('#mbSustituto').value.trim();
+            const motivo = $('#mbObs').value.trim();
+            return {
+                id: _editingData?.id || undefined,
+                tipo,
+                empleado_id: empleado,
+                empleado_destino_id: sustituto || null,
+                hotel_origen: hotel,
+                fecha_inicio: fechaInicio,
+                fecha_fin: fechaFin,
+                observaciones: motivo || null,
+                estado: 'activo',
+                payload: {
+                    creado_desde: 'bajas.html',
+                    creado_en: new Date().toISOString(),
+                    origen: 'manual_bajas_permisos',
+                    empleado_nombre: empleado,
+                    hotel_id: hotel,
+                    sustituto_id: sustituto || null,
+                    sustituto_nombre: sustituto || null,
+                    motivo: motivo || null,
+                    observacion: motivo || null
+                }
+            };
+        }
 
+        function validateBajaPermisoPayload(payload) {
+            if (!payload.tipo) return 'Selecciona Tipo.';
+            if (!payload.empleado_id) return 'Indica Empleado.';
+            if (!payload.hotel_origen) return 'Selecciona Hotel.';
+            if (!payload.fecha_inicio) return 'Indica Fecha inicio.';
+            if (!payload.fecha_fin) return 'Indica Fecha fin.';
+            if (payload.fecha_fin < payload.fecha_inicio) return 'Fecha fin no puede ser anterior a Fecha inicio.';
+            return '';
+        }
+
+        function isCreatedRecordVisible(payload) {
+            const hotel = $('#bjHotel')?.value || 'all';
+            const emp = $('#bjEmp')?.value || 'all';
+            const status = $('#bjStatus')?.value || 'all';
+            const rangeStr = $('#bjRange')?.value || '';
+            if (hotel !== 'all' && hotel !== payload.hotel_origen) return false;
+            if (emp !== 'all' && emp !== payload.empleado_id) return false;
+            if (status === 'anulados' || status === 'finalizados') return false;
+            if (rangeStr.includes(' a ')) {
+                const [start, end] = rangeStr.split(' a ');
+                if (payload.fecha_inicio > end || payload.fecha_fin < start) return false;
+            }
+            return true;
+        }
+
+        async function auditBajaPermiso(result, payload) {
+            if (!window.TurnosDB?.insertLog) return;
             try {
-                const cleanTipo = tipo.split(' ')[0]; // Quitar emojis
-                await window.TurnosDB.upsertEvento({
-                    id: _editingData?.id || undefined,
-                    tipo: cleanTipo,
-                    empleado_id: emp,
-                    empleado_destino_id: sust || null,
-                    fecha_inicio: dateStart,
-                    fecha_fin: dateEnd || dateStart,
-                    hotel_origen: hotel,
-                    observaciones: obs,
-                    estado: 'activo',
-                    payload: { 
-                        hotel_id: hotel,
-                        sustituto_nombre: sust || null,
-                        observacion: obs || null
-                    },
-                    updated_at: new Date().toISOString()
+                const detail = {
+                    accion: 'crear_baja_permiso',
+                    tipo: payload.tipo,
+                    empleado: payload.empleado_id,
+                    hotel: payload.hotel_origen,
+                    fecha_inicio: payload.fecha_inicio,
+                    fecha_fin: payload.fecha_fin,
+                    sustituto: payload.empleado_destino_id,
+                    motivo: payload.observaciones,
+                    estado: payload.estado,
+                    id_evento: result?.id || payload.id || null
+                };
+                await window.TurnosDB.insertLog({
+                    cambios_totales: 1,
+                    empleados_afectados: 1,
+                    resumen_json: detail,
+                    cambios_detalle_json: [detail],
+                    estado: 'ok'
                 });
+            } catch (err) {
+                console.warn('[BAJAS AUDIT WARNING]', err?.message || err);
+            }
+        }
 
-                closeModal();
+        async function saveBajaPermiso() {
+            setModalError('');
+            const payload = buildBajaPermisoPayload();
+            const validation = validateBajaPermisoPayload(payload);
+            if (validation) {
+                setModalError(validation);
+                return;
+            }
+            const btn = $('#btnSaveBajaPermiso');
+            const prevText = btn?.textContent;
+            if (btn) {
+                btn.disabled = true;
+                btn.textContent = 'Guardando...';
+            }
+            try {
+                const result = await window.TurnosDB.upsertEvento(payload);
+                await auditBajaPermiso(result, payload);
+                const visible = isCreatedRecordVisible(payload);
+                closeBajaPermisoModal();
                 await renderBajas();
-            } catch (err) { alert("Error: " + err.message); }
+                if (!visible) alert('Registro creado. Ajusta el rango de fechas para verlo.');
+            } catch (err) {
+                setModalError('Error al guardar: ' + err.message);
+            } finally {
+                if (btn) {
+                    btn.disabled = false;
+                    btn.textContent = prevText || 'Guardar';
+                }
+            }
+        }
+
+        async function saveManualBaja() {
+            return saveBajaPermiso();
         }
 
         let _editingData = null;
@@ -313,6 +418,7 @@
             $('#mbHotel').value = match.hotel_origen || match.payload?.hotel_id;
             $('#mbTipo').value = match.tipo.startsWith('BAJA') ? 'BAJA 🏥' : 'PERM 🗓️';
             
+            $('#mbTipo').value = match.tipo.startsWith('BAJA') ? 'BAJA' : 'PERMISO';
             const sust = match.empleado_destino_id || match.sustituto_id || 
                          match.sustituto || match.payload?.sustituto_id || 
                          match.payload?.sustituto || match.payload?.sustituto_nombre || 
@@ -324,7 +430,7 @@
             $('#mbSustituto').value = sust === '—' ? '' : sust;
             $('#mbObs').value = obs === '—' ? '' : obs;
 
-            openModal();
+            openBajaPermisoModal();
         }
 
         async function deleteCurrentPeriod() {
@@ -337,14 +443,15 @@
                     } else {
                         await window.TurnosDB.anularEvento(_editingData.id);
                     }
-                    closeModal();
+                    closeBajaPermisoModal();
                     await renderBajas();
                 } catch (e) { alert('Error al anular: ' + e.message); }
             }
         }
 
-        function openModal() {
+        function openBajaPermisoModal() {
             console.log("Opening modal...", _editingData);
+            setModalError('');
             if (!_editingData) {
                 $('#modalTitle').innerText = 'Añadir Baja o Permiso';
                 $('#btnDeleteBaja').style.display = 'none';
@@ -354,15 +461,26 @@
                 $('#mbTipo').value = '';
                 $('#mbSustituto').value = '';
                 $('#mbObs').value = '';
+                if ($('#mbEstado')) $('#mbEstado').value = 'activo';
             }
             $('#modalBaja').style.display = 'flex';
         }
 
-        function closeModal() {
+        function closeBajaPermisoModal() {
             console.log("Closing modal...");
             _editingData = null;
+            setModalError('');
             $('#modalBaja').style.display = 'none';
         }
+
+        window.openBajaPermisoModal = openBajaPermisoModal;
+        window.closeBajaPermisoModal = closeBajaPermisoModal;
+        window.openModal = openBajaPermisoModal;
+        window.closeModal = closeBajaPermisoModal;
+        window.saveBajaPermiso = saveBajaPermiso;
+        window.saveManualBaja = saveManualBaja;
+        window.editPeriod = editPeriod;
+        window.deleteCurrentPeriod = deleteCurrentPeriod;
 
         async function initPage() {
             try {
@@ -377,6 +495,7 @@
 
                 if (!window.TurnosDB) throw new Error("Base de datos no disponible. Recarga la página.");
 
+                $('#mbTipo').innerHTML = '<option value="" disabled selected>Tipo...</option><option value="BAJA">Baja</option><option value="PERMISO">Permiso</option>';
                 const [hotels, emps] = await Promise.all([window.TurnosDB.getHotels(), window.TurnosDB.getEmpleados()]);
                 
                 const uniqueEmps = [];

@@ -222,22 +222,27 @@
       }
 
       .viewport {
-          border-radius: 0 !important;
-          border: none !important;
-          box-shadow: none !important;
+          border-radius: 20px !important;
+          border: 1px solid var(--border) !important;
+          box-shadow: var(--shadow-sm) !important;
           min-height: unset !important;
           height: auto !important;
-          overflow: visible !important;
+          max-height: 80vh !important;
+          overflow-x: auto !important;
+          overflow-y: auto !important;
           background: var(--surface) !important;
+          margin: 0 40px 30px;
+          padding: 0;
       }
 
       .preview-table-v2 {
           width: 100%;
-          min-width: 1120px;
+          min-width: 1200px;
           table-layout: fixed;
-          border-collapse: collapse !important;
-          border-spacing: 0 !important;
-          background: var(--surface);
+          border-collapse: separate !important;
+          border-spacing: 0 8px !important;
+          background: transparent !important;
+          margin-top: -8px; /* Compensar espaciado inicial */
       }
 
       .preview-table-v2 th {
@@ -253,39 +258,58 @@
 
       .preview-table-v2 th:first-child,
       .preview-table-v2 td.emp-cell {
-          width: 355px !important;
-          min-width: 355px !important;
-          max-width: 355px !important;
+          width: 200px !important;
+          min-width: 200px !important;
+          max-width: 200px !important;
+          position: sticky !important;
+          left: 0 !important;
+          z-index: 10 !important;
+          background: var(--surface) !important;
+          border-right: 1px solid var(--border) !important;
+      }
+
+      .preview-table-v2 th:first-child {
+          z-index: 20 !important;
+          background: var(--bg3) !important;
       }
 
       .preview-table-v2 th:first-child {
           color: #53647a !important;
-          font-size: 0.72rem !important;
-          letter-spacing: 0;
+          font-size: 0.8rem !important;
+          letter-spacing: 0.05em;
       }
 
       .preview-table-v2 thead th > div:first-child {
           color: #53647a !important;
-          font-size: 0.64rem !important;
-          line-height: 1.05;
-          font-weight: 900 !important;
-          letter-spacing: 0;
+          font-family: 'Inter', sans-serif !important;
+          font-size: 0.75rem !important;
+          line-height: 1.1;
+          font-weight: 700 !important;
+          letter-spacing: 0.05em;
       }
 
       .preview-table-v2 thead th > div:last-child {
           color: #06142d !important;
-          font-size: 0.92rem !important;
+          font-family: 'Inter', sans-serif !important;
+          font-size: 1.05rem !important;
           line-height: 1.2;
-          font-weight: 900 !important;
+          font-weight: 500 !important;
           margin-top: 2px;
+          letter-spacing: -0.01em;
       }
 
       .preview-table-v2 td {
-          height: 76px;
-          padding: 0 4px !important;
-          border-bottom: 1px solid var(--border-soft);
+          height: 70px;
+          padding: 0 !important;
+          border-bottom: none !important;
           vertical-align: middle;
+          background: transparent;
+      }
+
+      .preview-table-v2 tr:not(.header-row) td {
           background: var(--surface);
+          border-top: 1px solid var(--border-soft);
+          border-bottom: 1px solid var(--border-soft);
       }
 
       .preview-table-v2 td.emp-cell {
@@ -295,41 +319,60 @@
       }
 
       .v-cell {
-          padding: 0 4px !important;
+          text-align: center !important;
+          vertical-align: middle !important;
+          padding: 4px 8px !important;
+          min-width: 130px;
       }
 
       .v-pill {
-          width: 100%;
-          min-height: 41px;
-          display: flex;
+          display: inline-flex;
           align-items: center;
           justify-content: center;
           gap: 6px;
-          padding: 8px 10px;
-          border-radius: 12px;
-          font-weight: 800;
-          font-size: 0.86rem;
-          letter-spacing: 0;
+          width: auto !important;
+          min-width: 92px;
+          max-width: 150px;
+          height: 36px;
+          padding: 0 16px;
+          border-radius: 999px;
+          font-size: 0.88rem;
+          font-weight: 700;
+          line-height: 1;
           white-space: nowrap;
-          overflow: hidden;
-          text-overflow: ellipsis;
-          box-shadow: 0 2px 7px rgba(15, 23, 42, 0.03);
+          box-shadow: 0 2px 5px rgba(15, 23, 42, 0.05);
+          transition: all 0.2s ease;
+      }
+
+      @media (max-width: 768px) {
+          .v-pill {
+              height: 22px;
+              min-width: 64px;
+              font-size: 0.58rem;
+              font-weight: 600;
+              border-radius: 5px;
+          }
       }
 
       .v-empty .v-pill {
-          min-height: 41px;
-          background: transparent;
-          border: 1px solid transparent;
-          box-shadow: none;
+          background: transparent !important;
+          border: none !important;
+          box-shadow: none !important;
+          color: #0f1f3a !important;
+          min-width: 40px !important;
+          font-weight: 800;
+          opacity: 0.6;
       }
 
-      .v-mañana .v-pill   { background: #eaf9ee; color: #218c36; border: 1px solid #d3f4dc; }
-      .v-tarde .v-pill    { background: #fff8d9; color: #e18500; border: 1px solid #fff0b3; }
-      .v-noche .v-pill    { background: #eef3ff; color: #3347bf; border: 1px solid #dfe7ff; }
-      .v-descanso .v-pill { background: #fff6f6; color: #ff4444; border: 1px solid #ffcfcf; }
-      .v-vac .v-pill      { background: #dff3ff; color: #005c92; border: 1px solid #bde5fb; }
-      .v-baja .v-pill     { background: #fff4f4; color: #b91c1c; border: 1px dashed #fecdd3; }
-      .v-perm .v-pill     { background: #f4ecff; color: #7e22ce; border: 1px solid #e7d4ff; }
+      /* Colores premium para píldoras (Index Only) */
+      .v-manana .v-pill   { background: #eaf9ee !important; color: #1c7331 !important; border: 1px solid #b7ebc5 !important; }
+      .v-tarde .v-pill    { background: #fff8d9 !important; color: #b46a00 !important; border: 1px solid #ffe899 !important; }
+      .v-noche .v-pill    { background: #f1f5f9 !important; color: #334155 !important; border: 1px solid #cbd5e1 !important; }
+      .v-descanso .v-pill { background: #fee2e2 !important; color: #991b1b !important; border: 1px solid #fecaca !important; }
+      .v-vac .v-pill      { background: #e0f2fe !important; color: #0369a1 !important; border: 1px solid #bae6fd !important; }
+      .v-baja .v-pill     { background: #fff1f2 !important; color: #9f1239 !important; border: 1px dashed #fecdd3 !important; }
+      .v-perm .v-pill     { background: #f5f3ff !important; color: #5b21b6 !important; border: 1px solid #ddd6fe !important; }
+      .v-form .v-pill     { background: #ecfdf5 !important; color: #065f46 !important; border: 1px solid #a7f3d0 !important; }
 
       .employee-row {
           height: 100%;
@@ -337,15 +380,17 @@
           display: flex;
           align-items: center;
           justify-content: space-between;
-          gap: 16px;
-          padding: 0 20px 0 34px;
+          gap: 12px;
+          padding: 0 16px;
       }
 
       .employee-name {
           min-width: 0;
-          color: var(--accent);
-          font-size: 0.94rem;
-          font-weight: 800;
+          color: var(--text);
+          font-size: 0.92rem;
+          font-weight: 700;
+          font-family: 'Outfit', sans-serif;
+          letter-spacing: -0.01em;
           line-height: 1.2;
           overflow: hidden;
           text-overflow: ellipsis;
@@ -359,31 +404,25 @@
           flex: 0 0 auto;
       }
 
-      .emp-badge-n,
-      .emp-badge-d {
-          width: 31px;
-          height: 31px;
-          border-radius: 999px;
+      .emp-badge-n, .emp-badge-d {
           display: inline-flex;
           align-items: center;
-          justify-content: center;
-          gap: 2px;
-          font-size: 0.72rem;
-          font-weight: 900;
-          line-height: 1;
-          box-shadow: 0 3px 10px rgba(15, 23, 42, 0.05);
+          gap: 4px;
+          padding: 2px 10px;
+          border-radius: 99px;
+          background: #ffffff;
+          border: 1px solid #e2e8f0;
+          font-size: 0.75rem;
+          font-weight: 600;
+          color: #1e293b;
+          box-shadow: 0 1px 2px rgba(0,0,0,0.02);
       }
-
-      .emp-badge-n {
-          background: #fff7ed;
-          color: #f47b20;
-          border: 1px solid #ffe8cf;
+      .emp-badge-n .badge-icon, .emp-badge-d .badge-icon {
+          font-size: 0.8rem;
       }
-
-      .emp-badge-d {
-          background: #eff6ff;
+      .emp-badge-d .badge-icon {
           color: #2563eb;
-          border: 1px solid #dce8ff;
+          font-weight: 800;
       }
 
       .badge-icon {
@@ -483,56 +522,75 @@
           }
 
           .toolbar-divider { display: none; }
-          .public-main { padding: 18px 12px 24px; }
-          .preview-week.week { border-radius: 18px; }
+          .public-main { padding: 12px 14px 24px; }
+          .preview-week.week { border-radius: 18px; margin-bottom: 24px; }
           .preview-week-header.week-head {
-              min-height: 88px;
-              padding: 16px 18px;
+              min-height: 70px;
+              padding: 12px 16px;
+              gap: 12px;
           }
 
           .preview-week-header.week-head img {
-              width: 52px;
-              height: 52px;
+              display: none !important;
           }
 
           .preview-week-header.week-head h3 {
-              font-size: 1.05rem;
+              font-size: 0.95rem;
+          }
+
+          .viewport {
+              margin: 0 !important;
+              border-radius: 0 0 18px 18px !important;
+              border-left: none !important;
+              border-right: none !important;
+              border-bottom: none !important;
           }
 
           .preview-table-v2 {
-              min-width: 900px;
+              min-width: 800px;
+              border-spacing: 0 !important;
           }
 
           .preview-table-v2 th:first-child,
           .preview-table-v2 td.emp-cell {
-              width: 190px !important;
-              min-width: 190px !important;
-              max-width: 190px !important;
+              width: 155px !important;
+              min-width: 155px !important;
+              max-width: 155px !important;
+              box-shadow: 4px 0 8px rgba(0,0,0,0.05) !important;
           }
 
           .employee-row {
-              padding: 0 12px 0 14px;
-              gap: 8px;
+              padding: 0 8px 0 10px;
+              gap: 6px;
           }
 
           .employee-name {
-              font-size: 0.82rem;
+              font-size: 0.75rem;
           }
 
           .emp-badge-n,
           .emp-badge-d {
-              width: 27px;
-              height: 27px;
-              font-size: 0.66rem;
+              width: 24px;
+              height: 24px;
+              padding: 0;
+              justify-content: center;
+              font-size: 0.6rem;
+          }
+          .emp-badge-n .badge-icon, .emp-badge-d .badge-icon { display: none; }
+
+          .preview-table-v2 thead th > div:first-child {
+              font-size: 0.65rem !important;
+          }
+          .preview-table-v2 thead th > div:last-child {
+              font-size: 0.85rem !important;
           }
 
           .night-summary {
-              border-radius: 14px;
-              padding: 18px 14px;
-          }
-
-          .night-summary-grid {
-              grid-template-columns: 1fr;
+              border-radius: 0;
+              margin: 0;
+              padding: 20px 16px;
+              border-left: none;
+              border-right: none;
           }
       }
   </style>
@@ -578,6 +636,10 @@
   
   <script>
     const $ = (s) => document.querySelector(s);
+    if (window.location.protocol === 'file:') {
+        console.error("ERROR DE SEGURIDAD: Estás abriendo el archivo vía file://. Usa http://localhost:8080 para cargar los datos correctamente.");
+        alert("⚠️ ATENCIÓN: No uses el archivo directo. Usa el enlace de servidor local (localhost) para que el cuadrante funcione.");
+    }
     let _picker;
     const logoFor = (h) => String(h || '').toLowerCase().includes('guadiana') ? 'guadiana logo.jpg' : 'cumbria logo.jpg';
     const escapeHtml = (value) => String(value ?? '').replace(/[&<>"']/g, (char) => ({
@@ -590,7 +652,7 @@
     const shiftInitial = (value) => {
         const text = String(value || '').trim().toLowerCase();
         if (!text) return '';
-        if (text.startsWith('m') || text.includes('mañana') || text.includes('manana')) return 'M';
+        if (text.startsWith('m') || text.includes('mañana') || text.includes('manana')) return 'manana';
         if (text.startsWith('t') || text.includes('tarde')) return 'T';
         if (text.startsWith('n') || text.includes('noche')) return 'N';
         if (text.startsWith('d') || text.includes('descanso')) return 'D';
@@ -640,21 +702,72 @@
         if (!year || !month) return '';
         return new Date(year, month - 1, 1).toLocaleDateString('es-ES', { month: 'long', year: 'numeric' });
     };
+    const normalizePublishedScheduleRows = (raw) => {
+        if (!Array.isArray(raw)) return [];
+        return raw.map(item => {
+            let hotel = item.hotel || 'Sin Hotel';
+            let empleados = item.rows || item.empleados || item.employees || (item.data && item.data.empleados) || [];
+            let columns = item.columns || [];
+            
+            return {
+                hotel,
+                empleados: Array.isArray(empleados) ? empleados : [],
+                columns: Array.isArray(columns) ? columns : []
+            };
+        });
+    };
+
     const buildNightSummary = (groups) => {
+        const normalized = normalizePublishedScheduleRows(groups);
         const byMonth = new Map();
 
-        groups.forEach(group => {
-            group.rows.forEach(row => {
-                row.cells.forEach((cell, idx) => {
-                    if (shiftInitial(cell.turno) !== 'N') return;
-                    const month = monthKeyFromDate(group.columns[idx]?.dbFecha);
-                    if (!month) return;
-                    if (!byMonth.has(month)) byMonth.set(month, new Map());
-                    const hotels = byMonth.get(month);
-                    if (!hotels.has(group.hotel)) hotels.set(group.hotel, new Map());
-                    const employees = hotels.get(group.hotel);
-                    employees.set(row.empName, (employees.get(row.empName) || 0) + 1);
-                });
+        normalized.forEach(group => {
+            group.empleados.forEach(emp => {
+                // EXCLUSIÓN REQUERIDA: No contar noches para personal de apoyo/ocasional puro
+                // Cruzamos con el mapa global por si el snapshot no trae metadatos
+                const profile = window._publicEmployeesMap?.get(window.normalizeId(emp.empleado_id || emp.nombre));
+                const showCounters = window.shouldShowEmployeeCounters && window.shouldShowEmployeeCounters(profile || emp, emp);
+                
+                if (!showCounters) return;
+
+                const dias = emp.dias || emp.days || {};
+                
+                // Si hay columnas definidas (formato renderSnapshotInContainer), las usamos como guía
+                if (group.columns && group.columns.length > 0) {
+                    group.columns.forEach((col, idx) => {
+                        const date = col.dbFecha;
+                        const cell = dias[date] || (emp.cells && emp.cells[idx]) || {};
+                        const turno = cell.code || cell.turno || cell.label || '';
+                        
+                        if (shiftInitial(turno) !== 'N') return;
+                        
+                        const month = monthKeyFromDate(date);
+                        if (!month) return;
+                        
+                        if (!byMonth.has(month)) byMonth.set(month, new Map());
+                        const hotels = byMonth.get(month);
+                        if (!hotels.has(group.hotel)) hotels.set(group.hotel, new Map());
+                        const employees = hotels.get(group.hotel);
+                        const empName = emp.nombre || emp.name || 'Empleado';
+                        employees.set(empName, (employees.get(empName) || 0) + 1);
+                    });
+                } else {
+                    // Si no hay columnas, iteramos sobre las llaves del objeto 'dias'
+                    Object.entries(dias).forEach(([date, cell]) => {
+                        const turno = cell.code || cell.turno || cell.label || '';
+                        if (shiftInitial(turno) !== 'N') return;
+                        
+                        const month = monthKeyFromDate(date);
+                        if (!month) return;
+                        
+                        if (!byMonth.has(month)) byMonth.set(month, new Map());
+                        const hotels = byMonth.get(month);
+                        if (!hotels.has(group.hotel)) hotels.set(group.hotel, new Map());
+                        const employees = hotels.get(group.hotel);
+                        const empName = emp.nombre || emp.name || 'Empleado';
+                        employees.set(empName, (employees.get(empName) || 0) + 1);
+                    });
+                }
             });
         });
 
@@ -672,46 +785,56 @@
             }));
     };
     const renderNightSummary = (groups) => {
-        const summary = buildNightSummary(groups);
-        if (!summary.length) {
+        if (!groups || !Array.isArray(groups)) return '';
+        
+        try {
+            const summary = buildNightSummary(groups);
+            if (!summary.length) {
+                return `
+                    <section class="night-summary">
+                        <h3 class="night-summary-title">Resumen de noches</h3>
+                        <p class="night-summary-empty">No hay noches en las fechas publicadas.</p>
+                    </section>
+                `;
+            }
+
             return `
                 <section class="night-summary">
                     <h3 class="night-summary-title">Resumen de noches</h3>
-                    <p class="night-summary-empty">No hay noches en las fechas consultadas.</p>
+                    ${summary.map(monthGroup => `
+                        <div class="night-summary-month">
+                            <h4>${escapeHtml(monthLabel(monthGroup.month))}</h4>
+                            <div class="night-summary-grid">
+                                ${monthGroup.hotels.map(hotelGroup => `
+                                    <table class="night-summary-table">
+                                        <thead>
+                                            <tr>
+                                                <th>${escapeHtml(hotelGroup.hotel)}</th>
+                                                <th>Noches</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            ${hotelGroup.employees.map(([name, count]) => `
+                                                <tr>
+                                                    <td>${escapeHtml(name)}</td>
+                                                    <td>${count}</td>
+                                                </tr>
+                                            `).join('')}
+                                        </tbody>
+                                    </table>
+                                `).join('')}
+                            </div>
+                        </div>
+                    `).join('')}
                 </section>
             `;
-        }
-
-        return `
-            <section class="night-summary">
+        } catch (err) {
+            console.error("[NIGHT SUMMARY ERROR]", err);
+            return `<section class="night-summary" style="opacity:0.6;">
                 <h3 class="night-summary-title">Resumen de noches</h3>
-                ${summary.map(monthGroup => `
-                    <div class="night-summary-month">
-                        <h4>${escapeHtml(monthLabel(monthGroup.month))}</h4>
-                        <div class="night-summary-grid">
-                            ${monthGroup.hotels.map(hotelGroup => `
-                                <table class="night-summary-table">
-                                    <thead>
-                                        <tr>
-                                            <th>${escapeHtml(hotelGroup.hotel)}</th>
-                                            <th>Noches</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        ${hotelGroup.employees.map(([name, count]) => `
-                                            <tr>
-                                                <td>${escapeHtml(name)}</td>
-                                                <td>${count}</td>
-                                            </tr>
-                                        `).join('')}
-                                    </tbody>
-                                </table>
-                            `).join('')}
-                        </div>
-                    </div>
-                `).join('')}
-            </section>
-        `;
+                <p class="night-summary-empty">Temporalmente no disponible.</p>
+            </section>`;
+        }
     };
     async function loadExcelSourceRows() {
         if (window._publicExcelSourceRows) return window._publicExcelSourceRows;
@@ -740,11 +863,35 @@
         return result;
     }
     
+
+
+    /**
+     * ARQUITECTURA CRÍTICA:
+     * Esta vista es de solo lectura.
+     * Admin resuelve turnos, ausencias, sustituciones y cambios.
+     * Esta vista solo lee snapshots publicados y renderiza.
+     * No usar eventos_cuadrante aquí para reconstruir el cuadrante.
+     */
+    const CONSUMER_VIEW_MODE = 'READ_ONLY_PUBLISHED_SNAPSHOT';
+
     window.renderPublicView = async () => {
-        const area = $('#app');
-        const selHotel = $('#hotelSelect').value;
-        const rangeStr = $('#dateRange').value;
-        
+        if (window.DEBUG_MODE) {
+            console.warn('[ARCHITECTURE] Vista de consumo: no recalcular reglas operativas aquí. Leer snapshot publicado.');
+        }
+
+        const area = document.getElementById('app');
+        if (!area) return;
+
+        // Carga opcional de metadatos de empleados para enriquecer snapshots antiguos
+        if (!window._publicEmployeesMap) {
+            try {
+                const emps = await window.TurnosDB.getEmpleados().catch(() => []);
+                window._publicEmployeesMap = new Map(emps.map(e => [window.normalizeId(e.id || e.nombre), e]));
+            } catch (e) { console.warn("No se pudieron cargar metadatos de empleados para el cruce visual."); }
+        }
+        const selHotel = document.getElementById('hotelSelect').value;
+        const rangeStr = document.getElementById('dateRange').value;
+
         let startIso, endIso;
         if (rangeStr.includes(" a ")) {
             [startIso, endIso] = rangeStr.split(" a ");
@@ -762,162 +909,255 @@
         }
         if (endIso < startIso) [startIso, endIso] = [endIso, startIso];
 
-        const weeksToRender = buildWeekRanges(startIso, endIso);
-        const fullStartIso = weeksToRender[0]?.start || mondayOfIso(startIso);
-        const fullEndIso = weeksToRender[weeksToRender.length - 1]?.end || sundayOfIso(endIso);
-
-        area.innerHTML = `<div style="padding:4rem; text-align:center; opacity:0.5; font-weight:700;">Sincronizando cuadrante...</div>`;
+        area.innerHTML = `<div style="padding:4rem; text-align:center; opacity:0.5; font-weight:700;">Cargando cuadrante publicado...</div>`;
 
         try {
-            const { rows: data, eventos } = await window.TurnosDB.fetchRangoCalculado(fullStartIso, fullEndIso);
-            const profiles = await window.TurnosDB.getEmpleados();
-            const hotels = await window.TurnosDB.getHotels();
-            const excelSource = await window.ExcelLoader.loadExcelSourceRows().catch(err => {
-                console.warn('No se pudo cargar el orden del Excel original:', err);
-                return {};
+            // ÚNICA FUENTE DE VERDAD PARA CONSUMO: Snapshots horneados por Admin
+            const result = await window.TurnosDB.loadPublishedSchedule({ 
+                semanaInicio: startIso, 
+                semanaFin: endIso 
             });
             
-            area.innerHTML = '';
-
-            const profilesByHotel = {};
-            profiles.forEach(p => {
-                const h = p.hotel_id || 'GENERAL';
-                if (!profilesByHotel[h]) profilesByHotel[h] = [];
-                profilesByHotel[h].push(p);
-            });
-
-            const dataHotels = [...new Set(data.map(t => t.hotel_id).filter(Boolean))];
-            const baseHotels = hotels.length ? hotels : [...new Set([...Object.keys(profilesByHotel), ...dataHotels])].sort();
-            const sortedHotels = [...new Set([...baseHotels, ...dataHotels])].sort();
-            if (selHotel && !sortedHotels.includes(selHotel)) sortedHotels.push(selHotel);
-
-            const hotelsToRender = selHotel ? [selHotel] : sortedHotels;
-            const nightSummaryGroups = [];
-
-            if (hotelsToRender.length === 0) {
-                area.innerHTML = `<div style="padding:4rem; text-align:center; opacity:0.5;">No hay turnos registrados para este periodo.</div>`;
+            if (!result.ok) {
+                area.innerHTML = `<div style="padding:4rem; text-align:center; opacity:0.8; font-weight:600; color:var(--text-dim);">
+                    <div style="font-size:3rem; margin-bottom:1rem;">📅</div>
+                    ${result.message}
+                </div>`;
                 return;
             }
 
-            for (const week of weeksToRender) {
-                for (const hName of hotelsToRender) {
-                    const profilesInHotel = profilesByHotel[hName] || [];
-                    const weekData = data.filter(t => t.fecha >= week.start && t.fecha <= week.end);
-                    const hShifts = weekData;
+            area.innerHTML = '';
+            const nightSummaryGroups = [];
 
-                    const safeId = `${hName}-${week.start}`.replace(/[^a-z0-9]/gi, '-');
-                    const card = document.createElement('div');
-                    card.className = 'preview-week week';
-                    card.innerHTML = `
-                        <div class="preview-week-header week-head">
-                            <img src="${logoFor(hName)}" alt="${escapeHtml(hName)}">
-                            <h3>${escapeHtml(hName.toUpperCase())} <span style="display:block; margin-top:5px; color:var(--text-dim); font-size:0.82rem; font-weight:800;">Semana del ${escapeHtml(window.TurnosDB.fmtDateLegacy(week.start))}</span></h3>
-                        </div>
-                        <div id="grid-container-${safeId}" style="padding:0;"></div>
-                    `;
-                    area.appendChild(card);
-                    const container = card.querySelector(`#grid-container-${safeId}`);
-                    const weekExcelRows = (excelSource[hName] || []).filter(r => r.weekStart === week.start);
-                    const rendered = await renderEnContenedor(container, week.start, week.end, hShifts, hName, profiles, profilesInHotel, weekExcelRows, eventos);
-                    if (!rendered.rows.length) {
-                        card.remove();
-                        continue;
-                    }
-                    nightSummaryGroups.push({ hotel: hName, ...rendered });
-                }
-            }
+            // Filtrar y renderizar snapshots
+            result.snapshots.forEach(snap => {
+                if (selHotel && snap.hotel !== selHotel) return;
+
+                const hName = snap.hotel;
+                const rosterGrid = snap.data; // El Snapshot es el resultado de buildRosterGrid de Admin
+                const weekStart = snap.semanaInicio || rosterGrid.semana_inicio;
+
+                const safeId = `${hName}-${weekStart}`.replace(/[^a-z0-9]/gi, '-');
+                const card = document.createElement('div');
+                card.className = 'preview-week week';
+                card.innerHTML = `
+                    <div class="preview-week-header week-head">
+                        <img src="${logoFor(hName)}" alt="${escapeHtml(hName)}">
+                        <h3>${escapeHtml(hName.toUpperCase())} <span style="display:block; margin-top:5px; color:var(--text-dim); font-size:0.82rem; font-weight:800;">Semana del ${escapeHtml(window.TurnosDB.fmtDateLegacy(weekStart))}</span></h3>
+                    </div>
+                    <div id="grid-container-${safeId}" style="padding:0;"></div>
+                `;
+                area.appendChild(card);
+
+                const container = card.querySelector(`#grid-container-${safeId}`);
+                const rendered = renderSnapshotInContainer(container, rosterGrid, hName);
+                nightSummaryGroups.push({ hotel: hName, ...rendered });
+            });
 
             if (area.children.length === 0) {
-                area.innerHTML = `<div style="padding:4rem; text-align:center; opacity:0.5;">No hay turnos registrados para este periodo.</div>`;
+                area.innerHTML = `<div style="padding:4rem; text-align:center; opacity:0.5;">No hay cuadrante publicado para los filtros seleccionados.</div>`;
             } else {
                 area.insertAdjacentHTML('beforeend', renderNightSummary(nightSummaryGroups));
             }
         } catch (e) {
             console.error(e);
-            area.innerHTML = `<div style="padding:4rem; text-align:center; color:red;">Error de conexion: ${e.message}</div>`;
+            area.innerHTML = `<div style="padding:4rem; text-align:center; color:red;">Error de carga: ${e.message}</div>`;
         }
     };
 
-    async function renderEnContenedor(container, inicio, fin, hotelData, hotelName, profiles, profilesInHotel, weekExcelRows = [], eventos = []) {
-        const columns = [];
-        let curr = new Date(inicio + "T12:00:00");
-        const dayNames = ['DOM','LUN','MAR','MIE','JUE','VIE','SAB'];
-        const monthNames = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+    function getPublicCellDisplay(cell, options = {}) {
+        const compact = !!options.compact;
+        const rawLabel = String(cell?.label || cell?.displayLabel || '').trim();
+        const code = String(cell?.code || cell?.tipo || '').toUpperCase().trim();
 
-        while (curr <= new Date(fin + "T12:00:00")) {
-            const iso = window.TurnosDB.normalizeDate(curr);
-            columns.push({
-                dbFecha: iso,
-                title: dayNames[curr.getDay()],
-                subtitle: `${curr.getDate()}/${monthNames[curr.getMonth()]}`,
-                isWeekend: curr.getDay() === 0 || curr.getDay() === 6,
-                isToday: iso === new Date().toISOString().split('T')[0]
-            });
+        let label = rawLabel;
+
+        // Normalización a nombres completos primero
+        if (!label || ['M','T','N','D','VAC','BAJA','PERM','PERMISO','FORM'].includes(label.toUpperCase())) {
+            const key = label.toUpperCase() || code;
+            label = {
+                M: 'Mañana',
+                T: 'Tarde',
+                N: 'Noche',
+                D: 'Descanso',
+                VAC: 'Vacaciones',
+                BAJA: 'Baja',
+                PERM: 'Permiso',
+                PERMISO: 'Permiso',
+                FORM: 'Formación'
+            }[key] || label || '—';
+        }
+
+        const icons = new Set();
+        const origen = String(cell?.origen || cell?.source || cell?.tipo_evento || '').toLowerCase();
+        const explicitIcons = Array.isArray(cell?.icons) ? cell.icons : [];
+
+        explicitIcons.forEach(i => {
+            if (['🌙','🏖️','🗓️','🤒','🎓','🔄'].includes(i)) icons.add(i);
+        });
+
+        if (/noche/i.test(label) || code === 'N') icons.add('🌙');
+        if (/vacaciones/i.test(label) || code === 'VAC') icons.add('🏖️');
+        if (/permiso/i.test(label) || code === 'PERM' || code === 'PERMISO') icons.add('🗓️');
+        if (/baja/i.test(label) || code === 'BAJA') icons.add('🤒');
+        if (/formaci/i.test(label) || code === 'FORM') icons.add('🎓');
+
+        const isRealChange =
+            (origen.includes('ct') ||
+             origen.includes('cambio') ||
+             origen.includes('intercambio') ||
+             String(cell?.tipo_evento || '').toUpperCase().includes('INTERCAMBIO') ||
+             String(cell?.tipo_evento || '').toUpperCase() === 'CT') &&
+            !origen.includes('sustitucion') &&
+            !origen.includes('vacaciones') &&
+            !origen.includes('ausencia');
+
+        if (isRealChange) icons.add('🔄');
+
+        const absenceCodes = ['VAC', 'BAJA', 'PERM', 'PERMISO', 'FORM'];
+        const isAbsence = absenceCodes.includes(code)
+            || /vacaciones|baja|permiso|formaci/i.test(label);
+
+        if (isAbsence) {
+            icons.delete('🔄');
+        }
+
+        // Eliminar iconos decorativos no deseados en Mañana/Tarde/Descanso
+        if (label === 'Mañana') { icons.delete('☀️'); icons.delete('🌞'); icons.delete('🌅'); }
+        if (label === 'Tarde')  { icons.delete('☀️'); icons.delete('🌞'); icons.delete('🌅'); }
+        if (label === 'Descanso' && !isRealChange) { icons.delete('🔄'); }
+
+        // Si es compacto (móvil), usar etiquetas cortas
+        if (compact) {
+            const compactMap = {
+                'Mañana': 'M',
+                'Tarde': 'T',
+                'Noche': 'N',
+                'Descanso': 'D',
+                'Vacaciones': 'VAC',
+                'Baja': 'BAJA',
+                'Permiso': 'PERM',
+                'Formación': 'FORM'
+            };
+            label = compactMap[label] || label;
+        }
+
+        return {
+            label,
+            icons: Array.from(icons),
+            text: label === '—' ? '—' : `${label}${icons.size ? ' ' + Array.from(icons).join(' ') : ''}`
+        };
+    }
+
+    function renderSnapshotInContainer(container, snapshotData, hotelName) {
+        // En el nuevo formato, snapshotData tiene { semana_inicio, semana_fin, hotel, empleados: [...] }
+        const empleados = snapshotData.empleados || [];
+        const semanaInicio = snapshotData.semana_inicio;
+        
+        // Calcular fechas de la semana desde el snapshot
+        const dates = [];
+        let curr = new Date(semanaInicio + "T12:00:00");
+        for (let i = 0; i < 7; i++) {
+            dates.push(window.TurnosDB.normalizeDate(curr));
             curr.setDate(curr.getDate() + 1);
         }
 
+        const dayNames = ['DOMINGO','LUNES','MARTES','MIÉRCOLES','JUEVES','VIERNES','SÁBADO'];
+        const monthNames = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+
+        const columns = dates.map(iso => {
+            const d = new Date(iso + "T12:00:00");
+            return {
+                dbFecha: iso,
+                title: dayNames[d.getDay()],
+                subtitle: `${d.getDate()}/${monthNames[d.getMonth()]}/${d.getFullYear().toString().slice(-2)}`,
+                isWeekend: d.getDay() === 0 || d.getDay() === 6,
+                isToday: iso === new Date().toISOString().split('T')[0]
+            };
+        });
+
         const table = new window.VirtualTable(container, { columns, rowHeight: 76 });
 
-        table.renderCellContent = (cell, cellData, empName, fecha) => {
-            const data = cellData || {};
-            const visual = window.TurnosRules.describeCell(data);
-            let cls = visual.publicClass;
-            let lbl = visual.label || data.turno || '';
-            const icon = visual.icon || '';
-            cell.title = visual.title || '';
+        table.renderCellContent = (cell, dayData, empName, fecha) => {
+            const data = dayData || {};
+            const isCompact = window.matchMedia('(max-width: 640px)').matches;
+            const display = getPublicCellDisplay(data, { compact: isCompact });
+            const visual = window.TurnosRules.describeCell({ turno: data.code, tipo: data.tipo });
+            
+            // Mapeo robusto de clase visual basado en el label normalizado y el código
+            let cls = (visual.publicClass || 'v-empty').replace('mañana', 'manana');
+            const norm = (display.label || '').toLowerCase();
+            const code = (data.code || '').toUpperCase();
 
-            if (data.hotel_id && data.hotel_id !== hotelName) {
-                lbl = `${lbl} (${data.hotel_id.split(' ')[0]})`;
+            if (norm.includes('vacaciones') || norm.includes('vac') || code === 'VAC' || code === 'V') {
+                cls = 'v-vac';
+            } else if (norm.includes('mañana') || norm === 'm' || code === 'M') {
+                cls = 'v-manana';
+            } else if (norm.includes('tarde') || norm === 't' || code === 'T') {
+                cls = 'v-tarde';
+            } else if (norm.includes('noche') || norm === 'n' || code === 'N') {
+                cls = 'v-noche';
+            } else if (norm.includes('descanso') || norm === 'd' || code === 'D') {
+                cls = 'v-descanso';
+            } else if (norm.includes('baja')) {
+                cls = 'v-baja';
+            } else if (norm.includes('permiso')) {
+                cls = 'v-perm';
+            } else if (norm.includes('formación') || norm.includes('formacion') || norm === 'form') {
+                cls = 'v-form';
             }
 
+            if (data.titular_cubierto) cell.title = `Cubriendo a ${data.titular_cubierto}`;
+
             cell.className = `v-cell ${cls}`;
-            cell.innerHTML = `<div class="v-pill">${escapeHtml(lbl)}${icon ? ` <span aria-hidden="true">${icon}</span>` : ''}</div>`;
+            cell.innerHTML = '';
+            
+            const pill = document.createElement('div');
+            pill.className = 'v-pill';
+            pill.textContent = display.text;
+            
+            cell.appendChild(pill);
         };
 
         table.renderRow = function(tr, rowData) {
             const tds = tr.children;
             tds[0].colSpan = 1; tds[0].style.display = '';
 
-            const nights = rowData.cells.filter(t => shiftInitial(t.turno) === 'N').length;
-            const rests  = rowData.cells.filter(t => shiftInitial(t.turno) === 'D').length;
+            // Cálculo de resúmenes visuales desde los datos horneados
+            let nights = 0, rests = 0;
+            dates.forEach(f => {
+                const d = rowData.dias[f] || {};
+                const c = (d.code || '').toUpperCase();
+                if (c.startsWith('N')) nights++;
+                if (c.startsWith('D')) rests++;
+            });
+
+            const isCompact = window.matchMedia('(max-width: 640px)').matches;
+            
+            // Detección de chips: Regla operativa vs Apoyo estructural
+            const profile = window._publicEmployeesMap?.get(window.normalizeId(rowData.empleado_id || rowData.nombre));
+            const showCounters = window.shouldShowEmployeeCounters && window.shouldShowEmployeeCounters(profile || rowData, rowData);
 
             tds[0].innerHTML = `
                 <div class="employee-row">
-                    <span class="employee-name">${escapeHtml(rowData.empName)}</span>
-                    <div class="employee-stats" style="${rowData.showStats ? '' : 'display:none;'}">
-                        <span class="emp-badge-n" title="Noches: ${nights}">${nights}<span class="badge-icon" aria-hidden="true">&#x1F319;</span></span>
-                        <span class="emp-badge-d" title="Descansos: ${rests}">${rests}<span class="badge-icon" aria-hidden="true">D</span></span>
+                    <span class="employee-name">${escapeHtml(rowData.nombre)}</span>
+                    ${(isCompact || !showCounters) ? '' : `
+                    <div class="employee-stats">
+                        <span class="emp-badge-n" title="Noches: ${nights}"><span class="badge-icon" aria-hidden="true">&#x1F319;</span> ${nights}</span>
+                        <span class="emp-badge-d" title="Descansos: ${rests}"><span class="badge-icon" aria-hidden="true">D</span> ${rests}</span>
                     </div>
+                    `}
                 </div>
             `;
 
             for (let i = 0; i < this.columns.length; i++) {
-                const td = tds[i+1];
-                td.style.display = '';
-                this.renderCellContent(td, rowData.cells[i], rowData.empName, this.columns[i].dbFecha);
+                const f = this.columns[i].dbFecha;
+                this.renderCellContent(tds[i+1], rowData.dias[f], rowData.nombre, f);
             }
         };
 
-        const rosterDates = columns.map(c => c.dbFecha);
-        const rosterGrid = window.TurnosEngine.buildRosterGrid({
-            rows: hotelData,
-            events: eventos,
-            employees: profiles,
-            dates: rosterDates,
-            hotel: hotelName,
-            sourceRows: weekExcelRows
-        });
-
-        const rows = rosterGrid.entries
-            .map(entry => ({
-                empName: entry.name,
-                cells: entry.cells,
-                showStats: entry.showStats
-            }))
-            .filter(row => row.cells.some(c => c && (c.turno || String(c.tipo || '').toUpperCase() !== 'NORMAL')));
-
-        table.setData(rows);
-        return { rows, columns };
+        table.setData(empleados.sort((a,b) => a.orden - b.orden));
+        return { rows: empleados, columns };
     }
 
     window.changeWeek = (delta) => {

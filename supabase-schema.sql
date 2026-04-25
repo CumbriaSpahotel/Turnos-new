@@ -25,6 +25,7 @@ CREATE TABLE IF NOT EXISTS empleados (
   hotel_id text,
   orden integer DEFAULT 999,
   activo boolean DEFAULT true,
+  id_interno text, -- ID persistente visual/administrativo
   updated_at timestamptz DEFAULT now()
 );
 
@@ -316,3 +317,33 @@ CREATE TABLE IF NOT EXISTS publicaciones_log (
 ALTER TABLE publicaciones_log ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "allow all" ON publicaciones_log;
 CREATE POLICY "allow all" ON publicaciones_log FOR ALL USING (true);
+
+-- 12. TABLA SNAPSHOTS DE CUADRANTE (ARQUITECTURA FIJA)
+-- Almacena el resultado final horneado por Admin para consumo de Index y App Móvil.
+CREATE TABLE IF NOT EXISTS public.publicaciones_cuadrante (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  fecha_publicacion timestamptz DEFAULT now(),
+  semana_inicio date NOT NULL,
+  semana_fin date NOT NULL,
+  hotel text NOT NULL,
+  estado text DEFAULT 'activo', -- 'activo' o 'reemplazado'
+  version integer DEFAULT 1,
+  publicado_por text,
+  resumen jsonb,
+  snapshot_json jsonb NOT NULL,
+  created_at timestamptz DEFAULT now(),
+  updated_at timestamptz DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_publicaciones_cuadrante_semana
+ON public.publicaciones_cuadrante (semana_inicio, semana_fin);
+
+CREATE INDEX IF NOT EXISTS idx_publicaciones_cuadrante_hotel
+ON public.publicaciones_cuadrante (hotel);
+
+CREATE INDEX IF NOT EXISTS idx_publicaciones_cuadrante_estado
+ON public.publicaciones_cuadrante (estado);
+
+ALTER TABLE public.publicaciones_cuadrante ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "allow all" ON public.publicaciones_cuadrante;
+CREATE POLICY "allow all" ON public.publicaciones_cuadrante FOR ALL USING (true);

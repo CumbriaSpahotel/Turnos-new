@@ -143,13 +143,27 @@
         // Construir índices una sola vez
         // Para baseRows necesitamos aplanar sourceRows con sus fechas
         const baseRowsFlat = [];
+        
+        // A) Añadir turnos reales de la DB (rows) al índice base
+        rows.forEach(r => {
+            baseRowsFlat.push({
+                empleadoId: r.empleado_id,
+                fecha: r.fecha,
+                turno: r.turno
+            });
+        });
+
+        // B) Añadir sourceRows (Excel) al índice (con prioridad si NO están vacíos)
         sourceRows.forEach(sRow => {
             dates.forEach((date, idx) => {
-                baseRowsFlat.push({
-                    empleadoId: sRow.empleadoId,
-                    fecha: date,
-                    turno: sRow.values[idx] || null
-                });
+                const val = sRow.values[idx];
+                if (val !== null && val !== undefined && String(val).trim() !== '') {
+                    baseRowsFlat.push({
+                        empleadoId: sRow.empleadoId,
+                        fecha: date,
+                        turno: val
+                    });
+                }
             });
         });
 

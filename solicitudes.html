@@ -3,70 +3,201 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TurnosWeb — Solicitudes</title>
+    <title>Gestión de Solicitudes — TurnosWeb</title>
     <link rel="stylesheet" href="admin.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
     <style>
+        :root {
+            --accent: #0ea5e9;
+            --accent-hover: #0284c7;
+            --bg: #f8fafc;
+            --surface: #ffffff;
+            --text: #0f172a;
+            --text-dim: #64748b;
+            --border: #e2e8f0;
+            --shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
+            --radius: 16px;
+        }
+
         .nav-item.active { background: var(--accent-dim); color: var(--accent); border-right: 3px solid var(--accent); }
         
+        .premium-list-header {
+            margin-bottom: 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+        }
+
         .request-card {
-            background: var(--bg2);
+            background: white;
             border: 1px solid var(--border);
-            border-radius: 18px;
-            padding: 1.5rem;
+            border-radius: 20px;
+            padding: 1.75rem;
             margin-bottom: 1.5rem;
-            transition: transform 0.2s, box-shadow 0.2s;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             position: relative;
-            overflow: hidden;
+            box-shadow: var(--shadow);
+            border-left: 6px solid #e2e8f0;
         }
+
         .request-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 20px rgba(0,0,0,0.05);
+            transform: translateY(-4px);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
         }
-        .request-card.approved { border-left: 5px solid #4caf50; }
-        .request-card.rejected { border-left: 5px solid #ff5252; opacity: 0.7; }
-        .request-card.pending { border-left: 5px solid #ff9800; }
 
-        .btn-approve {
-            background: #4caf50;
-            color: white;
-            border: none;
-            padding: 8px 16px;
-            border-radius: 10px;
-            font-weight: 700;
-            cursor: pointer;
-            transition: 0.2s;
+        .request-card.approved { border-left-color: #10b981; }
+        .request-card.rejected { border-left-color: #ef4444; opacity: 0.8; }
+        .request-card.pendiente { border-left-color: #f59e0b; }
+
+        .request-header {
             display: flex;
-            align-items: center;
-            gap: 6px;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 1.25rem;
+            padding-bottom: 1.25rem;
+            border-bottom: 1px solid var(--border);
         }
-        .btn-approve:hover { background: #43a047; transform: scale(1.05); }
 
-        .btn-reject {
-            background: #ff5252;
-            color: white;
-            border: none;
-            padding: 8px 16px;
-            border-radius: 10px;
+        .request-title {
+            font-family: 'Outfit', sans-serif;
+            font-size: 1.25rem;
             font-weight: 700;
-            cursor: pointer;
-            transition: 0.2s;
-            display: flex;
-            align-items: center;
-            gap: 6px;
+            color: var(--text);
+            margin-bottom: 0.25rem;
         }
-        .btn-reject:hover { background: #e53935; transform: scale(1.05); }
 
-        .date-badge {
-            background: var(--bg3);
-            padding: 12px;
-            border-radius: 12px;
+        .request-subtitle {
+            font-size: 0.85rem;
+            color: var(--text-dim);
+            font-weight: 500;
+        }
+
+        .hotel-badge {
+            font-size: 0.65rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--accent);
+            background: rgba(14, 165, 233, 0.1);
+            padding: 4px 10px;
+            border-radius: 6px;
+            margin-bottom: 0.5rem;
+            display: inline-block;
+        }
+
+        .status-pill {
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 0.7rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.02em;
+        }
+
+        .status-pill.aprobada { background: #dcfce7; color: #166534; }
+        .status-pill.rechazada { background: #fee2e2; color: #991b1b; }
+        .status-pill.pendiente { background: #fef3c7; color: #92400e; }
+
+        .date-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+            gap: 1rem;
+        }
+
+        .date-card {
+            background: #f8fafc;
             border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1rem;
             display: flex;
             flex-direction: column;
-            gap: 4px;
+            gap: 0.5rem;
         }
+
+        .date-label {
+            font-weight: 700;
+            font-size: 0.85rem;
+            color: var(--text);
+        }
+
+        .shift-swap {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        .shift-badge {
+            padding: 2px 8px;
+            border-radius: 6px;
+            font-weight: 800;
+        }
+        .shift-badge.origen { background: #fee2e2; color: #991b1b; }
+        .shift-badge.destino { background: #dcfce7; color: #166534; }
+
+        .action-group {
+            display: flex;
+            gap: 0.75rem;
+            margin-top: 1.5rem;
+        }
+
+        .btn-action {
+            border: none;
+            padding: 0.6rem 1.2rem;
+            border-radius: 10px;
+            font-weight: 700;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-family: inherit;
+        }
+
+        .btn-approve { background: #10b981; color: white; }
+        .btn-approve:hover { background: #059669; transform: translateY(-2px); }
+
+        .btn-reject { background: #ef4444; color: white; }
+        .btn-reject:hover { background: #dc2626; transform: translateY(-2px); }
+
+        .btn-reset { background: var(--bg); color: var(--text-dim); border: 1px solid var(--border); }
+        .btn-reset:hover { background: var(--border); color: var(--text); }
+
+        .obs-box {
+            margin-top: 1.25rem;
+            padding: 1rem;
+            background: #fff;
+            border: 1px dashed var(--border);
+            border-radius: 12px;
+            font-size: 0.85rem;
+            color: var(--text-dim);
+            font-style: italic;
+        }
+
+        .filter-bar {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+            background: white;
+            padding: 0.75rem 1.25rem;
+            border-radius: 14px;
+            border: 1px solid var(--border);
+            box-shadow: var(--shadow);
+        }
+
+        .select-premium {
+            border: 1px solid var(--border);
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            font-weight: 600;
+            font-family: inherit;
+            outline: none;
+            color: var(--text);
+        }
+
     </style>
 </head>
 <body class="light-mode">
@@ -89,6 +220,7 @@
             <a href="cambios.html" class="nav-item">🔄 <span class="nav-label">Cambios de Turno</span></a>
             <div class="nav-group-label">COMUNICACIÓN</div>
             <a href="solicitudes.html" class="nav-item active">📩 <span class="nav-label">Solicitudes</span></a>
+            <a href="bandeja.html" class="nav-item">📫 <span class="nav-label">Bandeja</span></a>
             <div class="nav-group-label">SISTEMA</div>
             <a href="configuracion.html" class="nav-item">📦 <span class="nav-label">Configuración</span></a>
         </nav>
@@ -101,35 +233,41 @@
         <section class="section active">
             <header class="page-header">
                 <div>
-                    <h1 class="page-title">Solicitudes Pendientes</h1>
-                    <p class="page-subtitle">Gestión de peticiones de cambios y permisos en tiempo real</p>
+                    <h1 class="page-title">Solicitudes del Personal</h1>
+                    <p class="page-subtitle">Gestiona y valida los cambios de turno propuestos por el equipo</p>
                 </div>
-                <div id="syncStatus" class="status-badge-premium" style="margin-left:auto; display:flex; align-items:center; gap:8px;">
-                    <span id="syncDot" style="width:8px; height:8px; border-radius:50%; background:#ff9800;"></span>
-                    <span id="syncText">Conectando...</span>
+                <div id="syncStatus" class="status-badge-premium" style="margin-left:auto;">
+                    <!-- Sincronizado dinámicamente -->
                 </div>
             </header>
 
-            <div class="ed-tools" style="margin-bottom: 2rem;">
-                <select id="statusFilter" onchange="fetchRequests()" style="padding: 10px; border-radius: 10px; border: 1px solid var(--border); font-weight: 600;">
-                    <option value="pendiente">Solo Pendientes</option>
-                    <option value="all">Todas las Solicitudes</option>
-                    <option value="aprobada">Solo Aprobadas</option>
-                    <option value="rechazada">Solo Rechazadas</option>
-                </select>
+            <div class="premium-list-header">
+                <div class="filter-bar">
+                    <span style="font-size:0.8rem; font-weight:700; color:var(--text-dim); text-transform:uppercase;">Filtrar por:</span>
+                    <select id="statusFilter" onchange="fetchRequests()" class="select-premium">
+                        <option value="pendiente">Pendientes de Revisión</option>
+                        <option value="aprobada">Aprobadas</option>
+                        <option value="rechazada">Rechazadas</option>
+                        <option value="all">Todas las Solicitudes</option>
+                    </select>
+                </div>
+                <div style="font-size:0.85rem; font-weight:600; color:var(--text-dim);">
+                    <span id="resultsCount">0</span> solicitudes encontradas
+                </div>
             </div>
 
-            <div id="requestsList" class="glass-panel" style="min-height:500px; padding:2rem;">
-                <div style="text-align:center; opacity:0.5; padding:5rem;">
-                    <i class="fas fa-spinner fa-spin"></i> Cargando solicitudes...
+            <div id="requestsList">
+                <div style="text-align:center; padding:5rem; opacity:0.3;">
+                    <i class="fas fa-spinner fa-spin fa-2x"></i>
+                    <p style="margin-top:1rem; font-weight:600;">Sincronizando con Supabase...</p>
                 </div>
             </div>
         </section>
     </main>
 
     <script src="supabase.js"></script>
-    <script src="supabase-dao.js?v=10.0"></script>
-    <script src="supabase-config.js?v=10.0"></script>
+    <script src="supabase-dao.js?v=11.1"></script>
+    <script src="supabase-config.js?v=11.1"></script>
     <script>
         const $ = (s) => document.querySelector(s);
         let _allRequests = [];
@@ -142,21 +280,22 @@
                 const today = new Date().toISOString().split('T')[0];
                 const data = await window.TurnosDB.fetchPeticiones();
                 
-                // Filtrar para mostrar solo solicitudes recientes/pendientes
-                const filtered = (filter === 'all' ? data : data.filter(r => r.estado === filter))
-                    .filter(r => {
-                        // Requisito: Si es pendiente, mostrar solo desde hoy en adelante
-                        if (filter === 'pendiente' && r.created_at.split('T')[0] < today) return false;
-                        return true;
-                    })
-                    .sort((a,b) => b.created_at.localeCompare(a.created_at));
-
+                let filtered = (filter === 'all' ? data : data.filter(r => r.estado === filter));
+                
+                // Si es pendiente, mostramos solo las que son de hoy o futuro para evitar ruido histórico,
+                // PERO permitimos ver todo si se filtra específicamente por Pendiente (regla de oro: no ocultar datos útiles)
+                // Ajuste: si el filtro es 'pendiente', mostramos TODAS las pendientes.
+                
+                filtered.sort((a,b) => b.created_at.localeCompare(a.created_at));
                 _allRequests = filtered;
+                $('#resultsCount').textContent = filtered.length;
 
                 if (filtered.length === 0) {
                     list.innerHTML = `
-                        <div style="text-align:center; opacity:0.5; padding:5rem;">
-                            📭 No hay solicitudes ${filter !== 'all' ? filter : ''} registradas.
+                        <div class="glass-panel" style="text-align:center; opacity:0.5; padding:5rem; border-radius:24px;">
+                            <div style="font-size:3rem; margin-bottom:1rem;">📭</div>
+                            <h3 style="font-family:'Outfit', sans-serif;">No hay solicitudes registradas</h3>
+                            <p>Cuando un empleado envíe un cambio, aparecerá aquí.</p>
                         </div>`;
                     return;
                 }
@@ -164,51 +303,52 @@
                 list.innerHTML = filtered.map(req => {
                     const statusCls = req.estado || 'pendiente';
                     const fechas = Array.isArray(req.fechas) ? req.fechas : [];
+                    const dateFmt = new Date(req.created_at).toLocaleString('es-ES', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
                     
                     return `
                         <div class="request-card ${statusCls}">
-                            <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:1.5rem; border-bottom:1px solid var(--border); padding-bottom:15px;">
+                            <div class="request-header">
                                 <div>
-                                    <div style="font-size:0.75rem; font-weight:800; color:var(--accent); text-transform:uppercase; letter-spacing:0.05em;">${req.hotel || 'HOTEL NO ESPECIFICADO'}</div>
-                                    <h3 style="margin:4px 0; font-size:1.3rem; font-family:'Outfit', sans-serif;">
+                                    <span class="hotel-badge">${req.hotel || 'CENTRO SIN DEFINIR'}</span>
+                                    <h3 class="request-title">
                                         ${req.solicitante} 
-                                        ${req.companero ? `<span style="color:var(--text-dim); font-size:0.9rem; font-weight:400; margin:0 10px;">intercambia con</span> ${req.companero}` : '<span style="color:var(--text-dim); font-size:0.9rem; font-weight:400; margin:0 10px;">solicita cambio</span>'}
+                                        ${req.companero ? ` <span style="font-weight:400; opacity:0.6; font-size:0.9em; margin:0 4px;">&</span> ${req.companero}` : ''}
                                     </h3>
-                                    <div style="font-size:0.8rem; color:var(--text-dim);">Enviada el ${new Date(req.created_at).toLocaleString('es-ES')}</div>
+                                    <div class="request-subtitle">
+                                        Petición de ${req.companero ? 'intercambio mutuo' : 'cambio de turno'} &bull; ${dateFmt}
+                                    </div>
                                 </div>
                                 
-                                <div style="display:flex; flex-direction:column; align-items:flex-end; gap:10px;">
-                                    <div class="status-badge" style="background:${getStatusBg(req.estado)}; color:${getStatusColor(req.estado)}; padding:6px 16px; border-radius:20px; font-size:0.75rem; font-weight:800; text-transform:uppercase;">
-                                        ${req.estado}
+                                <div style="text-align:right;">
+                                    <div class="status-pill ${statusCls}">${req.estado}</div>
+                                    <div class="action-group">
+                                        ${req.estado === 'pendiente' ? `
+                                            <button class="btn-action btn-reject" onclick="handleAction('${req.id}', 'rechazada')">Denegar</button>
+                                            <button class="btn-action btn-approve" onclick="handleAction('${req.id}', 'aprobada')">Aprobar</button>
+                                        ` : `
+                                            <button class="btn-action btn-reset" onclick="handleAction('${req.id}', 'pendiente')">🔄 Reabrir</button>
+                                        `}
                                     </div>
-                                    
-                                    <div style="display:flex; gap:10px;">
-                                        ${req.estado !== 'rechazada' ? `<button class="btn-reject" onclick="handleAction('${req.id}', 'rechazada')">${req.estado === 'aprobada' ? '✖ Rectificar y Denegar' : '✖ Denegar'}</button>` : ''}
-                                        ${req.estado !== 'aprobada' ? `<button class="btn-approve" onclick="handleAction('${req.id}', 'aprobada')">${req.estado === 'rechazada' ? '✔ Reabrir y Aprobar' : '✔ Aprobar'}</button>` : ''}
-                                        ${(req.estado === 'aprobada' || req.estado === 'rechazada') ? `<button class="btn-msg" style="border-radius:10px; padding:8px 16px; font-weight:700;" onclick="handleAction('${req.id}', 'pendiente')">🔄 Devolver a Pendiente</button>` : ''}
-                                    </div>
-
                                 </div>
                             </div>
 
-                            <div style="display:grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap:1rem;">
+                            <div class="date-grid">
                                 ${fechas.map(f => `
-                                    <div class="date-badge">
-                                        <div style="font-weight:800; font-size:0.9rem; color:var(--text);">📅 ${window.TurnosDB.fmtDateLegacy(f.fecha)}</div>
-                                        <div style="display:flex; align-items:center; gap:8px; font-size:0.85rem; font-weight:600;">
-                                            <span style="color:#ff5252; background:rgba(255,82,82,0.1); padding:2px 8px; border-radius:6px;">${f.origen || 'BASE'}</span>
+                                    <div class="date-card">
+                                        <div class="date-label">📅 ${window.TurnosDB.fmtDateLegacy(f.fecha, true)}</div>
+                                        <div class="shift-swap">
+                                            <span class="shift-badge origen">${f.origen || 'BASE'}</span>
                                             <span style="opacity:0.3;">→</span>
-                                            <span style="color:#4caf50; background:rgba(76,175,80,0.1); padding:2px 8px; border-radius:6px;">${f.destino}</span>
+                                            <span class="shift-badge destino">${f.destino}</span>
                                         </div>
-                                        ${f.nota ? `<div style="font-size:0.75rem; margin-top:5px; font-style:italic; color:var(--text-dim); line-height:1.2;">"${f.nota}"</div>` : ''}
+                                        ${f.nota ? `<div style="font-size:0.75rem; color:var(--text-dim);">"${f.nota}"</div>` : ''}
                                     </div>
                                 `).join('')}
                             </div>
                             
                             ${req.observaciones ? `
-                                <div style="margin-top:1.5rem; padding:12px 18px; background:rgba(0,0,0,0.02); border-radius:12px; font-size:0.85rem; border:1px dashed var(--border);">
-                                    <b style="color:var(--text); margin-right:8px;">Observaciones:</b> 
-                                    <span style="color:var(--text-dim);">${req.observaciones}</span>
+                                <div class="obs-box">
+                                    <strong>Nota del solicitante:</strong> "${req.observaciones}"
                                 </div>
                             ` : ''}
                         </div>
@@ -217,7 +357,7 @@
 
             } catch (err) {
                 console.error(err);
-                list.innerHTML = `<div style="color:#ff5252; padding:2rem; text-align:center;">Error al conectar con la base de datos: ${err.message}</div>`;
+                list.innerHTML = `<div class="alert error">Error de conexión: ${err.message}</div>`;
             }
         }
 
@@ -225,32 +365,22 @@
             const peticion = _allRequests.find(r => r.id === id);
             if (!peticion) return;
 
-            if (!confirm(`¿Estás seguro de que deseas marcar esta solicitud como ${newState.toUpperCase()}?`)) return;
+            const confirmMsg = newState === 'aprobada' 
+                ? `¿Aprobar solicitud de ${peticion.solicitante}? El cuadrante se actualizará automáticamente.`
+                : (newState === 'rechazada' ? `¿Denegar solicitud?` : `¿Mover de nuevo a pendiente?`);
+
+            if (!confirm(confirmMsg)) return;
 
             try {
                 if (newState === 'aprobada') {
                     await window.TurnosDB.procesarAprobacionPeticion(peticion);
-                    alert("Solicitud aprobada y cuadrante actualizado.");
                 } else {
                     await window.TurnosDB.actualizarEstadoPeticion(id, newState);
-                    alert("Solicitud rechazada.");
                 }
                 fetchRequests();
             } catch (e) {
                 alert("Error: " + e.message);
             }
-        }
-
-        function getStatusBg(s) {
-            if (s === 'aprobada') return 'rgba(76,175,80,0.15)';
-            if (s === 'rechazada') return 'rgba(255,82,82,0.15)';
-            return 'rgba(255,152,0,0.15)';
-        }
-
-        function getStatusColor(s) {
-            if (s === 'aprobada') return '#2e7d32';
-            if (s === 'rechazada') return '#c62828';
-            return '#ef6c00';
         }
 
         function toggleTheme() {
@@ -261,30 +391,21 @@
         document.addEventListener('DOMContentLoaded', () => {
             const savedTheme = localStorage.getItem('turnosweb_theme') || 'light';
             if (savedTheme === 'light') document.body.classList.add('light-mode');
-            else document.body.classList.remove('light-mode');
             
-            // Esperar a que el motor y el cliente estén listos
             const checkConnect = setInterval(() => {
                 if (window.TurnosDB && window.supabase) {
                     clearInterval(checkConnect);
-                    
-                    // Asegurar que el cliente está asignado al DAO
                     if (!window.TurnosDB.client) window.TurnosDB.client = window.supabase;
-                    
                     fetchRequests();
                     
-                    // Suscribirse a cambios en tiempo real
-                    window.supabase
-                        .channel('peticiones_changes')
+                    window.supabase.channel('peticiones_changes')
                         .on('postgres_changes', { event: '*', schema: 'public', table: 'peticiones_cambio' }, () => {
-                            console.log("Cambio detectado en peticiones, refrescando...");
                             fetchRequests();
-                        })
-                        .subscribe();
+                        }).subscribe();
                 }
             }, 300);
         });
     </script>
-    <script src="sync-status.js?v=10.0"></script>
+    <script src="sync-status.js?v=11.1"></script>
 </body>
 </html>
