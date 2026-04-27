@@ -5,13 +5,114 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TurnosWeb - Panel de Control Administrativo</title>
     <link rel="icon" type="image/png" href="admin_icon_premium.png">
-    <link rel="stylesheet" href="admin.css?v=8.23">
+    <link rel="stylesheet" href="admin.css?v=13.8">
     <link rel="stylesheet" href="flatpickr.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/plugins/monthSelect/style.css">
     <script src="xlsx.full.min.js"></script>
     <script src="flatpickr.js"></script>
     <script src="flatpickr_es.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/plugins/monthSelect/index.js"></script>
+<style>
+    /* ESTILOS PREMIUM DASHBOARD PROMPT */
+    .nav-toolbar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        background: #ffffff;
+        padding: 12px 24px;
+        border-bottom: 1px solid #e0e0e0;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.02);
+        margin-bottom: 20px;
+        position: sticky;
+        top: 0;
+        z-index: 100;
+    }
+    .nav-group {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    .nav-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 38px;
+        height: 38px;
+        border-radius: 8px; /* Solicitado: 8px */
+        border: 1px solid #e0e0e0;
+        background: #f8f9fa; /* Solicitado: #f8f9fa */
+        color: #1e293b;
+        cursor: pointer;
+        transition: all 0.2s ease-in-out;
+    }
+    .nav-btn:hover {
+        background: #e9ecef; /* Gris más oscuro */
+        border-color: #1a73e8;
+        color: #1a73e8;
+    }
+    .nav-btn-text {
+        padding: 0 16px;
+        height: 38px;
+        border-radius: 8px;
+        font-size: 0.8rem;
+        font-weight: 600;
+        border: 1px solid #e0e0e0;
+        background: #f8f9fa;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+    .nav-btn-text:hover {
+        background: #e9ecef;
+    }
+    .nav-date-indicator {
+        font-size: 1rem;
+        font-weight: 800;
+        color: #1e293b;
+        text-align: center;
+        min-width: 250px;
+    }
+    .nav-toggle-group {
+        display: flex;
+        background: #f1f5f9;
+        padding: 4px;
+        border-radius: 10px;
+        border: 1px solid #e2e8f0;
+    }
+    .nav-toggle-btn {
+        padding: 6px 16px;
+        border-radius: 6px;
+        font-size: 0.75rem;
+        font-weight: 700;
+        border: none;
+        background: transparent;
+        color: #64748b;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+    .nav-toggle-btn.active {
+        background: #1a73e8; /* Solicitado: Azul #1a73e8 */
+        color: white;
+        box-shadow: 0 2px 6px rgba(26,115,232,0.3);
+    }
+    .nav-calendar-trigger {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 38px;
+        height: 38px;
+        border-radius: 8px;
+        background: #f8f9fa;
+        color: #64748b;
+        border: 1px solid #e0e0e0;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+    .nav-calendar-trigger:hover {
+        color: #1a73e8;
+        border-color: #1a73e8;
+        background: white;
+    }
+</style>
 </head>
 <body class="light-mode">
     <!-- BARRA LATERAL (SIDEBAR) -->
@@ -97,278 +198,305 @@
                 </div>
             </header>
 
-            <!-- BLOQUE 1: ESTADO GLOBAL -->
-            <div class="status-grid" id="dashboard-stats">
-                <div class="status-card">
-                    <div class="sc-label">Estado Supabase</div>
-                    <div class="sc-value" id="stat-cloud-status" style="font-size: 0.9rem;">--</div>
+            <div class="dashboard-grid" style="display:grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap:20px; padding:0 30px 30px;">
+                <div class="kpi-card glass" style="padding:20px; border-radius:20px; border:1px solid var(--border); background:var(--surface);">
+                    <label style="display:block; font-size:0.7rem; font-weight:800; color:var(--text-dim); text-transform:uppercase; margin-bottom:10px;">Cambios Pendientes</label>
+                    <strong id="stat-pending-requests" style="font-size:1.5rem; font-weight:900; color:var(--text);">0</strong>
                 </div>
-                <div class="status-card">
-                    <div class="sc-label">Última Sincronización</div>
-            <!-- BLOQUE A: ESTADO DEL SISTEMA -->
-            <div class="dashboard-stats-grid">
-                <div class="stat-card">
-                    <div class="stat-icon cloud"><i class="fas fa-cloud"></i></div>
-                    <div class="stat-info">
-                        <span class="stat-label">Estado Cloud</span>
-                        <div class="stat-value" id="stat-cloud-status">...</div>
-                        <span class="stat-sub" id="stat-last-sync">Cargando...</span>
-                    </div>
+                <div class="kpi-card glass" style="padding:20px; border-radius:20px; border:1px solid var(--border); background:var(--surface);">
+                    <label style="display:block; font-size:0.7rem; font-weight:800; color:var(--text-dim); text-transform:uppercase; margin-bottom:10px;">Bajas Activas</label>
+                    <strong id="stat-today-activity" style="font-size:1.5rem; font-weight:900; color:var(--text);">0</strong>
                 </div>
-                <div class="stat-card">
-                    <div class="stat-icon pending"><i class="fas fa-sync"></i></div>
-                    <div class="stat-info">
-                        <span class="stat-label">Cambios Pendientes</span>
-                        <div class="stat-value" id="stat-pending-diff">0</div>
-                        <span class="stat-sub">Locales vs Nube</span>
-                    </div>
+                <div class="kpi-card glass" style="padding:20px; border-radius:20px; border:1px solid var(--border); background:var(--surface);">
+                    <label style="display:block; font-size:0.7rem; font-weight:800; color:var(--text-dim); text-transform:uppercase; margin-bottom:10px;">Cloud Status</label>
+                    <strong id="stat-cloud-status" style="font-size:1.5rem; font-weight:900; color:#10b981;">-</strong>
                 </div>
-                <div class="stat-card">
-                    <div class="stat-icon integrity"><i class="fas fa-shield-alt"></i></div>
-                    <div class="stat-info">
-                        <span class="stat-label">Integridad de Datos</span>
-                        <div class="stat-value" id="stat-integrity-score">...</div>
-                        <span class="stat-sub">Empleados con ID</span>
-                    </div>
+                <div class="kpi-card glass" style="padding:20px; border-radius:20px; border:1px solid var(--border); background:var(--surface);">
+                    <label style="display:block; font-size:0.7rem; font-weight:800; color:var(--text-dim); text-transform:uppercase; margin-bottom:10px;">Última Sincro</label>
+                    <strong id="stat-last-sync" style="font-size:1.2rem; font-weight:800; color:var(--text);">00:00:00</strong>
+                </div>
+                <div class="kpi-card glass" style="padding:20px; border-radius:20px; border:1px solid var(--border); background:var(--surface);">
+                    <label style="display:block; font-size:0.7rem; font-weight:800; color:var(--text-dim); text-transform:uppercase; margin-bottom:10px;">Pendientes Pub.</label>
+                    <strong id="stat-pending-diff" style="font-size:1.5rem; font-weight:900; color:var(--text);">0</strong>
+                </div>
+                <div class="kpi-card glass" style="padding:20px; border-radius:20px; border:1px solid var(--border); background:var(--surface);">
+                    <label style="display:block; font-size:0.7rem; font-weight:800; color:var(--text-dim); text-transform:uppercase; margin-bottom:10px;">Integridad Datos</label>
+                    <strong id="stat-integrity-score" style="font-size:1.5rem; font-weight:900; color:var(--text);">0%</strong>
                 </div>
             </div>
 
-            <!-- BLOQUE C: ACCIONES RÁPIDAS -->
-            <div class="dashboard-actions-strip">
-                <button class="action-tile" onclick="window.autoAssignIds()">
-                    <i class="fas fa-magic"></i>
-                    <span>Asignar IDs Auto</span>
-                </button>
-                <button class="action-tile" onclick="window.switchSection('employees')">
-                    <i class="fas fa-users-cog"></i>
-                    <span>Gestionar Empleados</span>
-                </button>
-                <button class="action-tile" onclick="window.switchSection('excel')">
-                    <i class="fas fa-table"></i>
-                    <span>Ir a Cuadrante</span>
-                </button>
-                <button class="action-tile" onclick="window.switchSection('preview')">
-                    <i class="fas fa-eye"></i>
-                    <span>Vista Pública</span>
-                </button>
-            </div>
-
-            <!-- BLOQUE 2: RIESGO OPERATIVO (PRIORIDAD ALTA) -->
-            <div id="operational-risk" class="operational-risk-panel" style="margin-top: 24px;">
-                <div class="panel-header" style="margin-bottom: 12px; border-bottom: 0; background: none; padding: 0;">
-                    <h3><i class="fas fa-exclamation-circle" style="color:#ef4444; margin-right:8px;"></i> RIESGO OPERATIVO PRIORITARIO</h3>
-                    <div class="severity-badge-container">
-                        <div class="severity-badge critical" id="count-critical">0 Críticos</div>
-                        <div class="severity-badge warning" id="count-warning">0 Avisos</div>
-                        <div class="severity-badge info" id="count-info">0 Info</div>
+            <div class="full-width-panel" style="padding:0 30px 20px;">
+                <div id="operational-risk" class="operational-risk-panel" style="background:var(--surface); border:1px solid var(--border); border-radius:20px; padding:20px;">
+                    <div class="panel-header" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+                        <h3 style="margin:0; font-size:1rem; font-weight:800;"><i class="fas fa-shield-alt" style="margin-right:10px; color:#ef4444;"></i> RIESGO OPERATIVO PRIORITARIO</h3>
+                        <div class="severity-badge-container" style="display:flex; gap:10px;">
+                            <div class="severity-badge critical" id="count-critical" style="background:#fee2e2; color:#b91c1c; padding:4px 12px; border-radius:20px; font-weight:700; font-size:0.75rem;">0 Críticos</div>
+                            <div class="severity-badge warning" id="count-warning" style="background:#fff7ed; color:#c2410c; padding:4px 12px; border-radius:20px; font-weight:700; font-size:0.75rem;">0 Avisos</div>
+                            <div class="severity-badge info" id="count-info" style="background:#f0f9ff; color:#0369a1; padding:4px 12px; border-radius:20px; font-weight:700; font-size:0.75rem;">0 Info</div>
+                        </div>
                     </div>
-                </div>
-                <div id="risk-alerts-container">
-                    <!-- Inyección dinámica de alertas accionables -->
+                    <div id="risk-alerts-container" class="risk-alerts-full"></div>
                 </div>
             </div>
 
-            <div class="dashboard-grid-layout" style="margin-top: 24px;">
-                <!-- BLOQUE 3: ACTIVIDAD RECIENTE -->
-                <div class="dashboard-col-main">
-                    <section class="dashboard-panel">
-                        <div class="panel-header">
-                            <h3><i class="fas fa-stream" style="margin-right:8px; color:#64748b;"></i> Actividad de Operaciones</h3>
-                            <span class="panel-tag">Live</span>
-                        </div>
-                        <div id="dashboard-timeline" class="timeline-container">
-                            <div class="timeline-empty">Cargando flujos de trabajo...</div>
-                        </div>
-                    </section>
+            <div class="dashboard-secondary-grid" style="display:grid; grid-template-columns: 1.2fr 1fr; gap:20px; padding:0 30px 30px;">
+                <!-- ACCIONES RÁPIDAS -->
+                <div class="glass-panel" style="padding:20px; border-radius:20px; border:1px solid var(--border); background:var(--surface);">
+                    <h3 style="margin:0 0 20px; font-size:1rem; font-weight:800; color:var(--text); text-transform:uppercase;"><i class="fas fa-bolt" style="margin-right:10px; color:#f59e0b;"></i> Acciones Rápidas</h3>
+                    <div id="dashboard-quick-actions"></div>
                 </div>
 
-                <!-- BLOQUE 4: AUDITORÍA Y PUBLICACIONES -->
-                <div class="dashboard-col-side">
-                    <section class="dashboard-panel">
-                        <div class="panel-header">
-                            <h3><i class="fas fa-history" style="margin-right:8px; color:#64748b;"></i> Auditoría de Publicación</h3>
-                        </div>
-                        <div id="dashboard-activity-list" class="activity-list-container">
-                            <div class="timeline-empty">Cargando historial...</div>
-                        </div>
-                    </section>
-
-                    <section class="dashboard-panel">
-                        <div class="panel-header"><h3>Importación Excel</h3></div>
-                        <div id="drop-zone" class="drop-zone-compact">
-                            <input type="file" id="fileInput" hidden accept=".xlsx, .xls">
-                            <i class="fas fa-file-excel"></i>
-                            <span>Arrastra aquí para actualizar base</span>
-                        </div>
-                    </section>
+                <!-- ACTIVIDAD RECIENTE -->
+                <div class="glass-panel" style="padding:20px; border-radius:20px; border:1px solid var(--border); background:var(--surface);">
+                    <h3 style="margin:0 0 20px; font-size:1rem; font-weight:800; color:var(--text); text-transform:uppercase;"><i class="fas fa-history" style="margin-right:10px; color:#6366f1;"></i> Actividad de Operaciones</h3>
+                    <div id="dashboard-timeline" style="max-height:300px; overflow-y:auto;"></div>
                 </div>
-            </div>
-        </section>
-
-
-
-        <!-- MODO EXCEL (RAW INSPECTOR) -->
-        <section id="section-excel" class="section">
-            <header class="page-header">
-                <div>
-                    <h1 class="page-title">Modo Excel (Base de Datos)</h1>
-                    <p class="page-subtitle">Visualizacion directa de registros en Supabase</p>
-                </div>
-                <div style="display:flex; gap:10px; margin-left:auto; align-items:center;">
-                    <select id="excelHotel" class="btn-premium" style="background:var(--bg3); border:1px solid var(--border); padding:8px 15px; border-radius:12px;" onchange="window.renderExcelView()">
-                        <option value="all">Filtro por Hotel: Ver Todos</option>
-                    </select>
-                    <input type="month" id="excelMonth" class="btn-premium" style="background:var(--bg3); border:1px solid var(--border); padding:8px 15px; border-radius:12px;" onchange="window.renderExcelView()">
-                </div>
-            </header>
-            <div id="excel-grid-container" style="background:var(--surface); border-radius:20px; border:1px solid var(--border); overflow:hidden; min-height:70vh;">
-                <!-- Dinamico -->
             </div>
         </section>
 
         <!-- VISTA PREVIA -->
+        
         <section id="section-preview" class="section">
-            <header class="page-header">
-                <div><h1 class="page-title">Vista Previa</h1></div>
-                <div class="header-controls">
-                    <select id="prevHotel" class="btn" onchange="renderPreview()" style="background:var(--bg3); color:var(--text); border:1px solid var(--border); border-radius:10px; padding:7px 15px;"></select>
-                    <div id="prevDateContainer" style="display:flex; align-items:center; gap:6px;">
-                        <button class="btn" id="btnPrevWeek" onclick="navigatePreview(-1)" style="background:var(--bg3); color:var(--text); border:1px solid var(--border); border-radius:10px; padding:7px 12px; cursor:pointer; font-size:1rem;" title="Semana anterior">&#8592;</button>
-                        <input type="text" id="prevWeekDate" class="btn" style="background:var(--bg3); color:var(--text); border:1px solid var(--border); border-radius:10px; padding:7px 15px; width:130px;">
-                        <button class="btn" id="btnNextWeek" onclick="navigatePreview(1)" style="background:var(--bg3); color:var(--text); border:1px solid var(--border); border-radius:10px; padding:7px 12px; cursor:pointer; font-size:1rem;" title="Semana siguiente">&#8594;</button>
-                    </div>
-                    <div id="prevMonthContainer" style="display:none; align-items:center; gap:6px;">
-                        <button class="btn" id="btnPrevMonth" onclick="navigatePreview(-1)" style="background:var(--bg3); color:var(--text); border:1px solid var(--border); border-radius:10px; padding:7px 12px; cursor:pointer; font-size:1rem;" title="Mes anterior">&#8592;</button>
-                        <input type="text" id="prevMonth" class="btn" style="background:var(--bg3); color:var(--text); border:1px solid var(--border); border-radius:10px; padding:7px 15px; width:130px;">
-                        <button class="btn" id="btnNextMonth" onclick="navigatePreview(1)" style="background:var(--bg3); color:var(--text); border:1px solid var(--border); border-radius:10px; padding:7px 12px; cursor:pointer; font-size:1rem;" title="Mes siguiente">&#8594;</button>
-                    </div>
-                    <div class="btn-group">
-                        <button class="btn active" id="btnViewWeekly" onclick="switchPreviewMode('weekly')">Semanal</button>
-                        <button class="btn" id="btnViewMonthly" onclick="switchPreviewMode('monthly')">Mensual</button>
-                    </div>
+            <header class="page-header" style="border-bottom:none; margin-bottom:0; padding-bottom:15px;">
+                <div>
+                    <h1 class="page-title">Vista Previa Operativa</h1>
+                    <p class="page-subtitle">Cuadrante maestro de turnos y coberturas</p>
+                </div>
+                <div style="margin-left:auto;">
+                    <select id="prevHotel" class="btn-premium" onchange="window.renderPreview()" style="min-width:220px; font-weight:700; background:var(--surface2); border:1px solid var(--border);"></select>
                 </div>
             </header>
-            <div id="previewContent"></div>
+
+            <nav class="nav-toolbar">
+                <div class="nav-group">
+                    <button class="nav-btn" onclick="window.DateManager.prev()" title="Anterior">
+                        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"></polyline></svg>
+                    </button>
+                    <button class="nav-btn-text" onclick="window.DateManager.today()">Hoy</button>
+                    <button class="nav-btn" onclick="window.DateManager.next()" title="Siguiente">
+                        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                    </button>
+                </div>
+
+                <div class="nav-date-indicator" id="dateDisplay">Cargando...</div>
+
+                <div class="nav-group">
+                    <div class="nav-toggle-group">
+                        <button id="btnViewWeekly" class="nav-toggle-btn active" onclick="window.DateManager.switchView('weekly')">Semanal</button>
+                        <button id="btnViewMonthly" class="nav-toggle-btn" onclick="window.DateManager.switchView('monthly')">Mensual</button>
+                    </div>
+                    <div style="width:1px; height:24px; background:var(--border); margin:0 5px;"></div>
+                    <button class="nav-calendar-trigger" id="datePickerTrigger" onclick="window.DateManager.openPicker()" title="Elegir fecha">
+                        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+                        <input type="text" id="datePicker" style="position:absolute; visibility:hidden; width:0; height:0;">
+                    </button>
+                </div>
+            </nav>
+
+            <div id="previewContent" style="padding:0 30px 30px;"></div>
         </section>
+
 
         <!-- EMPLEADOS -->
         <section id="section-employees" class="section">
-            <header class="page-header"><div><h1 class="page-title">Empleados</h1></div></header>
-            <div id="employeesContent"></div>
+            <header class="page-header"><div><h1 class="page-title">Gestión de Empleados</h1></div></header>
+            <div id="employeesContent" style="padding:0 30px 30px;"></div>
         </section>
 
         <!-- CAMBIOS DE TURNO -->
         <section id="section-changes" class="section">
             <header class="page-header">
                 <div>
-                    <h1 class="page-title">Gestión de Cambios de Turno</h1>
-                    <p class="page-subtitle">Control de intercambios y coberturas especiales</p>
+                    <h1 class="page-title">Panel Operativo de Cambios</h1>
+                    <p class="page-subtitle">Sincronización de intercambios aprobados</p>
+                </div>
+                <div class="header-controls" style="display:flex; gap:10px; margin-left:auto; align-items:center;">
+                    <input type="text" id="chSearch" class="btn-premium" placeholder="🔍 Buscar..." oninput="window.renderChanges()">
+                    <input type="text" id="chRange" class="btn-premium" placeholder="📅 Rango fechas..." style="width:200px;">
+                    <select id="chStatus" class="btn-premium" onchange="window.renderChanges()">
+                        <option value="activo">Pendientes / Activos</option>
+                        <option value="all">Ver Todos</option>
+                        <option value="anulado">Anulados</option>
+                    </select>
                 </div>
             </header>
-            <div id="changes-content">
-                <div style="padding:4rem; text-align:center; opacity:0.3;">
-                    <i class="fas fa-sync-alt fa-3x" style="margin-bottom:1rem; display:block;"></i>
-                    Cargando módulo de cambios...
+            <div style="display:grid; grid-template-columns: 1fr 300px; gap:25px; padding:0 30px 30px;">
+                <div style="background:var(--surface); border:1px solid var(--border); border-radius:20px; overflow:hidden;">
+                    <div id="changes-table-container">
+                        <table style="width:100%; border-collapse:collapse;">
+                            <thead style="background:var(--bg3); border-bottom:1px solid var(--border);">
+                                <tr>
+                                    <th style="padding:15px; text-align:left; font-size:0.7rem; color:var(--text-dim); text-transform:uppercase;">Fecha</th>
+                                    <th style="padding:15px; text-align:left; font-size:0.7rem; color:var(--text-dim); text-transform:uppercase;">Hotel</th>
+                                    <th style="padding:15px; text-align:left; font-size:0.7rem; color:var(--text-dim); text-transform:uppercase;">Participantes</th>
+                                    <th style="padding:15px; text-align:left; font-size:0.7rem; color:var(--text-dim); text-transform:uppercase;">Tipo</th>
+                                    <th style="padding:15px; text-align:left; font-size:0.7rem; color:var(--text-dim); text-transform:uppercase;">Observacion</th>
+                                    <th style="padding:15px; text-align:center; font-size:0.7rem; color:var(--text-dim); text-transform:uppercase;">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="changes-body"></tbody>
+                        </table>
+                    </div>
+                </div>
+                <div id="upcoming-changes-sidebar" style="background:var(--surface); border:1px solid var(--border); border-radius:20px; padding:20px;">
+                    <h3 style="margin:0 0 15px; font-size:0.8rem; font-weight:800; color:var(--text-dim); text-transform:uppercase;">Resumen Operativo</h3>
+                    <div style="display:grid; grid-template-columns:1fr; gap:10px; margin-bottom:20px;">
+                        <div class="glass-panel" style="padding:10px; border-radius:12px; border:1px solid var(--border); text-align:center;">
+                            <div style="font-size:0.6rem; color:var(--text-dim); font-weight:800;">TOTAL ACTIVOS</div>
+                            <div id="ch-stat-total" style="font-size:1.2rem; font-weight:900;">0</div>
+                        </div>
+                        <div class="glass-panel" style="padding:10px; border-radius:12px; border:1px solid var(--border); text-align:center;">
+                            <div style="font-size:0.6rem; color:var(--text-dim); font-weight:800;">PRÓX. 30 DÍAS</div>
+                            <div id="ch-stat-30d" style="font-size:1.2rem; font-weight:900;">0</div>
+                        </div>
+                        <div class="glass-panel" style="padding:10px; border-radius:12px; border:1px solid var(--border); text-align:center;">
+                            <div style="font-size:0.6rem; color:var(--text-dim); font-weight:800;">EMPS. AFECTADOS</div>
+                            <div id="ch-stat-emps" style="font-size:1.2rem; font-weight:900;">0</div>
+                        </div>
+                    </div>
+                    <h3 style="margin:0 0 15px; font-size:0.8rem; font-weight:800; color:var(--text-dim); text-transform:uppercase;">Próximos Cambios</h3>
+                    <div id="upcoming-changes-list" style="display:flex; flex-direction:column; gap:12px;"></div>
                 </div>
             </div>
+        </section>
+
+        <!-- SOLICITUDES -->
+        <section id="section-requests" class="section">
+            <header class="page-header"><div><h1 class="page-title">Solicitudes de Cambio</h1></div></header>
+            <div id="changes-content" style="padding:0 30px 30px;"></div>
         </section>
 
         <!-- VACACIONES -->
         <section id="section-vacations" class="section">
-            <header class="page-header">
-                <div>
-                    <h1 class="page-title">Gestión de Vacaciones</h1>
-                    <p class="page-subtitle">Control de periodos anuales y ausencias programadas</p>
-                </div>
-            </header>
-            <div id="vacations-content">
-                <div style="padding:4rem; text-align:center; opacity:0.3;">
-                    <i class="fas fa-calendar-alt fa-3x" style="margin-bottom:1rem; display:block;"></i>
-                    Cargando módulo de vacaciones...
-                </div>
-            </div>
+            <header class="page-header"><div><h1 class="page-title">Control de Vacaciones</h1></div></header>
+            <div id="vacations-content" style="padding:0 30px 30px;"></div>
         </section>
 
         <!-- BAJAS -->
-        <section id="section-absences" class="section">
+        <section id="section-bajas" class="section">
             <header class="page-header">
                 <div>
                     <h1 class="page-title">Bajas y Permisos</h1>
-                    <p class="page-subtitle">Registro de bajas médicas y permisos especiales</p>
+                    <p class="page-subtitle">Gestión de ausencias temporales, permisos e IT</p>
+                </div>
+                <div class="header-controls" style="display:flex; gap:10px; margin-left:auto; align-items:center;">
+                    <button class="btn-publish-premium" onclick="window.openBajaPermisoModal()" style="margin:0;">+ Nueva Baja/Permiso</button>
                 </div>
             </header>
-            <div id="absences-content">
-                <div style="padding:4rem; text-align:center; opacity:0.3;">
-                    <i class="fas fa-user-injured fa-3x" style="margin-bottom:1rem; display:block;"></i>
-                    Cargando módulo de bajas...
+            <div id="absences-content" style="padding:0 30px 30px;"></div>
+        </section>
+
+        <!-- GESTIÓN EXCEL -->
+        <section id="section-excel" class="section">
+            <header class="page-header">
+                <div>
+                    <h1 class="page-title">Modo Excel (Base de Datos)</h1>
+                    <p class="page-subtitle">Visualización directa de public.turnos en Supabase</p>
+                </div>
+            </header>
+            <div id="excel-grid-container" style="padding:0 30px 30px;"></div>
+        </section>
+
+        <!-- CONFIGURACIÓN -->
+        <section id="section-config" class="section">
+            <header class="page-header"><div><h1 class="page-title">Configuración del Sistema</h1></div></header>
+            <div id="config-content" style="padding:0 30px 30px;">
+                <div class="glass-panel" style="padding:24px; border-radius:24px; border:1px solid var(--border); background:var(--surface);">
+                    <h3 style="margin-top:0; font-size:1rem; font-weight:800; color:var(--text); margin-bottom:18px;">Parámetros Globales</h3>
+                    <div style="display:grid; gap:20px; max-width:600px;">
+                        <div>
+                            <label style="display:block; font-size:0.7rem; font-weight:800; color:var(--text-dim); text-transform:uppercase; margin-bottom:8px;">Nombre de la Empresa</label>
+                            <input type="text" class="btn-premium" style="width:100%;" value="Cumbria & Guadiana">
+                        </div>
+                        <div>
+                            <label style="display:block; font-size:0.7rem; font-weight:800; color:var(--text-dim); text-transform:uppercase; margin-bottom:8px;">Modo de Visualización</label>
+                            <select class="btn-premium" style="width:100%;">
+                                <option>Llamativo (Premium)</option>
+                                <option>Compacto (Excel)</option>
+                            </select>
+                        </div>
+                        <div style="padding-top:10px;">
+                            <button class="btn-publish-premium" onclick="alert('Configuración guardada (Simulado)')">Guardar Configuración</button>
+                        </div>
+                    </div>
                 </div>
             </div>
         </section>
-
-
-
-        <!-- BACKUP / CONFIGURACION -->
-        <section id="section-export" class="section">
-            <header class="page-header"><div><h1 class="page-title">Backup y Configuracion</h1></div></header>
-            <div class="glass" style="padding:2rem;">
-                <p style="margin-bottom:1.5rem; color:var(--text-muted);">Si tu navegador borra la configuracion por seguridad (Tracking Prevention), descarga un backup aqui y cargalo despues.</p>
-                <div style="display:flex; gap:1rem;">
-                    <button class="btn active" onclick="exportConfig()" style="background:var(--accent); color:white; border:none; padding:10px 20px; border-radius:10px; cursor:pointer;">Descargar Backup JSON</button>
-                    <button class="btn" onclick="$('#configImport').click()" style="background:var(--bg3); color:var(--text); border:1px solid var(--border); padding:10px 20px; border-radius:10px; cursor:pointer;">Importar Backup</button>
-                    <input type="file" id="configImport" hidden onchange="importConfig()" accept=".json">
-                </div>
-            </div>
-        </section>
-
     </main>
 
-    <!-- DRAWER -->
-    <div id="empDrawer" class="drawer-overlay" onclick="closeEmpDrawer()">
-        <div class="drawer-content" onclick="event.stopPropagation()">
-            <button class="drawer-close" onclick="closeEmpDrawer()">x</button>
-            <div id="drawerBody"></div>
+    <!-- MODALES -->
+    <div id="modalBaja" class="drawer-overlay" style="display:none; align-items:center; justify-content:center; padding:1rem; z-index:9999; background:rgba(0,0,0,0.5); position:fixed; top:0; left:0; width:100%; height:100%;" onclick="window.closeBajaPermisoModal()">
+        <div class="glass" style="width:100%; max-width:560px; padding:2rem; border-radius:24px; background:var(--surface); border:1px solid var(--border); max-height:90vh; overflow-y:auto;" onclick="event.stopPropagation()">
+            <h2 id="modalBajaTitle" style="margin-bottom:20px; font-weight:800;">Añadir Baja o Permiso</h2>
+            <div id="modalBajaStatus" style="margin-bottom:12px;"></div>
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:15px;">
+                <div style="grid-column: span 2;"><label style="display:block; font-size:0.6rem; font-weight:800; color:var(--text-dim); margin-bottom:5px;">TIPO</label><select id="mbTipo" class="btn-premium" style="width:100%;"><option value="BAJA">Baja Médica / IT</option><option value="PERMISO">Permiso</option><option value="FORMACION">Formación</option><option value="OTRO">Otro</option></select></div>
+                <div><label style="display:block; font-size:0.6rem; font-weight:800; color:var(--text-dim); margin-bottom:5px;">HOTEL</label><select id="mbHotel" class="btn-premium" style="width:100%;"></select></div>
+                <div><label style="display:block; font-size:0.6rem; font-weight:800; color:var(--text-dim); margin-bottom:5px;">EMPLEADO</label><select id="mbEmp" class="btn-premium" style="width:100%;"></select></div>
+                <div><label style="display:block; font-size:0.6rem; font-weight:800; color:var(--text-dim); margin-bottom:5px;">INICIO</label><input type="date" id="mbDateStart" class="btn-premium" style="width:100%;"></div>
+                <div><label style="display:block; font-size:0.6rem; font-weight:800; color:var(--text-dim); margin-bottom:5px;">FIN</label><input type="date" id="mbDateEnd" class="btn-premium" style="width:100%;"></div>
+                <div style="grid-column: span 2;"><label style="display:block; font-size:0.6rem; font-weight:800; color:var(--text-dim); margin-bottom:5px;">SUSTITUTO</label><select id="mbSustituto" class="btn-premium" style="width:100%;"></select></div>
+                <div><label style="display:block; font-size:0.6rem; font-weight:800; color:var(--text-dim); margin-bottom:5px;">ESTADO</label><select id="mbEstado" class="btn-premium" style="width:100%;"><option value="activo">Activo</option><option value="pendiente">Pendiente</option><option value="aprobado">Aprobado</option></select></div>
+                <div><label style="display:block; font-size:0.6rem; font-weight:800; color:var(--text-dim); margin-bottom:5px;">ADJUNTOS</label><input type="file" class="btn-premium" style="width:100%; opacity:0.4; pointer-events:none;" title="Adjuntos no habilitados todavía" disabled><div style="font-size:0.55rem; color:var(--text-dim); margin-top:3px;">Adjuntos no habilitados todavía.</div></div>
+                <div style="grid-column: span 2;"><label style="display:block; font-size:0.6rem; font-weight:800; color:var(--text-dim); margin-bottom:5px;">OBSERVACIONES / MOTIVO</label><textarea id="mbObs" class="btn-premium" style="width:100%; min-height:80px;" placeholder="Motivo o notas adicionales..."></textarea></div>
+            </div>
+            <div id="modalBajaWarning" style="display:none; margin-top:12px; padding:10px 14px; border-radius:10px; background:rgba(245,158,11,0.1); border:1px solid rgba(245,158,11,0.3); color:#b45309; font-size:0.75rem; font-weight:600;"></div>
+            <div style="margin-top:25px; display:flex; gap:10px;">
+                <button onclick="window.saveBajaPermiso()" class="btn-publish-premium" id="btnSaveBajaPermiso" style="flex:2;">Guardar</button>
+                <button onclick="window.anularBajaPermisoAction()" class="btn-premium" id="btnAnularBaja" style="flex:1; color:var(--danger); display:none;">Anular</button>
+                <button onclick="window.closeBajaPermisoModal()" class="btn-premium" style="flex:1;">Cerrar</button>
+            </div>
         </div>
     </div>
 
-    <script src="supabase.js"></script>
-    <script src="supabase-config.js?v=8.1"></script>
+    <!-- MODAL: AÑADIR REFUERZO -->
+    <div id="modalRefuerzo" class="drawer-overlay" style="display:none; align-items:center; justify-content:center; padding:1rem; z-index:9999; background:rgba(0,0,0,0.5); position:fixed; top:0; left:0; width:100%; height:100%;" onclick="window.closeRefuerzoModal()">
+        <div class="glass" style="width:100%; max-width:560px; padding:2rem; border-radius:24px; background:var(--surface); border:1px solid var(--border); max-height:90vh; overflow-y:auto;" onclick="event.stopPropagation()">
+            <h2 style="margin-bottom:20px; font-weight:800; display:flex; align-items:center; gap:10px;"><i class="fas fa-user-plus" style="color:#3b82f6;"></i> Añadir Refuerzo</h2>
+            <div id="refuerzoStatus" style="margin-bottom:12px;"></div>
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:15px;">
+                <div><label style="display:block; font-size:0.6rem; font-weight:800; color:var(--text-dim); margin-bottom:5px;">HOTEL</label><select id="rfHotel" class="btn-premium" style="width:100%;"></select></div>
+                <div><label style="display:block; font-size:0.6rem; font-weight:800; color:var(--text-dim); margin-bottom:5px;">EMPLEADO REFUERZO</label><select id="rfEmp" class="btn-premium" style="width:100%;"></select></div>
+                <div style="grid-column: span 2;"><label style="display:block; font-size:0.6rem; font-weight:800; color:var(--text-dim); margin-bottom:5px;">TIPO DE INSERCIÓN</label>
+                    <div style="display:flex; gap:10px;" id="rfTipoInsercion">
+                        <label style="display:flex; align-items:center; gap:5px; font-size:0.8rem; font-weight:600; cursor:pointer;"><input type="radio" name="rfTipo" value="dia" checked onchange="window.updateRefuerzoFechas()"> Día concreto</label>
+                        <label style="display:flex; align-items:center; gap:5px; font-size:0.8rem; font-weight:600; cursor:pointer;"><input type="radio" name="rfTipo" value="semana" onchange="window.updateRefuerzoFechas()"> Semana completa</label>
+                        <label style="display:flex; align-items:center; gap:5px; font-size:0.8rem; font-weight:600; cursor:pointer;"><input type="radio" name="rfTipo" value="rango" onchange="window.updateRefuerzoFechas()"> Rango personalizado</label>
+                    </div>
+                </div>
+                <div id="rfFechaGroup1"><label style="display:block; font-size:0.6rem; font-weight:800; color:var(--text-dim); margin-bottom:5px;">FECHA</label><input type="date" id="rfDateStart" class="btn-premium" style="width:100%;"></div>
+                <div id="rfFechaGroup2" style="display:none;"><label style="display:block; font-size:0.6rem; font-weight:800; color:var(--text-dim); margin-bottom:5px;">FECHA FIN</label><input type="date" id="rfDateEnd" class="btn-premium" style="width:100%;"></div>
+                <div style="grid-column: span 2;"><label style="display:block; font-size:0.6rem; font-weight:800; color:var(--text-dim); margin-bottom:5px;">TURNO ASIGNADO</label><select id="rfTurno" class="btn-premium" style="width:100%;"><option value="—">Pendiente de asignar</option><option value="M">Mañana</option><option value="T">Tarde</option><option value="N">Noche</option><option value="D">Descanso</option></select></div>
+                <div style="grid-column: span 2;"><label style="display:block; font-size:0.6rem; font-weight:800; color:var(--text-dim); margin-bottom:5px;">OBSERVACIONES</label><input type="text" id="rfObs" class="btn-premium" style="width:100%;" placeholder="Refuerzo operativo, apoyo evento..."></div>
+            </div>
+            <div id="refuerzoWarning" style="display:none; margin-top:12px; padding:10px 14px; border-radius:10px; background:rgba(245,158,11,0.1); border:1px solid rgba(245,158,11,0.3); color:#b45309; font-size:0.75rem; font-weight:600;"></div>
+            <div style="margin-top:25px; display:flex; gap:10px;">
+                <button onclick="window.saveRefuerzo()" class="btn-publish-premium" id="btnSaveRefuerzo" style="flex:2;">Añadir refuerzo</button>
+                <button onclick="window.closeRefuerzoModal()" class="btn-premium" style="flex:1;">Cancelar</button>
+            </div>
+        </div>
+    </div>
     
-    <!-- AUTHENTICATION PROTECTOR (OBLIGATORIO) -->
-    <script>
-        (async function checkAuth() {
-            if (!window.supabase) return;
-            const { data: { session } } = await window.supabase.auth.getSession();
-            if (!session) {
-                console.warn("Sesion no encontrada. Redirigiendo a login...");
-                window.location.replace('login.html');
-                return;
-            }
-            // Suscribirse a cambios de estado (logout en otros tabs, etc)
-            window.supabase.auth.onAuthStateChange((event, session) => {
-                if (!session) window.location.href = 'login.html';
-            });
-        })();
-    </script>
-    
-    <script src="localforage.js"></script>
-    <script src="supabase-dao.js?v=10.0"></script>
-    <script src="virtualizer.js?v=8.5"></script>
+    <!-- DRAWER DE EMPLEADO (MÓVIL / LATERAL) -->
+    <div id="empDrawer" class="drawer-overlay" onclick="window.closeEmpDrawer()">
+        <div class="drawer-content" onclick="event.stopPropagation()">
+            <div class="drawer-header">
+                <h3 id="drawerTitle">Detalle Empleado</h3>
+                <button class="btn-close-drawer" onclick="window.closeEmpDrawer()">&times;</button>
+            </div>
+            <div id="drawerBody" class="drawer-body"></div>
+        </div>
+    </div>
 
-    <script src="turnos-rules.js?v=4.1"></script>
-    <script src="shift-resolver.js?v=4.3"></script>
-    <script src="turnos-engine.js?v=4.1"></script>
-    <script src="excel-loader.js?v=1.0"></script>
-    <script src="admin.js?v=13.1"></script>
-    <script src="sync-status.js?v=10.1"></script>
-    <style>
-        @keyframes pulse {
-            0% { transform: scale(1); box-shadow: 0 4px 15px rgba(255,152,0,0.3); }
-            50% { transform: scale(1.05); box-shadow: 0 4px 25px rgba(255,152,0,0.5); }
-            100% { transform: scale(1); box-shadow: 0 4px 15px rgba(255,152,0,0.3); }
-        }
-        .pulse-animation {
-            animation: pulse 2s infinite;
-        }
-    </style>
+    <!-- SCRIPTS -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="supabase-config.js?v=13.8"></script>
+    <script src="localforage.js"></script>
+    <script src="supabase-dao.js?v=13.8"></script>
+    <script src="shift-resolver.js?v=13.8"></script>
+    <script src="admin.js?v=13.8"></script>
+    <script src="bajas-module.js?v=1.0"></script>
+    <script src="vacaciones-module.js?v=1.0"></script>
+    <script src="sync-status.js?v=13.8"></script>
 </body>
 </html>

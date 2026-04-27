@@ -96,7 +96,11 @@ window.TurnosDB = {
     },
 
     // --- LECTURA ---
-    async fetchRango(inicio, fin) {
+    async fetchTurnosBase(inicio, fin, hotel = 'all') {
+        return this.fetchRango(inicio, fin, hotel);
+    },
+
+    async fetchRango(inicio, fin, hotel = 'all') {
         const client = window.supabase;
         const i = this.normalizeDate(inicio);
         const f = this.normalizeDate(fin);
@@ -113,13 +117,20 @@ window.TurnosDB = {
                 return cache.raw;
             }
 
-            const data = await this.fetchAll(() => client
-                .from('turnos')
-                .select('*')
-                .gte('fecha', i)
-                .lte('fecha', f)
-                .order('fecha', { ascending: true })
-                .order('empleado_id', { ascending: true }));
+            const data = await this.fetchAll(() => {
+                let q = client
+                    .from('turnos')
+                    .select('*')
+                    .gte('fecha', i)
+                    .lte('fecha', f);
+                
+                if (hotel && hotel !== 'all') {
+                    q = q.eq('hotel_id', hotel);
+                }
+
+                return q.order('fecha', { ascending: true })
+                    .order('empleado_id', { ascending: true });
+            });
 
             if (window.localforage) await window.localforage.setItem(cacheKey, { timestamp: now, raw: data });
             this.updateUISyncStatus('ok');
@@ -220,6 +231,53 @@ window.TurnosDB = {
             });
             this.updateUISyncStatus('error');
             throw err;
+        }
+    },
+
+    async anularEventosPeticion(peticionId) {
+        // Marcamos como anulados los eventos vinculados a esta petición
+        const client = window.supabase;
+        const { error } = await client
+            .from('eventos_cuadrante')
+            .update({ estado: 'anulado', updated_at: new Date().toISOString() })
+            .eq('peticion_id', peticionId);
+        if (error) console.warn("DAO: Error anulando eventos de peticion (no crítico):", error);
+    },
+
+    async anularEvento(id) {
+        const client = window.supabase;
+        try {
+            if (!id) throw new Error("ID requerido");
+            const { error } = await client
+                .from('eventos_cuadrante')
+                .update({ estado: 'anulado', updated_at: new Date().toISOString() })
+                .eq('id', id);
+
+            if (error) throw error;
+            if (window.localforage) await window.localforage.clear();
+            this.updateUISyncStatus('ok');
+            return true;
+        } catch (err) {
+            console.error("DAO Error (anularEvento):", err);
+            this.updateUISyncStatus('error');
+            throw err;
+        }
+    },
+
+    async fetchBajasPermisos(hotel = null, empleado = null) {
+        try {
+            const data = await this.fetchEventos();
+            let res = (data || []).filter(ev => ev.tipo !== 'VAC');
+            if (hotel && hotel !== 'all') {
+                res = res.filter(ev => ev.hotel_origen === hotel);
+            }
+            if (empleado && empleado !== 'all') {
+                res = res.filter(ev => ev.empleado_id === empleado);
+            }
+            return res.sort((a,b) => (b.fecha_inicio || '').localeCompare(a.fecha_inicio || ''));
+        } catch (err) {
+            console.error("DAO Error (fetchBajasPermisos):", err);
+            return [];
         }
     },
 
@@ -411,6 +469,29 @@ window.TurnosDB = {
         return { rows, eventos };
     },
 
+    async fetchTurnosBase(start, end, hotel = null) {
+        const client = window.supabase;
+        try {
+            let q = client
+                .from('turnos')
+                .select('*')
+                .gte('fecha', this.normalizeDate(start))
+                .lte('fecha', this.normalizeDate(end))
+                .order('hotel_id', { ascending: true })
+                .order('empleado_id', { ascending: true })
+                .order('fecha', { ascending: true });
+
+            if (hotel && hotel !== 'Ver Todos' && hotel !== 'Todos los Hoteles' && hotel !== 'all') {
+                q = q.eq('hotel_id', hotel);
+            }
+
+            const data = await this.fetchAll(() => q);
+            return data || [];
+        } catch (err) {
+            console.error("DAO Error (fetchTurnosBase):", err);
+            return [];
+        }
+    },
 
 
     async fetchVacaciones(inicio = null, fin = null) {

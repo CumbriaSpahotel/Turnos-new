@@ -1,0 +1,127 @@
+[
+  {
+    "id": "1f6bd604-7d5b-4290-bf52-32ea93995382",
+    "solicitante": "Dani",
+    "companero": "Diana",
+    "hotel": "Sercotel Guadiana",
+    "fechas": [
+      {
+        "nota": "prueba",
+        "fecha": "2026-04-21",
+        "origen": "Tarde",
+        "destino": "Noche"
+      }
+    ],
+    "observaciones": "",
+    "estado": "pendiente",
+    "created_at": "2026-04-21T18:45:54.687224+00:00",
+    "updated_at": "2026-04-21T19:02:51.459642+00:00",
+    "solicitante_uuid": "2166b0e8-b626-4dc8-9fee-7c7ea47b7202",
+    "companero_uuid": "1aa10fff-e93d-4fef-8c60-386bad025a6d"
+  },
+  {
+    "id": "f92da63e-e0a2-4e35-accd-4e84d3d9ae7d",
+    "solicitante": "Dani",
+    "companero": "Macarena",
+    "hotel": "Sercotel Guadiana",
+    "fechas": [
+      {
+        "nota": "prueba",
+        "fecha": "2026-04-21",
+        "origen": "Tarde",
+        "destino": "Descanso"
+      }
+    ],
+    "observaciones": "",
+    "estado": "rechazada",
+    "created_at": "2026-04-21T18:46:30.793543+00:00",
+    "updated_at": "2026-04-21T19:09:04.708+00:00",
+    "solicitante_uuid": "2166b0e8-b626-4dc8-9fee-7c7ea47b7202",
+    "companero_uuid": "b06919a4-fc9c-4213-bc43-2cfb05c2cfb3"
+  },
+  {
+    "id": "3b4c0beb-19e2-4e0b-8af8-7d2751f30848",
+    "solicitante": "Dani",
+    "companero": "Federico",
+    "hotel": "Sercotel Guadiana",
+    "fechas": [
+      {
+        "nota": "",
+        "fecha": "2026-04-25",
+        "origen": "Mañana",
+        "destino": "Tarde"
+      }
+    ],
+    "observaciones": "",
+    "estado": "pendiente",
+    "created_at": "2026-04-25T10:43:12.07913+00:00",
+    "updated_at": "2026-04-25T10:43:12.07913+00:00",
+    "solicitante_uuid": "2166b0e8-b626-4dc8-9fee-7c7ea47b7202",
+    "companero_uuid": "37d7dd93-4845-4f5c-998c-cb4ca0420297"
+  },
+  {
+    "id": "8d2825ba-b722-4e11-adad-c2d216b42804",
+    "solicitante": "Dani",
+    "companero": "Macarena",
+    "hotel": "Sercotel Guadiana",
+    "fechas": [
+      {
+        "nota": "",
+        "fecha": "2026-04-25",
+        "origen": "—",
+        "destino": "Mañana"
+      }
+    ],
+    "observaciones": "Prueba controlada de solicitud de cambio",
+    "estado": "aprobada",
+    "created_at": "2026-04-25T13:24:48.591339+00:00",
+    "updated_at": "2026-04-25T13:24:48.591339+00:00",
+    "solicitante_uuid": "2166b0e8-b626-4dc8-9fee-7c7ea47b7202",
+    "companero_uuid": "b06919a4-fc9c-4213-bc43-2cfb05c2cfb3"
+  },
+  {
+    "id": "7c8ff9e7-9d3f-4279-9519-80cd30549b56",
+    "solicitante": "Test Reject",
+    "companero": "Macarena",
+    "hotel": "Sercotel Guadiana",
+    "fechas": [
+      {
+        "fecha": "2026-04-26",
+        "origen": "Tarde",
+        "destino": "Descanso"
+      }
+    ],
+    "observaciones": "Prueba de rechazo",
+    "estado": "rechazada",
+    "created_at": "2026-04-25T13:42:16.787263+00:00",
+    "updated_at": "2026-04-25T13:42:16.787263+00:00",
+    "solicitante_uuid": null,
+    "companero_uuid": "b06919a4-fc9c-4213-bc43-2cfb05c2cfb3"
+  },
+  {
+    "id": "2d4f99c8-8592-4182-959c-50f13afce9cb",
+    "solicitante": "Dani",
+    "companero": "Diana",
+    "hotel": "Sercotel Guadiana",
+    "fechas": [
+      {
+        "nota": "",
+        "fecha": "2026-04-27",
+        "origen": "D",
+        "destino": "Tarde"
+      },
+      {
+        "nota": "",
+        "fecha": "2026-04-29",
+        "origen": "M",
+        "destino": "Descanso"
+      }
+    ],
+    "observaciones": "prueba",
+    "estado": "pendiente",
+    "created_at": "2026-04-26T15:51:32.867043+00:00",
+    "updated_at": "2026-04-26T15:51:32.867043+00:00",
+    "solicitante_uuid": null,
+    "companero_uuid": null
+  }
+]

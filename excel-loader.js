@@ -6,7 +6,7 @@
    Caché global: window._sharedExcelSourceRows
 */
 (function () {
-    const EXCEL_FILE = 'Plantilla%20Cuadrante%20Turnos%20v.8.0.xlsx';
+    const EXCEL_FILE = 'V.9-Turnos.xlsx';
     const HOTEL_SHEETS = ['Cumbria Spa&Hotel', 'Sercotel Guadiana'];
 
     /**

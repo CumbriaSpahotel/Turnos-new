@@ -1,9 +1,733 @@
+
+window.formatDisplayName = (name) => {
+    if (!name) return '';
+    return name.replace(/_DUP_.*$/, '').replace(/_CT$/, '').replace(/_/g, ' ').trim();
+};
+window.$ = (s) => document.querySelector(s);
+window.$$ = (s) => document.querySelectorAll(s);
+window.safeGet = (id) => document.getElementById(id) || { textContent: '', style: {}, innerHTML: '', value: '' };
+window.isoDate = (date) => {
+    if (!date) return null;
+    const d = (typeof date === 'string') ? new Date(date) : date;
+    if (isNaN(d.getTime())) return null;
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+};
+window.fmtDateLegacy = (dateStr) => {
+    if (!dateStr) return '—';
+    const parts = dateStr.split('-');
+    if (parts.length !== 3) return dateStr;
+    return `${parts[2]}/${parts[1]}/${parts[0].slice(2)}`;
+};
+
+window._previewMode = 'weekly';
+window._previewDate = window.isoDate(new Date()); 
+
+
+
+window.getWeekStartISO = (date) => {
+    const d = new Date(date + 'T12:00:00');
+    const day = d.getDay();
+    const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+    return window.isoDate(new Date(d.setDate(diff)));
+};
+
+window.getDayOffsetFromWeek = (weekStart, date) => {
+    const s = new Date(weekStart + 'T12:00:00');
+    const d = new Date(date + 'T12:00:00');
+    return Math.round((d - s) / 86400000);
+};
+
+window.addIsoDays = (iso, days) => {
+    const d = new Date(iso + 'T12:00:00');
+    d.setDate(d.getDate() + days);
+    return window.isoDate(d);
+};
+
+window.getFechasSemana = (weekStart) => {
+    return [0,1,2,3,4,5,6].map(i => window.addIsoDays(weekStart, i));
+};
+
+window.getMonday = (date) => {
+    const d = new Date(date);
+    const day = d.getDay();
+    const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+    return new Date(d.setDate(diff));
+};
+
+window.escapeHtml = (text) => {
+    if (!text) return '';
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+};
+
+window.addLog = (msg, type = 'info') => {
+    console.log(`[${type.toUpperCase()}] ${msg}`);
+    const timeline = document.getElementById('dashboard-timeline');
+    if (timeline) {
+        const item = document.createElement('div');
+        item.className = `activity-log-item ${type}`;
+        item.style = 'padding: 10px 20px; border-bottom: 1px solid #eee; font-size: 0.8rem;';
+        item.innerHTML = `<strong>${new Date().toLocaleTimeString()}</strong> ${msg}`;
+        timeline.prepend(item);
+    }
+};
+
+window.getAvailableHotels = async () => {
+    try {
+        const hotels = await window.TurnosDB.getHotels();
+        if (hotels && hotels.length > 0) return hotels;
+    } catch(e) {}
+    return ['Cumbria Spa&Hotel', 'Sercotel Guadiana'];
+};
+
+
+// --- V9 EXCEL ORDER MAP HELPERS ---
+window.v9ExcelOrderMap = null;
+
+window.normalizeForV9 = (text) => {
+    if (!text) return '';
+    return String(text)
+        .trim()
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '') // Quitar tildes
+        .replace(/\s+/g, ' '); // Colapsar espacios
+};
+
+window.loadV9ExcelOrderMap = async () => {
+    if (window.v9ExcelOrderMap) return window.v9ExcelOrderMap;
+    try {
+        console.log("[V9_ORDER] Cargando mapa de orden desde data/v9_excel_order_map.json...");
+        const response = await fetch('data/v9_excel_order_map.json');
+        if (!response.ok) throw new Error('No se pudo cargar el archivo');
+        const data = await response.json();
+        
+        // Indexar para búsqueda rápida: "hotel|week|empleado" -> order
+        const map = new Map();
+        data.forEach(item => {
+            const h = window.normalizeForV9(item.hotel);
+            const w = item.week_start; // Ya es ISO YYYY-MM-DD
+            const e = window.normalizeForV9(item.empleado_id);
+            map.set(`${h}|${w}|${e}`, item.order);
+        });
+        
+        window.v9ExcelOrderMap = map;
+        console.log(`[V9_ORDER] Mapa cargado: ${map.size} entradas.`);
+        return map;
+    } catch (err) {
+        console.warn("[V9_ORDER] No se pudo cargar mapa de orden. Usando fallback.", err);
+        window.v9ExcelOrderMap = new Map();
+        return window.v9ExcelOrderMap;
+    }
+};
+
+window.getV9ExcelOrder = (hotel, weekStart, empleado) => {
+    if (!window.v9ExcelOrderMap) return null;
+    const h = window.normalizeForV9(hotel);
+    const w = weekStart;
+    const e = window.normalizeForV9(empleado);
+    return window.v9ExcelOrderMap.get(`${h}|${w}|${e}`) || null;
+};
+
+// --- FIN V9 HELPERS ---
+
+// --- FIX DATA
+
+// ==========================================
+// MÓDULO: ESTADO DE CONEXIÓN SUPABASE
+// ==========================================
+window.connectionState = {
+    status: 'connecting',
+    checkedAt: null,
+    message: ''
+};
+
+window.updateConnectionUI = (status, msg = '') => {
+    window.connectionState.status = status;
+    window.connectionState.checkedAt = new Date();
+    window.connectionState.message = msg;
+
+    const dot = document.getElementById('syncDot');
+    const text = document.getElementById('syncText');
+    const kpi = document.getElementById('stat-cloud-status');
+    const container = document.getElementById('syncStatus');
+
+    if (!dot || !text) return;
+
+    const config = {
+        connecting: { color: '#f59e0b', text: 'Conectando...', kpi: '...' },
+        connected: { color: '#10b981', text: 'Supabase conectado', kpi: 'Online' },
+        error: { color: '#ef4444', text: 'Error de conexión', kpi: 'Offline' },
+        unconfigured: { color: '#64748b', text: 'Sin configurar', kpi: 'N/A' }
+    };
+
+    const state = config[status] || config.error;
+    dot.style.background = state.color;
+    text.textContent = state.text;
+    if (kpi) {
+        kpi.textContent = state.kpi;
+        kpi.style.color = state.color;
+    }
+
+    if (status === 'error') {
+        container.title = msg;
+        if (!document.getElementById('btn-retry-conn')) {
+            const btn = document.createElement('button');
+            btn.id = 'btn-retry-conn';
+            btn.innerHTML = '<i class="fas fa-sync-alt"></i>';
+            btn.style = 'margin-left:8px; border:none; background:none; color:var(--text-dim); cursor:pointer; font-size:0.7rem;';
+            btn.onclick = (e) => {
+                e.stopPropagation();
+                window.checkSupabaseConnection();
+            };
+            container.appendChild(btn);
+        }
+    } else {
+        const btn = document.getElementById('btn-retry-conn');
+        if (btn) btn.remove();
+    }
+};
+
+window.checkSupabaseConnection = async () => {
+    window.updateConnectionUI('connecting');
+    
+    const timeout = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Tiempo de espera agotado al conectar con Supabase')), 5000)
+    );
+
+    try {
+        if (!window.supabase || !window.TurnosDB) {
+            throw new Error('Cliente Supabase no inicializado');
+        }
+
+        // Prueba real de consulta
+        const query = window.supabase.from('empleados').select('count', { count: 'exact', head: true });
+        await Promise.race([query, timeout]);
+        
+        window.updateConnectionUI('connected');
+        console.log("[CONN] Supabase conectado correctamente.");
+    } catch (err) {
+        console.error("[CONN ERROR]", err);
+        const isConfigError = err.message.includes('URL') || err.message.includes('Key');
+        window.updateConnectionUI(isConfigError ? 'unconfigured' : 'error', err.message);
+        
+        if (window.addLog) window.addLog(`Fallo de conexión: ${err.message}`, 'error');
+    }
+};
+// Ejecutar una vez al cargar para limpiar el error reportado por el usuario
+(async function fixNataliaTypo() {
+    try {
+        const emps = await window.TurnosDB.getEmpleados();
+        window.empleadosGlobales = emps;
+        const natalia = emps.find(e => e.nombre === 'Natalia' || e.id === 'Natalia');
+        const natalio = emps.find(e => e.nombre === 'Natalio' || e.id === 'Natalio');
+        
+        if (natalia) {
+            console.log("Corrigiendo typo Natalia -> Natalio en empleados...");
+            await window.TurnosDB.upsertEmpleado({
+                ...natalia,
+                nombre: 'Natalio',
+                id_interno: natalia.id_interno || natalia.id
+            });
+            
+            // MIGRACIÓN DE EVENTOS: Renombrar en eventos donde aparezca como empleado o sustituto
+            const events = await window.TurnosDB.fetchEventos("2024-01-01", "2026-12-31");
+            const toUpdate = events.filter(ev => ev.empleado_id === 'Natalia' || ev.empleado_destino_id === 'Natalia');
+            if (toUpdate.length > 0) {
+                console.log(`Actualizando ${toUpdate.length} eventos de Natalia -> Natalio...`);
+                for (const ev of toUpdate) {
+                    const updated = { ...ev };
+                    if (ev.empleado_id === 'Natalia') updated.empleado_id = 'Natalio';
+                    if (ev.empleado_destino_id === 'Natalia') updated.empleado_destino_id = 'Natalio';
+                    await window.TurnosDB.upsertEvento(updated);
+                }
+            }
+        }
+    } catch(e) { console.warn("Error en auto-fix Natalia:", e); }
+})();
+
+window.renderVacations = async () => {
+    const area = $('#vacations-content');
+    if (!area) return;
+    area.innerHTML = '<div style="padding:4rem; text-align:center; opacity:0.5;"><i class="fas fa-spinner fa-spin"></i> Cargando vacaciones premium...</div>';
+    
+    try {
+        const [employees, hotels] = await Promise.all([
+            window.TurnosDB.getEmpleados(),
+            window.TurnosDB.getHotels()
+        ]);
+
+        const hotel = $('#vacHotel')?.value || 'all';
+        const emp = $('#vacEmp')?.value || 'all';
+        const selectedYear = Number($('#vacYear')?.value || new Date().getFullYear());
+        const status = $('#vacStatus')?.value || 'pending';
+        const start = `${selectedYear}-01-01`;
+        const end = `${selectedYear}-12-31`;
+        const todayKey = new Date().toISOString().split('T')[0];
+
+        // Fetch de eventos tipo VAC
+        const eventos = await window.TurnosDB.fetchEventos(start, end);
+        const ESTADO_EXCLUIDO = /^(anulad|rechazad|cancelad)/i;
+        
+        const vacEventos = eventos.filter(ev => 
+            String(ev.tipo || '').toUpperCase().startsWith('VAC') && 
+            !ESTADO_EXCLUIDO.test(ev.estado || '')
+        );
+
+        // Mapear a periodos
+        const groupedVacs = window.groupConsecutiveEvents(vacEventos);
+        const allPeriods = groupedVacs.map(ev => ({
+            id:        ev.id,
+            ids:       ev.ids || [ev.id],
+            isGroup:   ev.isGroup || false,
+            empId:     ev.empleado_id,
+            hotel:     ev.hotel_origen || ev.payload?.hotel_id || 'General',
+            start:     ev.fecha_inicio,
+            end:       ev.fecha_fin || ev.fecha_inicio,
+            days:      Math.max(1, Math.round((new Date((ev.fecha_fin || ev.fecha_inicio) + 'T12:00:00') - new Date(ev.fecha_inicio + 'T12:00:00')) / 86400000) + 1),
+            sustituto: ev.empleado_destino_id || ev.payload?.sustituto || '',
+            estado:    ev.estado || 'activo'
+        }));
+
+        // Filtrado local
+        let visible = allPeriods.filter(p => {
+            if (hotel !== 'all' && p.hotel !== hotel) return false;
+            if (emp !== 'all' && p.empId !== emp) return false;
+            if (status === 'pending') return p.end >= todayKey;
+            if (status === 'past') return p.end < todayKey;
+            return true;
+        });
+        visible.sort((a,b) => a.start.localeCompare(b.start));
+        _visibleVacationPeriods = visible;
+
+        // Renderizado de UI
+        const years = [];
+        const currentYear = new Date().getFullYear();
+        for(let y=currentYear-1; y<=currentYear+2; y++) years.push(y);
+
+        area.innerHTML = `
+            <!-- ALTA FORM -->
+            <section class="glass-panel" style="padding:12px 18px; margin-bottom:12px; border:1px solid var(--border); border-radius:12px;">
+                <div style="display:flex; justify-content:space-between; gap:12px; align-items:center; flex-wrap:wrap; margin-bottom:10px;">
+                    <h2 id="vacFormTitle" style="margin:0; font-size:1rem;">Alta de vacaciones</h2>
+                    <div id="vacFormStatus" style="font-size:0.8rem;"></div>
+                </div>
+                <form id="vacCreateForm" style="display:grid; grid-template-columns:repeat(6, minmax(140px, 1fr)); gap:12px; align-items:end;" onsubmit="window.saveVacation(event)">
+                    <label class="form-label-premium">Empleado
+                        <select id="newVacEmp" class="btn-premium" required onchange="window.syncVacationFormHotel()"></select>
+                    </label>
+                    <label class="form-label-premium">Hotel
+                        <select id="newVacHotel" class="btn-premium" required></select>
+                    </label>
+                    <label class="form-label-premium">Rango de Vacaciones
+                        <input id="newVacRange" type="text" placeholder="Seleccionar periodo..." class="btn-premium" readonly style="width:240px; cursor:pointer;">
+                        <input id="newVacStart" type="hidden">
+                        <input id="newVacEnd" type="hidden">
+                    </label>
+                    <label class="form-label-premium">Sustituto
+                        <select id="newVacSub" class="btn-premium"></select>
+                    </label>
+                    <div style="display:flex; gap:5px;">
+                        <button id="btnCreateVac" class="btn-publish-premium" type="submit" style="flex:1; margin:0;">Guardar</button>
+                        <button id="btnCancelEditVac" class="btn-premium" type="button" style="display:none; padding:10px;" onclick="window.resetVacationForm()">✖</button>
+                    </div>
+                </form>
+            </section>
+
+            <!-- FILTROS -->
+            <section class="glass-panel" style="padding:10px 18px; margin-bottom:12px; border:1px solid var(--border); border-radius:12px;">
+                <div style="display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap;">
+                    <div>
+                        <h2 style="margin:0; font-size:1rem;">Gestión anual de vacaciones</h2>
+                    </div>
+                    <div class="header-controls" style="display:flex; gap:8px;">
+                        <select id="vacHotel" class="btn-premium" onchange="window.renderVacations()">
+                            <option value="all">Todos los Hoteles</option>
+                            ${hotels.map(h => `<option value="${h}" ${hotel === h ? 'selected' : ''}>${h}</option>`).join('')}
+                        </select>
+                        <select id="vacEmp" class="btn-premium" onchange="window.renderVacations()">
+                            <option value="all">Todos los Empleados</option>
+                            ${employees.map(e => `<option value="${e.id}" ${emp === e.id ? 'selected' : ''}>${e.nombre || e.id}</option>`).join('')}
+                        </select>
+                        <select id="vacYear" class="btn-premium" onchange="window.renderVacations()">
+                            ${years.map(y => `<option value="${y}" ${selectedYear === y ? 'selected' : ''}>${y}</option>`).join('')}
+                        </select>
+                        <select id="vacStatus" class="btn-premium" onchange="window.renderVacations()">
+                            <option value="pending" ${status === 'pending' ? 'selected' : ''}>Pendientes</option>
+                            <option value="past" ${status === 'past' ? 'selected' : ''}>Pasadas</option>
+                            <option value="all" ${status === 'all' ? 'selected' : ''}>Todas</option>
+                        </select>
+                    </div>
+                </div>
+            </section>
+
+            <!-- KPIs -->
+            <div style="display:grid; grid-template-columns:repeat(3, minmax(180px, 1fr)); gap:12px; margin-bottom:14px;">
+                <div class="glass-panel" style="padding:16px; border:1px solid var(--border); border-radius:15px;">
+                    <div style="font-size:0.7rem; color:var(--text-dim); font-weight:800; text-transform:uppercase;">Periodos</div>
+                    <div style="font-size:2rem; font-weight:900; margin-top:4px;">${visible.length}</div>
+                </div>
+                <div class="glass-panel" style="padding:16px; border:1px solid var(--border); border-radius:15px;">
+                    <div style="font-size:0.7rem; color:var(--text-dim); font-weight:800; text-transform:uppercase;">Personas</div>
+                    <div style="font-size:2rem; font-weight:900; margin-top:4px;">${new Set(visible.map(p => p.empId)).size}</div>
+                </div>
+                <div class="glass-panel" style="padding:16px; border:1px solid var(--border); border-radius:15px;">
+                    <div style="font-size:0.7rem; color:var(--text-dim); font-weight:800; text-transform:uppercase;">Próxima salida</div>
+                    <div style="font-size:1.15rem; font-weight:900; margin-top:8px;">${visible.length ? visible[0].empId : '—'}</div>
+                </div>
+            </div>
+
+            <!-- TABLA -->
+            <div class="glass-panel" style="padding:0; overflow:hidden; border-radius:15px; border:1px solid var(--border);">
+                <table class="preview-table" style="width:100%; border-collapse:collapse;">
+                    <thead>
+                        <tr style="background:var(--bg3);">
+                            <th style="padding:1rem; text-align:left; font-size:0.7rem; color:var(--text-dim); text-transform:uppercase;">Empleado</th>
+                            <th style="padding:1rem; text-align:left; font-size:0.7rem; color:var(--text-dim); text-transform:uppercase;">Hotel</th>
+                            <th style="padding:1rem; text-align:left; font-size:0.7rem; color:var(--text-dim); text-transform:uppercase;">Sustituto</th>
+                            <th style="padding:1rem; text-align:center; font-size:0.7rem; color:var(--text-dim); text-transform:uppercase;">Estado</th>
+                            <th style="padding:1rem; text-align:center; font-size:0.7rem; color:var(--text-dim); text-transform:uppercase;">Periodo / Duración</th>
+                            <th style="padding:1rem; text-align:center; font-size:0.7rem; color:var(--text-dim); text-transform:uppercase;">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${visible.map((p, idx) => `
+                            <tr style="border-top:1px solid var(--border);">
+                                <td style="padding:1rem; font-weight:700; color:var(--accent);">${p.empId}</td>
+                                <td style="padding:1rem; font-size:0.85rem;">${p.hotel}</td>
+                                <td style="padding:1rem; font-size:0.85rem; color:var(--text-dim);">${p.sustituto || '—'}</td>
+                                <td style="padding:1rem; text-align:center;">
+                                    <span style="background:${p.end >= todayKey ? 'rgba(16,185,129,0.1)' : 'rgba(255,255,255,0.05)'}; color:${p.end >= todayKey ? '#10b981' : 'var(--text-dim)'}; padding:4px 10px; border-radius:8px; font-weight:800; font-size:0.6rem;">
+                                        ${p.end >= todayKey ? 'PENDIENTE' : 'PASADA'}
+                                    </span>
+                                </td>
+                                <td style="padding:1rem; text-align:center;">
+                                    <div style="font-weight:700;">${window.fmtDateLegacy(p.start)} — ${window.fmtDateLegacy(p.end)}</div>
+                                    <div style="font-size:0.65rem; color:var(--text-dim); margin-top:4px; font-weight:700;">${Math.round((new Date(p.end + 'T12:00:00') - new Date(p.start + 'T12:00:00')) / 86400000) + 1} DÍAS</div>
+                                </td>
+                                <td style="padding:1rem; text-align:center;">
+                                    <button class="btn-premium" onclick="window.editVacationByIndex(${idx})" style="padding:5px 10px; font-size:0.7rem;">Gestionar</button>
+                                    <button class="btn-premium" onclick="window.cancelVacationGroup(${idx})" style="padding:5px 10px; font-size:0.7rem; color:var(--danger);">Anular</button>
+                                </td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            </div>
+        `;
+
+        // Llenar selects del form
+        const newVacEmp = $('#newVacEmp');
+        const newVacHotel = $('#newVacHotel');
+        const newVacSub = $('#newVacSub');
+        if (newVacEmp) {
+            newVacEmp.innerHTML = `<option value="" disabled selected>Seleccionar empleado...</option>` + 
+                employees.map(e => `<option value="${e.id}">${e.nombre || e.id}</option>`).join('');
+        }
+        if (newVacHotel) {
+            newVacHotel.innerHTML = `<option value="" disabled selected>Hotel...</option>` + 
+                hotels.map(h => `<option value="${h}">${h}</option>`).join('');
+        }
+        window.syncVacationFormHotel();
+
+        // Inicializar Flatpickr para el rango con estilo premium
+        flatpickr("#newVacRange", {
+            mode: "range",
+            dateFormat: "Y-m-d",
+            altInput: true,
+            altFormat: "d/m/y",
+            locale: "es",
+            monthSelectorType: "static",
+            animate: true,
+            onClose: (selectedDates) => {
+                if (selectedDates.length === 2) {
+                    $('#newVacStart').value = window.isoDate(selectedDates[0]);
+                    $('#newVacEnd').value = window.isoDate(selectedDates[1]);
+                } else {
+                    $('#newVacStart').value = "";
+                    $('#newVacEnd').value = "";
+                }
+            }
+        });
+
+    } catch (e) { 
+        console.error(e);
+        area.innerHTML = '<div style="color:var(--danger); padding:2rem;">Error: ' + e.message + '</div>'; 
+    }
+};
+
+window.syncVacationFormHotel = async () => {
+    const empId = $('#newVacEmp')?.value;
+    if (!empId) return;
+    const emps = await window.TurnosDB.getEmpleados();
+    const profile = emps.find(e => e.id === empId);
+    if (profile?.hotel_id && $('#newVacHotel')) $('#newVacHotel').value = profile.hotel_id;
+
+    const subSelect = $('#newVacSub');
+    if (subSelect) {
+        subSelect.innerHTML = `<option value="">Sin sustituto asignado</option>` + 
+            emps.filter(e => e.id !== empId).map(e => `<option value="${e.id}">${e.nombre || e.id}</option>`).join('');
+    }
+};
+
+window.saveVacation = async (e) => {
+    e.preventDefault();
+    const btn = $('#btnCreateVac');
+    const form = $('#vacCreateForm');
+    const statusBox = $('#vacFormStatus');
+    
+    try {
+        btn.disabled = true;
+        btn.textContent = 'Guardando...';
+        
+        const payload = {
+            tipo: 'VAC',
+            empleado_id: $('#newVacEmp').value,
+            hotel_origen: $('#newVacHotel').value,
+            fecha_inicio: $('#newVacStart').value,
+            fecha_fin: $('#newVacEnd').value,
+            empleado_destino_id: $('#newVacSub').value || null,
+            estado: 'activo'
+        };
+
+        if (!payload.fecha_inicio || !payload.fecha_fin) {
+            alert("Por favor, selecciona un rango de fechas válido en el calendario.");
+            return;
+        }
+
+        if (_editingVacationPeriod?.id) {
+            await window.TurnosDB.anularEvento(_editingVacationPeriod.id);
+        }
+
+        await window.TurnosDB.upsertEvento(payload);
+        
+        statusBox.innerHTML = '<span style="color:#10b981;">✓ Vacaciones guardadas</span>';
+        window.resetVacationForm();
+        await window.renderVacations();
+        
+    
+        // --- BLOQUE E: ACCIONES RÁPIDAS ---
+        const quickActions = $('#dashboard-quick-actions');
+        if (quickActions) {
+            quickActions.innerHTML = `
+                <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap:15px;">
+                    <button class="btn-premium" onclick="window.switchSection('excel')" style="height:100px; flex-direction:column; gap:8px;"><i class="fas fa-file-excel fa-2x"></i><span>Gestión Excel</span></button>
+                    <button class="btn-premium" onclick="window.switchSection('preview')" style="height:100px; flex-direction:column; gap:8px;"><i class="fas fa-calendar-alt fa-2x"></i><span>Vista Previa</span></button>
+                    <button class="btn-premium" onclick="window.switchSection('employees')" style="height:100px; flex-direction:column; gap:8px;"><i class="fas fa-users fa-2x"></i><span>Empleados</span></button>
+                    <button class="btn-premium" onclick="window.open('https://cumbriaspahotel.github.io/Turnos-new/', '_blank', 'noopener,noreferrer')" style="height:100px; flex-direction:column; gap:8px; background:var(--accent); color:white;"><i class="fas fa-external-link-alt fa-2x"></i><span>Vista Pública</span></button>
+                </div>
+            `;
+        }
+    } catch (err) {
+        statusBox.innerHTML = `<span style="color:var(--danger);">Error: ${err.message}</span>`;
+    } finally {
+        btn.disabled = false;
+        btn.textContent = _editingVacationPeriod ? 'Actualizar' : 'Guardar';
+    }
+};
+
+window.editVacationByIndex = async (idx) => {
+    const p = _visibleVacationPeriods[idx];
+    if (!p) return;
+    _editingVacationPeriod = p;
+    
+    $('#newVacEmp').value = p.empId;
+    await window.syncVacationFormHotel(); // Esperar a que se cargue el select de sustitutos
+    
+    $('#newVacHotel').value = p.hotel;
+    $('#newVacStart').value = p.start;
+    $('#newVacEnd').value = p.end;
+    $('#newVacSub').value = p.sustituto || '';
+    
+    // Sincronizar Flatpickr
+    const fp = document.querySelector("#newVacRange")._flatpickr;
+    if (fp) fp.setDate([p.start, p.end]);
+    
+    $('#vacFormTitle').textContent = `Editando vacaciones de ${p.empId}`;
+    $('#btnCreateVac').textContent = 'Actualizar';
+    $('#btnCancelEditVac').style.display = 'block';
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+};
+
+window.resetVacationForm = () => {
+    _editingVacationPeriod = null;
+    $('#vacCreateForm')?.reset();
+    $('#vacFormTitle').textContent = 'Alta de vacaciones';
+    $('#btnCreateVac').textContent = 'Guardar';
+    $('#btnCancelEditVac').style.display = 'none';
+};
+
+window.cancelVacationByIndex = async (idx) => {
+    const p = _visibleVacationPeriods[idx];
+    if (!p || !confirm(`¿Anular las vacaciones de ${p.empId}?`)) return;
+    try {
+        if (p.id) await window.TurnosDB.anularEvento(p.id);
+        else await window.TurnosDB.deleteVacacionesPeriodo({ empleado_id: p.empId, fecha_inicio: p.start, fecha_fin: p.end });
+        await window.renderVacations();
+    } catch (e) { alert('Error: ' + e.message); }
+};
+
+// --- BAJAS ---
+
+window.renderBajas = async () => {
+    const area = $('#absences-content');
+    if (!area) return;
+    area.innerHTML = '<div style="padding:4rem; text-align:center; opacity:0.5;"><i class="fas fa-spinner fa-spin"></i> Cargando ausencias premium...</div>';
+    
+    try {
+        const hotel  = $('#bjHotel')?.value  || 'all';
+        const emp    = $('#bjEmp')?.value    || 'all';
+        const status = $('#bjStatus')?.value || 'all';
+        const range  = $('#bjRange')?.value  || '';
+        
+        const now = new Date();
+        const isoNow = window.isoDate(now);
+
+        let start = null, end = null;
+        if (range.includes(' a ')) [start, end] = range.split(' a ');
+        
+        // POR DEFECTO: SI NO HAY RANGO, MOSTRAR DESDE HOY
+        if (!range && status === 'all') {
+            start = isoNow;
+        }
+
+        let rawData = await window.TurnosDB.fetchBajasPermisos({
+            hotel: hotel !== 'all' ? hotel : null,
+            empleado: emp !== 'all' ? emp : null,
+            estadoFiltro: status,
+            fechaInicio: start,
+            fechaFin: end
+        });
+        const data = window.groupConsecutiveEvents(rawData);
+
+        // Llenar filtros del header si existen
+        const hotelSelect = $('#bjHotel');
+        const empSelect = $('#bjEmp');
+        if (hotelSelect && empSelect && hotelSelect.options.length <= 1) {
+            const [hotels, employees] = await Promise.all([window.TurnosDB.getHotels(), window.TurnosDB.getEmpleados()]);
+            hotelSelect.innerHTML = `<option value="all">Todos los Hoteles</option>` + hotels.map(h => `<option value="${h}">${h}</option>`).join('');
+            empSelect.innerHTML = `<option value="all">Todos los Empleados</option>` + employees.map(e => `<option value="${e.id}">${e.nombre || e.id}</option>`).join('');
+
+            
+            // Init flatpickr for range
+            if (window.flatpickr) {
+                window.flatpickr("#bjRange", {
+                    mode: "range", dateFormat: "Y-m-d",
+                    locale: "es",
+                    onChange: () => window.renderBajas()
+                });
+            }
+        }
+
+        if (data.length === 0) {
+            area.innerHTML = '<div style="padding:4rem; text-align:center; opacity:0.5;">No hay registros de bajas o permisos.</div>';
+            return;
+        }
+
+        data.sort((a,b) => b.fecha_inicio.localeCompare(a.fecha_inicio));
+
+        area.innerHTML = `
+            <div class="glass-panel" style="padding:0; overflow:hidden; border-radius:15px; border:1px solid var(--border);">
+                <table class="preview-table" style="width:100%; border-collapse:collapse;">
+                    <thead>
+                        <tr style="background:var(--bg3);">
+                            <th style="padding:1rem; text-align:left; font-size:0.7rem; color:var(--text-dim); text-transform:uppercase;">Tipo</th>
+                            <th style="padding:1rem; text-align:left; font-size:0.7rem; color:var(--text-dim); text-transform:uppercase;">Empleado</th>
+                            <th style="padding:1rem; text-align:left; font-size:0.7rem; color:var(--text-dim); text-transform:uppercase;">Hotel</th>
+                            <th style="padding:1rem; text-align:center; font-size:0.7rem; color:var(--text-dim); text-transform:uppercase;">Periodo</th>
+                            <th style="padding:1rem; text-align:left; font-size:0.7rem; color:var(--text-dim); text-transform:uppercase;">Sustituto</th>
+                            <th style="padding:1rem; text-align:center; font-size:0.7rem; color:var(--text-dim); text-transform:uppercase;">Estado</th>
+                            <th style="padding:1rem; text-align:center; font-size:0.7rem; color:var(--text-dim); text-transform:uppercase;">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${data.map(b => `
+                            <tr style="border-top:1px solid var(--border);">
+                                <td style="padding:1rem;">
+                                    <span style="background:${b.tipo.includes('BAJA') ? 'rgba(239,68,68,0.1)' : 'rgba(139,92,246,0.1)'}; color:${b.tipo.includes('BAJA') ? '#f87171' : '#a78bfa'}; padding:4px 10px; border-radius:8px; font-weight:800; font-size:0.6rem;">
+                                        ${b.tipo}
+                                    </span>
+                                </td>
+                                <td style="padding:1rem; font-weight:700;">${b.empleado_id}</td>
+                                <td style="padding:1rem; font-size:0.85rem; color:var(--text-dim);">${b.hotel_origen || 'General'}</td>
+                                <td style="padding:1rem; text-align:center;">
+                                    <div style="font-weight:600;">${window.fmtDateLegacy(b.fecha_inicio)} — ${window.fmtDateLegacy(b.fecha_fin || b.fecha_inicio)}</div>
+                                    <div style="font-size:0.65rem; color:var(--text-dim); margin-top:4px; font-weight:700;">${Math.round((new Date((b.fecha_fin || b.fecha_inicio) + 'T12:00:00') - new Date(b.fecha_inicio + 'T12:00:00')) / 86400000) + 1} DÍAS ${b.isGroup ? '(Agrupados)' : 'NATURALES'}</div>
+                                </td>
+                                <td style="padding:1rem; font-size:0.85rem;">${b.empleado_destino_id || '—'}</td>
+                                <td style="padding:1rem; text-align:center;">
+                                    <span style="background:${b.estado === 'anulado' ? 'rgba(239,68,68,0.1)' : 'rgba(16,185,129,0.1)'}; color:${b.estado === 'anulado' ? '#ef4444' : '#10b981'}; padding:4px 10px; border-radius:8px; font-weight:800; font-size:0.6rem;">
+                                        ${(b.estado || 'activo').toUpperCase()}
+                                    </span>
+                                </td>
+                                <td style="padding:1rem; text-align:center;">
+                                    <button class="btn-premium" onclick="window.manageBajaGroup('${b.id}', ${JSON.stringify(b.ids || [b.id])})" style="padding:5px 10px; font-size:0.7rem;">Gestionar</button>
+                                </td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            </div>
+        `;
+    } catch (e) { area.innerHTML = '<div style="color:red; padding:2rem;">Error: ' + e.message + '</div>'; }
+};
+
+window.editBajaPeriod = async (id) => {
+    try {
+        const data = await window.TurnosDB.fetchEventos(); // Usamos fetchEventos general para máxima compatibilidad
+        const match = data.find(b => String(b.id) === String(id));
+        if (!match) return alert('No se encontró el registro: ' + id);
+
+        _editingBajaData = match;
+        $('#modalTitle').innerText = 'Gestionar Baja / Permiso';
+        $('#btnDeleteBaja').style.display = 'block';
+
+        // Llenar empleados y hoteles si no están listos
+        const [hotels, emps] = await Promise.all([window.TurnosDB.getHotels(), window.TurnosDB.getEmpleados()]);
+        $('#mbHotel').innerHTML = `<option value="" disabled>Seleccionar hotel...</option>` + hotels.map(h => `<option value="${h}" ${h === match.hotel_origen ? 'selected' : ''}>${h}</option>`).join('');
+        $('#mbEmp').innerHTML = `<option value="" disabled>Seleccionar empleado...</option>` + emps.map(e => `<option value="${e.id}" ${e.id === match.empleado_id ? 'selected' : ''}>${e.nombre || e.id}</option>`).join('');
+        $('#mbSustituto').innerHTML = `<option value="">Sin sustituto asignado</option>` + emps.map(e => `<option value="${e.id}" ${e.id === match.empleado_destino_id ? 'selected' : ''}>${e.nombre || e.id}</option>`).join('');
+
+        $('#mbTipo').value = match.tipo;
+        $('#mbDateStart').value = match.fecha_inicio;
+        $('#mbDateEnd').value = match.fecha_fin || match.fecha_inicio;
+        $('#mbObs').value = match.observaciones || '';
+
+        $('#modalBaja').style.display = 'flex';
+    } catch (err) {
+        alert('Error al cargar registro: ' + err.message);
+    }
+};
+
+window.deleteCurrentPeriod = async () => {
+    if (!_editingBajaData?.id) return;
+    if (!confirm('¿Seguro que deseas eliminar permanentemente este registro?')) return;
+    
+    const btn = $('#btnDeleteBaja');
+    try {
+        btn.disabled = true;
+        btn.textContent = 'Eliminando...';
+        await window.TurnosDB.anularEvento(_editingBajaData.id);
+        window.closeBajaPermisoModal();
+        await window.renderBajas();
+    } catch (e) { 
+        alert('Error: ' + e.message); 
+    } finally {
+        if (btn) {
+            btn.disabled = false;
+            btn.textContent = 'Eliminar este registro';
+        }
+    }
+};
 // ==========================================
 // 1. N�aCLEO Y CONFIGURACI�N GLOBAL
 // ==========================================
 window.parsedData = null;
-window.$ = (s) => document.querySelector(s);
-window.$$ = (s) => document.querySelectorAll(s);
+// (Utilidades movidas al inicio del archivo)
 
 window.cleanLogText = (value) => String(value ?? '')
     .normalize('NFD')
@@ -13,9 +737,1049 @@ window.cleanLogText = (value) => String(value ?? '')
 
 window.DEBUG_MODE = false;
 
+// --- NAVEGACIÓN ---
+window.switchSection = (id) => {
+    // Alias de navegación
+    const aliases = {
+        'control': 'home', 'panel-control': 'home', 'dashboard': 'home',
+        'gestion-excel': 'excel',
+        'vista-previa': 'preview',
+        'empleados': 'employees',
+        'cambios-turno': 'changes',
+        'vacaciones': 'vacations',
+        'bajas-permisos': 'bajas', 'leaves': 'bajas',
+        'solicitudes': 'requests',
+        'configuracion': 'config', 'settings': 'config'
+    };
+    const targetId = aliases[id] || id;
+
+    console.log(`[NAV] Cambiando a sección: ${targetId} (original: ${id})`);
+    const sections = document.querySelectorAll('.section');
+    const menuItems = document.querySelectorAll('.menu-item');
+    
+    sections.forEach(s => s.classList.remove('active'));
+    menuItems.forEach(m => m.classList.remove('active'));
+
+    const targetSec = document.getElementById(`section-${targetId}`);
+    if (targetSec) {
+        targetSec.classList.add('active');
+    } else {
+        console.warn(`[NAV] Sección section-${targetId} no encontrada en el DOM`);
+    }
+
+    // Activar el botón correspondiente en el sidebar
+    const targetBtn = Array.from(menuItems).find(m => {
+        const onClick = m.getAttribute('onclick') || '';
+        return onClick.includes(`'${id}'`) || onClick.includes(`"${id}"`) || onClick.includes(`'${targetId}'`) || onClick.includes(`"${targetId}"`);
+    });
+    if (targetBtn) targetBtn.classList.add('active');
+
+    if (targetId === 'home') window.renderDashboard?.();
+    if (targetId === 'excel') window.renderExcelView?.();
+    if (targetId === 'preview') window.renderPreview?.();
+    if (targetId === 'employees') window.populateEmployees?.();
+    if (targetId === 'changes') window.renderChanges?.();
+    if (targetId === 'requests') window.renderRequests?.();
+    if (targetId === 'vacations') window.renderVacations?.();
+    if (targetId === 'bajas') window.renderBajas?.();
+};
+
+/**
+ * Navegación inteligente desde el Dashboard a puntos específicos de conflicto.
+ */
+window.goToOperationalIssue = (empId, date, type) => {
+    console.log(`[NAVEGACIÓN] Dirigiendo a: ${empId}, Fecha: ${date}, Tipo: ${type}`);
+    
+    if (type === 'SIN_ID_INTERNO' || type === 'PLAZA_PENDIENTE') {
+        // Problemas de base de datos -> Ir al Excel
+        window.goToExcelRecord(empId, date);
+    } else if (date) {
+        // Problemas operativos puntuales -> Ir a la Vista Previa (Calendario)
+        window.goToPreviewRecord(empId, date);
+    } else {
+        // Problemas de perfil -> Ir a Empleados y abrir ficha
+        window.switchSection('employees');
+        window.openEmpDrawer(empId);
+    }
+};
+
+window.goToExcelRecord = (empId, date) => {
+    window.switchSection('excel');
+    window.excelFilters = window.excelFilters || {};
+    window.excelFilters.search = empId === '¿?' ? '' : empId; // No filtramos por '¿?' para ver el contexto
+    if (date) {
+        const month = date.slice(0, 7);
+        const monthInput = document.getElementById('excelMonth');
+        if (monthInput) monthInput.value = month;
+    }
+    window.renderExcelView();
+    
+    setTimeout(() => {
+        const rows = document.querySelectorAll('.excel-row-hover');
+        for (const row of rows) {
+            if (row.textContent.includes(empId)) {
+                row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                row.style.transition = 'background 0.5s';
+                row.style.background = '#fef3c7';
+                setTimeout(() => row.style.background = '', 3000);
+                break;
+            }
+        }
+    }, 600);
+};
+
+window.goToPreviewRecord = (empId, date) => {
+    window.switchSection('preview');
+    if (date) {
+        const monday = window.getWeekStartISO(date);
+        const input = document.getElementById('datePicker');
+        if (input) {
+            input.value = monday;
+            // Si flatpickr está activo, actualizarlo
+            if (input._flatpickr) input._flatpickr.setDate(monday);
+        }
+    }
+    window.renderPreview();
+    
+    setTimeout(() => {
+        const empRows = document.querySelectorAll('.employee-row-header, .puesto-row-header');
+        let found = false;
+        for (const row of empRows) {
+             if (row.textContent.toLowerCase().includes(empId.toLowerCase())) {
+                 row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                 const container = row.closest('.preview-row') || row.parentElement;
+                 container.style.transition = 'outline 0.3s';
+                 container.style.outline = '4px solid #3b82f6';
+                 container.style.outlineOffset = '-4px';
+                 container.style.borderRadius = '12px';
+                 container.style.zIndex = '10';
+                 setTimeout(() => {
+                     container.style.outline = 'none';
+                 }, 5000);
+                 found = true;
+                 break;
+             }
+        }
+        if (!found) console.warn(`[NAVEGACIÓN] No se encontró la fila para ${empId} en Vista Previa`);
+    }, 1200);
+};
+// ==========================================
+// MÓDULO: MODO EXCEL (RESTAURADO)
+// ==========================================
+window.renderExcelView = async () => {
+    const container = $('#excel-grid-container');
+    if (!container) return;
+
+    // Asegurar carga del mapa de orden V9
+    await window.loadV9ExcelOrderMap();
+    
+    const oldHotelSelect = $('#excelHotel');
+    const oldDateStart = $('#excelDateStart')?.value;
+    const oldDateEnd = $('#excelDateEnd')?.value;
+    const selectedHotel = oldHotelSelect?.value || 'all';
+
+    container.innerHTML = '<div style="padding: 2rem; text-align: center; color: var(--text-dim);"><i class="fas fa-spinner fa-spin"></i> Cargando Excel base...</div>';
+    
+    try {
+        let dateStart = oldDateStart;
+        let dateEnd = oldDateEnd;
+        if (!dateStart || !dateEnd) {
+            const now = new Date();
+            dateStart = window.isoDate(new Date(now.getFullYear(), now.getMonth(), 1));
+            dateEnd = window.isoDate(new Date(now.getFullYear(), now.getMonth() + 1, 0));
+        }
+
+        const wStartStr = window.getWeekStartISO(dateStart);
+        const wEndStr = window.isoDate(new Date(new Date(dateEnd + 'T12:00:00').getTime() + 7 * 86400000));
+        
+        let dbHotels = await window.getAvailableHotels();
+        const rawData = await window.TurnosDB.fetchTurnosBase(wStartStr, wEndStr, selectedHotel === 'all' ? null : selectedHotel);
+        
+        if (!window.excelFilters) window.excelFilters = { search: '', onlyPending: false };
+        // Helper: valid internal ID
+        const _hasValidId = (empId) => {
+            const profile = (window.empleadosGlobales || []).find(e => window.normalizeId(e.id) === window.normalizeId(empId) || window.normalizeId(e.nombre) === window.normalizeId(empId));
+            const idInt = String(profile?.id_interno || '').trim();
+            return /^EMP-\d{4,}$/.test(idInt);
+        };
+        if (window.pendingChangesCount === undefined) window.pendingChangesCount = 0;
+        
+        const getEmpLabel = (empId) => {
+            if (!empId) return 'Desconocido';
+            const profile = (window.empleadosGlobales || []).find(e => window.normalizeId(e.id) === window.normalizeId(empId) || window.normalizeId(e.nombre) === window.normalizeId(empId));
+            if (!profile) return `${empId} [${empId}]`;
+            const idInt = profile.id_interno || profile.id || empId;
+            return `${profile.nombre || empId} [${idInt}]`;
+        };
+        const TURNO_MAP = { 'M': 'Mañana', 'Mañana': 'Mañana', 'T': 'Tarde', 'Tarde': 'Tarde', 'N': 'Noche', 'Noche': 'Noche', 'D': 'Descanso', 'Descanso': 'Descanso', '-': 'Pendiente de asignar', '—': 'Pendiente de asignar', '': 'Pendiente de asignar', null: 'Pendiente de asignar' };
+        let totalPendientes = 0;
+        let totalSupportPendientes = 0;
+        let totalNoId = 0;
+        // PHASE 1: Group WITHOUT employee filter — to compute available employees
+        const grouped = {};
+        // Pre-compute support staff set for fast lookup
+        const _supportStaffSet = new Set();
+        (window.empleadosGlobales || []).forEach(emp => {
+            if (window.isEmpleadoOcasionalOApoyo && window.isEmpleadoOcasionalOApoyo(emp)) {
+                _supportStaffSet.add(window.normalizeId(emp.id));
+                if (emp.nombre) _supportStaffSet.add(window.normalizeId(emp.nombre));
+            }
+        });
+        const _isSupport = (empId) => _supportStaffSet.has(window.normalizeId(empId));
+        // Pre-compute no-ID set
+        const _noIdSet = new Set();
+
+        rawData.forEach(record => {
+            const empId = record.empleado_id || 'Desconocido';
+            if (empId.startsWith('_DUP') || empId.startsWith('Test_') || empId.startsWith('test_')) return;
+            const h = record.hotel_id || 'Sin Hotel';
+            if (selectedHotel !== 'all' && h !== selectedHotel) return;
+            const wStart = window.getWeekStartISO(record.fecha);
+            const val = record.turno || '—';
+            const isPending = (val === '—' || val === '-' || !val);
+            const isSupport = _isSupport(empId);
+            const hasId = _hasValidId(empId);
+            if (!hasId) _noIdSet.add(empId);
+            // Count pendientes within selected date range
+            if (isPending && record.fecha >= dateStart && record.fecha <= dateEnd) {
+                if (!hasId) { totalNoId++; }
+                else if (isSupport) { totalSupportPendientes++; }
+                else { totalPendientes++; }
+            }
+            if (!grouped[h]) grouped[h] = {};
+            if (!grouped[h][wStart]) grouped[h][wStart] = {};
+            if (!grouped[h][wStart][empId]) grouped[h][wStart][empId] = { values: Array(7).fill('—'), hasPending: false, hasSupportPending: false, isSupport, hasValidId: hasId };
+            const offset = window.getDayOffsetFromWeek(wStart, record.fecha);
+            if (offset >= 0 && offset <= 6) {
+                grouped[h][wStart][empId].values[offset] = val;
+                if (isPending && !isSupport) grouped[h][wStart][empId].hasPending = true;
+                if (isPending && isSupport && hasId) grouped[h][wStart][empId].hasSupportPending = true;
+            }
+        });
+        // Apply onlyPending filter to grouped (for available employee computation)
+        if (window.excelFilters.onlyPending) {
+            Object.keys(grouped).forEach(h => {
+                Object.keys(grouped[h]).forEach(w => {
+                    Object.keys(grouped[h][w]).forEach(e => { if (!grouped[h][w][e].hasPending) delete grouped[h][w][e]; });
+                    if (Object.keys(grouped[h][w]).length === 0) delete grouped[h][w];
+                });
+                if (Object.keys(grouped[h]).length === 0) delete grouped[h];
+            });
+        }
+        // PHASE 2: Compute available employees from primary-filtered data (within period)
+        const _availableExcelEmps = new Set();
+        Object.entries(grouped).forEach(([h, hotelData]) => {
+            Object.entries(hotelData).forEach(([wStart, weekData]) => {
+                // Only count weeks that intersect the user's selected period
+                const wEndDate = new Date(wStart + 'T12:00:00');
+                wEndDate.setDate(wEndDate.getDate() + 6);
+                const wEnd = window.isoDate(wEndDate);
+                if (wStart > dateEnd || wEnd < dateStart) return;
+                Object.keys(weekData).forEach(empId => _availableExcelEmps.add(empId));
+            });
+        });
+        // Reset selection if employee no longer in filtered set
+        if (window.excelFilters.search && !_availableExcelEmps.has(window.excelFilters.search)) {
+            window.excelFilters.search = '';
+        }
+        // PHASE 3: Apply employee filter to grouped for table rendering
+        if (window.excelFilters.search) {
+            const selEmp = window.excelFilters.search;
+            Object.keys(grouped).forEach(h => {
+                Object.keys(grouped[h]).forEach(w => {
+                    Object.keys(grouped[h][w]).forEach(e => {
+                        if (window.normalizeId(e) !== window.normalizeId(selEmp)) delete grouped[h][w][e];
+                    });
+                    if (Object.keys(grouped[h][w]).length === 0) delete grouped[h][w];
+                });
+                if (Object.keys(grouped[h]).length === 0) delete grouped[h];
+            });
+        }
+        const hotelsToRender = selectedHotel === 'all' ? dbHotels : [selectedHotel];
+        const saveBtnActive = window.pendingChangesCount > 0;
+        container.innerHTML = `
+            <div class="excel-toolbar">
+                <div class="toolbar-group"><label>Hotel</label><select id="excelHotel" class="toolbar-input" onchange="window.renderExcelView()"><option value="all">Ver Todos</option>${dbHotels.map(h => `<option value="${h}" ${h === selectedHotel ? 'selected' : ''}>${h}</option>`).join('')}</select></div>
+                <div class="toolbar-group">
+                    <label>Periodo</label>
+                    <input type="text" id="excelRangePicker" class="toolbar-input" placeholder="Seleccionar periodo..." readonly style="width:220px; cursor:pointer;">
+                    <input type="hidden" id="excelDateStart" value="${dateStart}">
+                    <input type="hidden" id="excelDateEnd" value="${dateEnd}">
+                </div>
+                <div class="toolbar-group">
+                    <label>Empleado / ID</label>
+                    <select id="excelSearch" class="toolbar-input" onchange="window.excelFilters.search=this.value; window.renderExcelView()">
+                        <option value="">Ver Todos los Empleados</option>
+                        ${(() => {
+                            // Use pre-computed _availableExcelEmps from Phase 2 (before employee filter)
+                            const empProfiles = Array.from(_availableExcelEmps)
+                                .map(id => {
+                                    const profile = (window.empleadosGlobales || []).find(e => window.normalizeId(e.id) === window.normalizeId(id) || window.normalizeId(e.nombre) === window.normalizeId(id));
+                                    return { id, nombre: profile?.nombre || id, id_interno: profile?.id_interno || id, isDup: id.includes('_DUP'), hasValidId: _hasValidId(id) };
+                                })
+                                .filter(e => !e.isDup && e.hasValidId)
+                                .sort((a,b) => (a.nombre || '').localeCompare(b.nombre || ''));
+                            if (empProfiles.length === 0) return '<option value="" disabled>Sin empleados para este filtro</option>';
+                            return empProfiles.map(e => `<option value="${e.id}" ${window.excelFilters.search === e.id ? 'selected' : ''}>${e.nombre} [${e.id_interno}]</option>`).join('');
+                        })()}
+                    </select>
+                </div>
+                <div class="toolbar-group"><label>Filtro Rápido</label><label style="display:flex; align-items:center; gap:8px; cursor:pointer; font-size:0.8rem; text-transform:none; color:#1e293b; font-weight:600;"><input type="checkbox" id="excelOnlyPending" ${window.excelFilters.onlyPending ? 'checked' : ''} onchange="window.excelFilters.onlyPending=this.checked; window.renderExcelView()"> Solo Pendientes</label></div>
+                <div class="toolbar-group" style="margin-left:auto; text-align:right;"><label>Pendientes</label><div style="font-weight:900; color:#b91c1c; font-size:1.1rem;"><span id="excelCounter">${totalPendientes}</span></div>${totalSupportPendientes > 0 ? `<div style="font-size:0.7rem; color:#64748b; font-weight:500;">Apoyo: ${totalSupportPendientes}</div>` : ''}${_noIdSet.size > 0 ? `<div style="font-size:0.65rem; color:#ef4444; font-weight:500;">Sin ID: ${_noIdSet.size} emp.</div>` : ''}</div>
+                <button class="btn-premium" onclick="window.openRefuerzoModal()" style="padding:10px 18px; font-size:0.75rem; font-weight:700; white-space:nowrap; background:linear-gradient(135deg,#3b82f6,#2563eb); color:white; border:none; border-radius:12px; cursor:pointer;"><i class="fas fa-user-plus"></i> Añadir refuerzo</button>
+                <button id="btnGuardarBase" class="btn-save-base ${saveBtnActive ? 'active' : ''}" ${!saveBtnActive ? 'disabled' : ''} onclick="window.saveTurnosBaseDirect()" title="${!saveBtnActive ? 'No hay cambios pendientes' : 'Guardar todos los cambios realizados'}"><i class="fas fa-save"></i> ${saveBtnActive ? `Guardar cambios (${window.pendingChangesCount})` : 'Guardar base'}</button>
+            </div>
+        `;
+        const sections = hotelsToRender.map(hotel => {
+            const hotelData = grouped[hotel];
+            if (!hotelData) return '';
+            const rows = [];
+            Object.keys(hotelData).sort().forEach(wStart => {
+                // Filter: only show weeks that intersect the user's selected period
+                const wEndDate = new Date(wStart + 'T12:00:00');
+                wEndDate.setDate(wEndDate.getDate() + 6);
+                const wEnd = window.isoDate(wEndDate);
+                if (wStart > dateEnd || wEnd < dateStart) return; // no intersection
+                Object.keys(hotelData[wStart]).sort((a, b) => {
+                    const orderA = window.getV9ExcelOrder(hotel, wStart, a) || 999999;
+                    const orderB = window.getV9ExcelOrder(hotel, wStart, b) || 999999;
+                    if (orderA !== orderB) return orderA - orderB;
+                    return a.localeCompare(b);
+                }).forEach(emp => {
+                    const entry = hotelData[wStart][emp];
+                    // Exclude employees without valid ID from operational view
+                    if (!entry.hasValidId) return;
+                    rows.push({ weekStart: wStart, empId: emp, displayName: getEmpLabel(emp), values: entry.values, hotel: hotel, isSupport: entry.isSupport, hasValidId: entry.hasValidId });
+                });
+            });
+            if (rows.length === 0) return '';
+            return `
+                <div style="background:white; border:1px solid #e2e8f0; border-radius:16px; overflow:hidden; margin-bottom:24px; box-shadow:0 4px 6px -1px rgba(0,0,0,0.05);">
+                    <div style="padding:16px 20px; font-weight:800; color:#1e293b; background:#f8fafc; border-bottom:1px solid #e2e8f0; display:flex; justify-content:space-between;"><span>${hotel}</span><span style="font-size:0.7rem; color:#64748b; font-weight:600;">MOSTRANDO ${rows.length} FILAS</span></div>
+                    <div style="overflow:auto;"><table style="width:100%; border-collapse:collapse; min-width:980px;"><thead><tr style="background:#f8fafc;"><th style="padding:12px; border-bottom:1px solid #e2e8f0; text-align:left; font-size:0.7rem; color:#64748b; text-transform:uppercase;">Semana</th><th style="padding:12px; border-bottom:1px solid #e2e8f0; text-align:left; font-size:0.7rem; color:#64748b; text-transform:uppercase;">Empleado</th>${['LUN', 'MAR', 'MIE', 'JUE', 'VIE', 'SAB', 'DOM'].map(day => `<th style="padding:12px 8px; border-bottom:1px solid #e2e8f0; text-align:center; font-size:0.7rem; color:#64748b;">${day}</th>`).join('')}</tr></thead><tbody>${rows.map(row => `
+                                    <tr class="excel-row-hover"><td style="padding:12px; border-bottom:1px solid #f1f5f9; white-space:nowrap; color:#64748b; font-size:0.8rem;">${window.fmtDateLegacy(row.weekStart)}</td><td style="padding:12px; border-bottom:1px solid #f1f5f9; min-width:220px; font-weight:600; color:#334155; font-size:0.85rem;">${row.displayName}</td>${[0, 1, 2, 3, 4, 5, 6].map(offset => {
+                                            const dbVal = row.values[offset];
+                                            const mappedVal = TURNO_MAP[dbVal] || dbVal;
+                                            const isPendiente = (mappedVal === 'Pendiente de asignar');
+                                            const pendClass = isPendiente ? (row.isSupport ? 'turno-pendiente-soft' : 'turno-pendiente-alerta') : '';
+                                            const options = ['Pendiente de asignar', 'Mañana', 'Tarde', 'Noche', 'Descanso'].map(o => `<option value="${o}" ${o === mappedVal ? 'selected' : ''}>${o}</option>`).join('');
+                                            const currDate = new Date(row.weekStart); currDate.setDate(currDate.getDate() + offset);
+                                            const dStr = window.isoDate(currDate);
+                                            return `<td style="padding:6px; border-bottom:1px solid #f1f5f9; text-align:center;"><select class="turno-edit-select ${pendClass}" data-hotel="${row.hotel}" data-emp="${row.empId}" data-date="${dStr}" data-original="${dbVal}" style="width:110px; padding:6px; border:1px solid #e2e8f0; border-radius:8px; background:#f8fafc; text-align:center; color:#475569; font-size:0.8rem; cursor:pointer;" onchange="window.handleExcelCellChange(this)">${options}</select></td>`;
+                                        }).join('')}</tr>`).join('')}</tbody></table></div></div>`;
+        }).join('');
+        container.innerHTML += sections || '<div style="padding: 3rem; text-align: center; color: #94a3b8; font-weight:600;">No hay registros que coincidan con los filtros.</div>';
+
+        // Inicializar Flatpickr para el rango Excel
+        flatpickr("#excelRangePicker", {
+            mode: "range",
+            dateFormat: "Y-m-d",
+            altInput: true,
+            altFormat: "d/m/y",
+            locale: "es",
+            defaultDate: [dateStart, dateEnd],
+            onClose: (selectedDates) => {
+                if (selectedDates.length === 2) {
+                    $('#excelDateStart').value = window.isoDate(selectedDates[0]);
+                    $('#excelDateEnd').value = window.isoDate(selectedDates[1]);
+                    window.renderExcelView();
+                }
+            }
+        });
+    } catch (error) { container.innerHTML = `<div style="padding:2rem; color:red; font-weight:800;">Error cargando Modo Excel: ${error.message}</div>`; }
+};
+
+window.handleExcelCellChange = (sel) => {
+    const isPendiente = sel.value === 'Pendiente de asignar';
+    // Preserve soft class for support staff
+    if (sel.classList.contains('turno-pendiente-soft')) {
+        sel.classList.toggle('turno-pendiente-soft', isPendiente);
+    } else {
+        sel.classList.toggle('turno-pendiente-alerta', isPendiente);
+    }
+    const selects = document.querySelectorAll('.turno-edit-select');
+    let changes = 0;
+    const REVERSE_MAP = { 'Mañana': 'M', 'Tarde': 'T', 'Noche': 'N', 'Descanso': 'D', 'Pendiente de asignar': '—' };
+    selects.forEach(s => {
+        const currentDb = REVERSE_MAP[s.value] || s.value;
+        if (s.dataset.original !== currentDb) changes++;
+    });
+    window.pendingChangesCount = changes;
+    const btn = document.getElementById('btnGuardarBase');
+    if (btn) {
+        btn.disabled = changes === 0;
+        btn.classList.toggle('active', changes > 0);
+        btn.innerHTML = `<i class="fas fa-save"></i> ${changes > 0 ? `Guardar cambios (${changes})` : 'Guardar base'}`;
+    }
+};
+
+window.saveTurnosBaseDirect = async () => {
+    const btn = document.getElementById('btnGuardarBase');
+    if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Guardando...'; }
+    try {
+        const selects = document.querySelectorAll('select.turno-edit-select');
+        const updates = [];
+        const blocked = [];
+        const REVERSE_MAP = { 'Mañana': 'M', 'Tarde': 'T', 'Noche': 'N', 'Descanso': 'D', 'Pendiente de asignar': '—' };
+        selects.forEach(sel => {
+            const original = sel.dataset.original;
+            const currentDb = REVERSE_MAP[sel.value] || sel.value;
+            if (original !== currentDb) {
+                const empId = sel.dataset.emp;
+                // Validate: employee must have valid internal ID
+                const profile = (window.empleadosGlobales || []).find(e => window.normalizeId(e.id) === window.normalizeId(empId) || window.normalizeId(e.nombre) === window.normalizeId(empId));
+                const idInt = String(profile?.id_interno || '').trim();
+                if (!/^EMP-\d{4,}$/.test(idInt)) {
+                    blocked.push(profile?.nombre || empId);
+                    return;
+                }
+                updates.push({ hotel_id: sel.dataset.hotel, empleado_id: empId, fecha: sel.dataset.date, turno: currentDb, updated_by: 'ADMIN_EXCEL_VIEW' });
+            }
+        });
+        if (blocked.length > 0) {
+            alert(`⚠️ No se pueden guardar turnos para empleados sin ID interno válido:\n${blocked.join(', ')}`);
+        }
+        if (updates.length === 0) {
+            alert('No hay cambios que guardar.');
+            if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-save"></i> Guardar base'; }
+            return;
+        }
+        const { error } = await window.supabase.from('turnos').upsert(updates, { onConflict: 'empleado_id,fecha' });
+        if (error) throw error;
+        window.pendingChangesCount = 0;
+        alert('✅ Cambios base guardados correctamente.');
+        await window.renderExcelView();
+    } catch (err) {
+        console.error(err);
+        alert('❌ Error al guardar: ' + err.message);
+        if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-save"></i> Guardar cambios'; }
+    }
+};
+
+// ==========================================
+// MÓDULO: AÑADIR REFUERZO (MODAL OPERATIVO)
+// ==========================================
+window.openRefuerzoModal = async () => {
+    const m = document.getElementById('modalRefuerzo');
+    if (!m) return;
+    const status = document.getElementById('refuerzoStatus');
+    const warn = document.getElementById('refuerzoWarning');
+    if (status) status.innerHTML = '';
+    if (warn) { warn.style.display = 'none'; warn.textContent = ''; }
+
+    const [hotels, emps] = await Promise.all([window.getAvailableHotels(), window.TurnosDB.getEmpleados()]);
+    const selectedHotel = document.getElementById('excelHotel')?.value || 'all';
+
+    // Hotel select — pre-select current Excel filter
+    const rfHotel = document.getElementById('rfHotel');
+    if (rfHotel) {
+        rfHotel.innerHTML = hotels.map(h => `<option value="${h}"${h === selectedHotel && selectedHotel !== 'all' ? ' selected' : ''}>${h}</option>`).join('');
+    }
+
+    // Employee select — only support/ocasional/refuerzo with valid EMP-XXXX IDs
+    const rfEmp = document.getElementById('rfEmp');
+    if (rfEmp) {
+        const supportEmps = emps
+            .filter(e => {
+                const idInt = String(e.id_interno || '').trim();
+                if (!/^EMP-\d{4,}$/.test(idInt)) return false;
+                if (window.isEmpleadoOcasionalOApoyo && window.isEmpleadoOcasionalOApoyo(e)) return true;
+                return false;
+            })
+            .sort((a, b) => (a.nombre || '').localeCompare(b.nombre || ''));
+        if (supportEmps.length === 0) {
+            rfEmp.innerHTML = '<option value="" disabled selected>No hay empleados de apoyo con ID válido</option>';
+        } else {
+            rfEmp.innerHTML = '<option value="" disabled selected>Seleccionar empleado...</option>' +
+                supportEmps.map(e => `<option value="${e.id}">${e.nombre || e.id} [${e.id_interno}]</option>`).join('');
+        }
+    }
+
+    // Default date from Excel period
+    const ds = document.getElementById('excelDateStart')?.value || '';
+    const rfDateStart = document.getElementById('rfDateStart');
+    if (rfDateStart) rfDateStart.value = ds;
+
+    // Reset state
+    document.getElementById('rfDateEnd').value = '';
+    document.getElementById('rfTurno').value = '—';
+    document.getElementById('rfObs').value = '';
+    document.querySelectorAll('input[name="rfTipo"]').forEach(r => { r.checked = (r.value === 'dia'); });
+    window.updateRefuerzoFechas();
+
+    m.style.display = 'flex';
+    setTimeout(() => m.classList.add('open'), 10);
+};
+
+window.closeRefuerzoModal = () => {
+    const m = document.getElementById('modalRefuerzo');
+    if (m) { m.classList.remove('open'); setTimeout(() => m.style.display = 'none', 300); }
+};
+
+window.updateRefuerzoFechas = () => {
+    const tipo = document.querySelector('input[name="rfTipo"]:checked')?.value || 'dia';
+    const g1 = document.getElementById('rfFechaGroup1');
+    const g2 = document.getElementById('rfFechaGroup2');
+    const label1 = g1?.querySelector('label');
+    if (tipo === 'dia') {
+        if (label1) label1.textContent = 'FECHA';
+        if (g2) g2.style.display = 'none';
+    } else if (tipo === 'semana') {
+        if (label1) label1.textContent = 'INICIO DE SEMANA (LUNES)';
+        if (g2) g2.style.display = 'none';
+    } else {
+        if (label1) label1.textContent = 'FECHA INICIO';
+        if (g2) g2.style.display = '';
+    }
+};
+
+window.saveRefuerzo = async () => {
+    const status = document.getElementById('refuerzoStatus');
+    const warn = document.getElementById('refuerzoWarning');
+    const btn = document.getElementById('btnSaveRefuerzo');
+    if (warn) { warn.style.display = 'none'; warn.textContent = ''; }
+
+    const hotel = document.getElementById('rfHotel')?.value;
+    const empId = document.getElementById('rfEmp')?.value;
+    const tipo = document.querySelector('input[name="rfTipo"]:checked')?.value || 'dia';
+    const turno = document.getElementById('rfTurno')?.value || '—';
+    const obs = document.getElementById('rfObs')?.value || '';
+    const dateStart = document.getElementById('rfDateStart')?.value;
+    const dateEnd = document.getElementById('rfDateEnd')?.value;
+
+    // Validations
+    if (!hotel) { status.innerHTML = '<span style="color:var(--danger);">Hotel obligatorio.</span>'; return; }
+    if (!empId) { status.innerHTML = '<span style="color:var(--danger);">Empleado obligatorio.</span>'; return; }
+    if (!dateStart) { status.innerHTML = '<span style="color:var(--danger);">Fecha obligatoria.</span>'; return; }
+
+    // Validate employee has valid ID
+    const emp = (window.empleadosGlobales || []).find(e => e.id === empId);
+    const idInt = String(emp?.id_interno || '').trim();
+    if (!/^EMP-\d{4,}$/.test(idInt)) {
+        status.innerHTML = '<span style="color:var(--danger);">Este empleado no tiene ID interno válido. No puede asignarse como refuerzo.</span>';
+        return;
+    }
+
+    // Compute date range
+    const dates = [];
+    if (tipo === 'dia') {
+        dates.push(dateStart);
+    } else if (tipo === 'semana') {
+        // From Monday to Sunday (7 days)
+        const base = new Date(dateStart + 'T12:00:00');
+        // Find Monday of that week
+        const dow = base.getDay();
+        const mondayOffset = dow === 0 ? -6 : 1 - dow;
+        const monday = new Date(base);
+        monday.setDate(monday.getDate() + mondayOffset);
+        for (let i = 0; i < 7; i++) {
+            const d = new Date(monday);
+            d.setDate(d.getDate() + i);
+            dates.push(window.isoDate(d));
+        }
+    } else {
+        // Rango
+        if (!dateEnd) { status.innerHTML = '<span style="color:var(--danger);">Fecha fin obligatoria para rango.</span>'; return; }
+        if (dateEnd < dateStart) { status.innerHTML = '<span style="color:var(--danger);">Fecha fin no puede ser anterior a inicio.</span>'; return; }
+        const cur = new Date(dateStart + 'T12:00:00');
+        const end = new Date(dateEnd + 'T12:00:00');
+        while (cur <= end) {
+            dates.push(window.isoDate(cur));
+            cur.setDate(cur.getDate() + 1);
+        }
+        if (dates.length > 31) { status.innerHTML = '<span style="color:var(--danger);">Rango máximo: 31 días.</span>'; return; }
+    }
+
+    try {
+        btn.disabled = true;
+        btn.textContent = 'Comprobando...';
+
+        // Check for conflicts: employee has M/T/N in another hotel same day
+        const existingAll = await window.TurnosDB.fetchTurnosBase(dates[0], dates[dates.length - 1], null);
+        const conflicts = [];
+        const duplicates = [];
+        dates.forEach(d => {
+            const existing = existingAll.filter(r => r.empleado_id === empId && r.fecha === d);
+            existing.forEach(r => {
+                if (r.hotel_id === hotel) {
+                    duplicates.push({ date: d, turno: r.turno });
+                } else {
+                    const t = (r.turno || '').toUpperCase();
+                    if (['M', 'T', 'N', 'MAÑANA', 'TARDE', 'NOCHE'].includes(t)) {
+                        conflicts.push({ date: d, hotel: r.hotel_id, turno: r.turno });
+                    }
+                }
+            });
+        });
+
+        // Block on conflicts
+        if (conflicts.length > 0) {
+            const cList = conflicts.map(c => `  ${c.date}: ${c.turno} en ${c.hotel}`).join('\n');
+            status.innerHTML = `<span style="color:var(--danger);">Conflicto de ubicación:<br><pre style="font-size:0.7rem; margin-top:4px;">${cList}</pre></span>`;
+            btn.disabled = false; btn.textContent = 'Añadir refuerzo';
+            return;
+        }
+
+        // Warn on duplicates
+        if (duplicates.length > 0) {
+            const dList = duplicates.map(d => `  ${d.date}: ${d.turno}`).join('\n');
+            if (!confirm(`Ya existen turnos para ${emp?.nombre || empId} en ${hotel}:\n${dList}\n\n¿Quieres reemplazarlos?`)) {
+                btn.disabled = false; btn.textContent = 'Añadir refuerzo';
+                return;
+            }
+        }
+
+        // Build upsert records
+        btn.textContent = 'Guardando...';
+        const records = dates.map(d => ({
+            empleado_id: empId,
+            hotel_id: hotel,
+            fecha: d,
+            turno: turno,
+            updated_by: 'ADMIN_REFUERZO'
+        }));
+
+        const { error } = await window.supabase.from('turnos').upsert(records, { onConflict: 'empleado_id,fecha' });
+        if (error) throw error;
+
+        if (window.addLog) window.addLog(`Refuerzo añadido: ${emp?.nombre || empId} en ${hotel} (${dates.length} día${dates.length !== 1 ? 's' : ''})`, 'info');
+
+        status.innerHTML = `<span style="color:#10b981;">✓ Refuerzo añadido: ${dates.length} día${dates.length !== 1 ? 's' : ''}</span>`;
+        setTimeout(async () => {
+            window.closeRefuerzoModal();
+            await window.renderExcelView();
+        }, 1000);
+
+    } catch (err) {
+        console.error('[REFUERZO] Error:', err);
+        status.innerHTML = `<span style="color:var(--danger);">Error: ${err.message}</span>`;
+    } finally {
+        btn.disabled = false;
+        btn.textContent = 'Añadir refuerzo';
+    }
+};
+
+// ==========================================
+// MÓDULO: CAMBIOS DE TURNO (DASHBOARD OPERATIVO)
+// ==========================================
+window.renderChanges = async () => {
+    const tableBody = $('#changes-body');
+    const upcomingList = $('#upcoming-changes-list');
+    if (!tableBody) return;
+
+    try {
+        const [events, hotels] = await Promise.all([
+            window.TurnosDB.fetchEventos(),
+            window.TurnosDB.getHotels()
+        ]);
+
+        // Poblar select de hoteles si está vacío (solo primera vez)
+        const hotelSel = $('#chHotel');
+        if (hotelSel && hotelSel.options.length <= 1) {
+            hotels.forEach(h => {
+                const opt = document.createElement('option');
+                opt.value = h; opt.textContent = h;
+                hotelSel.appendChild(opt);
+            });
+        }
+
+        // Filtros
+        const search = ($('#chSearch')?.value || '').toLowerCase();
+        const selHotel = $('#chHotel')?.value || 'all';
+        const selType = $('#chType')?.value || 'all';
+        const selStatus = $('#chStatus')?.value || 'activo';
+        
+        let filtered = events.filter(ev => ['CAMBIO_TURNO', 'INTERCAMBIO_TURNO', 'INTERCAMBIO_HOTEL'].includes(ev.tipo));
+        
+        const now = new Date();
+        const isoNow = window.isoDate(now);
+
+        // Por defecto (si no hay búsqueda ni rango manual), mostrar desde hoy en adelante
+        const rangeVal = $('#chRange')?.value || '';
+        if (rangeVal.includes(' a ')) {
+            const [s, e] = rangeVal.split(' a ');
+            filtered = filtered.filter(ev => ev.fecha_inicio >= s && ev.fecha_inicio <= e);
+        } else if (!search && !rangeVal && selStatus === 'activo') {
+            filtered = filtered.filter(ev => ev.fecha_inicio >= isoNow);
+        }
+
+        if (selStatus !== 'all') filtered = filtered.filter(ev => (ev.estado || 'activo') === selStatus);
+        if (selHotel !== 'all') filtered = filtered.filter(ev => ev.hotel_origen === selHotel || ev.hotel_destino === selHotel);
+        if (selType !== 'all') filtered = filtered.filter(ev => ev.tipo === selType);
+        
+        if (search) {
+            filtered = filtered.filter(ev => 
+                (ev.empleado_id || '').toLowerCase().includes(search) || 
+                (ev.empleado_destino_id || '').toLowerCase().includes(search) || 
+                (ev.observaciones || '').toLowerCase().includes(search)
+            );
+        }
+
+        // Ordenar por fecha ASC (hoy en adelante)
+        filtered.sort((a,b) => a.fecha_inicio.localeCompare(b.fecha_inicio));
+
+        // KPIs
+        const next30 = window.isoDate(new Date(now.getTime() + 30 * 86400000));
+        
+        const activos = filtered.filter(ev => (ev.estado || 'activo') === 'activo').length;
+        const p30d = filtered.filter(ev => ev.fecha_inicio >= isoNow && ev.fecha_inicio <= next30).length;
+        
+        const affectedSet = new Set();
+        filtered.forEach(ev => {
+            if (ev.empleado_id) affectedSet.add(ev.empleado_id);
+            if (ev.empleado_destino_id) affectedSet.add(ev.empleado_destino_id);
+        });
+
+        if ($('#ch-stat-total')) $('#ch-stat-total').textContent = activos;
+        if ($('#ch-stat-30d')) $('#ch-stat-30d').textContent = p30d;
+        if ($('#ch-stat-emps')) $('#ch-stat-emps').textContent = affectedSet.size;
+
+        // Render Table
+        tableBody.innerHTML = filtered.map(ev => {
+            const dateFmt = window.TurnosDB.fmtDateLegacy(ev.fecha_inicio);
+            const typeLabel = ev.tipo === 'CAMBIO_TURNO' ? 'CAMBIO PUNTUAL' : (ev.tipo === 'INTERCAMBIO_TURNO' ? 'INTERCAMBIO' : 'CAMBIO HOTEL');
+            const typeClass = ev.tipo === 'CAMBIO_TURNO' ? 'tag-info' : 'tag-warning';
+            
+            return `
+                <tr style="border-bottom:1px solid #f1f5f9; transition:0.2s;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='transparent'">
+                    <td style="padding:15px; font-weight:700; color:#2563eb;">${dateFmt}</td>
+                    <td style="padding:15px; font-size:0.85rem; color:#64748b;">${ev.hotel_origen || '—'}</td>
+                    <td style="padding:15px;">
+                        <div style="font-weight:800; font-size:0.9rem;">${ev.empleado_id} ${ev.empleado_destino_id ? '<span style="color:#94a3b8; font-weight:400; margin:0 4px;">↔</span> ' + ev.empleado_destino_id : ''}</div>
+                    </td>
+                    <td style="padding:15px;">
+                        <span class="panel-tag ${typeClass}" style="font-size:0.6rem; letter-spacing:0.02em;">${typeLabel}</span>
+                    </td>
+                    <td style="padding:15px; font-size:0.8rem; color:#64748b; max-width:200px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${ev.observaciones || '—'}</td>
+                    <td style="padding:15px; text-align:center;">
+                        <div style="display:flex; gap:6px; justify-content:center;">
+                            <button class="btn-icon" onclick="window.editChange('${ev.id}')" title="Gestionar"><i class="fas fa-edit"></i></button>
+                            <button class="btn-icon danger" onclick="window.anularChange('${ev.id}')" title="Anular"><i class="fas fa-trash"></i></button>
+                        </div>
+                    </td>
+                </tr>
+            `;
+        }).join('') || '<tr><td colspan="6" style="padding:3rem; text-align:center; opacity:0.5;">No hay cambios registrados.</td></tr>';
+
+        // Upcoming Sidebar
+        const upcoming = filtered.filter(ev => ev.fecha_inicio >= isoNow && (ev.estado || 'activo') === 'activo')
+                                 .sort((a,b) => a.fecha_inicio.localeCompare(b.fecha_inicio))
+                                 .slice(0, 10);
+        
+        upcomingList.innerHTML = upcoming.map(ev => `
+            <div style="padding:12px; border-radius:12px; background:#f8fafc; border:1px solid #e2e8f0;">
+                <div style="font-weight:800; font-size:0.8rem; color:#1e293b;">${window.TurnosDB.fmtDateLegacy(ev.fecha_inicio)} · ${ev.hotel_origen}</div>
+                <div style="font-size:0.75rem; color:#64748b; margin-top:2px;">${ev.empleado_id} ${ev.empleado_destino_id ? '↔ ' + ev.empleado_destino_id : ''}</div>
+            </div>
+        `).join('') || '<div style="padding:10px; text-align:center; opacity:0.5; font-size:0.8rem;">No hay cambios próximos.</div>';
+
+        // Inicializar Flatpickr si no existe
+        if (!window._chRangePicker) {
+            window._chRangePicker = flatpickr("#chRange", {
+                mode: "range",
+                dateFormat: "Y-m-d",
+                altInput: true,
+                altFormat: "d/m/y",
+                locale: "es",
+                defaultDate: [isoNow, next30], // Por defecto rango futuro
+                onChange: () => window.renderChanges()
+            });
+        }
+
+    } catch (err) {
+        console.error("Error renderChanges:", err);
+        tableBody.innerHTML = `<tr><td colspan="6" style="padding:2rem; color:red;">Error: ${err.message}</td></tr>`;
+    }
+};
+
+window.openNewChangeModal = () => {
+    // Abrir solicitud.html en nueva pestaña por ahora, o implementar modal
+    window.open('solicitud.html', '_blank');
+};
+
+window.anularChange = async (id) => {
+    if (!confirm("¿Estás seguro de anular este cambio operativo?")) return;
+    try {
+        await window.TurnosDB.anularEvento(id);
+        alert("Cambio anulado correctamente.");
+        window.renderChanges();
+    } catch (err) { alert("Error al anular: " + err.message); }
+};
+
+// ==========================================
+// MÓDULO: SOLICITUDES (RESTAURADO)
+// ==========================================
+window.renderRequests = async () => {
+    console.log("[ADMIN] Iniciando renderRequests...");
+    const container = $('#changes-content');
+    if (!container) return;
+    
+    if (!window._requestsFilter) window._requestsFilter = 'pendiente';
+
+    container.innerHTML = `
+        <div class="requests-toolbar" style="display:flex; align-items:center; gap:20px; margin-bottom:20px; background:white; padding:15px 25px; border-radius:16px; border:1px solid #e2e8f0; box-shadow:0 4px 6px -1px rgba(0,0,0,0.05);">
+            <div style="font-size:0.75rem; font-weight:800; color:#64748b; text-transform:uppercase; letter-spacing:0.05em;">Filtrar por:</div>
+            <select id="requestsFilter" class="toolbar-input" style="padding:8px 15px; border-radius:10px; border:1px solid #cbd5e1; background:#f8fafc; font-weight:700; color:#1e293b; cursor:pointer;" onchange="window._requestsFilter = this.value; window.renderRequests()">
+                <option value="pendiente" ${window._requestsFilter === 'pendiente' ? 'selected' : ''}>Pendientes de Revisión</option>
+                <option value="aprobada" ${window._requestsFilter === 'aprobada' ? 'selected' : ''}>Aprobadas</option>
+                <option value="rechazada" ${window._requestsFilter === 'rechazada' ? 'selected' : ''}>Rechazadas</option>
+                <option value="all" ${window._requestsFilter === 'all' ? 'selected' : ''}>Todas las Solicitudes</option>
+            </select>
+            <div id="requestsCount" style="margin-left:auto; font-size:0.8rem; font-weight:700; color:#0ea5e9;">Cargando...</div>
+        </div>
+        <div id="requests-list">
+            <div style="padding:4rem; text-align:center; opacity:0.5;"><i class="fas fa-spinner fa-spin"></i> Cargando solicitudes...</div>
+        </div>
+    `;
+
+    try {
+        const data = await window.TurnosDB.fetchPeticiones();
+        console.log("[ADMIN] Peticiones recibidas:", data.length);
+        
+        let filtered = data;
+        if (window._requestsFilter !== 'all') {
+            filtered = data.filter(r => r.estado === window._requestsFilter);
+        }
+
+        $('#requestsCount').textContent = `${filtered.length} resultados`;
+        const listContainer = $('#requests-list');
+
+        if (filtered.length === 0) {
+            listContainer.innerHTML = '<div style="padding:4rem; text-align:center; opacity:0.5;">No hay solicitudes que coincidan con el filtro.</div>';
+            return;
+        }
+
+        listContainer.innerHTML = filtered.map(req => {
+            const statusLabel = req.estado === 'pendiente' ? 'Pendiente' : (req.estado === 'aprobada' ? 'Aprobada' : 'Rechazada');
+            const statusColor = req.estado === 'pendiente' ? '#f59e0b' : (req.estado === 'aprobada' ? '#10b981' : '#ef4444');
+            const borderCol = req.estado === 'pendiente' ? '#f59e0b' : (req.estado === 'aprobada' ? '#10b981' : '#ef4444');
+
+            return `
+                <div class="request-card-admin" style="background:white; border:1px solid #e2e8f0; border-radius:16px; padding:20px; margin-bottom:16px; box-shadow:0 4px 6px -1px rgba(0,0,0,0.05); border-left:6px solid ${borderCol};">
+                    <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+                        <div>
+                            <div style="display:flex; align-items:center; gap:8px;">
+                                <div style="font-size:0.7rem; font-weight:800; color:#0ea5e9; text-transform:uppercase;">${req.hotel}</div>
+                                <span style="font-size:0.65rem; padding:2px 8px; border-radius:10px; background:${statusColor}22; color:${statusColor}; font-weight:800; text-transform:uppercase;">${statusLabel}</span>
+                            </div>
+                            <h3 style="font-size:1.1rem; font-weight:800; margin:4px 0;">${req.solicitante} ${req.companero ? '& ' + req.companero : ''}</h3>
+                            <div style="font-size:0.8rem; color:#64748b;">Solicitado el ${new Date(req.created_at).toLocaleString()}</div>
+                        </div>
+                        ${req.estado === 'pendiente' ? `
+                            <div style="display:flex; gap:8px;">
+                                <button onclick="window.handleRequestAction('${req.id}', 'rechazada')" style="background:#fee2e2; color:#991b1b; border:none; padding:8px 16px; border-radius:8px; font-weight:700; cursor:pointer;">Denegar</button>
+                                <button onclick="window.handleRequestAction('${req.id}', 'aprobada')" style="background:#dcfce7; color:#166534; border:none; padding:8px 16px; border-radius:8px; font-weight:700; cursor:pointer;">Aprobar</button>
+                            </div>
+                        ` : `
+                            <button onclick="window.handleRequestAction('${req.id}', 'pendiente')" style="background:#f1f5f9; color:#475569; border:none; padding:8px 16px; border-radius:8px; font-weight:700; cursor:pointer;">Resetear a Pendiente</button>
+                        `}
+                    </div>
+                    <div style="margin-top:16px; display:grid; grid-template-columns:repeat(auto-fill, minmax(200px, 1fr)); gap:12px;">
+                        ${(req.fechas || []).map(f => `
+                            <div style="background:#f8fafc; padding:12px; border-radius:12px; border:1px solid #e2e8f0;">
+                                <div style="font-weight:800; font-size:0.85rem;">${f.fecha}</div>
+                                <div style="font-size:0.8rem; color:#64748b;">${f.origen} → ${f.destino}</div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+        }).join('');
+    } catch (e) { 
+        console.error("[ADMIN ERROR] renderRequests:", e);
+        container.innerHTML = '<div style="padding:2rem; color:red; font-weight:800;">❌ Error cargando solicitudes: ' + e.message + '</div>'; 
+    }
+};
+
+window.handleRequestAction = async (id, newState) => {
+    if (!confirm(`¿Estás seguro de marcar como ${newState}?`)) return;
+    try {
+        await window.TurnosDB.actualizarEstadoPeticion(id, newState);
+        alert('Solicitud actualizada.');
+        window.renderRequests();
+    } catch (e) { alert('Error: ' + e.message); }
+};
+
+// ==========================================
+// MÓDULO: FICHA EMPLEADO HELPERS (RESTAURADO)
+// ==========================================
+window.enableEmployeeProfileEdit = () => {
+    window._employeeProfileTab = 'config';
+    window.renderEmployeeProfile();
+};
+
+window.setEmployeeProfileTab = (tab) => {
+    window._employeeProfileTab = tab;
+    window.renderEmployeeProfile();
+};
+
+window.moveEmployeeProfilePeriod = (direction) => {
+    const current = new Date(`${window._employeeProfileDate || window.isoDate(new Date())}T12:00:00`);
+    current.setMonth(current.getMonth() + direction);
+    window._employeeProfileDate = window.isoDate(current);
+    window.renderEmployeeProfile();
+};
+
+window.saveEmployeeProfileInline = async () => {
+    const empId = window._employeeProfileId;
+    if (!empId) return;
+    const nombre = $('#edit-emp-nombre')?.value;
+    const hotel = $('#edit-emp-hotel')?.value;
+    const puesto = $('#edit-emp-puesto')?.value;
+    const vacAnuales = Number($('#edit-emp-vac-anuales')?.value || 44);
+    const vacAjuste = Number($('#edit-emp-vac-ajuste')?.value || 0);
+    
+    try {
+        const { error } = await window.supabase.from('empleados').update({
+            nombre, 
+            hotel_id: hotel, 
+            puesto,
+            vacaciones_anuales: vacAnuales,
+            ajuste_vacaciones_dias: vacAjuste
+        }).eq('id', empId);
+        if (error) throw error;
+        alert('Ficha actualizada correctamente.');
+        await window.populateEmployees();
+        window.renderEmployeeProfile();
+    } catch (e) { alert('Error al guardar: ' + e.message); }
+};
+
+
+// --- SOPORTE LEGACY / EXCEL SOURCE ---
+window.loadAdminExcelSourceRows = async () => {
+    if (window._cachedExcelSource) return window._cachedExcelSource;
+    return {};
+};
+
+// 1.1 HELPER DE FECHAS ROBUSTO (UNIFICADO)
+window.isoDate = (value) => {
+    if (value === null || value === undefined || value === '') return null;
+    
+    // Si ya es un objeto Date
+    if (value instanceof Date) {
+        if (isNaN(value.getTime())) return null;
+        const y = value.getFullYear();
+        const m = String(value.getMonth() + 1).padStart(2, '0');
+        const d = String(value.getDate()).padStart(2, '0');
+        return `${y}-${m}-${d}`;
+    }
+    
+    const s = String(value).trim();
+    
+    // ISO YYYY-MM-DD...
+    if (/^\d{4}-\d{2}-\d{2}/.test(s)) return s.slice(0, 10);
+    
+    // Formato dd/mm/yyyy o dd-mm-yyyy
+    const dmyMatch = s.match(/^(\d{1,2})[/\-](\d{1,2})[/\-](\d{2,4})$/);
+    if (dmyMatch) {
+        const day = dmyMatch[1].padStart(2, '0');
+        const month = dmyMatch[2].padStart(2, '0');
+        let year = dmyMatch[3];
+        if (year.length === 2) year = (Number(year) > 50 ? '19' : '20') + year;
+        return `${year}-${month}-${day}`;
+    }
+    
+    // Fallback normalizador si existe en resolver
+    if (window.normalizeDate && value !== s) return window.normalizeDate(value);
+
+    console.warn('[isoDate] Valor de fecha no reconocido:', value);
+    return null;
+};
+
+// 1.2 HELPERS DE FECHAS Y OPERATIVA
+window.getMonday = (date) => {
+    const d = new Date(date);
+    const day = d.getDay();
+    const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+    return new Date(d.setDate(diff));
+};
+
+window.addIsoDays = (iso, n) => {
+    if (!iso) return null;
+    const d = new Date(iso + 'T12:00:00');
+    d.setDate(d.getDate() + n);
+    return window.isoDate(d);
+};
+
+window.getFechasSemana = (lunesIso) => {
+    return Array.from({ length: 7 }, (_, i) => window.addIsoDays(lunesIso, i));
+};
+
+window.openEmpDrawer = (id) => {
+    window._employeeProfileId = id;
+    window._employeeProfileDate = window._employeeProfileDate || window.isoDate(new Date());
+    window._employeeProfileTab = window._employeeProfileTab || 'overview';
+    window.renderEmployeeProfile?.();
+};
+
+// 1.2 SISTEMA DE DIAGNÓSTICO VISUAL DE ERRORES
+window.showDiagnostic = (error, source = 'Error Global') => {
+    const overlay = $('#diagnostic-overlay');
+    if (!overlay) return;
+
+    const message = error.message || String(error);
+    const stack = error.stack || '';
+    
+    // Extraer archivo y línea (simplificado)
+    const stackLines = stack.split('\n');
+    const firstLine = stackLines[0] || '';
+    const secondLine = stackLines[1] || ''; // Suele contener la ubicación real
+    const locMatch = secondLine.match(/at\s+(.+)\s+\((.+):(\d+):(\d+)\)/) || secondLine.match(/at\s+(.+):(\d+):(\d+)/);
+    
+    let location = 'Desconocida';
+    if (locMatch) {
+        const file = locMatch[2] || locMatch[1];
+        const line = locMatch[3] || locMatch[2];
+        location = `${file.split('/').pop()} : L${line}`;
+    }
+
+    // Mapeo de módulos
+    let module = 'Desconocido';
+    let section = null;
+    if (stack.includes('renderDashboard')) { module = 'Dashboard'; section = 'home'; }
+    else if (stack.includes('renderEmployeeProfile')) { module = 'Ficha Empleado'; section = 'employees'; }
+    else if (stack.includes('renderExcelView')) { module = 'Modo Excel'; section = 'excel'; }
+    else if (stack.includes('renderPreview')) { module = 'Vista Previa'; section = 'preview'; }
+    else if (stack.includes('publishToSupabase')) { module = 'Publicación'; }
+    else if (message.includes('isoDate')) { module = 'Sistema (Fechas)'; }
+
+    $('#diag-module-tag').textContent = `${module} [${location}]`;
+    $('#diag-message').textContent = message;
+    $('#diag-stack').textContent = stack || 'Sin traza disponible';
+    
+    const modBtn = $('#diag-module-btn');
+    if (section && window.switchSection) {
+        modBtn.style.display = 'block';
+        modBtn.onclick = () => {
+            window.switchSection(section);
+            overlay.style.display = 'none';
+        };
+        modBtn.textContent = `Ir a sección: ${module}`;
+    } else {
+        modBtn.style.display = 'none';
+    }
+
+    overlay.style.display = 'block';
+    console.error('[DIAGNÓSTICO]', { module, message, location, stack });
+};
+
+window.copyDiagnostic = () => {
+    const text = `ERROR DIAGNÓSTICO\nMódulo: ${$('#diag-module-tag').textContent}\nMensaje: ${$('#diag-message').textContent}\nStack: ${$('#diag-stack').textContent}`;
+    navigator.clipboard.writeText(text).then(() => alert('Copiado al portapapeles'));
+};
+
+window.addEventListener('error', (e) => {
+    // Evitar bucles
+    if (e.message.includes('showDiagnostic')) return;
+    window.showDiagnostic(e.error || e.message);
+});
+
+window.addEventListener('unhandledrejection', (e) => {
+    window.showDiagnostic(e.reason || 'Rechazo de promesa desconocido');
+});
+
 // Nota: Los helpers normalizeId, normalizeDate, normalizeTipo, etc. ahora son globales 
 // y residen en shift-resolver.js para evitar discrepancias.
-
 
 window.addLog = (msg, type = 'info') => {
     const bodies = [$('#logBody'), $('#homeLogBody')];
@@ -173,15 +1937,15 @@ window.calcularCondicionesEmpleado = (empleadoId) => {
     const descansosEsperados = Math.floor((diasTotales / 7) * 2);
 
     // Si es fijo 44, si no proporcional.
-    const derechoAnual = esFijo ? 44 : Math.round((44 * (365 - ( (new Date(currentYear, 11, 31) - alta) / 86400000 ))) / 365);
-    const generadas = esFijo ? 44 : Math.round((44 * diasEnAño) / 365);
+    const derechoAnual = Number(profile.vacaciones_anuales || 44);
+    const generadas = esFijo ? derechoAnual : Math.round((derechoAnual * diasEnAño) / 365);
 
     return {
         vacaciones: {
-            derechoAnual: 44, // Visualmente mostramos 44
+            derechoAnual: derechoAnual,
             generadas,
             usadas: vacacionesUsadas,
-            saldo: (esFijo ? 44 : generadas) + regularizacion - vacacionesUsadas
+            saldo: (esFijo ? derechoAnual : generadas) + regularizacion - vacacionesUsadas
         },
         descansos: {
             esperados: descansosEsperados,
@@ -232,6 +1996,73 @@ window.generarHistorialDesdeResolver = (empleadoId, fechaInicio, fechaFin, expli
     });
 };
 
+
+window.groupConsecutiveEvents = (events) => {
+    if (!events || events.length === 0) return [];
+    
+    // Tipos que queremos agrupar
+    const groupableTypes = ['VAC', 'BAJA', 'PERMISO', 'PERM'];
+    
+    // Separar los que agrupamos de los que no
+    const toGroup = events.filter(e => groupableTypes.some(t => String(e.tipo || '').toUpperCase().startsWith(t)));
+    const others = events.filter(e => !groupableTypes.some(t => String(e.tipo || '').toUpperCase().startsWith(t)));
+    
+    // Agrupar por empleado para procesar por separado
+    const byEmp = {};
+    toGroup.forEach(e => {
+        const key = e.empleado_id || e.empleado_uuid || 'unknown';
+        if (!byEmp[key]) byEmp[key] = [];
+        byEmp[key].push(e);
+    });
+    
+    const finalGroups = [];
+    
+    Object.values(byEmp).forEach(empEvents => {
+        // Ordenar por fecha de inicio
+        empEvents.sort((a, b) => a.fecha_inicio.localeCompare(b.fecha_inicio));
+        
+        let currentGroup = null;
+        
+        empEvents.forEach(e => {
+            if (!currentGroup) {
+                currentGroup = { 
+                    ...e, 
+                    fecha_fin: e.fecha_fin || e.fecha_inicio, 
+                    ids: [e.id],
+                    isGroup: false 
+                };
+            } else {
+                const lastEnd = new Date((currentGroup.fecha_fin || currentGroup.fecha_inicio) + 'T12:00:00');
+                const nextStart = new Date(e.fecha_inicio + 'T12:00:00');
+                const diffDays = Math.round((nextStart - lastEnd) / (1000 * 60 * 60 * 24));
+                
+                // Criterios de agrupación: consecutivo, mismo tipo, mismo hotel, mismo sustituto, mismo estado
+                const sameType = (currentGroup.tipo || '').split(' ')[0] === (e.tipo || '').split(' ')[0];
+                const sameHotel = currentGroup.hotel_origen === e.hotel_origen;
+                const sameSust = (currentGroup.empleado_destino_id || currentGroup.sustituto_id) === (e.empleado_destino_id || e.sustituto_id);
+                const sameState = (currentGroup.estado || 'activo') === (e.estado || 'activo');
+                
+                if (diffDays === 1 && sameType && sameHotel && sameSust && sameState) {
+                    currentGroup.fecha_fin = e.fecha_fin || e.fecha_inicio;
+                    currentGroup.ids.push(e.id);
+                    currentGroup.isGroup = true;
+                } else {
+                    finalGroups.push(currentGroup);
+                    currentGroup = { 
+                        ...e, 
+                        fecha_fin: e.fecha_fin || e.fecha_inicio, 
+                        ids: [e.id],
+                        isGroup: false 
+                    };
+                }
+            }
+        });
+        if (currentGroup) finalGroups.push(currentGroup);
+    });
+    
+    return [...finalGroups, ...others];
+};
+
 window.buildEmployeeProfileModel = (empleadoId, fechaReferencia) => {
     const DEFAULT_CONDICIONES = {
         vacaciones: { derechoAnual: 44, generadas: 0, usadas: 0, regularizacion: 0, saldo: 0 },
@@ -242,9 +2073,9 @@ window.buildEmployeeProfileModel = (empleadoId, fechaReferencia) => {
     const profile = (window.empleadosGlobales || []).find(e => window.normalizeId(e.id) === window.normalizeId(empleadoId) || window.normalizeId(e.nombre) === window.normalizeId(empleadoId));
     if (!profile) return null;
 
-    const refISO = String(fechaReferencia || window.isoDate(new Date())).slice(0, 10);
+    const refISO = String(fechaReferencia || window.isoDate(new Date()) || '').slice(0, 10);
     const mode = 'month';
-    const eventos = window.eventosGlobales || window.eventosActivos || [];
+    const eventos = window.eventosActivos || [];
     let baseIndex = null;
 
     const emp = {
@@ -260,36 +2091,50 @@ window.buildEmployeeProfileModel = (empleadoId, fechaReferencia) => {
         email: profile.email,
         notas: profile.notas,
         activo: profile.activo,
-        id_interno: profile.id_interno
+        id_interno: profile.id_interno,
+        vacaciones_anuales: profile.vacaciones_anuales || 44,
+        ajuste_vacaciones_dias: profile.ajuste_vacaciones_dias || 0
     };
 
-    const excelSource = window._adminExcelEditableRows || window._adminExcelBaseOriginalRows || null;
+    // INTENTO DE RECUPERAR TURNOS BASE DESDE ÚLTIMA CONSULTA GLOBAL (Aislamiento)
+    let excelSource = window._adminExcelEditableRows || window._adminExcelBaseOriginalRows || null;
+    let fallbackRaw = window._lastRawTurnosBase || [];
+    
+    if (!excelSource && fallbackRaw.length > 0) {
+        const bRows = [];
+        fallbackRaw.forEach(r => {
+            if (window.normalizeId(r.empleado_id) === window.normalizeId(emp.id)) {
+                bRows.push({ empleadoId: r.empleado_id, fecha: r.fecha, turno: r.turno });
+            }
+        });
+        if (bRows.length > 0 && window.buildIndices) {
+            const built = window.buildIndices(window.empleadosGlobales || [], [], bRows);
+            baseIndex = built.baseIndex;
+        }
+    }
+
     if (excelSource) {
         try {
             const hotelRows = excelSource[emp.hotel] || [];
             const baseRowsFlat = [];
             hotelRows.forEach(sRow => {
-                if (!sRow?.empleadoId || !Array.isArray(sRow.values) || !sRow.weekStart) return;
+                if (window.normalizeId(sRow.empleadoId) !== window.normalizeId(emp.id)) return;
                 const fechasSemana = window.getFechasSemana ? window.getFechasSemana(sRow.weekStart) : [];
-                sRow.values.forEach((turno, idx) => {
-                    const fecha = fechasSemana[idx];
-                    if (fecha) baseRowsFlat.push({ empleadoId: sRow.empleadoId, fecha, turno: turno || null });
-                });
+                if (Array.isArray(sRow.values)) {
+                    sRow.values.forEach((turno, idx) => {
+                        const fecha = fechasSemana[idx];
+                        if (fecha) baseRowsFlat.push({ empleadoId: sRow.empleadoId, fecha, turno: turno || null });
+                    });
+                }
             });
             if (baseRowsFlat.length > 0 && window.buildIndices) {
                 const built = window.buildIndices(window.empleadosGlobales || [], [], baseRowsFlat);
                 baseIndex = built.baseIndex;
             }
-        } catch (e) {
-            if (window.DEBUG_MODE === true) {
-                console.warn('[FICHA BASEINDEX ERROR]', { empleadoId, hotel: emp.hotel, error: e?.message });
-            }
-        }
+        } catch (e) { console.warn('[FICHA BASEINDEX ERROR]', e); }
     }
-    // Fallback: usar _lastBaseIndex si no se pudo construir uno propio
-    if (!baseIndex && window._lastBaseIndex) {
-        baseIndex = window._lastBaseIndex;
-    }
+    
+    if (!baseIndex && window._lastBaseIndex) baseIndex = window._lastBaseIndex;
 
     const condicionesRaw = window.calcularCondicionesEmpleado(emp.id);
     const condiciones = condicionesRaw || DEFAULT_CONDICIONES;
@@ -304,6 +2149,7 @@ window.buildEmployeeProfileModel = (empleadoId, fechaReferencia) => {
         const res = window.resolveEmployeeDay({ 
             empleado: profile,
             empleadoId: emp.id,
+            hotel: emp.hotel,
             fecha,
             eventos,
             baseIndex
@@ -326,12 +2172,7 @@ window.buildEmployeeProfileModel = (empleadoId, fechaReferencia) => {
         empleado: emp,
         calendario,
         resumen30d: {
-            mananas: null,
-            tardes: null,
-            noches: null,
-            descansos: null,
             vacaciones: condiciones.vacaciones.usadas,
-            bajas: null,
             cambios: activeEvents.filter(ev => /CAMBIO|INTERCAMBIO|REFUERZO/i.test(ev.tipo || '')).length
         },
         vacaciones: condiciones.vacaciones,
@@ -341,6 +2182,7 @@ window.buildEmployeeProfileModel = (empleadoId, fechaReferencia) => {
         condiciones
     };
 };
+
 
 window.employeeProfileBadges = (model) => {
     const emp = model.empleado;
@@ -357,14 +2199,14 @@ window.employeeProfileBadges = (model) => {
 
 window.employeeFieldSizeClass = (key, type) => {
     if (type === 'textarea') return 'span-12';
-    if (key === 'id') return 'span-1';
-    if (key === 'nombre') return 'span-5';
-    if (key === 'hotel_id') return 'span-6';
-    if (key === 'puesto') return 'span-4';
-    if (['categoria', 'tipo_personal', 'contrato', 'estado_empresa'].includes(key)) return 'span-2';
-    if (['fecha_alta', 'fecha_baja'].includes(key)) return 'span-4';
+    if (key === 'id') return 'span-4';
+    if (key === 'nombre') return 'span-8';
+    if (key === 'hotel_id') return 'span-12';
+    if (key === 'puesto') return 'span-6';
+    if (['categoria', 'tipo_personal', 'contrato', 'estado_empresa', 'id_interno'].includes(key)) return 'span-6';
+    if (['fecha_alta', 'fecha_baja'].includes(key)) return 'span-6';
     if (['telefono', 'email'].includes(key)) return 'span-6';
-    return 'span-2';
+    return 'span-6';
 };
 
 window.renderEmployeeProfileField = ([label, value, key, type = 'text']) => {
@@ -390,9 +2232,8 @@ window.renderEmployeeProfileField = ([label, value, key, type = 'text']) => {
     const common = `data-emp-field="${escapeHtml(key)}" data-emp-type="${escapeHtml(type)}"`;
     let inputHtml = '';
     
-    // Custom logic for selects
     if (key === 'hotel_id') {
-        const hotels = window._employeeLineHotels || [];
+        const hotels = window._employeeLineHotels || ['Cumbria Spa&Hotel', 'Sercotel Guadiana'];
         inputHtml = `
             <select ${common}>
                 <option value="">Seleccionar hotel...</option>
@@ -404,6 +2245,13 @@ window.renderEmployeeProfileField = ([label, value, key, type = 'text']) => {
         inputHtml = `
             <select ${common}>
                 ${types.map(t => `<option value="${escapeHtml(t)}" ${t === rawValue ? 'selected' : ''}>${escapeHtml(t.charAt(0).toUpperCase() + t.slice(1))}</option>`).join('')}
+            </select>
+        `;
+    } else if (key === 'estado_empresa') {
+        const states = ['ACTIVO', 'BAJA'];
+        inputHtml = `
+            <select ${common}>
+                ${states.map(s => `<option value="${escapeHtml(s)}" ${s === rawValue.toUpperCase() ? 'selected' : ''}>${escapeHtml(s)}</option>`).join('')}
             </select>
         `;
     } else if (type === 'boolean') {
@@ -427,45 +2275,68 @@ window.renderEmployeeProfileField = ([label, value, key, type = 'text']) => {
     `;
 };
 
-window.renderEmployeeProfilePanelBlock = (iconKey, title, rows) => `
-    <section class="emp-card">
-        <h3>${window.employeeIcon(iconKey)} ${escapeHtml(title)}</h3>
-        <dl class="emp-grid">${rows.map(window.renderEmployeeProfileField).join('')}</dl>
-    </section>
-`;
+
+window.employeeStatusMeta = (status) => {
+    const s = String(status || 'Activo').toLowerCase();
+    if (s.includes('baja')) return { label: 'Baja', cls: 'baja' };
+    if (s.includes('vaca')) return { label: 'Vacaciones', cls: 'vacaciones' };
+    if (s.includes('exced')) return { label: 'Excedencia', cls: 'excedencia' };
+    return { label: 'Activo', cls: 'activo' };
+};
+
+window.employeeNorm = (val) => String(val || '').toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+
+window.openEmployeeDayDetail = (fecha) => {
+    console.log("Detalle de día:", fecha);
+    // Podríamos abrir un mini-modal con los detalles técnicos del turno resuelto
+};
 
 window.renderEmployeeProfileCalendar = (model) => {
-    const weekdays = ['LUN', 'MAR', 'MIE', 'JUE', 'VIE', 'SAB', 'DOM'];
-    // Aseguramos que el calendario siempre muestre un bloque completo para evitar cortes
-    const cells = model.calendario.map(day => {
-        const cls = window.employeeShiftClass(day.turno, day.incidencia);
-        const hasAlert = day.cambio || day.sustitucion;
-        
-        let label = window.employeeShiftLabel(day);
-        if (day.incidencia === 'VAC') label = 'VAC';
-        if (day.incidencia === 'BAJA') label = 'BAJA';
-        
-        return `
-            <button class="emp-cal-cell emp-cal-${cls}${day.outsideMonth ? ' muted' : ''}" onclick="window.openEmployeeDayDetail('${day.fecha}')">
-                <span class="emp-cal-date">${new Date(`${day.fecha}T12:00:00`).getDate()}</span>
-                <strong>${label || '-'}</strong>
-                <div class="emp-cal-indicators">
-                    ${day.cambio ? '<i class="fas fa-exchange-alt" style="color:#3b82f6; font-size:0.5rem;"></i>' : ''}
-                    ${day.sustitucion ? '<i class="fas fa-user-friends" style="color:#8b5cf6; font-size:0.5rem;"></i>' : ''}
-                </div>
-            </button>
-        `;
-    }).join('');
+    const days = model.calendario || [];
+    const weekdays = ['L', 'M', 'X', 'J', 'V', 'S', 'D'];
     
     return `
-        <div class="emp-calendar-shell">
-            <div class="emp-calendar-week-head">${weekdays.map(d => `<span>${d}</span>`).join('')}</div>
-            <div class="emp-calendar-grid month">${cells}</div>
-        </div>
-        <div class="emp-cal-legend" style="margin-top:12px; display:flex; gap:12px; justify-content:center; font-size:0.65rem; color:#64748b;">
-            <span><i class="fas fa-circle" style="color:#ccfbf1;"></i> Vac</span>
-            <span><i class="fas fa-circle" style="color:#fee2e2;"></i> Baja</span>
-            <span><i class="fas fa-exchange-alt" style="color:#3b82f6;"></i> Cambio</span>
+        <div class="emp-calendar-shell" style="background:var(--bg3); border-radius:18px; padding:15px; border:1px solid var(--border);">
+            <div class="emp-calendar-week-head" style="display:grid; grid-template-columns:repeat(7, 1fr); text-align:center; margin-bottom:10px; font-size:0.65rem; font-weight:800; color:var(--text-dim);">
+                ${weekdays.map(w => `<span>${w}</span>`).join('')}
+            </div>
+            <div class="emp-calendar-grid month" style="display:grid; grid-template-columns:repeat(7, 1fr); gap:4px;">
+                ${days.map(day => {
+                    const label = window.employeeShiftLabel(day).replace('&mdash;', '-').replace('PENDIENTE DE ASIGNAR', '-').replace('Descanso', 'D');
+                    const labelShort = label.length > 2 ? label.charAt(0) : label;
+                    const isToday = day.fecha === window.isoDate(new Date());
+                    
+                    let statusClass = '';
+                    if (day.incidencia) {
+                        const type = window.normalizeTipo(day.incidencia.tipo);
+                        if (type === 'VAC') statusClass = 'vac';
+                        else if (type === 'BAJA' || type === 'IT') statusClass = 'baja';
+                        else statusClass = 'event';
+                    } else if (label === 'D' || label === 'Descanso') {
+                        statusClass = 'descanso';
+                    } else if (['M','T','N'].includes(labelShort.toUpperCase())) {
+                        statusClass = labelShort.toLowerCase();
+                    }
+
+                    const cls = [
+                        'emp-cal-cell',
+                        day.outsideMonth ? 'outside' : '',
+                        isToday ? 'today' : '',
+                        statusClass ? 'st-' + statusClass : '',
+                        day.cambio ? 'has-change' : '',
+                        day.sustitucion ? 'is-sust' : ''
+                    ].filter(Boolean).join(' ');
+
+                    return `
+                        <div class="${cls}" onclick="window.openEmployeeDayDetail('${day.fecha}')" title="${day.fecha}: ${label}" style="aspect-ratio:1/1; display:flex; flex-direction:column; align-items:center; justify-content:center; border-radius:8px; cursor:pointer; position:relative; font-size:0.75rem; border:1px solid transparent;">
+                            <span class="day-num" style="font-size:0.6rem; opacity:0.5; position:absolute; top:2px; right:4px;">${day.fecha.split('-')[2]}</span>
+                            <span class="shift-tag" style="font-weight:900;">${labelShort}</span>
+                            ${day.cambio ? `<i class="fas fa-sync-alt" style="position:absolute; bottom:2px; left:2px; font-size:0.5rem; color:#f59e0b;"></i>` : ''}
+                            ${day.sustitucion ? `<i class="fas fa-user-friends" style="position:absolute; bottom:2px; right:2px; font-size:0.5rem; color:#2563eb;"></i>` : ''}
+                        </div>
+                    `;
+                }).join('')}
+            </div>
         </div>
     `;
 };
@@ -474,1059 +2345,283 @@ window.renderEmployeeProfile = () => {
     const drawer = $('#empDrawer');
     const body = $('#drawerBody');
     if (!drawer || !body) return;
-    const model = window.buildEmployeeProfileModel(window._employeeProfileId, window._employeeProfileDate);
-    if (!model) return;
-    drawer.classList.add('open');
-    const emp = model.empleado;
-    const status = window.employeeStatusMeta(emp.estado);
-    const refISO = window._employeeProfileDate || window.isoDate(new Date());
-    const refDate = new Date(`${refISO}T12:00:00`);
-    const mode = 'month';
-    const titlePeriod = refDate.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' });
 
     const currentTab = window._employeeProfileTab || 'overview';
-
-    const laboralRows = [
-        ['ID Interno', emp.id_interno, 'id_interno'],
-        ['Nombre', emp.nombre, 'nombre'], 
-        ['Hotel Principal', emp.hotel, 'hotel_id'],
-        ['Puesto', emp.puesto, 'puesto'], 
-        ['Tipo', emp.tipo, 'tipo_personal'], 
-        ['Estado', emp.estado, 'estado_empresa']
-    ];
-
-    const technicalRows = [
-        ['ID técnico legacy', emp.id]
-    ];
-
-    if (emp.estado === 'Baja') {
-        laboralRows.push(['Baja', emp.fechaBaja, 'fecha_baja', 'date']);
-    }
-
-    const assignedHotels = String(emp.hotelesAsignados || '').split(',').map(h => h.trim()).filter(Boolean);
-    const hotelsRows = [
-        ['Hoteles Operativos', emp.hotelesAsignados, 'hoteles_asignados', 'textarea']
-    ];
-    const contactoRows = [
-        ['Tel', emp.telefono, 'telefono'], ['Email', emp.email, 'email'], ['Activo', emp.activo === false ? 'No' : 'Si', 'activo', 'boolean']
-    ];
-    const condiciones = model.condiciones || {};
-    const vacaciones = model.vacaciones || {};
-    const meta = model.meta || {};
-
-    const vacationRows = [
-        ['Derecho', vacaciones.derechoAnual], 
-        ['Usadas', vacaciones.usadas], 
-        ['Ajuste', meta.regularizacion || 0, 'ajuste_vacaciones_dias', 'number'], 
-        ['Saldo', vacaciones.saldo]
-    ];
-
-    const eventList = model.eventosActivos.length
-        ? model.eventosActivos.map(ev => `
-            <div class="emp-event-item" onclick="window.openEmployeeIncidentDetail()">
-                <strong>${escapeHtml(ev.tipo || 'Evento')}</strong>
-                <span>${window.employeeEventDateRange(ev)}</span>
-            </div>
-        `).join('')
-        : '<div class="emp-event-item"><span>Sin eventos</span></div>';
-
-    // Cálculos para nuevos bloques
-    const todayISO = window.isoDate(new Date());
-    const turnoHoy = model.calendario.find(d => d.fecha === todayISO);
-    const incidenciasActivas = model.eventosActivos.filter(ev => /VAC|BAJA|PERM/i.test(ev.tipo || ''));
-    const cambiosActivos = model.eventosActivos.filter(ev => /CAMBIO|INTERCAMBIO|REFUERZO/i.test(ev.tipo || ''));
+    const refISO = window._employeeProfileDate || window.isoDate(new Date());
+    const model = window.buildEmployeeProfileModel(window._employeeProfileId, refISO);
     
-    const overviewContent = `
-        <div class="employee-profile-layout">
-            <div class="employee-config-panel">
-                <!-- BLOQUE: ESTADO ACTUAL -->
-                <div class="emp-operational-strip">
-                    <div class="op-strip-card ${incidenciasActivas.length ? 'status-incident' : ''}">
-                        <span class="label">Turno Hoy</span>
-                        <span class="value">${turnoHoy ? (turnoHoy.turno || 'DESCANSO') : '--'}</span>
-                    </div>
-                    <div class="op-strip-card">
-                        <span class="label">Hotel Actual</span>
-                        <span class="value">${escapeHtml(emp.hotel)}</span>
-                    </div>
-                    <div class="op-strip-card">
-                        <span class="label">Estado</span>
-                        <span class="value">${incidenciasActivas.length ? 'INCIDENCIA' : 'OPERATIVO'}</span>
+    if (!model) {
+        body.innerHTML = '<div style="padding:4rem; text-align:center; opacity:0.5;">Empleado no encontrado.</div>';
+        return;
+    }
+    
+    drawer.classList.add('open');
+    const emp = model.emp;
+    const refDate = new Date(`${refISO}T12:00:00`);
+    const titlePeriod = refDate.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' });
+
+    // 1. CABECERA PREMIUM
+    const headerHTML = `
+        <div class="emp-premium-header">
+            <div class="emp-header-info">
+                <div class="emp-avatar" style="background:var(--accent); color:white; width:60px; height:60px; border-radius:18px; display:flex; align-items:center; justify-content:center; font-size:1.5rem; font-weight:800; box-shadow:0 8px 16px rgba(0,0,0,0.1);">
+                    ${emp.nombre.charAt(0)}
+                </div>
+                <div class="emp-title-block">
+                    <h2 style="margin:0; font-size:1.4rem; font-weight:800; color:var(--text);">${escapeHtml(emp.nombre)} <span style="font-size:0.8rem; opacity:0.5; font-weight:400; margin-left:8px;">${emp.id_interno || emp.id}</span></h2>
+                    <div class="emp-subtitle" style="display:flex; align-items:center; gap:8px; font-size:0.8rem; color:var(--text-dim); margin-top:4px;">
+                        <span>${emp.puesto || 'Recepcionista'}</span>
+                        <i class="fas fa-circle" style="font-size:4px; opacity:0.3;"></i> 
+                        <span>${emp.hotel || 'Hotel no definido'}</span>
+                        <i class="fas fa-circle" style="font-size:4px; opacity:0.3;"></i> 
+                        <span class="status-pill ${window.employeeStatusMeta(emp.estado).cls}">${window.employeeStatusMeta(emp.estado).label}</span>
                     </div>
                 </div>
+            </div>
+            <div class="emp-header-actions">
+                <button class="btn-premium" onclick="window.setEmployeeProfileTab('config')" style="background:var(--accent); color:white; border:none; padding:10px 20px; border-radius:12px; font-weight:700; cursor:pointer; font-size:0.8rem;">
+                    <i class="fas fa-user-edit" style="margin-right:6px;"></i> Editar ficha
+                </button>
+            </div>
+        </div>
+    `;
 
-                <!-- ALERTAS AUTOMÁTICAS (OPERATIVAS Y CONFLICTOS) -->
-                ${(() => {
-                    const showCounters = window.shouldShowEmployeeCounters && window.shouldShowEmployeeCounters(model.empleado, model.rowData);
-                    const alerts = [];
-                    
-                    // Alerta Descanso - Solo para personal con control activo
-                    if (showCounters && model.descansos.diferencia < -2) {
-                        alerts.push(`<div class="emp-alert-box"><i class="fas fa-exclamation-triangle"></i><span><strong>ALERTA DE DESCANSO:</strong> Balance crítico de ${Math.abs(model.descansos.diferencia)} días. Riesgo de fatiga.</span></div>`);
-                    }
+    // 2. RESUMEN KPI (SIEMPRE VISIBLE)
+    const kpiHTML = `
+        <div class="emp-kpi-grid" style="display:grid; grid-template-columns:repeat(5, 1fr); gap:12px; margin-bottom:24px;">
+            <div class="emp-kpi-card glass" style="padding:15px; border-radius:18px; border:1px solid var(--border);">
+                <label style="display:block; font-size:0.6rem; font-weight:800; color:var(--text-dim); text-transform:uppercase; margin-bottom:4px;">Estado Hoy</label>
+                <strong style="font-size:1rem; color:var(--text);">${model.hoy ? window.employeeShiftLabel(model.hoy) : '-'}</strong>
+            </div>
+            <div class="emp-kpi-card glass" style="padding:15px; border-radius:18px; border:1px solid var(--border);">
+                <label style="display:block; font-size:0.6rem; font-weight:800; color:var(--text-dim); text-transform:uppercase; margin-bottom:4px;">Hotel Actual</label>
+                <strong style="font-size:1rem; color:var(--text);">${emp.hotel || '-'}</strong>
+            </div>
+            <div class="emp-kpi-card glass" style="padding:15px; border-radius:18px; border:1px solid var(--border);">
+                <label style="display:block; font-size:0.6rem; font-weight:800; color:var(--text-dim); text-transform:uppercase; margin-bottom:4px;">Saldo Pendiente</label>
+                <strong style="font-size:1rem; color:#10b981;">${model.vacaciones.derechoAnual - model.vacaciones.usadas + model.vacaciones.saldo} d&iacute;as</strong>
+            </div>
+            <div class="emp-kpi-card glass" style="padding:15px; border-radius:18px; border:1px solid var(--border);">
+                <label style="display:block; font-size:0.6rem; font-weight:800; color:var(--text-dim); text-transform:uppercase; margin-bottom:4px;">Vacas. Usadas</label>
+                <strong style="font-size:1rem; color:var(--text);">${model.vacaciones.usadas} / ${model.vacaciones.derechoAnual}</strong>
+            </div>
+            <div class="emp-kpi-card glass" style="padding:15px; border-radius:18px; border:1px solid var(--border);">
+                <label style="display:block; font-size:0.6rem; font-weight:800; color:var(--text-dim); text-transform:uppercase; margin-bottom:4px;">Ajustes Saldo</label>
+                <strong style="font-size:1rem; color:var(--text);">${model.vacaciones.saldo > 0 ? '+' : ''}${model.vacaciones.saldo}</strong>
+            </div>
+        </div>
+    `;
 
-                    // Alerta Días Seguidos - Solo para personal con control activo
-                    if (showCounters) {
-                        let consecutive = 0;
-                        let maxConsecutive = 0;
-                        model.calendario.forEach(d => {
-                            if (d.turno && d.turno !== 'D' && !d.incidencia) {
-                                consecutive++;
-                                if (consecutive > maxConsecutive) maxConsecutive = consecutive;
-                            } else {
-                                consecutive = 0;
-                            }
-                        });
-                        if (maxConsecutive > 6) {
-                            alerts.push(`<div class="emp-alert-box" style="background:#fff1f2; border-color:#fecdd3; color:#9f1239;"><i class="fas fa-running"></i><span><strong>EXCESO DE JORNADA:</strong> Detectados ${maxConsecutive} días seguidos trabajando sin descanso.</span></div>`);
-                        }
-                    }
+    const tabsNav = `
+        <div class="emp-tabs-nav" style="display:flex; gap:20px; border-bottom:1px solid var(--border); margin-bottom:24px; padding-bottom:2px;">
+            <button class="emp-tab-btn ${currentTab === 'overview' ? 'active' : ''}" onclick="window.setEmployeeProfileTab('overview')" style="background:none; border:none; padding:10px 5px; color:var(--text-dim); font-weight:700; cursor:pointer; font-size:0.85rem; position:relative;">Vista General</button>
+            <button class="emp-tab-btn ${currentTab === 'planning' ? 'active' : ''}" onclick="window.setEmployeeProfileTab('planning')" style="background:none; border:none; padding:10px 5px; color:var(--text-dim); font-weight:700; cursor:pointer; font-size:0.85rem; position:relative;">Planificaci&oacute;n</button>
+            <button class="emp-tab-btn ${currentTab === 'config' ? 'active' : ''}" onclick="window.setEmployeeProfileTab('config')" style="background:none; border:none; padding:10px 5px; color:var(--text-dim); font-weight:700; cursor:pointer; font-size:0.85rem; position:relative;">Datos y Config</button>
+            <button class="emp-tab-btn ${currentTab === 'history' ? 'active' : ''}" onclick="window.setEmployeeProfileTab('history')" style="background:none; border:none; padding:10px 5px; color:var(--text-dim); font-weight:700; cursor:pointer; font-size:0.85rem; position:relative;">Historial</button>
+            <button class="emp-tab-btn ${currentTab === 'vacations' ? 'active' : ''}" onclick="window.setEmployeeProfileTab('vacations')" style="background:none; border:none; padding:10px 5px; color:var(--text-dim); font-weight:700; cursor:pointer; font-size:0.85rem; position:relative;">Control Vacaciones</button>
+        </div>
+    `;
 
-                    // Alerta Incoherencia (Turno + Incidencia)
-                    const hasIncoherence = model.calendario.some(d => d.turno && d.turno !== 'D' && d.incidencia);
-                    if (hasIncoherence) {
-                        alerts.push(`<div class="emp-alert-box" style="background:#fef2f2; border-color:#fee2e2; color:#b91c1c;"><i class="fas fa-bug"></i><span><strong>INCOHERENCIA DE DATOS:</strong> El empleado tiene turnos asignados durante días de Vacaciones o Baja.</span></div>`);
-                    }
+    let tabContent = '';
+    const today = window.isoDate(new Date());
 
-                    return alerts.join('');
-                })()}
-
-                <section class="emp-card">
-                    <div class="drawer-section-title compact">INCIDENCIAS Y CAMBIOS</div>
-                    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:16px;">
-                        <div>
-                            <h4 style="font-size:0.7rem; color:#64748b; margin-bottom:8px;">AUSENCIAS</h4>
-                            ${incidenciasActivas.length ? incidenciasActivas.map(ev => `
-                                <div style="background:#f8fafc; padding:10px; border-radius:8px; border-left:3px solid #ef4444; margin-bottom:8px;">
-                                    <div style="font-weight:800; font-size:0.8rem;">${escapeHtml(ev.tipo)}</div>
-                                    <div style="font-size:0.7rem; color:#64748b;">${ev.fecha_inicio} al ${ev.fecha_fin || '...'}</div>
-                                </div>
-                            `).join('') : '<div style="font-size:0.75rem; color:#94a3b8; font-style:italic;">Sin ausencias activas</div>'}
-                        </div>
-                        <div>
-                            <h4 style="font-size:0.7rem; color:#64748b; margin-bottom:8px;">CAMBIOS / REFUERZOS</h4>
-                            ${cambiosActivos.length ? cambiosActivos.map(ev => `
-                                <div style="background:#f8fafc; padding:10px; border-radius:8px; border-left:3px solid #3b82f6; margin-bottom:8px;">
-                                    <div style="font-weight:800; font-size:0.8rem;">${escapeHtml(ev.tipo)}</div>
-                                    <div style="font-size:0.7rem; color:#64748b;">${ev.fecha_inicio}</div>
-                                </div>
-                            `).join('') : '<div style="font-size:0.75rem; color:#94a3b8; font-style:italic;">Sin cambios pendientes</div>'}
-                        </div>
+    if (currentTab === 'overview') {
+        tabContent = `
+            <div class="emp-grid" style="display:grid; grid-template-columns: 1fr 1fr; gap:20px;">
+                <section class="emp-card glass" style="padding:24px; border-radius:24px; border:1px solid var(--border);">
+                    <h3 style="margin-top:0; font-size:0.95rem; font-weight:800; color:var(--text); margin-bottom:18px;">Informaci&oacute;n Personal</h3>
+                    <div style="display:grid; gap:12px;">
+                        ${window.renderEmployeeProfileField(['Email Corporativo', emp.email, 'email'])}
+                        ${window.renderEmployeeProfileField(['Tel&eacute;fono de Contacto', emp.telefono, 'telefono'])}
+                        ${window.renderEmployeeProfileField(['Fecha de Alta', window.fmtDateLegacy(emp.fechaAlta), 'fecha_alta'])}
                     </div>
                 </section>
-
-                ${(window.isEmpleadoOcasionalOApoyo && window.isEmpleadoOcasionalOApoyo(model.empleado)) ? '' : `
-                <section class="emp-card">
-                    <div class="drawer-section-title compact">CONTROL DE VACACIONES</div>
-                    <div class="emp-annual-summary-grid" style="margin-top:0;">
-                        <div class="emp-annual-card vac" style="padding:12px;">
-                            <div class="emp-annual-stats" style="grid-template-columns: repeat(4, 1fr);">
-                                <div class="stat"><label>Anual</label><strong>${model.vacaciones.derechoAnual}</strong></div>
-                                <div class="stat"><label>Generadas</label><strong>${model.vacaciones.generadas}</strong></div>
-                                <div class="stat"><label>Usadas</label><strong class="val-vac">${model.vacaciones.usadas}</strong></div>
-                                <div class="stat highlight"><label>Saldo</label><strong class="${model.vacaciones.saldo < 0 ? 'val-baja' : 'val-m'}">${model.vacaciones.saldo}</strong></div>
+                <section class="emp-card glass" style="padding:24px; border-radius:24px; border:1px solid var(--border);">
+                    <h3 style="margin-top:0; font-size:0.95rem; font-weight:800; color:var(--text); margin-bottom:18px;">Detalle Contractual</h3>
+                    <div style="display:grid; gap:12px;">
+                        ${window.renderEmployeeProfileField(['Categor&iacute;a', emp.puesto, 'puesto'])}
+                        ${window.renderEmployeeProfileField(['Tipo de Contrato', emp.tipo, 'tipo_personal'])}
+                        ${window.renderEmployeeProfileField(['Centro de Trabajo', emp.hotel, 'hotel_id'])}
+                    </div>
+                </section>
+            </div>
+        `;
+    } else if (currentTab === 'planning') {
+        const rawProximos = model.eventosActivos.filter(ev => (ev.fecha_fin || ev.fecha_inicio) >= today);
+        const proximos = window.groupConsecutiveEvents(rawProximos).sort((a,b) => a.fecha_inicio.localeCompare(b.fecha_inicio));
+        
+        tabContent = `
+            <div class="emp-grid" style="display:grid; grid-template-columns: 1fr 400px; gap:24px; align-items:start;">
+                <section class="emp-card glass" style="padding:20px; border-radius:24px; border:1px solid var(--border);">
+                    <h3 style="margin-top:0; font-size:0.95rem; font-weight:800; color:var(--text); margin-bottom:18px;">Pr&oacute;ximos Eventos y Planificaci&oacute;n</h3>
+                    <div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(180px, 1fr)); gap:12px;">
+                        ${proximos.length > 0 ? proximos.slice(0, 12).map(ev => {
+                            const isVac = ev.tipo.includes('VAC');
+                            const isBaja = ev.tipo.includes('BAJA') || ev.tipo.includes('IT');
+                            const accent = isVac ? '#2563eb' : (isBaja ? '#ef4444' : '#f59e0b');
+                            const days = Math.round((new Date((ev.fecha_fin || ev.fecha_inicio) + 'T12:00:00') - new Date(ev.fecha_inicio + 'T12:00:00')) / 86400000) + 1;
+                            
+                            return `
+                                <div style="padding:14px; background:white; border-radius:18px; border:1px solid var(--border); border-top:4px solid ${accent}; box-shadow:0 4px 6px -1px rgba(0,0,0,0.05);">
+                                    <div style="font-weight:900; font-size:0.7rem; color:${accent}; text-transform:uppercase; letter-spacing:0.05em; margin-bottom:4px;">${ev.tipo} ${ev.isGroup ? '(Agrupado)' : ''}</div>
+                                    <div style="font-weight:800; font-size:0.9rem; color:var(--text); margin-bottom:4px;">${window.fmtDateLegacy(ev.fecha_inicio)}${ev.fecha_fin && ev.fecha_fin !== ev.fecha_inicio ? ` — ${window.fmtDateLegacy(ev.fecha_fin)}` : ''}</div>
+                                    <div style="font-size:0.7rem; color:var(--text-dim); font-weight:700;">${days} D&Iacute;A${days > 1 ? 'S' : ''} NATURALES</div>
+                                    <div style="margin-top:8px; font-size:0.7rem; font-style:italic; color:var(--text-dim); border-top:1px solid #f1f5f9; padding-top:8px;">${ev.observaciones || 'Sin detalles'}</div>
+                                </div>
+                            `;
+                        }).join('') : '<div style="grid-column:1/-1; padding:60px; text-align:center; opacity:0.4; font-size:0.8rem;">No hay eventos planificados.</div>'}
+                    </div>
+                </section>
+                <div style="display:flex; flex-direction:column; gap:24px;">
+                    <section class="emp-card glass" style="padding:20px; border-radius:24px; border:1px solid var(--border);">
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+                            <h3 style="margin:0; font-size:0.95rem; font-weight:800;">Navegaci&oacute;n</h3>
+                            <div style="display:flex; gap:5px;">
+                                <button onclick="window.moveEmployeeProfilePeriod(-1)" class="btn-premium" style="padding:6px 10px;"><i class="fas fa-chevron-left"></i></button>
+                                <button onclick="window.moveEmployeeProfilePeriod(1)" class="btn-premium" style="padding:6px 10px;"><i class="fas fa-chevron-right"></i></button>
                             </div>
                         </div>
-                    </div>
-                </section>
-                `}
-            </div>
-            
-            <aside class="employee-side-panel">
-                <section class="emp-card emp-calendar-card">
-                    <div class="emp-profile-toolbar" style="margin-bottom: 12px;">
-                        <button class="emp-nav-btn" onclick="window.moveEmployeeProfilePeriod(-1)">&lsaquo;</button>
-                        <h4 style="font-size: 0.8rem;">${escapeHtml(titlePeriod)}</h4>
-                        <button class="emp-nav-btn" onclick="window.moveEmployeeProfilePeriod(1)">&rsaquo;</button>
-                    </div>
-                    ${window.renderEmployeeProfileCalendar(model)}
-                </section>
-            </aside>
-        </div>
-    `;
-
-    const infoContent = `
-        <div class="employee-config-panel" style="gap: 8px;">
-            <div style="display:grid; grid-template-columns: 1fr 400px; gap: 12px;">
-                <div style="display:flex; flex-direction:column; gap: 8px;">
-                    ${window.renderEmployeeProfilePanelBlock('laboral', 'Datos laborales principales', laboralRows)}
-                    <section class="emp-card">
-                        <h3 style="border-bottom: 1px solid #f1f5f9; padding-bottom: 8px; margin-bottom: 12px; font-size: 0.75rem; color: #64748b;">
-                            Configuración Avanzada
-                        </h3>
-                        <div style="display:flex; flex-direction:column; gap: 8px;">
-                            ${window.renderEmployeeProfilePanelBlock('technical', 'Sistema Legacy', technicalRows)}
-                            <details class="emp-hotels-edit-details" style="border-top: 1px solid #f1f5f9; padding-top: 8px;">
-                                <summary style="color: var(--accent); font-weight: 700; font-size: 0.7rem; cursor: pointer;">Notas de sistema...</summary>
-                                <div style="margin-top: 8px;">
-                                    ${window.renderEmployeeProfileField(['Notas internas', emp.notas, 'notas', 'textarea'])}
-                                </div>
-                            </details>
-                        </div>
+                        <div style="text-align:center; margin-bottom:15px; font-weight:800; color:var(--accent); text-transform:capitalize;">${titlePeriod}</div>
+                        ${window.renderEmployeeProfileCalendar(model)}
                     </section>
                 </div>
-                <div style="display:flex; flex-direction:column; gap: 8px;">
-                    ${window.renderEmployeeProfilePanelBlock('contacto', 'Contacto', contactoRows)}
-                    ${(window.shouldShowEmployeeCounters && window.shouldShowEmployeeCounters(model.empleado, model.rowData)) ? window.renderEmployeeProfilePanelBlock('vacaciones', 'Control de Vacaciones', vacationRows) : ''}
+            </div>
+        `;
+    } else if (currentTab === 'history') {
+        const rawPasados = model.eventosActivos.filter(ev => (ev.fecha_fin || ev.fecha_inicio) < today);
+        const pasados = window.groupConsecutiveEvents(rawPasados).sort((a,b) => b.fecha_inicio.localeCompare(a.fecha_inicio));
+        
+        tabContent = `
+            <section class="emp-card glass" style="padding:24px; border-radius:24px; border:1px solid var(--border);">
+                <h3 style="margin-top:0; font-size:0.95rem; font-weight:800; color:var(--text); margin-bottom:18px;">Historial de Eventos Pasados</h3>
+                <div style="display:grid; gap:10px;">
+                    ${pasados.length > 0 ? pasados.map(ev => `
+                        <div style="display:flex; justify-content:space-between; align-items:center; padding:12px; border-bottom:1px solid var(--border); opacity:0.8;">
+                            <div>
+                                <span style="font-weight:700; font-size:0.85rem;">${ev.tipo} ${ev.isGroup ? '(Agrupado)' : ''}</span>
+                                <span style="margin-left:10px; font-size:0.75rem; color:var(--text-dim);">${window.fmtDateLegacy(ev.fecha_inicio)}${ev.fecha_fin && ev.fecha_fin !== ev.fecha_inicio ? ` — ${window.fmtDateLegacy(ev.fecha_fin)}` : ''}</span>
+                            </div>
+                            <div style="font-size:0.8rem; font-weight:600; color:${ev.estado === 'anulado' ? '#ef4444' : '#10b981'};">${ev.estado || 'Finalizado'}</div>
+                        </div>
+                    `).join('') : '<div style="padding:40px; text-align:center; opacity:0.4;">Sin registros históricos.</div>'}
                 </div>
+            </section>
+        `;
+    } else if (currentTab === 'vacations') {
+        const rawVacs = model.eventosActivos.filter(ev => ev.tipo.includes('VAC'));
+        const vacs = window.groupConsecutiveEvents(rawVacs).sort((a,b) => b.fecha_inicio.localeCompare(a.fecha_inicio));
+        
+        tabContent = `
+            <div style="display:grid; grid-template-columns: 1fr 300px; gap:24px;">
+                <section class="emp-card glass" style="padding:24px; border-radius:24px; border:1px solid var(--border);">
+                    <h3 style="margin-top:0; font-size:0.95rem; font-weight:800; color:var(--text); margin-bottom:18px;">Periodos de Vacaciones</h3>
+                    <div style="display:grid; gap:10px;">
+                        ${vacs.length > 0 ? vacs.map(ev => {
+                            const days = Math.round((new Date((ev.fecha_fin || ev.fecha_inicio) + 'T12:00:00') - new Date(ev.fecha_inicio + 'T12:00:00')) / 86400000) + 1;
+                            return `
+                                <div style="display:flex; justify-content:space-between; align-items:center; padding:15px; background:var(--bg2); border-radius:15px; border:1px solid var(--border);">
+                                    <div>
+                                        <div style="font-weight:800; font-size:0.9rem;">${window.fmtDateLegacy(ev.fecha_inicio)}${ev.fecha_fin && ev.fecha_fin !== ev.fecha_inicio ? ` — ${window.fmtDateLegacy(ev.fecha_fin)}` : ''}</div>
+                                        <div style="font-size:0.75rem; color:var(--text-dim); margin-top:3px;">${days} d&iacute;as naturales ${ev.isGroup ? '(Agrupados)' : ''}</div>
+                                    </div>
+                                    <span class="status-pill ${ev.estado === 'activo' ? 'activo' : 'baja'}">${ev.estado || 'activo'}</span>
+                                </div>
+                            `;
+                        }).join('') : '<div style="padding:60px; text-align:center; opacity:0.4;">No hay periodos de vacaciones registrados este año.</div>'}
+                    </div>
+                </section>
+                <section class="emp-card glass" style="padding:20px; border-radius:24px; border:1px solid var(--border); background:rgba(37,99,235,0.05);">
+                    <h4 style="margin:0 0 15px; font-size:0.8rem; font-weight:800; text-transform:uppercase; color:var(--accent);">Desglose del Saldo</h4>
+                    <div style="display:flex; flex-direction:column; gap:12px;">
+                        <div style="display:flex; justify-content:space-between; font-size:0.85rem;"><span>Derecho Anual:</span> <strong>${model.vacaciones.derechoAnual} d&iacute;as</strong></div>
+                        <div style="display:flex; justify-content:space-between; font-size:0.85rem;"><span>Consumidas:</span> <strong style="color:#ef4444;">- ${model.vacaciones.usadas} d&iacute;as</strong></div>
+                        <div style="display:flex; justify-content:space-between; font-size:0.85rem;"><span>Ajustes:</span> <strong>${model.vacaciones.saldo >= 0 ? '+' : ''}${model.vacaciones.saldo} d&iacute;as</strong></div>
+                        <div style="margin-top:10px; padding-top:10px; border-top:1px dashed var(--border); display:flex; justify-content:space-between; font-weight:800; font-size:1rem; color:#10b981;">
+                            <span>Saldo Neto:</span>
+                            <span>${model.vacaciones.derechoAnual - model.vacaciones.usadas + model.vacaciones.saldo} d&iacute;as</span>
+                        </div>
+                    </div>
+                </section>
+            </div>
+        `;
+    } else if (currentTab === 'config') {
+        tabContent = `
+            <div class="emp-grid" style="display:grid; grid-template-columns: 1fr 1fr; gap:20px;">
+                <div class="span-6">
+                    <div class="emp-profile-field"><label>Nombre Completo</label><input type="text" id="edit-emp-nombre" value="${emp.nombre || ''}" class="btn-premium" style="width:100%; margin-top:5px;"></div>
+                    <div class="emp-profile-field" style="margin-top:15px;"><label>Email</label><input type="email" id="edit-emp-email" value="${emp.email || ''}" class="btn-premium" style="width:100%; margin-top:5px;"></div>
+                    <div class="emp-profile-field" style="margin-top:15px;"><label>Tel&eacute;fono</label><input type="text" id="edit-emp-telefono" value="${emp.telefono || ''}" class="btn-premium" style="width:100%; margin-top:5px;"></div>
+                    <div class="emp-profile-field" style="margin-top:15px;"><label>D&iacute;as Vacaciones/A&ntilde;o</label><input type="number" id="edit-emp-vac-anuales" value="${emp.vacaciones_anuales || 44}" class="btn-premium" style="width:100%; margin-top:5px;"></div>
+                    <div class="emp-profile-field" style="margin-top:15px;"><label>Ajuste Saldo (D&iacute;as)</label><input type="number" id="edit-emp-vac-ajuste" value="${emp.ajuste_vacaciones_dias || 0}" class="btn-premium" style="width:100%; margin-top:5px;"></div>
+                </div>
+                <div class="span-6">
+                    <div class="emp-profile-field"><label>Categor&iacute;a / Puesto</label><input type="text" id="edit-emp-puesto" value="${emp.puesto || ''}" class="btn-premium" style="width:100%; margin-top:5px;"></div>
+                    <div class="emp-profile-field" style="margin-top:15px;"><label>Hotel Principal</label>
+                        <select id="edit-emp-hotel" class="btn-premium" style="width:100%; margin-top:5px;">
+                            <option value="">- Seleccionar -</option>
+                            <option value="Cumbria Spa&Hotel" ${emp.hotel === 'Cumbria Spa&Hotel' ? 'selected' : ''}>Cumbria Spa&Hotel</option>
+                            <option value="Sercotel Guadiana" ${emp.hotel === 'Sercotel Guadiana' ? 'selected' : ''}>Sercotel Guadiana</option>
+                        </select>
+                    </div>
+                    <div class="emp-profile-field" style="margin-top:15px;"><label>Estado Operativo</label>
+                        <select id="edit-emp-estado" class="btn-premium" style="width:100%; margin-top:5px;">
+                            <option value="Activo" ${emp.estado === 'Activo' ? 'selected' : ''}>Activo</option>
+                            <option value="Baja" ${emp.estado === 'Baja' ? 'selected' : ''}>Baja</option>
+                            <option value="Excedencia" ${emp.estado === 'Excedencia' ? 'selected' : ''}>Excedencia</option>
+                        </select>
+                    </div>
+                    <div class="emp-profile-field" style="margin-top:15px;"><label>ID Interno (Empresa)</label><input type="text" id="edit-emp-id-interno" value="${emp.id_interno || ''}" class="btn-premium" style="width:100%; margin-top:5px;"></div>
+                </div>
+                <div class="span-12" style="margin-top:20px;">
+                    <button class="btn-publish-premium" onclick="window.saveEmployeeProfileInline()" style="width:auto; padding:14px 40px;">Guardar Cambios en Ficha</button>
+                </div>
+            </div>
+        `;
+    }
+
+    body.innerHTML = `
+        <div class="employee-profile-container" style="padding:10px;">
+            ${headerHTML}
+            ${kpiHTML}
+            ${tabsNav}
+            <div class="emp-content-area" style="min-height:400px;">
+                ${tabContent}
+            </div>
+            <div style="margin-top:40px; padding-top:20px; border-top:1px solid var(--border); font-size:0.65rem; color:var(--text-dim); display:flex; justify-content:space-between;">
+                <span>ID Técnico: ${emp.id}</span>
+                <span>UUID: ${emp.uuid || 'N/A'}</span>
             </div>
         </div>
     `;
-
-    body.innerHTML = `
-        <article class="employee-profile">
-            <header class="employee-profile-head">
-                <div class="emp-head-main-wrapper">
-                    <div class="emp-profile-logo-shell">
-                        <svg class="emp-logo-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
-                        <div class="emp-logo-text">
-                            <span>Sercotel</span>
-                            <strong>Guadiana</strong>
-                        </div>
-                    </div>
-                    ${window.employeeAvatar(emp.nombre)}
-                    <div class="emp-head-main">
-                        <h2>${escapeHtml(emp.nombre)} <span>#${escapeHtml(emp.id || 'N/A')}</span></h2>
-                        <div class="emp-head-info">
-                            <span>${window.employeeIcon('role')} ${escapeHtml(emp.puesto)}</span>
-                            <span>&bull;</span>
-                            <span>${window.employeeIcon('hotel')} ${escapeHtml(emp.hotel)}</span>
-                        </div>
-                    </div>
-                </div>
-                <div class="emp-profile-actions">
-                    ${window._employeeProfileEditing
-                        ? '<button type="button" class="primary" onclick="window.saveEmployeeProfileInline()">Guardar</button><button type="button" onclick="window.cancelEmployeeProfileEdit()">Cancelar</button>'
-                        : '<button type="button" class="primary" onclick="window.enableEmployeeProfileEdit()">Editar Perfil</button>'}
-                    <button type="button" onclick="window.openEmployeeActiveChanges()">
-                        ${window.employeeIcon('cambios')} Cambios
-                    </button>
-                </div>
-            </header>
-
-            <div class="emp-head-facts">
-                ${!(window.shouldShowEmployeeCounters && window.shouldShowEmployeeCounters(emp, model.rowData)) ? `
-                    <div class="emp-fact-card">
-                        <span>${window.employeeIcon('hotel')} Centro</span>
-                        <strong>${escapeHtml(emp.hotel)}</strong>
-                    </div>
-                    <div class="emp-fact-card">
-                        <span>${window.employeeIcon('role')} Categoría</span>
-                        <strong>${escapeHtml(emp.puesto)}</strong>
-                    </div>
-                ` : `
-                    <div class="emp-fact-card">
-                        <span>${window.employeeIcon('vacaciones')} Saldo Vac</span>
-                        <strong>${window.employeeFormatNumber(model.vacaciones.saldo)}</strong>
-                    </div>
-                    <div class="emp-fact-card">
-                        <span>${window.employeeIcon('descansos')} Balance D</span>
-                        <strong>${model.descansos.diferencia > 0 ? '+' : ''}${model.descansos.diferencia}</strong>
-                    </div>
-                `}
-                <div class="emp-fact-card">
-                    <span>${window.employeeIcon('cambios')} Cambios</span>
-                    <strong>${window.employeeFormatNumber(model.resumen30d.cambios)}</strong>
-                </div>
-                <div class="emp-fact-card">
-                    <span>${window.employeeIcon('eventos')} Eventos</span>
-                    <strong>${model.eventosActivos.length}</strong>
-                </div>
-            </div>
-
-            <div class="emp-profile-main-tabs">
-                <button class="${currentTab === 'overview' ? 'active' : ''}" onclick="window.setEmployeeProfileTab('overview')">
-                    Vista General
-                </button>
-                <button class="${currentTab === 'info' ? 'active' : ''}" onclick="window.setEmployeeProfileTab('info')">
-                    Información Laboral
-                </button>
-            </div>
-
-            <div id="empProfileTabContent" class="tab-fade-in">
-                ${currentTab === 'overview' ? overviewContent : infoContent}
-            </div>
-        </article>
-    `;
-};
-
-window.setEmployeeProfileTab = (tab) => {
-    window._employeeProfileTab = tab;
-    window.renderEmployeeProfile();
-};
-
-window.openEmpDrawer = (idOrName) => {
-    window._employeeProfileId = idOrName;
-    window._employeeProfileDate = window.isoDate(new Date());
-    window._employeeProfileMode = 'month';
-    window._employeeProfileTab = 'overview';
-    window._employeeProfileEditing = false;
-    window.renderEmployeeProfile();
-};
-
-window.enableEmployeeProfileEdit = () => {
-    window._employeeProfileEditing = true;
-    window.renderEmployeeProfile();
-};
-
-window.cancelEmployeeProfileEdit = () => {
-    window._employeeProfileEditing = false;
-    window.renderEmployeeProfile();
 };
 
 window.saveEmployeeProfileInline = async () => {
-    const model = window.buildEmployeeProfileModel(window._employeeProfileId, window._employeeProfileDate);
-    if (!model) return;
-    const line = (window._employeeLineModels || []).find(item => window.employeeNorm(item.id) === window.employeeNorm(model.empleado.id) || window.employeeNorm(item.nombre) === window.employeeNorm(model.empleado.nombre));
-    const payload = { ...(line?.profile || {}), id: model.empleado.id };
-    document.querySelectorAll('[data-emp-field]').forEach(input => {
-        const key = input.dataset.empField;
-        const type = input.dataset.empType || input.type;
-        let value = input.value;
-        if (type === 'boolean') value = value === 'true';
-        if (type === 'number') value = value === '' ? null : Number(value);
-        if (type === 'date' && value === '') value = null;
-        payload[key] = value;
-    });
-    if (!payload.nombre) payload.nombre = model.empleado.nombre;
+    const empId = window._employeeProfileId;
+    const payload = {
+        id: empId,
+        nombre: $('#edit-emp-nombre').value,
+        email: $('#edit-emp-email').value,
+        telefono: $('#edit-emp-telefono').value,
+        hotel: $('#edit-emp-hotel').value,
+        hotel_id: $('#edit-emp-hotel').value,
+        puesto: $('#edit-emp-puesto').value,
+        estado: $('#edit-emp-estado').value,
+        activo: $('#edit-emp-estado').value === 'Activo',
+        id_interno: $('#edit-emp-id-interno').value,
+        vacaciones_anuales: Number($('#edit-emp-vac-anuales').value || 44),
+        ajuste_vacaciones_dias: Number($('#edit-emp-vac-ajuste').value || 0),
+        updated_at: new Date().toISOString()
+    };
     try {
         await window.TurnosDB.upsertEmpleado(payload);
-
-        // Auditoría específica para ID Interno (Fase 1)
-        if (payload.id_interno && payload.id_interno !== (line?.profile?.id_interno)) {
-            await window.TurnosDB.insertLog({
-                usuario: 'ADMIN',
-                resumen_json: {
-                    accion: 'asignar_id_interno_empleado',
-                    empleado_id_operativo: payload.id,
-                    id_interno: payload.id_interno,
-                    nombre: payload.nombre
-                }
-            }).catch(e => console.warn("Error al registrar log de ID Interno:", e));
-        }
-
-        window._employeeProfileEditing = false;
-        await window.populateEmployees();
-        window._employeeProfileId = payload.id || payload.nombre;
+        alert('Ficha de empleado actualizada correctamente.');
+        // Recargar datos globales y refrescar UI
+        if (window.populateEmployees) await window.populateEmployees();
         window.renderEmployeeProfile();
-    } catch (err) {
-        console.error('[EMPLEADO ERROR]', {
-            message: err?.message,
-            context: 'saveEmployeeProfileInline',
-            raw: err
-        });
-        alert(`No se pudo guardar la ficha: ${err.message}`);
+    } catch (e) {
+        alert('Error al guardar: ' + e.message);
     }
 };
-
-window.setEmployeeProfileMode = (mode) => {
-    window._employeeProfileMode = mode === 'month' ? 'month' : 'week';
-    window.renderEmployeeProfile();
-};
-
-window.moveEmployeeProfilePeriod = (direction) => {
-    const mode = window._employeeProfileMode || 'week';
-    const date = new Date(`${window._employeeProfileDate || window.isoDate(new Date())}T12:00:00`);
-    date.setDate(date.getDate() + (mode === 'month' ? 31 * direction : 7 * direction));
-    if (mode === 'month') date.setDate(1);
-    window._employeeProfileDate = window.isoDate(date);
-    window.renderEmployeeProfile();
-};
-
-window.openEmployeeDayDetail = (fecha) => {
-    const model = window.buildEmployeeProfileModel(window._employeeProfileId, window._employeeProfileDate);
-    const day = model?.calendario?.find(d => d.fecha === fecha);
-    if (!day) return;
-    alert([
-        `Fecha: ${fecha}`,
-        `Turno: ${window.employeeShiftLabel(day).replace(/&mdash;/g, '-')}`,
-        day.turnoBase ? `Base: ${day.turnoBase}` : '',
-        day.incidencia ? `Incidencia: ${day.incidencia}` : '',
-        day.cambio ? 'Cambio de turno activo' : '',
-        day.sustitucion ? 'Sustitucion activa' : ''
-    ].filter(Boolean).join('\n'));
-};
-
-window.openEmployeeIncidentDetail = () => {
-    const model = window.buildEmployeeProfileModel(window._employeeProfileId, window._employeeProfileDate);
-    const events = model?.eventosActivos || [];
-    alert(events.length
-        ? events.map(ev => `${ev.tipo || 'Evento'}: ${window.employeeEventDateRange(ev).replace(/&mdash;/g, '-')}`).join('\n')
-        : 'Sin incidencias activas para la fecha de referencia.');
-};
-
-window.openEmployeeActiveChanges = () => {
-    const model = window.buildEmployeeProfileModel(window._employeeProfileId, window._employeeProfileDate);
-    const changes = (model?.eventosActivos || []).filter(ev => /CAMBIO|INTERCAMBIO|REFUERZO/i.test(String(ev.tipo || '')));
-    alert(changes.length
-        ? changes.map(ev => `${ev.tipo || 'Cambio'}: ${window.employeeEventDateRange(ev).replace(/&mdash;/g, '-')}`).join('\n')
-        : 'Sin cambios de turno activos.');
-};
-
-window.openEmployeeEditBasic = () => {
-    const model = window.buildEmployeeProfileModel(window._employeeProfileId, window._employeeProfileDate);
-    if (!model) return;
-    const line = (window._employeeLineModels || []).find(item => window.employeeNorm(item.id) === window.employeeNorm(model.empleado.id));
-    const profile = { ...(line?.profile || {}), id: model.empleado.id };
-    const nombre = prompt('Nombre', model.empleado.nombre);
-    if (nombre === null) return;
-    const puesto = prompt('Puesto', model.empleado.puesto);
-    if (puesto === null) return;
-    const tipo = prompt('Tipo de empleado', model.empleado.tipo);
-    if (tipo === null) return;
-    window.TurnosDB.upsertEmpleado({ ...profile, nombre, puesto, tipo_personal: tipo })
-        .then(() => window.populateEmployees())
-        .catch(err => alert(`No se pudo guardar la ficha: ${err.message}`));
-};
-
-window.switchSection = (id) => {
-    const sections = $$('.section');
-    const menuItems = $$('.menu-item');
-    
-    sections.forEach(s => s.classList.remove('active'));
-    menuItems.forEach(n => n.classList.remove('active'));
-
-    const targetSec = $(`#section-${id}`);
-    if (targetSec) targetSec.classList.add('active');
-    
-    const targetMenu = Array.from(menuItems).find(item => item.getAttribute('onclick')?.includes(`'${id}'`));
-    if (targetMenu) targetMenu.classList.add('active');
-
-    if (id === 'preview') window.renderPreview();
-    if (id === 'excel') window.renderExcelView();
-    if (id === 'home') window.renderDashboard();
-    if (id === 'changes') window.renderCambiosTurno();
-    if (id === 'vacations') window.location.href = 'vacaciones.html';
-    if (id === 'bajas' || id === 'absences') window.location.href = 'bajas.html';
-    if (id === 'requests') window.location.href = 'solicitudes.html';
-};
-
-window.renderCambiosTurno = async () => {
-    const container = document.getElementById('changes-content');
-    if (!container) return;
-
-    try {
-        container.innerHTML = `
-            <div class="glass-panel" style="padding: 24px;">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                    <h3 style="margin: 0;">Historial de Cambios e Intercambios</h3>
-                    <button class="btn-premium" onclick="window.location.href='cambios.html'" style="padding: 8px 16px; font-size: 0.75rem;">Abrir Gestor Avanzado</button>
-                </div>
-                <div id="changes-table-container">
-                    <p style="opacity: 0.5;">Cargando registros de auditoría...</p>
-                </div>
-            </div>
-        `;
-        
-        const events = await window.TurnosDB.fetchEventos();
-        const changes = events.filter(e => /CAMBIO|INTERCAMBIO|REFUERZO/i.test(e.tipo || ''));
-        
-        const table = document.getElementById('changes-table-container');
-        if (changes.length === 0) {
-            table.innerHTML = '<div style="padding: 40px; text-align: center; opacity: 0.5;">No hay cambios registrados recientemente.</div>';
-            return;
-        }
-
-        table.innerHTML = `
-            <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem;">
-                <thead>
-                    <tr style="text-align: left; border-bottom: 2px solid var(--border);">
-                        <th style="padding: 12px 8px;">Fecha</th>
-                        <th style="padding: 12px 8px;">Tipo</th>
-                        <th style="padding: 12px 8px;">Empleado</th>
-                        <th style="padding: 12px 8px;">Detalle</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    ${changes.slice(0, 50).map(c => `
-                        <tr style="border-bottom: 1px solid var(--border);">
-                            <td style="padding: 12px 8px;">${c.fecha_inicio}</td>
-                            <td style="padding: 12px 8px;"><span class="badge" style="background: #e2e8f0;">${c.tipo}</span></td>
-                            <td style="padding: 12px 8px;"><strong>${c.empleado_id}</strong></td>
-                            <td style="padding: 12px 8px; font-size: 0.75rem;">${c.observaciones || c.turno_nuevo || '�'}</td>
-                        </tr>
-                    `).join('')}
-                </tbody>
-            </table>
-        `;
-    } catch (err) {
-        console.error('[ADMIN ERROR] Fallo al renderizar Cambios de Turno', {
-            message: err.message,
-            stack: err.stack,
-            context: 'renderCambiosTurno'
-        });
-        container.innerHTML = '<div class="alert error">Error al cargar el módulo de cambios. Revisa la consola.</div>';
-    }
-};
-
-window.renderVacationsModule = async () => {
-    const container = document.getElementById('vacations-content');
-    if (!container) return;
-
-    // Estado local para filtros
-    if (!window._vacationFilters) {
-        window._vacationFilters = {
-            hotel: 'all',
-            search: '',
-            estado: 'activo'
-        };
-    }
-
-    container.innerHTML = `
-        <div class="glass-panel" style="padding: 24px;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
-                <div>
-                    <h2 style="margin: 0; font-size: 1.5rem; color: var(--text);">Gestión de Vacaciones</h2>
-                    <p style="margin: 4px 0 0; font-size: 0.85rem; color: var(--text-dim);">Control centralizado de periodos de descanso</p>
-                </div>
-                <button class="btn-premium" onclick="window.openVacationModal()" style="display: flex; align-items: center; gap: 8px;">
-                    <i class="fas fa-plus"></i> Nueva Vacación
-                </button>
-            </div>
-
-            <div class="filters-bar" style="display: flex; gap: 16px; margin-bottom: 24px; padding: 16px; background: rgba(0,0,0,0.03); border-radius: 12px;">
-                <div style="flex: 1;">
-                    <label style="display: block; font-size: 0.7rem; font-weight: 700; color: var(--text-dim); text-transform: uppercase; margin-bottom: 6px;">Buscar Empleado</label>
-                    <input type="text" id="vac-search" class="input-premium" placeholder="Nombre..." value="${window._vacationFilters.search}" 
-                        oninput="window._vacationFilters.search = this.value; window.renderVacationsTable();" style="width: 100%;">
-                </div>
-                <div style="width: 200px;">
-                    <label style="display: block; font-size: 0.7rem; font-weight: 700; color: var(--text-dim); text-transform: uppercase; margin-bottom: 6px;">Hotel</label>
-                    <select id="vac-hotel" class="input-premium" onchange="window._vacationFilters.hotel = this.value; window.renderVacationsTable();" style="width: 100%;">
-                        <option value="all">Todos los Hoteles</option>
-                        ${(window._employeeLineHotels || []).map(h => `<option value="${h}" ${window._vacationFilters.hotel === h ? 'selected' : ''}>${h}</option>`).join('')}
-                    </select>
-                </div>
-                <div style="width: 150px;">
-                    <label style="display: block; font-size: 0.7rem; font-weight: 700; color: var(--text-dim); text-transform: uppercase; margin-bottom: 6px;">Estado</label>
-                    <select id="vac-estado" class="input-premium" onchange="window._vacationFilters.estado = this.value; window.renderVacationsTable();" style="width: 100%;">
-                        <option value="activo" ${window._vacationFilters.estado === 'activo' ? 'selected' : ''}>Activos</option>
-                        <option value="all" ${window._vacationFilters.estado === 'all' ? 'selected' : ''}>Todos</option>
-                    </select>
-                </div>
-            </div>
-
-            <div id="vacations-table-container">
-                <div style="padding: 40px; text-align: center; opacity: 0.5;">
-                    <i class="fas fa-spinner fa-spin fa-2x"></i>
-                    <p style="margin-top: 12px;">Cargando vacaciones...</p>
-                </div>
-            </div>
-        </div>
-    `;
-
-    window.renderVacationsTable();
-};
-
-window.renderVacationsTable = async () => {
-    const tableContainer = document.getElementById('vacations-table-container');
-    if (!tableContainer) return;
-
-    try {
-        const events = await window.TurnosDB.fetchEventos();
-        let vacations = events.filter(ev => window.normalizeTipo(ev.tipo) === 'VAC');
-
-        // Aplicar filtros
-        const filters = window._vacationFilters;
-        if (filters.hotel !== 'all') {
-            vacations = vacations.filter(v => v.hotel === filters.hotel || v.hotel_origen === filters.hotel);
-        }
-        if (filters.search) {
-            const s = window.employeeNorm(filters.search);
-            vacations = vacations.filter(v => window.employeeNorm(v.empleado_id).includes(s) || window.employeeNorm(v.nombre).includes(s));
-        }
-        // fetchEventos ya filtra anulados por defecto, pero si filters.estado es 'all' y queremos verlos, tendríamos que haberlos traído.
-        // Como fetchEventos usa .neq('estado', 'anulado'), para ver todos necesitamos un método que no filtre.
-        // Por ahora, el filtro 'all' solo mostrará lo que trajo fetchEventos (activos/pendientes).
-
-        if (vacations.length === 0) {
-            tableContainer.innerHTML = `
-                <div style="padding: 60px; text-align: center; background: rgba(0,0,0,0.02); border: 2px dashed var(--border); border-radius: 12px;">
-                    <i class="fas fa-umbrella-beach fa-3x" style="opacity: 0.2; margin-bottom: 16px;"></i>
-                    <p style="margin: 0; font-weight: 600; color: var(--text-dim);">No hay vacaciones registradas con estos filtros.</p>
-                </div>
-            `;
-            return;
-        }
-
-        // Ordenar por fecha inicio desc
-        vacations.sort((a, b) => String(b.fecha_inicio).localeCompare(String(a.fecha_inicio)));
-
-        tableContainer.innerHTML = `
-            <table class="table-premium" style="width: 100%; border-collapse: collapse; font-size: 0.85rem;">
-                <thead>
-                    <tr style="text-align: left; border-bottom: 2px solid var(--border);">
-                        <th style="padding: 16px 12px;">Empleado</th>
-                        <th style="padding: 16px 12px;">Periodo</th>
-                        <th style="padding: 16px 12px;">Hotel</th>
-                        <th style="padding: 16px 12px;">Sustituto</th>
-                        <th style="padding: 16px 12px;">Estado</th>
-                        <th style="padding: 16px 12px; text-align: right;">Acciones</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    ${vacations.map(v => {
-                        const isCristina = window.employeeNorm(v.empleado_id).includes('cristina');
-                        return `
-                        <tr style="border-bottom: 1px solid var(--border); transition: background 0.2s;" onmouseover="this.style.background='rgba(0,0,0,0.01)'" onmouseout="this.style.background='transparent'">
-                            <td style="padding: 16px 12px;">
-                                <div style="display: flex; align-items: center; gap: 10px;">
-                                    ${window.employeeAvatar(v.nombre || v.empleado_id)}
-                                    <strong>${v.nombre || v.empleado_id}</strong>
-                                </div>
-                            </td>
-                            <td style="padding: 16px 12px;">
-                                <div style="display: flex; flex-direction: column;">
-                                    <span>${window.employeeEventDateRange(v)}</span>
-                                    <span style="font-size: 0.75rem; color: var(--text-dim);">${v.observaciones || ''}</span>
-                                </div>
-                            </td>
-                            <td style="padding: 16px 12px; color: var(--text-dim);">${v.hotel || v.hotel_origen || '�'}</td>
-                            <td style="padding: 16px 12px;">
-                                ${v.sustituto || v.sustituto_id ? `<span class="badge" style="background:#fef3c7; color:#92400e; border:1px solid #fde68a;">${v.sustituto || v.sustituto_id}</span>` : '<span style="opacity:0.3">�</span>'}
-                            </td>
-                            <td style="padding: 16px 12px;">
-                                <span class="badge" style="background: ${v.estado === 'activo' ? '#dcfce7; color:#166534;' : '#f1f5f9; color:#475569;'}">
-                                    ${v.estado || 'activo'}
-                                </span>
-                            </td>
-                            <td style="padding: 16px 12px; text-align: right;">
-                                <button class="btn-icon" title="Anular" onclick="window.anularVacacion('${v.id}')" style="color: #ef4444; background: #fee2e2; border-radius: 8px; padding: 6px; border: none; cursor: pointer; margin-left: 4px;">
-                                    <i class="fas fa-trash-alt"></i>
-                                </button>
-                            </td>
-                        </tr>`;
-                    }).join('')}
-                </tbody>
-            </table>
-        `;
-    } catch (err) {
-        tableContainer.innerHTML = `<div class="alert error">Error al cargar listado: ${err.message}</div>`;
-    }
-};
-
-window.openVacationModal = (vacation = null) => {
-    let modal = document.getElementById('vacationModal');
-    if (modal) modal.remove();
-
-    modal = document.createElement('div');
-    modal.id = 'vacationModal';
-    modal.className = 'drawer-overlay open';
-    modal.style.zIndex = '10000';
-    
-    const emps = (window.empleadosGlobales || []).sort((a,b) => a.nombre.localeCompare(b.nombre));
-    const hotels = window._employeeLineHotels || [];
-
-    modal.innerHTML = `
-        <div class="glass-panel" style="position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 450px; max-width: 95%; padding: 32px; border-radius: 20px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);">
-            <h3 style="margin: 0 0 24px; font-size: 1.25rem;">${vacation ? 'Editar Vacación' : 'Nueva Vacación'}</h3>
-            
-            <form id="vac-form" style="display: flex; flex-direction: column; gap: 16px;">
-                <div>
-                    <label class="label-premium">Empleado</label>
-                    <select id="form-vac-emp" class="input-premium" required style="width: 100%;">
-                        <option value="">Seleccionar empleado...</option>
-                        ${emps.map(e => `<option value="${e.id}" data-hotel="${e.hotel_id}">${e.nombre}</option>`).join('')}
-                    </select>
-                </div>
-                
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
-                    <div>
-                        <label class="label-premium">Desde</label>
-                        <input type="date" id="form-vac-inicio" class="input-premium" required style="width: 100%;">
-                    </div>
-                    <div>
-                        <label class="label-premium">Hasta</label>
-                        <input type="date" id="form-vac-fin" class="input-premium" required style="width: 100%;">
-                    </div>
-                </div>
-
-                <div>
-                    <label class="label-premium">Sustituto (Opcional)</label>
-                    <select id="form-vac-sust" class="input-premium" style="width: 100%;">
-                        <option value="">Ninguno</option>
-                        ${emps.map(e => `<option value="${e.id}">${e.nombre}</option>`).join('')}
-                    </select>
-                </div>
-
-                <div>
-                    <label class="label-premium">Observaciones</label>
-                    <textarea id="form-vac-obs" class="input-premium" style="width: 100%; height: 80px;"></textarea>
-                </div>
-
-                <div style="display: flex; gap: 12px; margin-top: 12px;">
-                    <button type="button" class="btn-premium" onclick="document.getElementById('vacationModal').remove()" style="flex: 1; background: #f1f5f9; color: #475569; border: 1px solid #e2e8f0;">Cancelar</button>
-                    <button type="submit" class="btn-premium" style="flex: 2;">Guardar Vacación</button>
-                </div>
-            </form>
-        </div>
-    `;
-
-    document.body.appendChild(modal);
-
-    const form = document.getElementById('vac-form');
-    form.onsubmit = async (e) => {
-        e.preventDefault();
-        const empId = document.getElementById('form-vac-emp').value;
-        const empOption = document.getElementById('form-vac-emp').selectedOptions[0];
-        const hotelId = empOption.dataset.hotel;
-        const nombre = empOption.text;
-        
-        const payload = {
-            tipo: 'VAC',
-            empleado_id: empId,
-            nombre: nombre,
-            hotel: hotelId,
-            hotel_origen: hotelId,
-            fecha_inicio: document.getElementById('form-vac-inicio').value,
-            fecha_fin: document.getElementById('form-vac-fin').value,
-            sustituto_id: document.getElementById('form-vac-sust').value,
-            sustituto: document.getElementById('form-vac-sust').selectedOptions[0].text === 'Ninguno' ? null : document.getElementById('form-vac-sust').selectedOptions[0].text,
-            observaciones: document.getElementById('form-vac-obs').value,
-            estado: 'activo'
-        };
-
-        try {
-            window.addLog(`Guardando vacación para ${nombre}...`, 'info');
-            await window.TurnosDB.upsertEvento(payload);
-            window.addLog(`Vacación guardada con éxito.`, 'ok');
-            
-            // Recargar datos globales
-            window.eventosActivos = await window.TurnosDB.fetchEventos();
-            
-            modal.remove();
-            window.renderVacationsTable();
-            
-            // Si hay otros módulos abiertos que dependen de esto, se refrescarán al navegar o al forzar
-            if (window._employeeProfileId) window.openEmpDrawer(window._employeeProfileId);
-        } catch (err) {
-            alert(`Error al guardar: ${err.message}`);
-        }
-    };
-};
-
-window.anularVacacion = async (id) => {
-    if (!confirm('¿Seguro que deseas anular este periodo de vacaciones?')) return;
-
-    try {
-        window.addLog(`Anulando vacación ${id}...`, 'info');
-        // El DAO no tiene un update parcial explícito para estado, pero upsertEvento puede usarse si tenemos el objeto completo.
-        // Pero fetchEventos ya trajo el objeto.
-        const events = await window.TurnosDB.fetchEventos();
-        const vac = events.find(e => String(e.id) === String(id));
-        if (!vac) throw new Error("No se encontró el registro.");
-
-        await window.TurnosDB.upsertEvento({ ...vac, estado: 'anulado' });
-        window.addLog(`Vacación anulada.`, 'ok');
-        
-        window.eventosActivos = await window.TurnosDB.fetchEventos();
-        window.renderVacationsTable();
-        if (window._employeeProfileId) window.openEmpDrawer(window._employeeProfileId);
-    } catch (err) {
-        alert(`Error al anular: ${err.message}`);
-    }
-};
-
-window.renderAbsencesModule = async () => {
-    const container = document.getElementById('absences-content');
-    if (!container) return;
-
-    container.innerHTML = `
-        <div class="glass-panel" style="padding: 24px;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
-                <div>
-                    <h2 style="margin: 0; font-size: 1.5rem; color: var(--text);">Gestión de Ausencias y Bajas</h2>
-                    <p style="margin: 4px 0 0; font-size: 0.85rem; color: var(--text-dim);">Registro de IT, permisos y ausencias justificadas</p>
-                </div>
-                <button class="btn-premium" onclick="window.openAbsenceModal()" style="display: flex; align-items: center; gap: 8px; background: #f43f5e;">
-                    <i class="fas fa-plus"></i> Nueva Baja/Permiso
-                </button>
-            </div>
-
-            <div id="absences-table-container">
-                <div style="padding: 40px; text-align: center; opacity: 0.5;">
-                    <i class="fas fa-spinner fa-spin fa-2x"></i>
-                    <p style="margin-top: 12px;">Cargando ausencias...</p>
-                </div>
-            </div>
-        </div>
-    `;
-
-    window.renderAbsencesTable();
-};
-
-window.renderAbsencesTable = async () => {
-    const tableContainer = document.getElementById('absences-table-container');
-    if (!tableContainer) return;
-
-    try {
-        const events = await window.TurnosDB.fetchEventos();
-        const absences = events.filter(ev => ['BAJA', 'PERMISO', 'PERM'].includes(window.normalizeTipo(ev.tipo)));
-
-        if (absences.length === 0) {
-            tableContainer.innerHTML = `<div style="padding: 40px; text-align: center; opacity: 0.5;">No hay ausencias activas registradas.</div>`;
-            return;
-        }
-
-        absences.sort((a, b) => String(b.fecha_inicio).localeCompare(String(a.fecha_inicio)));
-
-        tableContainer.innerHTML = `
-            <table class="table-premium" style="width: 100%; border-collapse: collapse; font-size: 0.85rem;">
-                <thead>
-                    <tr style="text-align: left; border-bottom: 2px solid var(--border);">
-                        <th style="padding: 16px 12px;">Empleado</th>
-                        <th style="padding: 16px 12px;">Tipo</th>
-                        <th style="padding: 16px 12px;">Periodo</th>
-                        <th style="padding: 16px 12px; text-align: right;">Acciones</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    ${absences.map(a => `
-                        <tr style="border-bottom: 1px solid var(--border);">
-                            <td style="padding: 16px 12px;"><strong>${a.nombre || a.empleado_id}</strong></td>
-                            <td style="padding: 16px 12px;"><span class="badge" style="background:#fee2e2; color:#b91c1c;">${a.tipo}</span></td>
-                            <td style="padding: 16px 12px;">${window.employeeEventDateRange(a)}</td>
-                            <td style="padding: 16px 12px; text-align: right;">
-                                <button class="btn-icon" onclick="window.anularVacacion('${a.id}')" style="color: #ef4444;"><i class="fas fa-trash-alt"></i></button>
-                            </td>
-                        </tr>
-                    `).join('')}
-                </tbody>
-            </table>
-        `;
-    } catch (err) {
-        tableContainer.innerHTML = `<div class="alert error">Error: ${err.message}</div>`;
-    }
-};
-
-window.openAbsenceModal = () => {
-    // Reutilizamos el modal de vacaciones con ajustes mínimos de tipo
-    window.openVacationModal();
-    const title = document.querySelector('#vacationModal h3');
-    if (title) title.textContent = 'Nueva Baja / Permiso';
-    const form = document.getElementById('vac-form');
-    // Inyectar selector de tipo
-    const typeDiv = document.createElement('div');
-    typeDiv.innerHTML = `
-        <label class="label-premium">Tipo de Ausencia</label>
-        <select id="form-abs-type" class="input-premium" style="width: 100%;">
-            <option value="BAJA">Baja Médica (IT)</option>
-            <option value="PERMISO">Permiso Retribuido</option>
-            <option value="OTRO">Otro</option>
-        </select>
-    `;
-    form.insertBefore(typeDiv, form.firstChild);
-    
-    // Sobrescribir el submit
-    form.onsubmit = async (e) => {
-        e.preventDefault();
-        const empOption = document.getElementById('form-vac-emp').selectedOptions[0];
-        const payload = {
-            tipo: document.getElementById('form-abs-type').value,
-            empleado_id: document.getElementById('form-vac-emp').value,
-            nombre: empOption.text,
-            hotel: empOption.dataset.hotel,
-            fecha_inicio: document.getElementById('form-vac-inicio').value,
-            fecha_fin: document.getElementById('form-vac-fin').value,
-            observaciones: document.getElementById('form-vac-obs').value,
-            estado: 'activo'
-        };
-        await window.TurnosDB.upsertEvento(payload);
-        window.eventosActivos = await window.TurnosDB.fetchEventos();
-        document.getElementById('vacationModal').remove();
-        window.renderAbsencesTable();
-    };
-};
-
-window.ADMIN_EXCEL_STORAGE_KEY = 'turnosweb_admin_excel_base_v1';
-
-window.cloneExcelRows = (value) => JSON.parse(JSON.stringify(value || {}));
-
-window.loadAdminExcelSourceRows = async ({ forceBase = false } = {}) => {
-    if (!window._adminExcelBaseOriginalRows || forceBase) {
-        window._adminExcelBaseOriginalRows = window.cloneExcelRows(await window.ExcelLoader.loadExcelSourceRows());
-    }
-
-    if (forceBase) {
-        return window.cloneExcelRows(window._adminExcelBaseOriginalRows);
-    }
-
-    if (window._adminExcelEditableRows) return window._adminExcelEditableRows;
-
-    try {
-        const stored = localStorage.getItem(window.ADMIN_EXCEL_STORAGE_KEY);
-        if (stored) {
-            window._adminExcelEditableRows = JSON.parse(stored);
-            return window._adminExcelEditableRows;
-        }
-    } catch (error) {
-        console.warn('No se pudieron leer los cambios locales del Excel base:', error);
-    }
-
-    window._adminExcelEditableRows = window.cloneExcelRows(window._adminExcelBaseOriginalRows);
-    return window._adminExcelEditableRows;
-};
-
-window.persistAdminExcelSourceRows = () => {
-    const rows = window._adminExcelEditableRows || {};
-    localStorage.setItem(window.ADMIN_EXCEL_STORAGE_KEY, JSON.stringify(rows));
-    window.addLog('Base Excel guardada en local', 'ok');
-};
-
-window.resetAdminExcelSourceRows = async () => {
-    localStorage.removeItem(window.ADMIN_EXCEL_STORAGE_KEY);
-    window._adminExcelEditableRows = await window.loadAdminExcelSourceRows({ forceBase: true });
-    window.renderExcelView();
-    window.renderPreview();
-    if (window.populateEmployees) window.populateEmployees();
-};
-
-window.findEditableExcelRow = (hotel, weekStart, rowIndex) => {
-    const rows = window._adminExcelEditableRows?.[hotel] || [];
-    return rows.find(row => String(row.weekStart) === String(weekStart) && Number(row.rowIndex) === Number(rowIndex)) || null;
-};
-
-window.updateExcelBaseName = (hotel, weekStart, rowIndex, value) => {
-    const row = window.findEditableExcelRow(hotel, weekStart, rowIndex);
-    if (!row) return;
-    row.displayName = String(value || '').trim();
-    row.empleadoId = row.displayName;
-};
-
-window.updateExcelBaseShift = (hotel, weekStart, rowIndex, offset, value) => {
-    const row = window.findEditableExcelRow(hotel, weekStart, rowIndex);
-    if (!row) return;
-    row.values[offset] = window.normalizePreviewTurno(value);
-};
-
-window.renderExcelView = async () => {
-    const container = $('#excel-grid-container');
-    if (!container) return;
-
-    container.innerHTML = '<div style="padding: 2rem; text-align: center; color: var(--text-dim);">Cargando Excel base...</div>';
-
-    try {
-        const baseOriginal = await window.loadAdminExcelSourceRows({ forceBase: true });
-        const baseEditado = await window.loadAdminExcelSourceRows();
-        const excelRows = baseEditado;
-        const hotelSelect = $('#excelHotel');
-        const monthInput = $('#excelMonth');
-        const selectedHotel = hotelSelect?.value || 'all';
-
-        if (monthInput && !monthInput.value) monthInput.value = window.isoDate(new Date()).slice(0, 7);
-        const selectedMonth = monthInput?.value || window.isoDate(new Date()).slice(0, 7);
-        const [year, month] = selectedMonth.split('-').map(Number);
-        const monthStart = `${selectedMonth}-01`;
-        const monthEnd = window.isoDate(new Date(year, month, 0));
-
-        const hotels = Object.keys(excelRows || {});
-        if (hotelSelect && hotelSelect.options.length <= 1) {
-            hotelSelect.innerHTML = `<option value="all">Filtro por Hotel: Ver Todos</option>${hotels.map(h => `<option value="${escapeHtml(h)}">${escapeHtml(h)}</option>`).join('')}`;
-            hotelSelect.value = selectedHotel;
-        }
-
-        const hotelsToRender = selectedHotel === 'all' ? hotels : [selectedHotel];
-        const shiftOptions = ['', 'M', 'T', 'N', 'D'];
-
-        container.innerHTML = `
-            <div style="padding:16px 20px; display:flex; justify-content:space-between; align-items:center; gap:12px; border-bottom:1px solid var(--border); background:var(--bg3);">
-                <div>
-                    <div style="font-weight:800; color:var(--text);">Modo Excel</div>
-                    <div style="font-size:0.75rem; color:var(--text-dim);">Base original separada de base editada (${Object.keys(baseOriginal || {}).length} hoteles). Los cambios se guardan en local y no tocan backend.</div>
-                </div>
-                <div style="display:flex; gap:10px; flex-wrap:wrap;">
-                    <button class="btn active" onclick="window.persistAdminExcelSourceRows(); window.renderPreview(); if (window.populateEmployees) window.populateEmployees();" style="background:var(--accent); color:white;">Guardar base</button>
-                    <button class="btn" onclick="window.resetAdminExcelSourceRows()" style="background:var(--bg3); color:var(--text); border:1px solid var(--border);">Restaurar base original</button>
-                </div>
-            </div>
-        `;
-
-        const sections = hotelsToRender.map(hotel => {
-            const rows = (excelRows[hotel] || [])
-                .filter(row => {
-                    const rowEnd = window.addIsoDays(row.weekStart, 6);
-                    return row.weekStart <= monthEnd && rowEnd >= monthStart;
-                })
-                .sort((a, b) => a.weekStart.localeCompare(b.weekStart) || a.rowIndex - b.rowIndex);
-
-            if (!rows.length) {
-                return `
-                    <div style="padding:24px; border-bottom:1px solid #eef2f7;">
-                        <div style="font-weight:800; color:#0f172a; margin-bottom:8px;">${escapeHtml(hotel)}</div>
-                        <div style="color:#64748b; font-size:0.85rem;">No hay filas del Excel base para este mes.</div>
-                    </div>
-                `;
-            }
-
-            return `
-                <div style="padding:0 0 24px 0; border-bottom:1px solid #eef2f7;">
-                    <div style="padding:18px 20px; font-weight:800; color:#0f172a; background:#f8fafc; border-bottom:1px solid #eef2f7;">${escapeHtml(hotel)}</div>
-                    <div style="overflow:auto;">
-                        <table style="width:100%; border-collapse:collapse; min-width:980px; background:white;">
-                            <thead>
-                                <tr style="background:#f8fafc;">
-                                    <th style="padding:10px 12px; border-bottom:1px solid #eef2f7; text-align:left;">Semana</th>
-                                    <th style="padding:10px 12px; border-bottom:1px solid #eef2f7; text-align:left;">Empleado</th>
-                                    ${['LUN', 'MAR', 'MIE', 'JUE', 'VIE', 'SAB', 'DOM'].map(day => `<th style="padding:10px 8px; border-bottom:1px solid #eef2f7; text-align:center;">${day}</th>`).join('')}
-                                </tr>
-                            </thead>
-                            <tbody>
-                                ${rows.map(row => `
-                                    <tr>
-                                        <td style="padding:10px 12px; border-bottom:1px solid #f1f5f9; white-space:nowrap;">${escapeHtml(window.fmtDateLegacy(row.weekStart))}</td>
-                                        <td style="padding:10px 12px; border-bottom:1px solid #f1f5f9; min-width:220px;">
-                                            <input type="text" value="${escapeHtml(row.displayName || row.empleadoId || '')}" onchange="window.updateExcelBaseName(${JSON.stringify(hotel)}, ${JSON.stringify(row.weekStart)}, ${row.rowIndex}, this.value)" style="width:100%; padding:8px 10px; border:1px solid #dbe4ee; border-radius:10px; background:white;">
-                                        </td>
-                                        ${[0, 1, 2, 3, 4, 5, 6].map(offset => `
-                                            <td style="padding:8px; border-bottom:1px solid #f1f5f9; text-align:center;">
-                                                <select onchange="window.updateExcelBaseShift(${JSON.stringify(hotel)}, ${JSON.stringify(row.weekStart)}, ${row.rowIndex}, ${offset}, this.value)" style="width:72px; padding:8px; border:1px solid #dbe4ee; border-radius:10px; background:white; text-align:center;">
-                                                    ${shiftOptions.map(option => `<option value="${option}" ${String(row.values?.[offset] || '') === option ? 'selected' : ''}>${option || '-'}</option>`).join('')}
-                                                </select>
-                                            </td>
-                                        `).join('')}
-                                    </tr>
-                                `).join('')}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            `;
-        }).join('');
-
-        container.innerHTML += sections || '<div style="padding: 2rem; text-align: center; color: var(--text-dim);">No hay datos del Excel base para el filtro actual.</div>';
-    } catch (error) {
-        container.innerHTML = `<div style="padding:2rem; color:red;">Error cargando Excel base: ${escapeHtml(error.message)}</div>`;
-    }
-};
-
-window.toggleTheme = () => {
-    document.body.classList.toggle('light-mode');
-    const isLight = document.body.classList.contains('light-mode');
-    localStorage.setItem('turnosweb_theme', isLight ? 'light' : 'dark');
-};
-
-window.isoDate = (date) => {
-    if (!date) return '';
-    let d;
-    if (typeof date === 'number') {
-        d = new Date((date - 25569) * 86400 * 1000);
-    } else if (typeof date === 'string' && date.includes('-')) {
-        d = new Date(date + 'T12:00:00');
-    } else {
-        d = new Date(date);
-    }
-    if (isNaN(d.getTime())) return date;
-    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-};
-
-window.getMonday = (date) => {
-    const d = new Date(date);
-    const day = d.getDay();
-    const diff = d.getDate() - day + (day === 0 ? -6 : 1);
-    const result = new Date(d.setDate(diff));
-    return result;
-};
-
 // ==========================================
 // 2. EXCEL SOURCE LOADER � delegado a excel-loader.js
 // ==========================================
@@ -1539,12 +2634,14 @@ window.getMonday = (date) => {
 window._previewMode = 'weekly';
 window.switchPreviewMode = (mode) => {
     window._previewMode = mode;
-    const btnW = $('#btnViewWeekly'), btnM = $('#btnViewMonthly');
-    const dateC = $('#prevDateContainer'), monthC = $('#prevMonthContainer');
+    
+    // UI Toggle
+    const btnW = document.getElementById('btnViewWeekly');
+    const btnM = document.getElementById('btnViewMonthly');
     if (btnW) btnW.classList.toggle('active', mode === 'weekly');
     if (btnM) btnM.classList.toggle('active', mode === 'monthly');
-    if (dateC) dateC.style.display = mode === 'weekly' ? 'flex' : 'none';
-    if (monthC) monthC.style.display = mode === 'monthly' ? 'flex' : 'none';
+    
+    window.DateManager.init();
     window.renderPreview();
 };
 
@@ -1795,133 +2892,201 @@ window.createPuestosPreviewModel = ({
         return { ...res, _finalState: res };
     };
 
-    const getEmployees = () => {
+            const getEmployees = (viewType = 'weekly') => {
+        const firstDate = dates[0] || '';
         const operativeRows = [];
-        const deferredRows = [];
-        const usedAsSust = new Set();
-        const handledTitulars = new Set();
+        const absentRows = [];
+        const handledEmps = new Set();
+        
+        const cleanForId = (name) => {
+            if (!name) return '';
+            return window.normalizeId(window.formatDisplayName(name));
+        };
 
-        const coverageLookup = new Map();
-        ausenciaSustitucionMap.forEach((coberturas, normSust) => {
-            coberturas.forEach(cob => {
-                const isVisible = dates.some(d => d >= cob.fi && d <= cob.ff);
-                if (isVisible) coverageLookup.set(cob.normTitular, { normSust, rawSust: cob.sustitutoRaw });
+        // --- LOGICA VISTA SEMANAL (ESTRUCTURA OPERATIVA) ---
+        if (viewType === 'weekly') {
+            const weekStatus = new Map(); 
+            eventos.forEach(ev => {
+                const tipo = window.normalizeTipo(ev.tipo);
+                if (!['VAC', 'BAJA', 'PERM', 'PERMISO', 'FORMACION', 'REFUERZO'].includes(tipo)) return;
+                if (window.normalizeEstado(ev.estado) === 'anulado') return;
+                if (window.eventoPerteneceAHotel && !window.eventoPerteneceAHotel(ev, hotel)) return;
+
+                const fi = window.normalizeDate(ev.fecha_inicio);
+                const ff = window.normalizeDate(ev.fecha_fin || ev.fecha_inicio);
+                if (!dates.some(d => d >= fi && d <= ff)) return;
+
+                const tId = ev.empleado_id;
+                if (!tId) return;
+                const normT = window.normalizeId(tId);
+                const sRaw = ev.empleado_destino_id || ev.sustituto_id || ev.sustituto || ev.payload?.sustituto_id || ev.payload?.sustituto;
+                
+                const existing = weekStatus.get(normT);
+                if (existing && existing.sustitutoId && !sRaw) return;
+
+                weekStatus.set(normT, { tipo, sustitutoId: sRaw ? window.normalizeId(sRaw) : null, rawSust: sRaw, titularId: tId });
             });
-        });
 
-        sourceRows.forEach(r => {
-            const normTitular = window.normalizeId(r.empleadoId);
-            if (handledTitulars.has(normTitular)) return;
-            const coverage = coverageLookup.get(normTitular);
-
-            if (coverage) {
-                const { normSust, rawSust } = coverage;
-                if (!usedAsSust.has(normSust)) {
-                    const empProfile = employees.find(e => window.normalizeId(e.id) === normSust || window.normalizeId(e.nombre) === normSust);
-                    operativeRows.push({
-                        hotel,
-                        hotel_id: hotel,
-                        puesto: `Puesto ${String((r.rowIndex || 0) + 1).padStart(2, '0')}`,
-                        posicionId: r.rowIndex,
-                        orden: r.rowIndex,
-                        ordenOriginal: r.rowIndex,
-                        employee_id: rawSust,
-                        empleadoId: rawSust,
-                        nombre: empProfile?.nombre || rawSust,
-                        empleado: empProfile?.nombre || rawSust,
-                        displayName: empProfile?.nombre || rawSust,
-                        empleadoMostrado: empProfile?.nombre || rawSust,
-                        empleadoReal: rawSust,
-                        titularAusente: null,
-                        sustitutoDe: r.empleadoId,
-                        esCoberturaAusencia: true,
-                        esAusenteInformativo: false,
-                        _originalTitularId: r.empleadoId
-                    });
-                    usedAsSust.add(normSust);
+            const puestoAssignments = new Map();
+            sourceRows.forEach(r => {
+                if (String(r.empleadoId || '').includes('---') || String(r.empleadoId || '').includes('___')) return;
+                const normT = window.normalizeId(r.empleadoId);
+                const status = weekStatus.get(normT);
+                if (status) {
+                    if (status.sustitutoId) puestoAssignments.set(normT, { occupantId: status.rawSust, isSustitucion: true });
+                    else if (status.tipo !== 'REFUERZO') puestoAssignments.set(normT, { occupantId: 'VACANTE-' + normT, isVacante: true });
+                    else puestoAssignments.set(normT, { occupantId: r.empleadoId });
+                } else {
+                    puestoAssignments.set(normT, { occupantId: r.empleadoId });
                 }
-                deferredRows.push({
-                    hotel,
-                    hotel_id: hotel,
-                    puesto: 'Ausente',
-                    posicionId: r.rowIndex,
-                    orden: r.rowIndex,
-                    ordenOriginal: r.rowIndex,
-                    employee_id: r.empleadoId,
-                    empleadoId: r.empleadoId,
-                    nombre: r.displayName || r.empleadoId,
-                    empleado: r.displayName || r.empleadoId,
-                    displayName: r.displayName || r.empleadoId,
-                    empleadoMostrado: r.displayName || r.empleadoId,
-                    empleadoReal: r.empleadoId,
-                    titularAusente: r.empleadoId,
-                    sustitutoDe: null,
-                    esCoberturaAusencia: false,
-                    esAusenteInformativo: true
-                });
-                handledTitulars.add(normTitular);
-            } else {
-                if (!usedAsSust.has(normTitular)) {
-                    operativeRows.push({
-                        hotel,
-                        hotel_id: hotel,
-                        puesto: `Puesto ${String((r.rowIndex || 0) + 1).padStart(2, '0')}`,
-                        posicionId: r.rowIndex,
-                        orden: r.rowIndex,
-                        ordenOriginal: r.rowIndex,
+            });
+
+            sourceRows.forEach(r => {
+                const normT = window.normalizeId(r.empleadoId);
+                const assignment = puestoAssignments.get(normT);
+                if (!assignment) return;
+
+                const v9Order = window.getV9ExcelOrder(hotel, r.week_start || firstDate, r.empleadoId);
+                
+                const status = weekStatus.get(normT);
+                if (status && status.tipo !== 'REFUERZO') {
+                    const tProfile = employees.find(e => window.normalizeId(e.id) === normT || window.normalizeId(e.nombre) === normT);
+                    absentRows.push({
+                        ...r,
                         employee_id: r.empleadoId,
-                        empleadoId: r.empleadoId,
-                        nombre: r.displayName || r.empleadoId,
-                        empleado: r.displayName || r.empleadoId,
-                        displayName: r.displayName || r.empleadoId,
-                        empleadoMostrado: r.displayName || r.empleadoId,
-                        empleadoReal: r.empleadoId,
-                        titularAusente: null,
-                        sustitutoDe: null,
-                        esCoberturaAusencia: false,
-                        esAusenteInformativo: false
+                        nombre: tProfile?.nombre || r.empleadoId,
+                        isAbsentInformative: true,
+                        puestoOrden: v9Order + 100000 
                     });
-                    handledTitulars.add(normTitular);
                 }
-            }
-        });
 
-        ausenciaSustitucionMap.forEach((coberturas, normSust) => {
-            if (usedAsSust.has(normSust)) return;
-            const hasActive = coberturas.some(cob => dates.some(d => d >= cob.fi && d <= cob.ff));
-            if (hasActive) {
-                const empProfile = employees.find(e => window.normalizeId(e.id) === normSust || window.normalizeId(e.nombre) === normSust);
-                const rawSust = coberturas[0].sustitutoRaw;
-                operativeRows.push({ 
-                    hotel, 
-                    hotel_id: hotel,
-                    puesto: 'Personal Apoyo', 
-                    employee_id: rawSust,
-                    empleadoId: rawSust,
-                    nombre: empProfile?.nombre || rawSust,
-                    displayName: empProfile?.nombre || rawSust,
-                    empleadoMostrado: empProfile?.nombre || rawSust, 
-                    empleadoReal: rawSust, 
-                    esCoberturaAusencia: true, 
-                    esAusenteInformativo: false 
+                const occId = assignment.occupantId;
+                const normOcc = window.normalizeId(occId);
+                if (handledEmps.has(normOcc)) return;
+
+                const occProfile = employees.find(e => window.normalizeId(e.id) === normOcc || window.normalizeId(e.nombre) === normOcc);
+                operativeRows.push({
+                    ...r,
+                    employee_id: occId,
+                    empleadoId: occId,
+                    nombre: occProfile?.nombre || occId,
+                    displayName: occProfile?.nombre || occId,
+                    isVacante: assignment.isVacante,
+                    isSustitucion: assignment.isSustitucion,
+                    puestoOrden: v9Order,
+                    titularOriginal: r.displayName || r.empleadoId
                 });
-                usedAsSust.add(normSust);
-            }
+                handledEmps.add(normOcc);
+            });
+
+            eventos.forEach(ev => {
+                const isExplicitRef = Boolean(ev.isRefuerzo === true || ev.origen === 'refuerzo' || ev.payload?.tipo_modulo === 'refuerzo');
+                if (!isExplicitRef) return;
+                if (window.normalizeEstado(ev.estado) === 'anulado') return;
+                if (window.eventoPerteneceAHotel && !window.eventoPerteneceAHotel(ev, hotel)) return;
+
+                const fi = window.normalizeDate(ev.fecha_inicio);
+                const ff = window.normalizeDate(ev.fecha_fin || ev.fecha_inicio);
+                if (!dates.some(d => d >= fi && d <= ff)) return;
+
+                const empId = ev.empleado_id;
+                const normEmpId = window.normalizeId(empId);
+                if (handledEmps.has(normEmpId)) return;
+
+                const empProfile = employees.find(e => window.normalizeId(e.id) === normEmpId || window.normalizeId(e.nombre) === normEmpId);
+                operativeRows.push({ hotel, employee_id: empId, nombre: empProfile?.nombre || empId, puestoOrden: 200000, isRefuerzo: true });
+                handledEmps.add(normEmpId);
+            });
+        } 
+        else {
+            sourceRows.forEach(r => {
+                if (String(r.empleadoId || '').includes('---') || String(r.empleadoId || '').includes('___')) return;
+                const norm = cleanForId(r.empleadoId);
+                if (handledEmps.has(norm)) return;
+                
+                let hasWork = false;
+                for(const d of dates) {
+                    const resolved = getTurnoEmpleadoExtended(r.empleadoId, d);
+                    if (resolved && resolved.turno && resolved.turno !== 'D' && !resolved.incidencia) {
+                        hasWork = true; break;
+                    }
+                }
+                
+                if (hasWork) {
+                    const v9Order = window.getV9ExcelOrder(hotel, r.week_start || firstDate, r.empleadoId);
+                    operativeRows.push({ ...r, employee_id: r.empleadoId, nombre: r.displayName || r.empleadoId, puestoOrden: v9Order });
+                    handledEmps.add(norm);
+                }
+            });
+
+            eventos.forEach(ev => {
+                if (window.normalizeEstado(ev.estado) === 'anulado') return;
+                if (window.eventoPerteneceAHotel && !window.eventoPerteneceAHotel(ev, hotel)) return;
+                
+                const fi = window.normalizeDate(ev.fecha_inicio);
+                const ff = window.normalizeDate(ev.fecha_fin || ev.fecha_inicio);
+                if (!dates.some(d => d >= fi && d <= ff)) return;
+
+                const idsToCheck = [ev.empleado_id, ev.empleado_destino_id || ev.sustituto_id || ev.payload?.sustituto_id].filter(Boolean);
+                
+                idsToCheck.forEach(id => {
+                    const norm = cleanForId(id);
+                    if (handledEmps.has(norm)) return;
+
+                    let hasWork = false;
+                    for(const d of dates) {
+                        const resolved = getTurnoEmpleadoExtended(id, d);
+                        if (resolved && resolved.turno && resolved.turno !== 'D' && !resolved.incidencia) {
+                            hasWork = true; break;
+                        }
+                    }
+
+                    if (hasWork) {
+                        const profile = employees.find(e => window.normalizeId(e.id) === norm || window.normalizeId(e.nombre) === norm);
+                        const v9Order = window.getV9ExcelOrder(hotel, firstDate, id) || 150000;
+                        operativeRows.push({ hotel, employee_id: id, nombre: profile?.nombre || id, puestoOrden: v9Order, isFromEvent: true });
+                        handledEmps.add(norm);
+                    }
+                });
+            });
+        }
+
+        let result = [...operativeRows, ...absentRows];
+        
+        result = result.filter(row => {
+            const clean = window.formatDisplayName(row.nombre || row.displayName || '').trim();
+            return clean && clean.length > 0;
         });
 
-        operativeRows.sort((a, b) => (a.ordenOriginal ?? 999) - (b.ordenOriginal ?? 999));
-        const finalRows = [...operativeRows, ...deferredRows];
-        
-        // Diagnóstico DEBUG
-        if (window.DEBUG_MODE) {
-            console.log('[GET_EMPLOYEES_SAMPLE]', finalRows.slice(0, 3).map(r => ({
-                id: r.employee_id,
-                name: r.nombre,
-                display: r.displayName
-            })));
+        if (viewType === 'monthly') {
+            result.forEach(row => {
+                let count = 0;
+                for (const d of dates) {
+                    const res = getTurnoEmpleadoExtended(row.employee_id, d);
+                    // Solo cuentan turnos operativos (no VAC, no BAJA, no D, no Vacío)
+                    if (res && res.turno && res.turno !== 'D' && !res.incidencia) {
+                        count++;
+                    }
+                }
+                row.totalTurnosMes = count;
+            });
+
+            result.sort((a, b) => {
+                // Primero: Volumen de actividad (descendente)
+                if (b.totalTurnosMes !== a.totalTurnosMes) return b.totalTurnosMes - a.totalTurnosMes;
+                // Segundo: Orden Excel (puestoOrden)
+                if (a.puestoOrden !== b.puestoOrden) return a.puestoOrden - b.puestoOrden;
+                return String(a.nombre || '').localeCompare(String(b.nombre || ''));
+            });
+        } else {
+            result.sort((a, b) => {
+                if (a.puestoOrden !== b.puestoOrden) return a.puestoOrden - b.puestoOrden;
+                return String(a.nombre || '').localeCompare(String(b.nombre || ''));
+            });
         }
+
         
-        return finalRows;
+        return result;
     };
 
     return {
@@ -2083,7 +3248,7 @@ window.detectarErrores = (previewModel) => {
             const celda = previewModel.getCelda(puesto.puesto_id, fecha);
             if (!celda) return;
 
-            if (celda.incidencia && (!celda.real || celda.real === celda.titular)) {
+            if (celda.incidencia && !celda.cobertura && (!celda.real || celda.real === celda.titular)) {
                 warnError({
                     tipo: 'turno_sin_cubrir',
                     fecha,
@@ -2212,230 +3377,197 @@ window.getTurnoEmpleadoLabel = (turnoEmpleado) => {
     if (turnoEmpleado.incidencia === 'PERM') return 'Permiso';
 
     const key = window.TurnosRules?.shiftKey(turnoEmpleado.turno || '', 'NORMAL') || '';
-    return window.TurnosRules?.definitions?.[key]?.label || turnoEmpleado.turno || '�';
+    return window.TurnosRules?.definitions?.[key]?.label || turnoEmpleado.turno || '—';
 };
 
-window.renderEmpleadoRowHeader = (employee, { showVacationIcon = false } = {}) => `
-    <div style="display:flex; flex-direction:column; gap:4px;">
-        <span style="font-weight:800; color:#0f172a; font-size:0.82rem;">${escapeHtml(employee?.displayName || employee?.employee_id || 'Empleado')}${showVacationIcon && employee?.isOnVacationVisibleRange ? ' �x�️' : ''}</span>
-    </div>
-`;
+window.renderEmpleadoRowHeader = (employee, { showVacationIcon = false, isCompact = false } = {}) => {
+    const rawName = employee?.nombre || employee?.displayName || 'Empleado';
+    if (rawName.includes('---') || rawName.includes('___')) return '';
 
-window.renderEmpleadoCell = (turnoEmpleado) => {
-    const data = turnoEmpleado;
-    const turnoBase = data?.turno_base ?? data?._celda?.turno_base ?? '';
-    const turnoFinal = data?.turno ?? '';
-    const hasSustitucion = Boolean(data?.real && data?.titular && data.real !== data.titular);
-    const normalizeTurnoCode = (value) => window.normalizePreviewTurno
-        ? window.normalizePreviewTurno(value || '')
-        : String(value || '').trim().toUpperCase();
-    const internalShiftCodes = new Set([
-        'CT',
-        'CAMBIO',
-        'CAMBIO_TURNO',
-        'INTERCAMBIO',
-        'INTERCAMBIO_TURNO',
-        'INTERCAMBIO_HOTEL',
-        'CAMBIO_HOTEL',
-        'CAMBIO_POSICION',
-        'INTERCAMBIO_POSICION'
-    ]);
-    const isStateChange = (state) => {
-        const reason = String(state?.sourceReason || '').toUpperCase();
-        return Boolean(
-            state
-            && !state.isAbsence
-            && (
-                state.isModified
-                || reason.includes('CAMBIO')
-                || reason.includes('INTERCAMBIO')
-                || reason.includes('OVERRIDE')
-                || reason.includes('REFUERZO')
-            )
-        );
-    };
-    const stateToVisibleTurno = (state) => {
-        if (!state || state.isAbsence) return '';
-        const turno = normalizeTurnoCode(state.turnoFinal);
-        if (turno && !internalShiftCodes.has(turno)) return turno;
-        if (String(state.estadoFinal || '').toUpperCase() === 'DESCANSO') return 'D';
-        return '';
-    };
-
-    const normalizarTurnoVisible = (cellData) => {
-        if (!cellData) return '';
-
-        if (cellData.incidencia === 'VAC') return 'VAC';
-        if (cellData.incidencia === 'BAJA') return 'BAJA';
-        if (cellData.incidencia === 'PERM' || cellData.incidencia === 'PERMISO') return 'PERM';
-
-        const candidateStates = [
-            cellData._celda?._realState,
-            cellData._celda?._finalState,
-            cellData._celda?._titularState
-        ];
-
-        for (const state of candidateStates) {
-            if (!isStateChange(state)) continue;
-            const resolvedTurno = stateToVisibleTurno(state);
-            if (resolvedTurno) return resolvedTurno;
-        }
-
-        const rawTurno = normalizeTurnoCode(cellData.turno);
-        if (rawTurno && !internalShiftCodes.has(rawTurno)) return rawTurno;
-
-        const fallbackTurnos = [
-            stateToVisibleTurno(cellData._celda?._realState),
-            stateToVisibleTurno(cellData._celda?._finalState),
-            stateToVisibleTurno(cellData._celda?._titularState),
-            cellData.turno_base,
-            cellData._celda?.turno_base
-        ];
-
-        for (const candidate of fallbackTurnos) {
-            const normalized = normalizeTurnoCode(candidate);
-            if (normalized && !internalShiftCodes.has(normalized)) return normalized;
-        }
-
-        return '';
-    };
-
-    const turnoVisible = normalizarTurnoVisible(data);
-    const turnoBaseVisible = normalizeTurnoCode(turnoBase);
-    const hayCambio = Boolean(
-        data?.cambio === true
-        || data?.intercambio === true
-        || data?.origen === 'evento_ct'
-        || (
-            turnoVisible
-            && turnoBaseVisible
-            && !['VAC', 'BAJA', 'PERM', 'PERMISO'].includes(turnoVisible)
-            && turnoVisible !== turnoBaseVisible
-        )
-    );
-
-    const getTurnoLabel = (turno) => {
-        const normalized = normalizeTurnoCode(turno);
-        const key = window.TurnosRules?.shiftKey(normalized, 'NORMAL') || '';
-        return window.TurnosRules?.definitions?.[key]?.label || normalized || ' ';
-    };
-
-    const getIncidenciaLabel = (incidencia) => {
-        if (incidencia === 'VAC') return 'Vacaciones';
-        if (incidencia === 'BAJA') return 'Baja';
-        if (incidencia === 'PERM') return 'Permiso';
-        return incidencia || '';
-    };
-
-    const getTurnoDisplayLine = (turno) => {
-        const turnoLabel = getTurnoLabel(turno);
-        return `${escapeHtml(turnoLabel)}${data?.intercambio ? ' 🔄 ' : ''}`;
-    };
-
-    const getVisualStyle = () => {
-        if (!data) {
-            return 'background:#f8fafc; color:#475569; border:1px dashed #cbd5e1;';
-        }
-        if (data.conflicto) {
-            return 'background:#fff7ed; color:#9a3412; border:1px solid #fdba74;';
-        }
-        if (data.incidencia === 'VAC') {
-            return 'background:#e0f2fe; color:#075985; border:1px solid #7dd3fc;';
-        }
-        if (data.incidencia === 'BAJA') {
-            return 'background:#fee2e2; color:#b91c1c; border:1px solid #fca5a5;';
-        }
-        if (data.incidencia === 'PERM' || data.incidencia === 'PERMISO') {
-            return 'background:#ffedd5; color:#9a3412; border:1px solid #fdba74;';
-        }
-
-        const shiftKey = window.TurnosRules?.shiftKey(turnoVisible || turnoBaseVisible || '', 'NORMAL') || '';
-        if (shiftKey === 'm') {
-            return 'background:#dcfce7; color:#166534; border:1px solid #86efac;';
-        }
-        if (shiftKey === 't') {
-            return 'background:#fef3c7; color:#92400e; border:1px solid #fcd34d;';
-        }
-        if (shiftKey === 'n') {
-            return 'background:#dbeafe; color:#1d4ed8; border:1px solid #93c5fd;';
-        }
-        if (shiftKey === 'd') {
-            return 'background:#e5e7eb; color:#991b1b; border:1px solid #d1d5db;';
-        }
-
-        return 'background:#f8fafc; color:#1e293b; border:1px solid #e2e8f0;';
-    };
-
-    const buildContainer = (title, lines, extraLine = '') => `
-        <div title="${escapeHtml(title)}" style="display:flex; flex-direction:column; gap:6px; min-height:86px; padding:10px 8px; border-radius:12px; background:#ffffff;">
-            <div style="display:flex; flex-direction:column; gap:4px; align-items:stretch;">
-                ${lines.map(line => `
-                    <div style="display:inline-flex; align-items:center; justify-content:center; text-align:center; padding:8px 6px; border-radius:10px; font-size:0.76rem; font-weight:800; ${getVisualStyle()}">
-                        ${line}
-                    </div>
-                `).join('')}
-            </div>
-            ${extraLine}
-        </div>
-    `;
-
-    if (!data) {
-        return buildContainer('Sin turno', ['&mdash;']);
+    if (employee?.isVacante) {
+        return `
+        <div style="display:flex; flex-direction:column; gap:2px;">
+            <span style="font-weight:800; color:#ef4444; font-size:0.82rem; line-height:1.3;">⚠️ VACANTE</span>
+        </div>`;
     }
 
-    if (data.conflicto) {
-        return buildContainer(
-            'Conflicto: múltiples asignaciones',
-            ['&#9888; Conflicto'],
-            `<div style="font-size:0.7rem; color:#9a3412; text-align:center;">(múltiples asignaciones)</div>`
-        );
+    const name = escapeHtml(window.formatDisplayName(rawName));
+    const vacIcon = showVacationIcon && employee?.isOnVacationVisibleRange ? ' 🏖️' : '';
+    
+    if (employee?.isAbsentInformative) {
+        return `
+        <div style="display:flex; flex-direction:column; gap:2px; opacity:0.6;">
+            <span style="font-weight:700; color:#64748b; font-size:0.82rem; line-height:1.3;">${name}${vacIcon}</span>
+        </div>`;
     }
 
-    if (['VAC', 'BAJA', 'PERM', 'PERMISO', 'FORMACION'].includes(data.incidencia)) {
-        const finalCellHtml = window.renderTurnoContent ? window.renderTurnoContent(data.incidencia) : escapeHtml(data.incidencia);
-        return buildContainer(data.incidencia, [finalCellHtml]);
-    }
+    const isExplicitRefuerzo = Boolean(employee?.isRefuerzo === true || employee?.origen === 'refuerzo' || employee?.payload?.tipo_modulo === 'refuerzo');
+    const supportBadge = isExplicitRefuerzo ? `<span style="display:inline-block;padding:2px 7px;border-radius:6px;background:#dbeafe;color:#2563eb;font-size:0.55rem;font-weight:700;margin-left:6px;">REFUERZO</span>` : '';
 
-    if (!turnoVisible) {
-        return buildContainer('Sin turno', ['&mdash;']);
-    }
-
-    if (hasSustitucion) {
-        const turnoLabel = getTurnoLabel(turnoVisible);
-        const turnoDisplayLine = getTurnoDisplayLine(turnoVisible);
-        const details = `(Sustituye a ${escapeHtml(data.titular || ' ')})`;
-        return buildContainer(turnoLabel, [turnoDisplayLine], `
-            <div style="font-size:0.7rem; color:#475569; text-align:center;">${details}</div>
-        `);
-    }
-
-    const turnoLabelRaw = getTurnoLabel(turnoVisible);
-    const finalCellHtml = window.renderTurnoContent ? window.renderTurnoContent(turnoVisible, { intercambio: !!data.intercambio }) : escapeHtml(turnoLabelRaw);
-    return buildContainer(turnoLabelRaw, [finalCellHtml]);
+    return `
+    <div style="display:flex; flex-direction:column; gap:2px;">
+        <span style="font-weight:700; color:#0f172a; font-size:0.82rem; line-height:1.3;">${name}${vacIcon}${supportBadge}</span>
+    </div>`;
 };
 
-window.navigatePreview = (dir) => {
-    if (window._previewMode === 'weekly' && window._fpWeek) {
-        const current = window._fpWeek.selectedDates[0] || new Date();
-        current.setDate(current.getDate() + (dir * 7));
-        window._fpWeek.setDate(current);
+window.renderEmpleadoCell = (turnoEmpleado, { isCompact = false } = {}) => {
+    if (!turnoEmpleado) return '<div class="preview-cell-empty"></div>';
+
+    const turnoVisible = turnoEmpleado.incidencia || turnoEmpleado.turno || '';
+    const turnoBase = turnoEmpleado.turno_base || '';
+    const hayCambio = Boolean(turnoEmpleado.cambio || (turnoVisible && turnoBase && turnoVisible !== turnoBase && !['VAC','BAJA','PERM'].includes(turnoVisible)));
+
+    // Capsule definitions (Shifts & Incidences)
+    const capsuleStyles = {
+        VAC:  { bg: '#e0f2fe', color: '#0369a1', border: '#7dd3fc', label: 'Vacaciones', icon: '🏖️' },
+        BAJA: { bg: '#fee2e2', color: '#b91c1c', border: '#fca5a5', label: 'Baja', icon: '🏥' },
+        PERM: { bg: '#ffedd5', color: '#9a3412', border: '#fdba74', label: 'Permiso', icon: '📄' },
+        M:    { bg: '#dcfce7', color: '#166534', border: '#86efac', label: 'Mañana', icon: '' },
+        T:    { bg: '#fef9c3', color: '#854d0e', border: '#fde047', label: 'Tarde', icon: '' },
+        N:    { bg: '#dbeafe', color: '#1e40af', border: '#93c5fd', label: 'Noche', icon: '🌙' },
+        D:    { bg: '#f1f5f9', color: '#475569', border: '#e2e8f0', label: 'Descanso', icon: '' }
+    };
+
+    const shiftKey = window.TurnosRules?.shiftKey?.(turnoVisible, 'NORMAL') || String(turnoVisible).toUpperCase();
+    const styleKey = ['VAC','BAJA','PERM'].includes(turnoVisible) ? turnoVisible : shiftKey;
+    const style = capsuleStyles[styleKey] || { bg: '#f8fafc', color: '#475569', border: '#e2e8f0', label: turnoVisible || '—', icon: '' };
+
+    if (isCompact) {
+        // VISTA MENSUAL: Estilo plano y minimalista
+        const compactBg = style.bg;
+        const compactColor = style.color;
+        const labelText = turnoVisible || '—';
+        const compactIcons = (turnoVisible === 'VAC' ? '🏖️' : '') + (hayCambio ? ' 🔄' : '');
+        
+        return `
+        <div style="display:flex; align-items:center; justify-content:center; padding:4px 2px; border-radius:6px; font-size:0.7rem; font-weight:700; min-height:45px; background:${compactBg}; color:${compactColor}; border:1px solid rgba(0,0,0,0.05);">
+            ${escapeHtml(labelText)}${compactIcons ? ` <span style="font-size:0.65rem;">${compactIcons}</span>` : ''}
+        </div>`;
+    } else {
+        // VISTA SEMANAL: Estilo PREMIUM (Capsule)
+        const label = capsuleStyles[styleKey]?.label || turnoVisible || '—';
+        let iconHtml = '';
+        if (style.icon) iconHtml += ` <span style="margin-left:4px;">${style.icon}</span>`;
+        if (hayCambio && !['VAC','BAJA','PERM'].includes(turnoVisible)) iconHtml += ` <span style="margin-left:4px;">🔄</span>`;
+
+        return `
+        <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:75px; gap:4px;">
+            <span style="display:inline-flex; align-items:center; justify-content:center; padding:8px 16px; border-radius:999px; font-size:0.8rem; font-weight:800; background:${style.bg}; color:${style.color}; border:1px solid ${style.border}; box-shadow:0 1px 3px rgba(0,0,0,0.06); white-space:nowrap;">
+                ${escapeHtml(label)}${iconHtml}
+            </span>
+        </div>`;
+    }
+};
+
+
+
+
+window.DateManager = {
+    state: {
+        currentDate: window.isoDate(new Date()),
+        view: 'weekly'
+    },
+
+    init: function() {
+        this.state.currentDate = window._previewDate || window.isoDate(new Date());
+        this.state.view = window._previewMode || 'weekly';
+        this.initPicker();
+        this.updateUI();
+    },
+
+    updateUI: function() {
+        const btnW = document.getElementById('btnViewWeekly');
+        const btnM = document.getElementById('btnViewMonthly');
+        if (btnW) btnW.classList.toggle('active', this.state.view === 'weekly');
+        if (btnM) btnM.classList.toggle('active', this.state.view === 'monthly');
+        
+        window._previewMode = this.state.view;
+        window._previewDate = this.state.currentDate;
+    },
+
+    prev: function() {
+        const d = new Date(this.state.currentDate + 'T12:00:00');
+        if (this.state.view === 'weekly') {
+            d.setDate(d.getDate() - 7);
+        } else {
+            d.setMonth(d.getMonth() - 1, 1); // Ir al día 1 del mes anterior
+        }
+        this.state.currentDate = window.isoDate(d);
+        this.syncAndRender();
+    },
+
+    next: function() {
+        const d = new Date(this.state.currentDate + 'T12:00:00');
+        if (this.state.view === 'weekly') {
+            d.setDate(d.getDate() + 7);
+        } else {
+            d.setMonth(d.getMonth() + 1, 1); // Ir al día 1 del mes siguiente
+        }
+        this.state.currentDate = window.isoDate(d);
+        this.syncAndRender();
+    },
+
+    today: function() {
+        this.state.currentDate = window.isoDate(new Date());
+        this.syncAndRender();
+    },
+
+    switchView: function(mode) {
+        this.state.view = mode;
+        this.updateUI();
+        this.initPicker();
         window.renderPreview();
-    } else if (window._previewMode === 'monthly' && window._fpMonth) {
-        const current = window._fpMonth.selectedDates[0] || new Date();
-        current.setMonth(current.getMonth() + dir);
-        window._fpMonth.setDate(current);
+    },
+
+    syncAndRender: function() {
+        this.updateUI();
+        if (window._fpInstance) window._fpInstance.setDate(this.state.currentDate, false);
         window.renderPreview();
+    },
+
+    initPicker: function() {
+        const input = document.getElementById('datePicker');
+        if (!input) return;
+        if (window._fpInstance) window._fpInstance.destroy();
+
+        const config = {
+            locale: 'es',
+            defaultDate: this.state.currentDate,
+            onChange: (selectedDates) => {
+                if (selectedDates.length) {
+                    this.state.currentDate = window.isoDate(selectedDates[0]);
+                    this.syncAndRender();
+                }
+            }
+        };
+
+        if (this.state.view === 'monthly') {
+            config.plugins = [new monthSelectPlugin({ shorthand: true, dateFormat: "Y-m", altFormat: "F Y" })];
+        }
+
+        window._fpInstance = flatpickr(input, config);
+    },
+
+    openPicker: function() {
+        if (window._fpInstance) window._fpInstance.open();
     }
 };
+
 
 window.renderPreview = async () => {
+    const display = document.getElementById('dateDisplay');
+    const monthNames = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
+
     const area = $('#previewContent');
     if (!area) return;
+
+    // Asegurar carga del mapa de orden V9
+    await window.loadV9ExcelOrderMap();
     
     const hotelSel = $('#prevHotel')?.value || 'all';
     const isWeekly = window._previewMode === 'weekly';
-    const rawDate = $('#prevWeekDate')?.value || window.isoDate(new Date());
-    const rawMonth = $('#prevMonth')?.value || window.isoDate(new Date()).substring(0,7);
+        const rawDate = window._previewDate;
+        const rawMonth = window._previewDate.substring(0,7);
 
     area.innerHTML = `<div style="padding:4rem; text-align:center; opacity:0.5;"><i class="fas fa-spinner fa-spin"></i> Cargando cuadrantes...</div>`;
 
@@ -2453,9 +3585,20 @@ window.renderPreview = async () => {
             start = window.getMonday(base);
             end = new Date(start);
             end.setDate(start.getDate() + 6);
+            
+            if (display) {
+                const fmt = (d) => {
+                    const dd = d.getDate().toString().padStart(2, '0');
+                    const mm = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"][d.getMonth()];
+                    return `${dd} de ${mm}`;
+                };
+                display.textContent = `${fmt(start)} — ${fmt(end)} ${end.getFullYear()}`;
+            }
         } else {
             const [y, m] = rawMonth.split('-').map(Number);
             start = new Date(y, m - 1, 1);
+            if (display) display.textContent = `${monthNames[start.getMonth()]} ${start.getFullYear()}`;
+
             end = new Date(y, m, 0);
         }
 
@@ -2518,6 +3661,30 @@ window.renderPreview = async () => {
                 return row.weekStart <= endISO && rowEnd >= startISO;
             });
 
+            // --- TAREA CODEX: GENERAR SOURCE ROWS SINTÉTICOS SI NO HAY EXCEL ---
+            // Si no hay filas de Excel para esta semana/hotel, pero hay datos en Supabase,
+            // creamos filas virtuales para que el motor pueda renderizar.
+            if (hotelSourceRows.length === 0 && data && data.length > 0) {
+                const hotelData = data.filter(r => r.hotel_id === hName);
+                if (hotelData.length > 0) {
+                    const empsInHotel = [...new Set(hotelData.map(r => r.empleado_id))];
+                    empsInHotel.forEach((empId, idx) => {
+                        const empProfile = (profiles || []).find(p => p.id === empId || p.nombre === empId);
+                        const row = {
+                            empleadoId: empId,
+                            displayName: empProfile?.nombre || empId,
+                            rowIndex: empProfile?.orden ?? empProfile?.display_order ?? empProfile?.sort_order ?? 999,
+                            weekStart: startISO,
+                            values: columns.map(c => {
+                                const found = hotelData.find(r => r.empleado_id === empId && r.fecha === c.date);
+                                return found ? found.turno : null;
+                            })
+                        };
+                        hotelSourceRows.push(row);
+                    });
+                }
+            }
+
             const previewModel = window.createPuestosPreviewModel({
                 hotel: hName,
                 dates: columns.map(c => c.date),
@@ -2536,17 +3703,13 @@ window.renderPreview = async () => {
             window.validarPreviewModel(previewModel);
 
             if (previewModel.puestos.length === 0) continue;
-            const employeesToRender = previewModel.getEmpleadosVisibles
-                ? previewModel.getEmpleadosVisibles(startISO, endISO)
-                : previewModel.getEmployees();
-            const orderedEmployeesToRender = previewModel.ordenarEmpleados
-                ? previewModel.ordenarEmpleados(employeesToRender, columns.map(c => c.date))
-                : employeesToRender;
+            const viewType = isWeekly ? 'weekly' : 'monthly';
+            const employeesToRender = previewModel.getEmployees(viewType);
             
             // DEDUPLICACIÓN DE SEGURIDAD (Si Admin no lo muestra duplicado, nosotros tampoco)
             const seenEmps = new Set();
             const deduplicatedList = [];
-            orderedEmployeesToRender.forEach(emp => {
+            employeesToRender.forEach(emp => {
                 const key = emp.employee_id;
                 if (!seenEmps.has(key)) {
                     seenEmps.add(key);
@@ -2587,7 +3750,15 @@ window.renderPreview = async () => {
 
             const renderEmployeeTable = true;
 
+
             if (renderEmployeeTable) {
+                const isWeekly = (new Date(endISO) - new Date(startISO)) < (8 * 24 * 60 * 60 * 1000);
+                const tableClass = isWeekly ? 'preview-table-premium' : 'preview-table-compact';
+                const thWidth = isWeekly ? '220px' : '180px';
+                const thPadding = isWeekly ? '15px 25px' : '10px 15px';
+                const cellPadding = isWeekly ? '8px' : '4px';
+                const minColWidth = isWeekly ? '145px' : '85px';
+
                 const hotelSection = document.createElement('div');
                 hotelSection.innerHTML = `
                 <div class="glass-panel" style="margin-bottom:3rem; padding:0; overflow:hidden; border:1px solid #e2e8f0; background:white; border-radius:16px;">
@@ -2596,20 +3767,28 @@ window.renderPreview = async () => {
                         <h2 style="margin:0; font-size:1.1rem; color:#1e293b; font-weight:800;">${hName} <span style="color:#94a3b8; font-size:0.85rem;">${isWeekly ? `Semana ${window.fmtDateLegacy(startISO)}` : `${window.fmtDateLegacy(startISO)} - ${window.fmtDateLegacy(endISO)}`}</span></h2>
                     </div>
                     <div style="overflow-x:auto;">
-                        <table class="preview-table-premium" style="width:100%; border-collapse:collapse;">
+                        <table class="${tableClass}" style="width:100%; border-collapse:collapse;">
                             <thead>
                                 <tr style="background:#f8fafc;">
-                                    <th style="padding:15px 25px; text-align:left; border-bottom:1px solid #f1f5f9; width:220px; color:#64748b; font-size:0.7rem; text-transform:uppercase; position:sticky; left:0; background:#f8fafc; z-index:10;">Empleado</th>
-                                    ${columns.map(c => `<th style="padding:12px; border-bottom:1px solid #f1f5f9; text-align:center; min-width:145px; border-left:1px solid #f1f5f9;"><div style="font-size:0.65rem; color:#94a3b8;">${c.dayName}</div><div style="font-size:0.75rem; font-weight:600;">${c.dayDisplay.toLowerCase()}</div></th>`).join('')}
+                                    <th style="padding:${thPadding}; text-align:left; border-bottom:1px solid #f1f5f9; width:${thWidth}; color:#64748b; font-size:0.7rem; text-transform:uppercase; position:sticky; left:0; background:#f8fafc; z-index:10; border-right:1px solid #f1f5f9;">Empleado</th>
+                                    ${columns.map(c => {
+                                        const isWeekend = c.dayName === 'SAB' || c.dayName === 'DOM';
+                                        const bg = (!isWeekly && isWeekend) ? '#f1f5f9' : '#f8fafc';
+                                        return `<th style="padding:12px; border-bottom:1px solid #f1f5f9; text-align:center; min-width:${minColWidth}; border-left:1px solid #f1f5f9; background:${bg};"><div style="font-size:0.65rem; color:#94a3b8;">${c.dayName}</div><div style="font-size:0.75rem; font-weight:600;">${c.dayDisplay.toLowerCase()}</div></th>`;
+                                    }).join('')}
                                 </tr>
                             </thead>
                             <tbody>
                                 ${deduplicatedList.map(employee => `
                                     <tr style="border-bottom:1px solid #f1f5f9;">
-                                        <td style="padding:12px 25px; background:white; position:sticky; left:0; z-index:5; border-right:1px solid #f1f5f9;">
-                                            ${window.renderEmpleadoRowHeader(employee, { showVacationIcon: true })}
+                                        <td style="padding:${isWeekly ? '12px 25px' : '8px 15px'}; background:white; position:sticky; left:0; z-index:5; border-right:1px solid #f1f5f9;">
+                                            ${window.renderEmpleadoRowHeader(employee, { showVacationIcon: true, isCompact: !isWeekly })}
                                         </td>
-                                        ${columns.map(c => `<td style="padding:8px; text-align:center; border-left:1px solid #f1f5f9;">${window.renderEmpleadoCell(previewModel.getTurnoEmpleado(employee.employee_id, c.date))}</td>`).join('')}
+                                        ${columns.map(c => {
+                                            const isWeekend = c.dayName === 'SAB' || c.dayName === 'DOM';
+                                            const bg = (!isWeekly && isWeekend) ? 'rgba(0,0,0,0.02)' : 'transparent';
+                                            return `<td style="padding:${cellPadding}; text-align:center; border-left:1px solid #f1f5f9; background:${bg};">${window.renderEmpleadoCell(previewModel.getTurnoEmpleado(employee.employee_id, c.date), { isCompact: !isWeekly })}</td>`;
+                                        }).join('')}
                                     </tr>
                                 `).join('')}
                             </tbody>
@@ -2754,7 +3933,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const excelSel = $('#excelHotel');
     if (excelSel) excelSel.innerHTML = `<option value="all">Filtro por Hotel: Ver Todos</option>` + hotels.map(h => `<option value="${h}">${h}</option>`).join('');
     const excelMonth = $('#excelMonth');
-    if (excelMonth && !excelMonth.value) excelMonth.value = window.isoDate(new Date()).slice(0, 7);
+    if (excelMonth && !excelMonth.value) excelMonth.value = (window.isoDate(new Date()) || '').slice(0, 7);
     window.renderPreview();
 
     // Cargar empleados inicialmente
@@ -2832,7 +4011,9 @@ window.debugVacCristina = (fechaTest = '2026-04-20') => {
 
 function fmtDateLegacy(date) {
     if (!date) return '-';
-    const d = new Date(date);
+    // Forzar mediodía para evitar desfases por zona horaria al parsear YYYY-MM-DD
+    const d = new Date(String(date).includes('T') ? date : date + 'T12:00:00');
+    if (isNaN(d.getTime())) return date;
     return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${String(d.getFullYear()).slice(-2)}`;
 }
 window.fmtDateLegacy = fmtDateLegacy;
@@ -3351,7 +4532,7 @@ window.detectarConflictosOperativos = async (fecha, hotel) => {
             title: 'Mapeo de Identidad Pendiente',
             desc: `Existen ${empsSinId.length} perfiles operativos sin identificador único persistente (id_interno).`,
             suggestion: 'Asigna un código EMP-XXXX desde la ficha de cada empleado para asegurar la integridad histórica.',
-            action: { label: 'Ir a Personal', fn: 'window.switchSection("personal")' }
+            action: { label: 'Ir a Personal', fn: 'window.switchSection("employees")' }
         });
     }
 
@@ -3810,7 +4991,7 @@ window.publishToSupabase = async () => {
 
         // Si es publicación forzada (sin cambios), usamos la semana visible
         if (weeksAffected.length === 0) {
-            const rawDate = document.getElementById('prevWeekDate')?.value;
+            const rawDate = document.getElementById('datePicker')?.value;
             if (rawDate) {
                 const base = new Date(rawDate + 'T12:00:00');
                 weeksAffected = [window.isoDate(window.getMonday(base))];
@@ -4034,10 +5215,10 @@ window.renderDashboard = async () => {
         const empsConId = activeEmps.filter(e => e.id_interno && String(e.id_interno).trim() !== '').length;
         const integrity = totalEmps > 0 ? Math.round((empsConId / totalEmps) * 100) : 100;
 
-        $('#stat-cloud-status').textContent = 'Conectado';
-        $('#stat-last-sync').textContent = new Date().toLocaleTimeString();
-        $('#stat-pending-diff').textContent = changes.length;
-        $('#stat-integrity-score').textContent = `${integrity}%`;
+        if ($('#stat-cloud-status')) $('#stat-cloud-status').textContent = 'Conectado';
+        if ($('#stat-last-sync')) $('#stat-last-sync').textContent = new Date().toLocaleTimeString();
+        if ($('#stat-pending-diff')) $('#stat-pending-diff').textContent = changes.length;
+        if ($('#stat-integrity-score')) $('#stat-integrity-score').textContent = `${integrity}%`;
 
         // --- BLOQUE B: RIESGO OPERATIVO (AGRUPADO) ---
         const riskContainer = $('#risk-alerts-container');
@@ -4055,6 +5236,7 @@ window.renderDashboard = async () => {
             allRisks.push({
                 severity: 'info',
                 type: 'SIN_ID_INTERNO',
+                empId: empsSinIdInterno[0].id || empsSinIdInterno[0].nombre,
                 title: 'Mapeo de ID Interno',
                 desc: `Faltan asignar ${empsSinIdInterno.length} IDs internos persistentes.`
             });
@@ -4066,6 +5248,7 @@ window.renderDashboard = async () => {
             allRisks.push({
                 severity: 'info',
                 type: 'PLAZA_PENDIENTE',
+                empId: '¿?',
                 title: 'Plaza Pendiente de Definir',
                 desc: `Existe un registro provisional (${plazaPendiente.id}) para planificación de coberturas.`
             });
@@ -4091,7 +5274,7 @@ window.renderDashboard = async () => {
                             <div class="alert-desc">${escapeHtml(r.desc)}</div>
                         </div>
                         <div class="alert-actions">
-                            <button class="alert-btn primary" onclick="${r.action ? r.action.fn : (r.empId ? `window.openEmpDrawer('${r.empId}')` : `window.switchSection('preview')`)}">
+                            <button class="alert-btn primary" onclick="${r.action ? r.action.fn : (r.empId ? `window.goToOperationalIssue('${r.empId}', '${r.fecha || ''}', '${r.type || ''}')` : `window.switchSection('preview')`)}">
                                 ${r.action ? r.action.label : 'Ver Detalle'}
                             </button>
                         </div>
@@ -4100,34 +5283,93 @@ window.renderDashboard = async () => {
             }
         }
 
-        // Badges
-        $('#count-critical').textContent = `${counts.critical} Críticos`;
-        $('#count-warning').textContent = `${counts.warning} Avisos`;
-        $('#count-info').textContent = `${counts.info} Info`;
+        // Badges y KPIs nuevos
+        if ($('#count-critical')) $('#count-critical').textContent = `${counts.critical} Críticos`;
+        if ($('#count-warning')) $('#count-warning').textContent = `${counts.warning} Avisos`;
+        if ($('#count-info')) $('#count-info').textContent = `${counts.info} Info`;
 
-        // --- BLOQUE C: ACCIONES RÁPIDAS ---
-        // (Se asume que el HTML tiene un contenedor para esto o se inyecta)
+        if ($('#stat-critical-count')) {
+            $('#stat-critical-count').textContent = counts.critical;
+            $('#stat-critical-count').style.color = counts.critical > 0 ? '#ef4444' : '#10b981';
+        }
+        if ($('#stat-pending-requests')) {
+            const pendingReqs = (peticiones || []).filter(p => p.estado === 'pendiente' || p.estado === 'PENDIENTE').length;
+            $('#stat-pending-requests').textContent = pendingReqs;
+            $('#stat-pending-requests').style.color = pendingReqs > 0 ? '#f59e0b' : 'inherit';
+        }
+
+        // --- BLOQUE E: ACCIONES RÁPIDAS ---
+        const quickActions = $('#dashboard-quick-actions');
+        if (quickActions) {
+            quickActions.innerHTML = `
+                <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap:15px;">
+                    <button class="btn-premium" onclick="window.switchSection('excel')" style="height:100px; flex-direction:column; gap:8px; border-radius:16px;">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:28px; height:28px;"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="3" y1="9" x2="21" y2="9"></line><line x1="9" y1="21" x2="9" y2="9"></line></svg>
+                        <span style="font-size:0.8rem; font-weight:800;">Gestión Excel</span>
+                    </button>
+                    <button class="btn-premium" onclick="window.switchSection('preview')" style="height:100px; flex-direction:column; gap:8px; border-radius:16px;">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:28px; height:28px;"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+                        <span style="font-size:0.8rem; font-weight:800;">Vista Previa</span>
+                    </button>
+                    <button class="btn-premium" onclick="window.switchSection('employees')" style="height:100px; flex-direction:column; gap:8px; border-radius:16px;">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:28px; height:28px;"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+                        <span style="font-size:0.8rem; font-weight:800;">Empleados</span>
+                    </button>
+                    <button class="btn-premium" onclick="window.open('https://cumbriaspahotel.github.io/Turnos-new/', '_blank')" style="height:100px; flex-direction:column; gap:8px; background:var(--accent); color:white; border-radius:16px; border:none;">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="width:28px; height:28px;"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
+                        <span style="font-size:0.8rem; font-weight:800;">Vista Pública</span>
+                    </button>
+                </div>
+            `;
+        }
 
         // --- BLOQUE D: ACTIVIDAD / AUDITORÍA ---
         const timeline = $('#dashboard-timeline');
         if (timeline) {
             try {
-                const logs = await window.TurnosDB.fetchLogs(15);
+                const logs = await window.TurnosDB.fetchLogs(20);
+                
+                // Calcular actividad hoy
+                const todayISO = new Date().toISOString().split('T')[0];
+                const todayLogs = (logs || []).filter(l => l.fecha && l.fecha.startsWith(todayISO)).length;
+                // Bajas activas: count events whose period covers today (not finalized/past)
+                try {
+                    const evts = await window.TurnosDB.fetchEventos();
+                    const bajaTipos = ['BAJA','PERM','PERMISO','IT','BAJA_MEDICA','FORMACION','AUSENCIA','OTRO'];
+                    const activeBajas = (evts || []).filter(e => {
+                        if (!bajaTipos.includes((e.tipo || '').toUpperCase())) return false;
+                        const est = (e.estado || 'activo').toLowerCase();
+                        if (est === 'anulado' || est === 'rechazado') return false;
+                        const fin = e.fecha_fin || e.fecha_inicio;
+                        return e.fecha_inicio <= todayISO && fin >= todayISO;
+                    }).length;
+                    if ($('#stat-today-activity')) $('#stat-today-activity').textContent = activeBajas;
+                } catch(be) { console.warn('[Dashboard] Error counting bajas:', be); }
+
                 if (!logs || logs.length === 0) {
-                    timeline.innerHTML = '<div style="padding:20px; text-align:center; opacity:0.5; font-size:0.8rem;">Sin actividad reciente.</div>';
+                    timeline.innerHTML = '<div style="padding:40px; text-align:center; opacity:0.5; font-size:0.9rem;"><i class="fas fa-history fa-2x" style="display:block; margin-bottom:12px;"></i>Sin actividad reciente.</div>';
                 } else {
                     timeline.innerHTML = logs.map(log => `
-                        <div class="activity-log-item ${log.revertida ? 'warn' : 'ok'}">
-                            <div style="font-size:0.75rem; color:var(--text-muted);">${new Date(log.fecha).toLocaleTimeString()}</div>
-                            <div style="font-weight:700;">${log.revertida ? 'Publicación Revertida' : 'Sincronización Cloud'}</div>
-                            <div style="font-size:0.7rem;">${log.cambios_totales} turnos actualizados por ${log.usuario || 'Admin'}</div>
-                            ${log.revertida ? '' : `<button class="btn-text" style="font-size:0.6rem; color:var(--error); margin-top:4px;" onclick="window.revertirPublicacion('${log.id}')">Revertir</button>`}
+                        <div class="activity-log-item ${log.revertida ? 'warn' : 'ok'}" style="display: flex; align-items: center; justify-content: space-between; padding: 12px 24px; border-bottom: 1px solid #f1f5f9;">
+                            <div style="display: flex; align-items: center; gap: 16px;">
+                                <div style="width: 40px; height: 40px; border-radius: 50%; background: ${log.revertida ? '#fee2e2' : '#f0fdf4'}; display: flex; align-items: center; justify-content: center; color: ${log.revertida ? '#ef4444' : '#10b981'};">
+                                    <i class="fas ${log.revertida ? 'fa-undo' : 'fa-check'}"></i>
+                                </div>
+                                <div>
+                                    <div style="font-weight: 800; color: #334155; font-size: 0.9rem;">${log.revertida ? 'Publicación Revertida' : 'Sincronización Cloud'}</div>
+                                    <div style="font-size: 0.75rem; color: #64748b;">${log.cambios_totales} turnos • por ${log.usuario || 'Admin'} • ID: ${log.id.slice(0,8)}</div>
+                                </div>
+                            </div>
+                            <div style="text-align: right;">
+                                <div style="font-size: 0.75rem; font-weight: 700; color: #94a3b8;">${new Date(log.fecha).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</div>
+                                ${log.revertida ? '<span style="font-size: 0.65rem; color: #ef4444; font-weight: 700;">REVERTIDA</span>' : `<button class="btn-text" style="font-size: 0.65rem; color: #ef4444; font-weight: 700; text-decoration: underline;" onclick="window.revertirPublicacion('${log.id}')">REVERTIR</button>`}
+                            </div>
                         </div>
                     `).join('');
                 }
             } catch (err) {
                 console.error('[AUDITORIA ERROR]', err);
-                timeline.innerHTML = '<div style="padding:20px; text-align:center; color:var(--error); font-size:0.8rem;">Auditoría no disponible. Revisa publicaciones_log.</div>';
+                timeline.innerHTML = '<div style="padding:40px; text-align:center; color:var(--error); font-size:0.8rem;">Auditoría no disponible.</div>';
             }
         }
 
@@ -4159,9 +5401,21 @@ window.aplicarCambioLocal = (payload) => {
     // console.log("Realtime Payload:", payload);
     // Solo refrescar dashboard si está visible para no saturar
     if ($('#section-home').classList.contains('active')) {
-        // Debounce simple para no refrescar por cada micro-cambio en bulk
         if (window._dashRefreshTimer) clearTimeout(window._dashRefreshTimer);
         window._dashRefreshTimer = setTimeout(window.renderDashboard, 1000);
+    window.initPreviewPickers();
+    }
+    if ($('#section-changes').classList.contains('active')) {
+        if (window._changesRefreshTimer) clearTimeout(window._changesRefreshTimer);
+        window._changesRefreshTimer = setTimeout(window.renderChanges, 1000);
+    }
+    if ($('#section-vacations').classList.contains('active')) {
+        if (window._vacRefreshTimer) clearTimeout(window._vacRefreshTimer);
+        window._vacRefreshTimer = setTimeout(window.renderVacations, 1000);
+    }
+    if ($('#section-bajas').classList.contains('active')) {
+        if (window._bajasRefreshTimer) clearTimeout(window._bajasRefreshTimer);
+        window._bajasRefreshTimer = setTimeout(window.renderBajas, 1000);
     }
 };
 
@@ -4183,6 +5437,119 @@ window.updateSidebarBadges = async () => {
     }
 };
 
+// ==========================================
+// 10. HELPERS Y GESTIÓN DE PERFIL DE EMPLEADO
+// ==========================================
+
+window.escapeHtml = (str) => {
+    if (!str) return '';
+    return String(str)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+};
+
+window.renderEmployeeProfileField = ([label, value, icon]) => {
+    return `
+        <div class="emp-field" style="display:flex; flex-direction:column; gap:4px;">
+            <label style="font-size:0.65rem; font-weight:800; color:var(--text-dim); text-transform:uppercase;">${label}</label>
+            <div style="font-size:0.9rem; color:var(--text); font-weight:600; display:flex; align-items:center; gap:8px;">
+                <i class="fas fa-${icon || 'info-circle'}" style="opacity:0.3; font-size:0.8rem;"></i>
+                <span>${value || 'No definido'}</span>
+            </div>
+        </div>
+    `;
+};
+
+window.buildEmployeeProfileModel = (empId, refISO) => {
+    const emp = (window.empleadosGlobales || []).find(e => e.id === empId || e.nombre === empId);
+    if (!emp) return null;
+
+    const refDate = new Date(refISO + 'T12:00:00');
+    const startMonth = new Date(refDate.getFullYear(), refDate.getMonth(), 1);
+    const endMonth = new Date(refDate.getFullYear(), refDate.getMonth() + 1, 0);
+
+    // Días del mes (rellenando semanas)
+    const calendario = [];
+    let curr = new Date(startMonth);
+    while (curr.getDay() !== 1) curr.setDate(curr.getDate() - 1); // Lunes anterior
+    
+    const maxDays = 42; 
+    for(let i=0; i<maxDays; i++) {
+        const iso = window.isoDate(curr);
+        const res = window.ShiftResolver.resolveEmployeeDay({
+            empleadoId: emp.id,
+            hotel: emp.hotel_id || emp.hotel,
+            fecha: iso,
+            eventos: window.eventosGlobales || [],
+            baseIndex: window._baseIndex || {}
+        });
+        calendario.push({
+            fecha: iso,
+            ...res,
+            outsideMonth: curr.getMonth() !== refDate.getMonth()
+        });
+        curr.setDate(curr.getDate() + 1);
+        if (i >= 34 && curr.getMonth() !== refDate.getMonth() && curr.getDay() === 1) break;
+    }
+
+    const eventosActivos = (window.eventosGlobales || []).filter(ev => ev.empleado_id === emp.id || ev.empleado_uuid === emp.uuid);
+    
+    // Cálculo de vacaciones simplificado (esto debería venir de stats o DB)
+    const vacs = eventosActivos.filter(ev => ev.tipo.includes('VAC') && (ev.estado || 'activo') !== 'anulado');
+    const usadas = vacs.reduce((acc, ev) => {
+        const s = new Date(ev.fecha_inicio);
+        const e = new Date(ev.fecha_fin || ev.fecha_inicio);
+        return acc + Math.round((e - s) / 86400000) + 1;
+    }, 0);
+
+    return {
+        emp,
+        hoy: calendario.find(d => d.fecha === window.isoDate(new Date())) || calendario[0],
+        calendario,
+        eventosActivos,
+        vacaciones: {
+            saldo: Number(emp.ajuste_vacaciones_dias || 0),
+            usadas,
+            derechoAnual: Number(emp.vacaciones_anuales || 44)
+        },
+        resumen30d: {
+            cambios: (window._lastStats?.[emp.nombre || emp.id]?.cambios || 0)
+        }
+    };
+};
+
+window.openEmpDrawer = async (id) => {
+    window._employeeProfileId = id;
+    window._employeeProfileTab = 'overview';
+    window._employeeProfileDate = window.isoDate(new Date());
+    
+    const drawer = $('#empDrawer');
+    if (drawer) {
+        drawer.classList.add('open');
+        window.renderEmployeeProfile();
+    }
+};
+
+window.setEmployeeProfileTab = (tab) => {
+    window._employeeProfileTab = tab;
+    window.renderEmployeeProfile();
+};
+
+window.moveEmployeeProfilePeriod = (months) => {
+    const d = new Date(window._employeeProfileDate + 'T12:00:00');
+    d.setMonth(d.getMonth() + months);
+    window._employeeProfileDate = window.isoDate(d);
+    window.renderEmployeeProfile();
+};
+
+window.openEmployeeDayDetail = (date) => {
+    console.log("Detalle del día:", date);
+    // Podríamos abrir un mini-modal con los detalles técnicos del turno resuelto
+};
+
 // Initialize
 document.addEventListener('DOMContentLoaded', () => {
     setTimeout(window.renderDashboard, 1000);
@@ -4193,3 +5560,69 @@ document.addEventListener('DOMContentLoaded', () => {
     setInterval(window.updateSidebarBadges, 30000);
 });
 
+// INTEGRITY CHECK
+console.log("[Admin] Validando carga v13.3...");
+["isoDate", "switchSection", "loadAdminExcelSourceRows", "populateEmployees", "renderDashboard", "renderRequests"].forEach(fn => {
+    if (typeof window[fn] !== "function") console.error("[Admin ERROR] window." + fn + " no está definida.");
+});
+
+
+window.cancelVacationGroup = async (idx) => {
+    const p = _visibleVacationPeriods[idx];
+    if (!p) return;
+    
+    const count = p.ids ? p.ids.length : 1;
+    const msg = count > 1 
+        ? `Vas a anular ${p.days} días de vacaciones de ${p.empId} del ${window.fmtDateLegacy(p.start)} al ${window.fmtDateLegacy(p.end)}. ¿Continuar?`
+        : `¿Anular las vacaciones de ${p.empId}?`;
+        
+    if (!confirm(msg)) return;
+    
+    try {
+        const ids = p.ids || [p.id];
+        for (const id of ids) {
+            await window.TurnosDB.anularEvento(id);
+        }
+        await window.renderVacations();
+    } catch (e) { alert('Error: ' + e.message); }
+};
+
+window.manageBajaGroup = async (id, ids) => {
+    if (ids && ids.length > 1) {
+        if (confirm(`Este periodo consta de ${ids.length} eventos diarios agrupados. ¿Deseas gestionar el periodo completo?\n\n(Pulsa Cancelar si prefieres gestionar solo el día inicial)`)) {
+            // Por ahora, como no hay edición masiva, abrimos el primero pero avisamos
+            window._editingGroupIds = ids;
+        }
+    }
+    window.editBajaPeriod(id);
+};
+
+window.diagnoseOperationalOrder = (hotel, weekStart) => {
+    const model = Object.values(window._previewPuestosModels || {}).find(m => m.hotel === hotel);
+    if (!model) {
+        console.warn("[DIAGNOSTIC] No hay modelo activo para", hotel);
+        return;
+    }
+
+    const firstDate = model.dates[0] || weekStart;
+    const baseRows = model.puestos.map(p => ({
+        puestoOrden: p.rowIndex,
+        titularBase: p.excelLabel,
+        origenOrden: 'V9 Excel Map'
+    }));
+
+    const operationalRows = model.getEmployees().map(emp => ({
+        puestoOrden: emp.puestoOrden,
+        ocupanteVisible: emp.nombre,
+        titularBase: emp.titularOriginal || emp.nombre,
+        motivo: emp.isVacante ? 'Vacante' : (emp.isSustitucion ? 'Sustitucion' : (emp.isRefuerzo ? 'Refuerzo' : 'Titular Base')),
+        origenOrden: 'Operativo Herencia'
+    }));
+
+    console.group('[DIAGNOSTICO OPERATIVO: ' + hotel + ' ' + firstDate + ']');
+    console.log('--- baseRows ---');
+    console.table(baseRows);
+    console.log('--- operationalRows ---');
+    console.table(operationalRows);
+    console.groupEnd();
+};

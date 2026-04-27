@@ -1,0 +1,392 @@
+Estas son las reglas maestras que protegería. Si se respetan, el sistema puede crecer sin romperse.
+
+1. Identidad del empleado
+
+El sistema no debe usar nombres como identificador real. El nombre es solo visual.
+
+Regla:
+
+Identidad técnica: uuid / id interno estable
+Identidad visible: EMP-0001, EMP-0002...
+Nombre: solo para mostrar
+
+Proteger:
+
+No cambiar empleados.id legacy sin migración controlada.
+No borrar empleados históricos.
+No fusionar Natalio/Natalia, Sergio/Sergio Sánchez, etc. sin auditoría.
+No usar el nombre para relacionar turnos nuevos, eventos nuevos o solicitudes nuevas.
+2. Turnos base limpios
+
+La tabla turnos debe guardar solo la base del cuadrante.
+
+Permitido:
+
+M = Mañana
+T = Tarde
+N = Noche
+D = Descanso
+- = Pendiente / sin asignar
+
+Prohibido en turnos:
+
+VAC
+V
+CT
+BAJA
+PERMISO
+IT
+FORMACION
+CAMBIO
+
+Esos códigos no son turnos base. Son incidencias o eventos.
+
+3. Eventos separados de turnos
+
+Vacaciones, bajas, permisos y cambios deben vivir en eventos_cuadrante o su módulo correspondiente.
+
+Regla:
+
+turnos = planificación base
+eventos = incidencias
+motor = resolución final
+snapshot = resultado publicado
+
+Ejemplo:
+
+Cristina tiene turno M.
+Cristina tiene VAC.
+Miriam la sustituye.
+
+No se debe cambiar físicamente el turno de Cristina a Miriam en turnos. El motor debe resolverlo.
+
+4. Admin decide, público solo muestra
+
+La arquitectura correcta es:
+
+Admin calcula/resuelve
+Admin publica snapshot
+Index y móvil solo leen snapshot
+
+Proteger:
+
+index.html no debe usar TurnosEngine.
+mobile.app.js no debe recalcular eventos.
+Las vistas públicas no deben consultar eventos_cuadrante para decidir turnos.
+
+Si index o móvil calculan, vuelve el caos.
+
+5. Snapshots como verdad publicada
+
+Lo que ve el empleado debe ser una copia congelada de lo que Admin publicó.
+
+Regla:
+
+Un snapshot activo por hotel + semana.
+Los anteriores quedan como reemplazado.
+No borrar snapshots históricos.
+
+Proteger:
+
+No publicar si Vista Previa tiene errores.
+No publicar si hay duplicados.
+No publicar si hay conflictos de ubicación.
+No publicar si hay turnos pendientes críticos.
+6. Importadores separados por módulo
+
+Cada Excel debe ir a su módulo, nunca mezclarse.
+
+V.9-Turnos.xlsx              -> public.turnos
+V.9-Vacaciones.xlsx          -> eventos VAC
+V.9-Bajas y permisos.xlsx    -> eventos IT/PERMISO
+V.9-Cambios de turno.xlsx    -> eventos CT / intercambio
+
+Proteger:
+
+El importador de turnos no puede cargar VAC ni CT.
+El importador de vacaciones no puede tocar turnos base.
+El importador de cambios no puede modificar turnos base.
+7. Backup antes de cargas masivas
+
+Antes de cualquier recarga:
+
+backup de turnos
+backup de eventos
+backup de empleados si toca identidad
+backup de publicaciones si toca snapshots
+
+Regla:
+
+Sin backup, no hay carga.
+Sin dry run, no hay escritura.
+8. No corregir importaciones a mano si el Excel estaba mal
+
+El editor manual sirve para ajustes puntuales, no para tapar errores de importación.
+
+Regla:
+
+Si el Excel estaba mal, se corrige el Excel y se reimporta.
+Si el importador estaba mal, se corrige el importador.
+No arreglar 200 celdas manualmente.
+9. Pendiente de asignar debe ser visible
+
+Un - no puede pasar desapercibido.
+
+Regla visual:
+
+Pendiente de asignar = alerta roja visible
+
+Debe poder filtrarse:
+
+Solo pendientes
+Por empleado
+Por hotel
+Por mes
+10. Vacaciones y bajas agrupadas
+
+La base puede tener eventos por día, pero la interfaz debe mostrar periodos humanos.
+
+Incorrecto:
+
+Cristina VAC 26/04
+Cristina VAC 27/04
+Cristina VAC 28/04
+
+Correcto:
+
+Cristina | Vacaciones | 26/04/26 — 03/05/26 | 8 días | Sustituta: Miriam
+
+Proteger:
+
+No perder los IDs diarios.
+Agrupar solo visualmente si no se autoriza migración.
+Gestionar/anular grupos con confirmación.
+11. Ficha de empleado como centro de verdad visual
+
+La ficha debe mostrar resumen, no ruido.
+
+Debe tener:
+
+ID interno
+nombre
+hotel actual
+puesto
+tipo
+estado laboral
+turno hoy
+vacaciones
+descansos
+cambios
+eventos
+calendario
+historial
+
+Proteger:
+
+Solo un Estado Laboral visible.
+No duplicar Activo Sí/No.
+Calendario independiente del resto del admin.
+Datos legacy en bloque colapsable.
+12. Estado laboral ≠ baja médica
+
+Separar siempre:
+
+BAJA laboral = empleado ya no trabaja en la empresa
+IT / baja médica = incidencia temporal
+
+No mezclar.
+
+Regla:
+
+estado_relacion: ACTIVO / BAJA
+evento.tipo: IT / VAC / PERMISO / CT
+13. Vacante no es lo mismo que sin turno
+
+Si un empleado causa baja laboral y tenía turno, el puesto debe quedar visible como vacante.
+
+Correcto:
+
+VACANTE · Mañana
+
+No basta con:
+
+—
+
+Porque — puede significar simplemente sin asignación.
+
+14. Conflicto de ubicación
+
+Un empleado no puede tener turno operativo en dos hoteles el mismo día.
+
+Regla:
+
+M/T/N en Cumbria y Sercotel el mismo día = conflicto crítico
+
+Debe bloquear publicación.
+
+15. Salud laboral
+
+La alerta de días seguidos solo debe contar trabajo real.
+
+Cuenta:
+
+M
+T
+N
+Mañana
+Tarde
+Noche
+
+No cuenta:
+
+D
+Descanso
+VAC
+IT
+Permiso
+-
+Pendiente
+
+Si no puede justificar la racha con fechas, no debe mostrar alerta.
+
+16. Solicitudes de cambio deben saber los turnos reales
+
+El usuario no debe inventar el cambio.
+
+Formulario correcto:
+
+Dani tenía: Descanso
+Diana tenía: Tarde
+
+Dani recibe: Tarde
+Diana recibe: Descanso
+
+Proteger:
+
+No enviar “— → —”.
+No permitir solicitante = compañero.
+No enviar si no se resolvieron ambos turnos, salvo edición manual explícita.
+17. Navegación global protegida
+
+Cualquier función usada por onclick en HTML debe existir en window.
+
+Proteger:
+
+window.switchSection
+window.isoDate
+window.renderExcelView
+window.openEmpDrawer
+window.renderEmployeeProfile
+window.renderEmployeeProfileCalendar
+
+Si falta una, el admin se rompe.
+
+18. Ningún módulo puede quedar en blanco
+
+Regla de UI:
+
+Cada módulo debe mostrar una de tres cosas:
+1. datos
+2. estado vacío claro
+3. error visible con diagnóstico
+
+Nunca una pantalla blanca.
+
+19. Diagnóstico de errores visible
+
+Los errores críticos deben verse en pantalla con:
+
+módulo
+mensaje
+archivo
+línea
+función
+stack copiable
+botón reintentar
+
+No depender solo de la consola.
+
+20. Conexión Supabase no puede quedarse en “Conectando”
+
+Estados permitidos:
+
+Conectando... temporal
+Supabase conectado
+Error de conexión
+Sin configurar
+
+Proteger:
+
+timeout de 5 segundos
+botón reintentar
+KPI y badge usando la misma fuente
+21. Una sola base de datos, centros como dimensión
+
+No separar hoteles en bases distintas.
+
+Regla:
+
+empleado global
+centro_id / hotel como dimensión
+
+Así se protegen:
+
+traslados
+conflictos entre hoteles
+vacaciones acumuladas
+historial
+tercer hotel futuro
+22. No avanzar a migración PK si hay huérfanos
+
+Antes de tocar claves:
+
+0 turnos reales sin uuid
+0 eventos reales sin uuid
+0 solicitudes reales sin uuid
+
+Los _DUP, placeholders y pruebas deben estar clasificados.
+
+23. Dashboard operativo, no decorativo
+
+El panel de control debe tener:
+
+KPIs útiles
+acciones rápidas
+riesgos
+actividad
+estado conexión
+vista pública
+
+No debe tener cajas grandes vacías.
+
+24. Reglas de protección antes de publicar
+
+Antes de publicar snapshot:
+
+Vista Previa sin errores
+turnos base cargados
+eventos aplicados
+vacaciones visibles
+cambios visibles
+sin duplicados
+sin conflictos de ubicación
+sin empleados fantasma
+sin TEST HOTEL
+sin CT/V en turnos base
+25. Regla final
+
+La regla central del sistema es esta:
+
+No mezclar identidad, turnos, eventos y publicación.
+Cada cosa tiene su sitio.
+
+Más concreto:
+
+Empleado = identidad
+Turnos = base
+Eventos = incidencias
+Motor = resolución
+Snapshot = publicación
+Index/móvil = lectura
+
+Si se respeta eso, el sistema será estable. Si se vuelve a mezclar, volverán los errores.

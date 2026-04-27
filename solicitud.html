@@ -238,7 +238,9 @@
         .shift-row:hover { background: #f8fafc; }
 
         .row-date { font-weight: 700; color: var(--text); }
-        .row-origen { font-weight: 500; color: var(--text-dim); font-size: 0.9rem; }
+        .row-origen { display: flex; flex-direction: column; gap: 4px; line-height: 1.2; }
+        .row-origen .emp-label { font-size: 0.7rem; font-weight: 800; color: var(--text-dim); text-transform: uppercase; }
+        .row-origen .shift-val { font-weight: 700; color: var(--text); font-size: 0.95rem; }
         .row-arrow { text-align: center; color: var(--accent); opacity: 0.5; font-size: 1.2rem; }
 
         .btn-add-date {
@@ -406,6 +408,7 @@
                     <div class="field-group">
                         <label class="field-label">Centro de Trabajo</label>
                         <select id="sel_hotel" name="centro_trabajo" class="select-control" onchange="loadEmployees()">
+                            <option value="" disabled selected>Selecciona hotel primero...</option>
                             <option value="Sercotel Guadiana">Sercotel Guadiana</option>
                             <option value="Cumbria Spa&Hotel">Cumbria Spa&Hotel</option>
                         </select>
@@ -525,42 +528,28 @@
             const compSelect = $("#companero");
 
             try {
-                // Si no tenemos empleados cargados, los traemos
                 if (_emps.length === 0) {
                     _emps = await window.TurnosDB.getEmpleados();
                 }
 
-                // Filtrar por hotel (Robusto: normaliza y compara)
                 const hotelEmps = _emps.filter(e => {
-                    if (!e.hotel_id) return true; // Global o sin asignar
-                    const hDb = window.normalizeId(e.hotel_id);
-                    const hSel = window.normalizeId(hotel);
-                    // Coincidencia si uno contiene al otro (p.ej. "Guadiana" en "Sercotel Guadiana")
-                    return hDb.includes(hSel) || hSel.includes(hDb);
+                    const hDb = window.TurnosDB.normalizeString(e.hotel_id || '');
+                    const hSel = window.TurnosDB.normalizeString(hotel || '');
+                    return !hSel || hDb.includes(hSel) || hSel.includes(hDb);
                 });
-
-                if (window.DEBUG_MODE === true) {
-                    console.log("[SOLICITUD EMPLEADOS RAW]", _emps.length);
-                    console.log("[SOLICITUD HOTEL SELECTED]", hotel);
-                    console.log("[SOLICITUD EMPLEADOS FILTRADOS]", hotelEmps.length, hotelEmps.map(e => e.nombre));
-                }
 
                 const selects = [solSelect, compSelect];
                 selects.forEach(sel => {
                     const currentVal = sel.value;
                     let html = '<option value="">Selecciona nombre...</option>';
-                    
                     hotelEmps.sort((a,b) => a.nombre.localeCompare(b.nombre)).forEach(e => {
                         html += `<option value="${e.id}" ${e.id === currentVal ? 'selected' : ''}>${e.nombre}</option>`;
                     });
-                    
                     sel.innerHTML = html;
                 });
 
             } catch (err) {
                 console.error("Error cargando empleados:", err);
-                solSelect.innerHTML = '<option value="">Error al cargar</option>';
-                compSelect.innerHTML = '<option value="">Error al cargar</option>';
             }
         }
 
@@ -575,11 +564,21 @@
                 <div class="row-date-box">
                     <input type="text" class="input-control row-date-picker" placeholder="Fecha..." onchange="autoFillShifts()">
                 </div>
-                <div class="row-origen" data-val="">—</div>
+                <div class="row-origen">
+                    <div id="cur-sol-${id}">
+                        <div class="emp-label">Solicitante</div>
+                        <div class="shift-val">—</div>
+                    </div>
+                    <div id="cur-comp-${id}" style="margin-top: 8px; display: none;">
+                        <div class="emp-label">Compañero</div>
+                        <div class="shift-val">—</div>
+                    </div>
+                </div>
                 <div class="row-arrow">→</div>
-                <div class="row-destino-box">
-                    <select class="select-control row-destino">
-                        <option value="—">—</option>
+                <div class="row-destino-box" style="display: flex; flex-direction: column; gap: 4px;">
+                    <div class="emp-label" style="font-size: 0.7rem; font-weight: 800; color: var(--text-dim); text-transform: uppercase;">Solicitas</div>
+                    <select class="select-control row-destino" onchange="this.dataset.manual='true'">
+                        <option value="—">Nuevo turno...</option>
                         <option value="Mañana">Mañana</option>
                         <option value="Tarde">Tarde</option>
                         <option value="Noche">Noche</option>
@@ -614,6 +613,7 @@
 
         async function autoFillShifts() {
             const solId = $("#solicitante").value;
+            const compId = $("#companero").value;
             const hotelName = $("#sel_hotel").value;
             if (!solId) return;
 
@@ -626,21 +626,25 @@
             const end = sorted[sorted.length - 1];
 
             try {
-                const { rows: dbRows, eventos } = await window.TurnosDB.fetchRangoCalculado(start, end);
+                // CORRECCIÓN: Obtener tanto rows (base) como eventos
+                const { rows: baseRows, eventos } = await window.TurnosDB.fetchRangoCalculado(start, end);
                 
-                if (_baseRows.length === 0) {
-                    const excelData = await window.ExcelLoader.loadExcelSourceRows().catch(() => ({}));
-                    _baseRows = excelData[hotelName] || [];
-                }
+                // Mapear baseRows para que ShiftResolver los entienda
+                const simplifiedBase = baseRows.map(r => ({
+                    empleadoId: r.empleado_id,
+                    fecha: r.fecha,
+                    turno: r.turno
+                }));
 
-                const { baseIndex } = window.ShiftResolver.buildIndices(_emps, eventos, _baseRows);
+                const { baseIndex } = window.ShiftResolver.buildIndices(_emps, eventos, simplifiedBase);
 
                 rows.forEach(row => {
-                    const dateInput = row.querySelector(".row-date-picker");
-                    const date = dateInput.value;
+                    const id = row.id.split('-')[1];
+                    const date = row.querySelector(".row-date-picker").value;
                     if (!date) return;
 
-                    const res = window.ShiftResolver.resolveEmployeeDay({
+                    // 1. Resolve Solicitante
+                    const resSol = window.ShiftResolver.resolveEmployeeDay({
                         empleadoId: solId,
                         hotel: hotelName,
                         fecha: date,
@@ -648,19 +652,42 @@
                         baseIndex: baseIndex
                     });
 
-                    const labelEl = row.querySelector(".row-origen");
-                    const turnoActual = res.turnoFinal || res.turno || "—";
-                    
-                    let cleanLabel = turnoActual;
-                    if (window.employeeShiftLabel) {
-                        cleanLabel = window.employeeShiftLabel(res);
-                    } else if (turnoActual === 'M') cleanLabel = "Mañana";
-                    else if (turnoActual === 'T') cleanLabel = "Tarde";
-                    else if (turnoActual === 'N') cleanLabel = "Noche";
-                    else if (turnoActual === 'D') cleanLabel = "Descanso";
-                    
-                    labelEl.textContent = cleanLabel;
-                    labelEl.dataset.val = cleanLabel;
+                    const solLabelEl = row.querySelector(`#cur-sol-${id} .shift-val`);
+                    const turnoSol = resSol.turnoFinal || resSol.turno || "—";
+                    solLabelEl.textContent = window.cleanTurnoLabel ? window.cleanTurnoLabel(turnoSol) : turnoSol;
+                    solLabelEl.dataset.val = turnoSol;
+
+                    // 2. Resolve Compañero
+                    const compBox = row.querySelector(`#cur-comp-${id}`);
+                    if (compId) {
+                        compBox.style.display = "block";
+                        const resComp = window.ShiftResolver.resolveEmployeeDay({
+                            empleadoId: compId,
+                            hotel: hotelName,
+                            fecha: date,
+                            eventos: eventos,
+                            baseIndex: baseIndex
+                        });
+                        const compLabelEl = compBox.querySelector(".shift-val");
+                        const turnoComp = resComp.turnoFinal || resComp.turno || "—";
+                        compLabelEl.textContent = window.cleanTurnoLabel ? window.cleanTurnoLabel(turnoComp) : turnoComp;
+                        compLabelEl.dataset.val = turnoComp;
+
+                        // AUTO-FILL DESTINO: Si no se ha tocado manualmente, ponemos el del compañero
+                        const destinoSelect = row.querySelector(".row-destino");
+                        const cleanComp = window.cleanTurnoLabel ? window.cleanTurnoLabel(turnoComp) : turnoComp;
+                        if (destinoSelect && !destinoSelect.dataset.manual && cleanComp !== '—') {
+                            // Buscar la opción que coincida con cleanComp
+                            for (let opt of destinoSelect.options) {
+                                if (opt.value === cleanComp) {
+                                    destinoSelect.value = opt.value;
+                                    break;
+                                }
+                            }
+                        }
+                    } else {
+                        compBox.style.display = "none";
+                    }
                 });
 
             } catch (e) {
@@ -687,8 +714,9 @@
             let valid = true;
             
             $$(".shift-row").forEach(row => {
+                const id = row.id.split('-')[1];
                 const date = row.querySelector(".row-date-picker").value;
-                const origen = row.querySelector(".row-origen").dataset.val;
+                const origen = row.querySelector(`#cur-sol-${id} .shift-val`).dataset.val;
                 const destino = row.querySelector(".row-destino").value;
                 
                 if (!date) valid = false;

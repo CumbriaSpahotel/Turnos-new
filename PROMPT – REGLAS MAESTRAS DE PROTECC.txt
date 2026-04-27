@@ -1,0 +1,697 @@
+PROMPT – REGLAS MAESTRAS DE PROTECCIÓN DEL SISTEMA “TURNOSWEB / HOTELES G+C”
+
+Objetivo:
+Blindar el sistema para que ningún desarrollador, agente automático, IA, script o refactorización modifique partes críticas sin autorización expresa.
+
+Estas reglas son obligatorias. No son recomendaciones.
+
+==================================================
+0. PRINCIPIO GENERAL
+==================================================
+
+Nadie puede modificar lógica crítica, base de datos, identificadores, publicaciones, importadores o arquitectura sin autorización expresa.
+
+Antes de tocar cualquier parte sensible:
+
+1. Explicar qué se va a modificar.
+2. Justificar por qué es necesario.
+3. Indicar archivos/tablas afectadas.
+4. Indicar riesgos.
+5. Hacer backup si hay escritura.
+6. Hacer dry run si hay importación o migración.
+7. Esperar autorización expresa.
+
+Frase obligatoria antes de cambios sensibles:
+
+“Esta acción puede afectar datos operativos o históricos. Solicito autorización expresa antes de ejecutarla.”
+
+==================================================
+1. IDENTIDAD DE EMPLEADOS – PROTEGIDO
+==================================================
+
+PROHIBIDO sin autorización expresa:
+
+- Cambiar `empleados.id`.
+- Cambiar la primary key de empleados.
+- Migrar definitivamente a UUID.
+- Borrar empleados.
+- Fusionar empleados.
+- Renombrar IDs legacy.
+- Reasignar `id_interno`.
+- Reutilizar un EMP-XXXX dado de baja.
+- Fusionar Natalio/Natalia.
+- Fusionar Sergio/Sergio Sánchez.
+- Eliminar el placeholder “¿?” sin confirmación.
+- Cambiar el significado de `id_interno`.
+- Usar nombres como identificador nuevo.
+
+Regla protegida:
+
+Empleado = identidad estable.
+Nombre = solo visual.
+EMP-XXXX = identificador administrativo visible.
+UUID = identidad técnica paralela o futura.
+ID legacy = compatibilidad histórica.
+
+No modificar nada de identidad sin plan de migración aprobado.
+
+==================================================
+2. TURNOS BASE – PROTEGIDO
+==================================================
+
+La tabla `turnos` solo puede contener turnos base.
+
+Valores permitidos:
+
+- M
+- T
+- N
+- D
+- -
+
+PROHIBIDO guardar en `turnos`:
+
+- V
+- VAC
+- CT
+- CAMBIO
+- BAJA
+- IT
+- PERMISO
+- PERM
+- FORMACION
+- SUSTITUCION
+- texto largo tipo “Vacaciones”
+- texto largo tipo “Intercambio turno”
+
+Regla protegida:
+
+`turnos` = base operativa limpia.
+
+No modificar masivamente `turnos` sin:
+- backup
+- dry run
+- informe de diferencias
+- autorización expresa
+
+==================================================
+3. EVENTOS / INCIDENCIAS – PROTEGIDO
+==================================================
+
+Vacaciones, bajas, permisos, sustituciones y cambios NO son turnos base.
+
+Deben vivir en `eventos_cuadrante` o módulo equivalente.
+
+PROHIBIDO sin autorización expresa:
+
+- Borrar eventos históricos.
+- Cambiar tipos de eventos masivamente.
+- Convertir eventos en turnos base.
+- Mover sustituciones a `turnos`.
+- Eliminar payload histórico.
+- Cambiar empleado_id / empleado_destino_id / sustituto_id sin mapa.
+- Modificar vacaciones ya cargadas.
+- Modificar bajas/permisos ya cargados.
+- Modificar cambios de turno ya cargados.
+
+Regla protegida:
+
+Eventos = incidencias.
+Turnos = base.
+Motor = resolución.
+
+==================================================
+4. SNAPSHOTS PUBLICADOS – PROTEGIDO
+==================================================
+
+PROHIBIDO sin autorización expresa:
+
+- Borrar snapshots.
+- Reescribir snapshots históricos.
+- Publicar snapshots automáticamente.
+- Publicar desde scripts sin confirmación.
+- Cambiar estructura de `snapshot_json`.
+- Marcar snapshots como reemplazados masivamente.
+- Crear snapshots de prueba en producción.
+- Publicar si la Vista Previa tiene errores.
+- Publicar si hay conflictos.
+- Publicar si hay empleados duplicados o fantasma.
+- Publicar si aparece TEST HOTEL.
+- Publicar si hay CT/V en turnos base.
+
+Regla protegida:
+
+Admin resuelve.
+Admin publica.
+Index y móvil solo leen snapshots.
+
+==================================================
+5. INDEX Y APP MÓVIL – PROTEGIDO
+==================================================
+
+PROHIBIDO sin autorización expresa:
+
+- Hacer que `index.html` recalcule turnos.
+- Hacer que la app móvil consulte eventos para resolver turnos.
+- Reintroducir TurnosEngine en vistas públicas.
+- Reintroducir ShiftResolver en vistas públicas.
+- Consultar `eventos_cuadrante` desde vistas públicas para calcular.
+- Cambiar la fuente de verdad pública.
+- Pintar datos no publicados.
+
+Regla protegida:
+
+Vistas públicas = solo lectura de snapshot publicado.
+
+Si no hay snapshot:
+mostrar “No hay cuadrante publicado para esta semana.”
+
+No reconstruir nada.
+
+==================================================
+6. IMPORTADORES EXCEL – PROTEGIDO
+==================================================
+
+Cada archivo tiene su módulo.
+
+- `V.9-Turnos.xlsx` -> `public.turnos`
+- `V.9-Vacaciones.xlsx` -> eventos VAC
+- `V.9-Bajas y permisos.xlsx` -> eventos IT/PERMISO
+- `V.9-Cambios de turno.xlsx` -> eventos CT / intercambio
+
+PROHIBIDO sin autorización expresa:
+
+- Usar un importador para otro módulo.
+- Cargar vacaciones como turnos.
+- Cargar CT como turnos.
+- Cargar bajas como turnos.
+- Borrar datos antes de importar.
+- Reimportar todo sin backup.
+- Corregir masivamente desde Excel sin dry run.
+- Ignorar semanas que cruzan mes.
+- Descartar fechas futuras válidas.
+- Convertir datos dudosos automáticamente.
+
+Regla protegida:
+
+Sin backup, no hay importación.
+Sin dry run, no hay escritura.
+Sin informe, no hay carga real.
+
+==================================================
+7. BACKUPS – OBLIGATORIO
+==================================================
+
+Antes de cualquier cambio masivo crear backup.
+
+Obligatorio para:
+
+- `turnos`
+- `eventos_cuadrante`
+- `empleados`
+- `peticiones_cambio`
+- `publicaciones_cuadrante`
+- cualquier tabla afectada por migración
+
+PROHIBIDO continuar si el backup falla.
+
+Nombre recomendado:
+
+backup_YYYYMMDD_HHMM_tabla_motivo.json
+
+Ubicación:
+
+C:\Users\comun\Documents\GitHub\Turnos-new\backups
+
+==================================================
+8. MIGRACIONES DE BASE DE DATOS – PROTEGIDO
+==================================================
+
+PROHIBIDO sin autorización expresa:
+
+- ALTER TABLE.
+- DROP TABLE.
+- DROP COLUMN.
+- DELETE masivo.
+- UPDATE masivo.
+- Cambiar constraints.
+- Cambiar RLS.
+- Cambiar policies.
+- Cambiar primary keys.
+- Cambiar foreign keys.
+- Crear triggers.
+- Crear funciones SECURITY DEFINER.
+- Cambiar `onConflict` sin revisar constraint real.
+
+Toda migración requiere:
+
+1. SQL propuesto.
+2. Riesgo.
+3. Rollback.
+4. Backup.
+5. Dry run si aplica.
+6. Autorización expresa.
+
+==================================================
+9. UUID / MIGRACIÓN DE IDENTIDAD – PROTEGIDO
+==================================================
+
+El sistema puede tener UUID paralelo, pero no se puede migrar definitivamente sin permiso.
+
+PROHIBIDO sin autorización expresa:
+
+- Sustituir `empleados.id` por UUID.
+- Cambiar PK.
+- Forzar FKs nuevas.
+- Eliminar columnas legacy.
+- Reescribir tablas históricas.
+- Declarar completada la migración UUID si quedan no mapeados.
+- Ignorar registros huérfanos.
+- Ignorar `_DUP`.
+- Ignorar placeholders.
+
+Condición mínima antes de Fase 2:
+
+- 0 turnos reales sin UUID.
+- 0 eventos reales sin UUID.
+- 0 peticiones reales sin UUID.
+- huérfanos clasificados.
+- placeholders clasificados.
+- `_DUP` clasificados.
+
+==================================================
+10. EMPLEADOS PLACEHOLDER / “¿?” – PROTEGIDO
+==================================================
+
+El registro “¿?” representa plaza pendiente, no empleado normal.
+
+PROHIBIDO sin autorización expresa:
+
+- Eliminarlo.
+- Convertirlo en empleado real.
+- Usarlo como persona normal.
+- Contarlo como empleado sin ID.
+- Contarlo como riesgo crítico.
+- Publicarlo como empleado real sin validación.
+- Meterlo en solicitudes.
+
+Debe tratarse como:
+
+- tipo: placeholder
+- riesgo: informativo
+- uso: planificación temporal
+
+==================================================
+11. PERSONAL APOYO / OCASIONAL – PROTEGIDO
+==================================================
+
+PROHIBIDO sin autorización expresa:
+
+- Ocultar métricas de todos los sustitutos.
+- Tratar sustituto como apoyo automáticamente.
+- Quitar contadores a quien cubre una ausencia real.
+- Meter apoyo ocasional en métricas estructurales sin criterio.
+- Cambiar tipo de contrato masivamente.
+
+Regla:
+
+Apoyo estructural puede no tener métricas.
+Sustituto operativo sí puede tener métricas si cubre un puesto real.
+
+==================================================
+12. SOLICITUDES DE CAMBIO – PROTEGIDO
+==================================================
+
+PROHIBIDO sin autorización expresa:
+
+- Romper Formspree.
+- Cambiar endpoint Formspree.
+- Quitar envío email.
+- Quitar guardado en Supabase.
+- Quitar mensaje de bandeja.
+- Enviar solicitudes “— → —”.
+- Permitir solicitante = compañero.
+- Permitir enviar sin fecha.
+- Permitir enviar sin resolver turnos, salvo edición manual explícita.
+- Cambiar estructura de peticiones sin compatibilidad.
+
+Regla:
+
+El formulario debe saber:
+- turno actual solicitante
+- turno actual compañero
+- quién recibe qué turno
+
+==================================================
+13. FORMULARIOS Y BANDEJA – PROTEGIDO
+==================================================
+
+PROHIBIDO sin autorización expresa:
+
+- Quitar trazabilidad de ID solicitud.
+- Quitar ID en email.
+- Quitar ID en bandeja.
+- Quitar manejo de éxito parcial.
+- Quitar prevención de doble envío.
+- Quitar feedback al usuario.
+- Quitar creación de mensaje interno.
+
+Regla:
+
+Solicitud = Supabase + Bandeja + Formspree.
+
+Si Formspree falla pero Supabase guarda:
+mostrar éxito parcial, no error total.
+
+==================================================
+14. DASHBOARD – PROTEGIDO
+==================================================
+
+El dashboard debe ser operativo, no decorativo.
+
+Debe contener:
+
+- KPIs útiles.
+- Acciones rápidas.
+- Riesgos.
+- Actividad.
+- Estado Supabase.
+- Vista Pública.
+- Filtros si aplica.
+
+PROHIBIDO sin autorización expresa:
+
+- Quitar controles esenciales.
+- Dejar solo KPIs sin acciones.
+- Dejar tarjetas gigantes vacías.
+- Ocultar riesgos críticos.
+- Mostrar Integridad 0% si no se ha calculado bien.
+- Dejar “Conectando...” indefinidamente.
+- Eliminar Actividad de Operaciones sin reemplazo.
+
+==================================================
+15. CONEXIÓN SUPABASE – PROTEGIDO
+==================================================
+
+Estados permitidos:
+
+- Conectando...
+- Supabase conectado
+- Error de conexión
+- Sin configurar
+
+PROHIBIDO:
+
+- Dejar “Conectando...” indefinidamente.
+- Marcar conectado sin consulta real.
+- Mostrar badge y KPI con estados distintos.
+- Ocultar error de conexión.
+- No tener timeout.
+
+Regla:
+
+Timeout máximo recomendado: 5 segundos.
+Debe existir botón reintentar si falla.
+
+==================================================
+16. NAVEGACIÓN GLOBAL – PROTEGIDO
+==================================================
+
+Toda función llamada desde HTML inline debe existir en `window`.
+
+Funciones críticas:
+
+- `window.switchSection`
+- `window.isoDate`
+- `window.renderExcelView`
+- `window.openEmpDrawer`
+- `window.renderEmployeeProfile`
+- `window.renderEmployeeProfileCalendar`
+- `window.renderDashboard`
+
+PROHIBIDO sin autorización expresa:
+
+- Renombrar funciones globales sin actualizar llamadas.
+- Quitar wrappers usados por HTML.
+- Cambiar IDs de secciones sin actualizar navegación.
+- Dejar módulos en blanco.
+
+Regla:
+
+Ningún módulo puede quedar en blanco.
+Debe mostrar datos, estado vacío o error visible.
+
+==================================================
+17. GESTIÓN EXCEL – PROTEGIDO
+==================================================
+
+Gestión Excel debe leer `public.turnos`.
+
+PROHIBIDO sin autorización expresa:
+
+- Volver a depender del Excel local para visualizar.
+- Usar `dbHotels` sin definir.
+- Usar `loadAdminExcelSourceRows` si ya no aplica.
+- Dejar pantalla en blanco.
+- Quitar filtros.
+- Quitar guardado.
+- Quitar alerta roja de pendientes.
+- Quitar nombre + EMP.
+- Guardar textos largos en DB.
+
+Debe tener:
+
+- filtro hotel
+- filtro mes
+- filtro empleado/ID
+- solo pendientes
+- contador pendientes
+- botón guardar cambios
+- selects de turnos
+- pendientes visibles en rojo
+
+==================================================
+18. VISTA PREVIA – PROTEGIDO
+==================================================
+
+PROHIBIDO sin autorización expresa:
+
+- Publicar automáticamente desde Vista Previa.
+- Ignorar errores de validación.
+- Mostrar empleados fantasma.
+- Mostrar duplicados.
+- Ignorar vacaciones.
+- Ignorar cambios.
+- Ignorar sustituciones.
+- Recalcular con lógica distinta a la oficial.
+- Ocultar conflictos.
+
+Vista Previa debe ser la base de lo que se publica.
+
+==================================================
+19. FICHA DE EMPLEADO – PROTEGIDO
+==================================================
+
+PROHIBIDO sin autorización expresa:
+
+- Duplicar Estado/Activo.
+- Quitar EMP-XXXX.
+- Quitar calendario.
+- Quitar vacaciones.
+- Quitar historial.
+- Quitar bloque legacy.
+- Mezclar baja laboral con IT.
+- Mostrar alertas de jornada falsas.
+- Contar `-`, VAC, IT o D como trabajado.
+
+Regla:
+
+Ficha = resumen operativo + datos + calendario + historial.
+
+Debe tener:
+
+- estado laboral único
+- campos importantes como select
+- vacaciones agrupadas
+- calendario independiente
+- legacy colapsable
+
+==================================================
+20. VACACIONES – PROTEGIDO
+==================================================
+
+PROHIBIDO sin autorización expresa:
+
+- Cambiar regla de 44 días.
+- Duplicar arrastres.
+- Cerrar año automáticamente.
+- Editar cierres sin auditoría.
+- Contar CT como vacaciones.
+- Contar permisos como vacaciones.
+- Guardar V en turnos.
+- Mostrar vacaciones consecutivas como filas eternas si son el mismo periodo.
+
+Regla:
+
+Vacaciones = eventos VAC.
+Visualización = periodos agrupados.
+Saldo = cálculo controlado.
+
+==================================================
+21. BAJAS / PERMISOS – PROTEGIDO
+==================================================
+
+PROHIBIDO sin autorización expresa:
+
+- Mezclar baja laboral con IT.
+- Anular periodos agrupados sin confirmación.
+- Borrar eventos diarios al agrupar visualmente.
+- Perder IDs diarios agrupados.
+- Mostrar 10 días consecutivos como 10 filas si son el mismo periodo.
+
+Regla:
+
+La base puede tener eventos diarios.
+La UI debe mostrar periodos humanos agrupados.
+
+==================================================
+22. CAMBIOS DE TURNO – PROTEGIDO
+==================================================
+
+PROHIBIDO sin autorización expresa:
+
+- Guardar CT en turnos base.
+- Convertir cambios en turnos físicos sin evento.
+- Borrar trazabilidad del intercambio.
+- Quitar participantes.
+- Quitar origen legacy.
+- Quitar validación de fechas.
+
+Regla:
+
+CT = evento.
+No turno base.
+
+==================================================
+23. PUBLICACIÓN EN SUPABASE – PROTEGIDO
+==================================================
+
+PROHIBIDO sin autorización expresa:
+
+- Publicar sin revisión.
+- Publicar si hay errores.
+- Publicar si hay pendientes críticos.
+- Publicar si hay conflictos.
+- Publicar si hay duplicados.
+- Publicar con TEST HOTEL.
+- Publicar si snapshot no coincide con Vista Previa.
+- Publicar si no se puede reemplazar versión anterior.
+
+La publicación debe ser acción consciente del usuario.
+
+==================================================
+24. VISTA PÚBLICA – PROTEGIDO
+==================================================
+
+URL pública:
+
+https://cumbriaspahotel.github.io/Turnos-new/
+
+PROHIBIDO sin autorización expresa:
+
+- Cambiar URL pública.
+- Abrir ruta local.
+- Romper botón Vista Pública.
+- Hacer que Vista Pública use una sección interna del admin.
+
+Debe abrir en pestaña nueva:
+
+target="_blank"
+rel="noopener noreferrer"
+
+==================================================
+25. ERRORES Y DIAGNÓSTICO – PROTEGIDO
+==================================================
+
+PROHIBIDO:
+
+- Ocultar errores con try/catch silencioso.
+- Declarar completado con errores en consola.
+- Dejar pantalla blanca.
+- Mostrar solo “algo falló” sin detalle.
+- No indicar módulo afectado.
+
+Todo error crítico debe mostrar:
+
+- módulo
+- mensaje
+- archivo
+- línea
+- función
+- stack copiable
+- botón reintentar
+
+==================================================
+26. VALIDACIÓN ANTES DE DECLARAR “COMPLETADO”
+==================================================
+
+Antes de decir “completado”, validar:
+
+- Panel Control
+- Gestión Excel
+- Vista Previa
+- Empleados
+- Ficha de empleado
+- Cambios Turno
+- Vacaciones
+- Bajas / Permisos
+- Solicitudes
+- Configuración
+- Vista Pública
+
+Consola sin:
+
+- ReferenceError
+- TypeError
+- Uncaught promise
+- `isoDate is not a function`
+- `switchSection is not a function`
+- `dbHotels is not defined`
+- `loadAdminExcelSourceRows is not a function`
+- `renderEmployeeProfileCalendar is not a function`
+- `Cannot read properties of null`
+
+También ejecutar:
+
+node --check admin.js
+
+Si se modifican otros JS:
+
+node --check archivo.js
+
+==================================================
+27. REGLA FINAL DE ARQUITECTURA
+==================================================
+
+No mezclar responsabilidades.
+
+Regla maestra:
+
+Empleado = identidad.
+Turnos = base.
+Eventos = incidencias.
+Motor = resolución.
+Snapshot = publicación.
+Index/móvil = lectura.
+
+Cualquier cambio que mezcle estas capas requiere autorización expresa.
+
+==================================================
+28. FRASE DE BLOQUEO
+==================================================
+
+Si una tarea pide tocar algo protegido, responder:
+
+“Esto afecta una zona protegida del sistema. Necesito autorización expresa antes de modificarlo. Indico impacto, archivos/tablas, riesgo y plan de reversión.”
+
+No proceder hasta recibir autorización.

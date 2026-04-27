@@ -1,0 +1,105 @@
+﻿    const getEmployees = () => {
+        // Asegurar carga del mapa si no estÃ¡ listo (aunque suele cargarse en renderPreview)
+        // window.loadV9ExcelOrderMap(); 
+
+        const operativeRows = [];
+        const handledTitulars = new Set();
+        
+        // Referencia de semana para el mapa de orden
+        const firstDate = dates[0] || '';
+
+        // 1. AÃ±adir todas las filas base respetando el orden exacto del Excel
+        sourceRows.forEach(r => {
+            const normTitular = window.normalizeId(r.empleadoId);
+            const empProfile = employees.find(e => window.normalizeId(e.id) === normTitular || window.normalizeId(e.nombre) === normTitular);
+            const normName = window.normalizeId(empProfile?.nombre || r.displayName || r.empleadoId);
+            const normId = window.normalizeId(empProfile?.id || r.empleadoId);
+            
+            if (handledTitulars.has(normTitular) || handledTitulars.has(normName) || handledTitulars.has(normId)) return;
+            
+            operativeRows.push({
+                ...r,
+                hotel,
+                hotel_id: hotel,
+                puesto: `Puesto ${String((r.rowIndex || 0) + 1).padStart(2, '0')}`,
+                posicionId: r.rowIndex,
+                orden: r.rowIndex,
+                ordenOriginal: r.rowIndex,
+                employee_id: r.empleadoId,
+                empleadoId: r.empleadoId,
+                nombre: r.displayName || r.empleadoId,
+                empleado: r.displayName || r.empleadoId,
+                displayName: r.displayName || r.empleadoId,
+                empleadoMostrado: r.displayName || r.empleadoId,
+                empleadoReal: r.empleadoId,
+                titularAusente: null,
+                sustitutoDe: null,
+                esCoberturaAusencia: false,
+                esAusenteInformativo: false
+            });
+            handledTitulars.add(normTitular);
+            if (normName) handledTitulars.add(normName);
+            if (normId) handledTitulars.add(normId);
+        });
+
+        // 2. AÃ±adir sustitutos/refuerzos externos (que NO estaban en el cuadrante base)
+        ausenciaSustitucionMap.forEach((coberturas, normSust) => {
+            if (handledTitulars.has(normSust)) return; // Si ya estaba en el Excel base, no lo re-aÃ±adimos ni movemos
+            const hasActive = coberturas.some(cob => dates.some(d => d >= cob.fi && d <= cob.ff));
+            if (hasActive) {
+                const empProfile = employees.find(e => window.normalizeId(e.id) === normSust || window.normalizeId(e.nombre) === normSust);
+                const rawSust = coberturas[0].sustitutoRaw;
+                operativeRows.push({ 
+                    hotel, 
+                    hotel_id: hotel,
+                    puesto: 'Personal Apoyo', 
+                    employee_id: rawSust,
+                    empleadoId: rawSust,
+                    nombre: empProfile?.nombre || rawSust,
+                    displayName: empProfile?.nombre || rawSust,
+                    empleadoMostrado: empProfile?.nombre || rawSust, 
+                    empleadoReal: rawSust, 
+                    esCoberturaAusencia: true, 
+                    esAusenteInformativo: false
+                    // NOTE: Do not set isRefuerzo: true here, substitutes are not reinforcements
+                });
+                handledTitulars.add(normSust);
+            }
+        });
+
+        // 3. Ordenar
+        operativeRows.sort((a, b) => {
+            const empA = employees.find(e => window.normalizeId(e.id) === window.normalizeId(a.empleadoId) || window.normalizeId(e.nombre) === window.normalizeId(a.empleadoId));
+            const empB = employees.find(e => window.normalizeId(e.id) === window.normalizeId(b.empleadoId) || window.normalizeId(e.nombre) === window.normalizeId(b.empleadoId));
+            
+            // 1. Priorizar mapa de orden V9 del Excel
+            const v9OrderA = window.getV9ExcelOrder(hotel, firstDate, a.empleadoId);
+            const v9OrderB = window.getV9ExcelOrder(hotel, firstDate, b.empleadoId);
+            
+            if (v9OrderA !== null && v9OrderB !== null) {
+                return v9OrderA - v9OrderB;
+            }
+            if (v9OrderA !== null) return -1;
+            if (v9OrderB !== null) return 1;
+
+            // 2. Fallback: Orden de perfil > orden original del excel > fallback alfabÃ©tico
+            const ordA = empA?.orden ?? empA?.display_order ?? empA?.sort_order ?? a.ordenOriginal ?? 999;
+            const ordB = empB?.orden ?? empB?.display_order ?? empB?.sort_order ?? b.ordenOriginal ?? 999;
+            
+            if (ordA !== ordB) return ordA - ordB;
+            return String(a.nombre || '').localeCompare(String(b.nombre || ''));
+        });
+        
+        const finalRows = operativeRows;
+        
+        // DiagnÃ³stico DEBUG
+        if (window.DEBUG_MODE) {
+            console.log('[GET_EMPLOYEES_SAMPLE]', finalRows.slice(0, 3).map(r => ({
+                id: r.employee_id,
+                name: r.nombre,
+                display: r.displayName
+            })));
+        }
+        
+        return finalRows;
+    };
