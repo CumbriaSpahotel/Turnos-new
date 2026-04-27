@@ -5110,6 +5110,12 @@ window.validatePublishChanges = (changes) => {
                     errors.push(`[BLOQUEO] Fila extra sin justificación explícita (sin evento): "${empName}" en ${hName}`);
                 }
 
+                // [L] EMP-XXXX Visibility Check
+                const isEMPId = (str) => /EMP-\d{4}/i.test(String(str || ''));
+                if (isEMPId(row.nombreVisible) || isEMPId(row.nombre)) {
+                    errors.push(`[BLOQUEO] ID interno visible en cabecera: "${row.nombreVisible || row.nombre}" en ${hName}`);
+                }
+
                 Object.entries(row.cells).forEach(([fecha, cell]) => {
                     const code = String(cell.code || '').toUpperCase().trim();
                     
@@ -5121,9 +5127,14 @@ window.validatePublishChanges = (changes) => {
                         }
                     }
 
+                    // [L] EMP-XXXX Visibility Check in cell
+                    if (isEMPId(cell.label)) {
+                        errors.push(`[BLOQUEO] ID interno visible en celda: "${cell.label}" para ${empName} el ${fecha}`);
+                    }
+
                     // [F] Critical coverage (Absence without substitute)
                     if (cell.isAbsence && !cell.sustituto) {
-                        // Solo advertencia si no es crítico, pero el usuario lo pidió como regla
+                        // REGLA: Las vacantes son avisos operativos, no bloqueos automáticos
                         warnings.push(`[AVISO] Ausencia sin sustituto: ${empName} (${cell.type}) el ${fecha}`);
                     }
                 });
