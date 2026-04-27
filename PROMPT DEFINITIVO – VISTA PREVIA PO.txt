@@ -1,0 +1,342 @@
+PROMPT DEFINITIVO – VISTA PREVIA: POSICIÓN HEREDADA + AUSENTES AL FINAL
+
+CONTEXTO
+Estás construyendo la lógica de renderizado de un cuadrante operativo.
+
+La fuente de la verdad para la estructura y el orden es el Excel V.9 original.
+
+El Excel define los puestos operativos y su orden.
+
+Cada fila del Excel representa un puesto base ocupado originalmente por un titular.
+
+==================================================
+1. REGLA DE ORO
+==================================================
+
+El orden del Excel es inalterable como estructura.
+
+Las incidencias no cambian el orden de puestos.
+
+Las sustituciones no crean puestos nuevos.
+
+Las vacaciones, bajas y permisos desplazan al titular ausente al final como información, pero su puesto original queda ocupado por el sustituto si existe.
+
+==================================================
+2. MODELO DE FILA
+==================================================
+
+Cada fila base debe representarse así:
+
+{
+  puestoOrden,
+  titularOriginal,
+  ocupanteVisible,
+  turnosOperativos,
+  incidenciaTitular,
+  rowType
+}
+
+Donde:
+
+- puestoOrden = posición original del Excel.
+- titularOriginal = empleado que estaba en esa fila en el Excel.
+- ocupanteVisible = empleado que debe verse en la fila operativa.
+- turnosOperativos = turnos que se muestran en esa fila.
+- incidenciaTitular = VAC / BAJA / IT / PERMISO si aplica.
+- rowType = "operativo" | "ausente_info" | "refuerzo".
+
+==================================================
+3. AUSENCIAS CON SUSTITUTO
+==================================================
+
+Si un titularOriginal está ausente por:
+
+- Vacaciones
+- Baja / IT
+- Permiso
+- Ausencia justificada
+
+y existe sustituto explícito:
+
+1. El sustituto ocupa la fila original del titular.
+2. El sustituto hereda puestoOrden.
+3. El sustituto hereda los turnos operativos del puesto cubierto.
+4. El titular ausente se elimina del bloque operativo.
+5. El titular ausente se añade a absentRows.
+6. absentRows se renderiza al final del bloque del hotel.
+7. El titular ausente muestra solo su incidencia, no turnos operativos normales.
+
+Ejemplo:
+
+Excel:
+1. Cristian
+2. Yago
+3. Felipe
+
+Evento:
+Yago VAC con sustituto Sergio G.
+
+Render:
+1. Cristian
+2. Sergio G
+3. Felipe
+Final:
+Yago — Vacaciones 🏖️
+
+==================================================
+4. AUSENCIAS SIN SUSTITUTO
+==================================================
+
+Si un titular está ausente y NO existe sustituto explícito:
+
+1. La fila original se mantiene en su puestoOrden.
+2. ocupanteVisible = "Vacante" o "Sin cubrir".
+3. La fila muestra alerta operativa.
+4. El titular ausente se añade a absentRows al final.
+5. No se mueve a otro empleado para cubrir sin dato explícito.
+
+Render:
+1. Cristian
+2. Vacante / Sin cubrir
+3. Felipe
+Final:
+Yago — Vacaciones 🏖️
+
+==================================================
+5. EVITAR DUPLICADOS
+==================================================
+
+Un empleado no puede aparecer dos veces en el bloque operativo.
+
+Si el sustituto ya tenía una fila propia en el Excel:
+
+1. Su fila original se elimina del bloque operativo.
+2. Solo aparece ocupando el puesto del titular ausente.
+3. Su puesto original NO queda ocupado por él.
+4. Si su puesto original queda sin ocupante, debe tratarse como:
+   - vacante si corresponde,
+   - o no renderizarse si el modelo operativo así lo define.
+
+Regla técnica:
+Antes de renderizar, construir un set:
+
+assignedOperationalEmployeeIds
+
+Si un empleado ya fue asignado como ocupanteVisible en una sustitución, no puede renderizarse otra vez en su fila base.
+
+==================================================
+6. CAMBIOS DE TURNO
+==================================================
+
+Los cambios de turno NO son sustituciones de puesto.
+
+Un cambio de turno:
+
+- no mueve filas.
+- no cambia ocupanteVisible de toda la fila.
+- solo modifica celdas concretas.
+- puede mostrar icono 🔄 si hay cambio real.
+
+No aplicar lógica de desplazamiento al final para simples cambios de turno.
+
+==================================================
+7. REFUERZOS
+==================================================
+
+Refuerzo solo existe si tiene marca explícita:
+
+- isRefuerzo === true
+- origen === "refuerzo"
+- payload.tipo_modulo === "refuerzo"
+- payload.creado_desde === "admin_refuerzo"
+- meta.refuerzo === true
+
+Si el refuerzo cubre un titular ausente:
+- se comporta como sustituto.
+- ocupa el puesto del titular.
+
+Si el refuerzo no cubre ningún titular:
+- se añade al final como extraRefuerzoRows.
+
+Apoyo/ocasional NO es refuerzo.
+
+==================================================
+8. ORDEN FINAL
+==================================================
+
+Construir arrays separados:
+
+operationalRows:
+- filas activas por puesto Excel.
+- sustitutos ocupan puesto heredado.
+- vacantes ocupan puesto si no hay sustituto.
+- ordenadas por puestoOrden.
+
+absentRows:
+- titulares ausentes desplazados.
+- solo informativas.
+- ordenadas por puestoOrden original.
+
+extraRefuerzoRows:
+- refuerzos explícitos sin titular cubierto.
+- al final.
+
+Render final:
+
+rowsToRender = [
+  ...operationalRows.sort(puestoOrden),
+  ...absentRows.sort(puestoOrdenOriginal),
+  ...extraRefuerzoRows
+]
+
+==================================================
+9. VISUALIZACIÓN
+==================================================
+
+Fila operativa:
+- mostrar solo ocupanteVisible.
+- no mostrar EMP-XXXX.
+- no mostrar UUID.
+- no mostrar texto “Sustituye a”.
+- no mostrar badge falso de refuerzo.
+
+Fila ausente informativa:
+- mostrar titularOriginal.
+- mostrar incidencia:
+  - Vacaciones 🏖️
+  - Permiso
+  - Baja / IT
+- no mostrar turnos operativos normales.
+- estilo visual secundario.
+
+==================================================
+10. IMPLEMENTACIÓN TÉCNICA
+==================================================
+
+No construir filas por empleado.
+
+Construir filas por puesto Excel.
+
+Flujo obligatorio:
+
+1. buildBaseRowsFromExcelOrder(hotel, weekStart)
+2. loadEventsForWeek(hotel, weekStart)
+3. resolveSubstitutionsAndAbsences(baseRows, events)
+4. build operationalRows
+5. build absentRows
+6. build extraRefuerzoRows
+7. render rowsToRender
+
+Pseudocódigo:
+
+for each baseRow in baseRows:
+  if titular has absence:
+    absentRows.push(createAbsentInfoRow(baseRow, absence))
+
+    if absence has explicit substitute:
+      if substitute not already assigned:
+        operationalRows.push({
+          puestoOrden: baseRow.puestoOrden,
+          titularOriginal: baseRow.titularOriginal,
+          ocupanteVisible: substitute,
+          turnosOperativos: resolveCoveredTurns(baseRow, substitute, absence),
+          rowType: "operativo"
+        })
+        mark substitute as assigned
+      else:
+        operationalRows.push(createVacantRow(baseRow, absence))
+    else:
+      operationalRows.push(createVacantRow(baseRow, absence))
+
+  else:
+    if titular not already assigned as substitute:
+      operationalRows.push({
+        puestoOrden: baseRow.puestoOrden,
+        titularOriginal: baseRow.titularOriginal,
+        ocupanteVisible: baseRow.titularOriginal,
+        turnosOperativos: baseRow.turnosBase,
+        rowType: "operativo"
+      })
+
+==================================================
+11. VALIDACIÓN OBLIGATORIA
+==================================================
+
+Validar con semanas que contengan:
+
+1. vacaciones con sustituto.
+2. vacaciones sin sustituto.
+3. baja/IT con sustituto.
+4. permiso con sustituto.
+5. sustituto que ya tenía fila propia en Excel.
+6. cambio de turno.
+7. refuerzo explícito.
+8. apoyo/ocasional en Excel.
+
+Confirmar:
+
+- el sustituto hereda la posición del titular ausente.
+- el titular ausente baja a absentRows.
+- el sustituto no aparece dos veces.
+- cambios de turno no mueven filas.
+- refuerzos sin titular van al final.
+- no se muestran EMP-XXXX.
+- no se escribe en Supabase.
+- no se publican snapshots.
+
+==================================================
+12. NO TOCAR
+==================================================
+
+No tocar:
+
+- public.turnos
+- Supabase
+- eventos_cuadrante
+- publicaciones_cuadrante
+- snapshots
+- empleados
+- UUID
+- PK
+- importadores
+- Modo Excel
+- Vacaciones
+- Bajas/Permisos
+
+Solo tocar:
+
+- Vista Previa
+- construcción de filas
+- helper de sustituciones/ausencias
+- render visual
+
+==================================================
+13. ENTREGABLE
+==================================================
+
+Responder con:
+
+1. Qué función construye filas base desde Excel.
+2. Qué función resuelve ausencias y sustituciones.
+3. Qué función crea operationalRows.
+4. Qué función crea absentRows.
+5. Qué función evita duplicados.
+6. Cómo se tratan sustitutos con fila propia.
+7. Cómo se tratan ausencias sin sustituto.
+8. Cómo se tratan cambios de turno.
+9. Cómo se tratan refuerzos.
+10. Resultado visual de una semana con sustitución.
+11. Resultado visual de una semana con permiso/baja.
+12. Confirmación sin EMP-XXXX.
+13. Confirmación sin texto “Sustituye a”.
+14. Confirmación sin escritura en Supabase.
+15. Resultado node --check.
+16. Consola final.
+17. Errores restantes.
+
+CRITERIO DE ACEPTACIÓN:
+El Excel define los puestos.
+El titular ausente baja al final como informativo.
+El sustituto ocupa la posición heredada.
+No hay duplicados.
+No se crean filas extra salvo refuerzos explícitos.

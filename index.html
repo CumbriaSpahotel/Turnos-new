@@ -730,7 +730,7 @@
                 
                 if (!showCounters) return;
 
-                const dias = emp.dias || emp.days || {};
+                const dias = emp.cells || emp.dias || emp.days || {};
                 
                 // Si hay columnas definidas (formato renderSnapshotInContainer), las usamos como guía
                 if (group.columns && group.columns.length > 0) {

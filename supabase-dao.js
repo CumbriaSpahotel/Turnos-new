@@ -999,25 +999,34 @@ window.TurnosDB = {
         const semanaFin = this.normalizeDate(rawEnd);
         const client = window.supabase;
         try {
-            // 1. Obtener versión actual para esta semana/hotel
-            const { data: prevs } = await client
+            // 1. Obtener versión actual y ID activo para rollback
+            const { data: currentActive } = await client
                 .from('publicaciones_cuadrante')
-                .select('version')
+                .select('id, version')
                 .eq('semana_inicio', semanaInicio)
                 .eq('hotel', hotel)
+                .eq('estado', 'activo')
                 .order('version', { ascending: false })
                 .limit(1);
             
-            const nextVersion = (prevs && prevs[0]?.version) ? prevs[0].version + 1 : 1;
+            const lastId = (currentActive && currentActive[0]) ? currentActive[0].id : null;
+            const nextVersion = (currentActive && currentActive[0]) ? currentActive[0].version + 1 : 1;
 
-            // 3. Insertar nuevo snapshot activo
+            // 2. Insertar nuevo snapshot activo
             const { data: newSnap, error: snapErr } = await client
                 .from('publicaciones_cuadrante')
                 .insert([{
                     semana_inicio: semanaInicio,
                     semana_fin: semanaFin,
                     hotel: hotel,
-                    snapshot_json: snapshot,
+                    snapshot_json: {
+                        ...snapshot,
+                        metadata: {
+                            ...(snapshot.metadata || {}),
+                            rollback_target: lastId,
+                            published_at: new Date().toISOString()
+                        }
+                    },
                     resumen: resumen,
                     publicado_por: usuario || 'ADMIN',
                     version: nextVersion,
@@ -1028,9 +1037,7 @@ window.TurnosDB = {
             
             if (snapErr) throw snapErr;
 
-            // 2. Marcar snapshots anteriores como 'reemplazado'
-            // Se hace después del insert para asegurar que el nuevo ya existe.
-            // Se usa el ID del nuevo para excluirlo del update.
+            // 3. Marcar snapshots anteriores como 'reemplazado'
             const { error: upErr } = await client
                 .from('publicaciones_cuadrante')
                 .update({ estado: 'reemplazado', updated_at: new Date().toISOString() })
@@ -1038,12 +1045,10 @@ window.TurnosDB = {
                 .eq('hotel', hotel)
                 .eq('estado', 'activo')
                 .neq('id', newSnap.id);
+            
+            if (upErr) console.warn('[DAO] Error al marcar versiones anteriores como reemplazadas:', upErr);
 
-            if (upErr) {
-                console.warn("[SNAPSHOT VERSIONING ERROR] No se pudo desactivar la versión anterior (RLS Update Error). La deduplicación en cliente se encargará de mostrar la más reciente.", upErr);
-            }
-
-            // 4. Registrar en log de auditoría (publicaciones_log)
+            // 4. Log de auditoría
             try {
                 await this.insertLog({
                     cambios_totales: resumen?.emps || 0,
@@ -1054,10 +1059,8 @@ window.TurnosDB = {
                         semana_fin: semanaFin,
                         hotel: hotel,
                         version: nextVersion,
-                        id_publicacion_cuadrante: newSnap.id,
-                        resumen: resumen
+                        rollback_target: lastId
                     },
-                    cambios_detalle_json: [],
                     estado: 'ok',
                     usuario: usuario || 'ADMIN'
                 });
