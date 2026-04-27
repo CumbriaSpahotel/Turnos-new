@@ -912,12 +912,19 @@ window.TurnosDB = {
         const client = window.supabase;
         try {
             const { data: { session } } = await client.auth.getSession();
+            
+            // Adaptar logData al esquema real de publicaciones_log
+            // Columnas reales: resumen (json), cambios_json (json), cambios_totales (int), usuario (text)
+            const payload = {
+                resumen: logData.resumen_json || logData.resumen || {},
+                cambios_json: logData.cambios_json || {},
+                cambios_totales: logData.cambios_totales || 0,
+                usuario: logData.usuario || session?.user?.email || 'WEB_ADMIN'
+            };
+
             const { data, error } = await client
                 .from('publicaciones_log')
-                .insert([{
-                    ...logData,
-                    usuario: logData.usuario || session?.user?.email || 'WEB_ADMIN'
-                }])
+                .insert([payload])
                 .select()
                 .single();
             if (error) throw error;
@@ -928,11 +935,7 @@ window.TurnosDB = {
                 code: err.code,
                 logData: logData
             });
-            // Si es un error de columna faltante en el cache del schema, no bloqueamos la publicación
-            if (err.code === 'PGRST204') {
-                return null;
-            }
-            throw err;
+            return null; // No bloqueamos si falla el log
         }
     },
 
@@ -1052,8 +1055,7 @@ window.TurnosDB = {
             try {
                 await this.insertLog({
                     cambios_totales: resumen?.emps || 0,
-                    empleados_afectados: resumen?.emps || 0,
-                    resumen_json: {
+                    resumen: {
                         accion: 'publicar_snapshot_cuadrante',
                         semana_inicio: semanaInicio,
                         semana_fin: semanaFin,
@@ -1061,7 +1063,6 @@ window.TurnosDB = {
                         version: nextVersion,
                         rollback_target: lastId
                     },
-                    estado: 'ok',
                     usuario: usuario || 'ADMIN'
                 });
             } catch (logErr) {
