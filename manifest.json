@@ -2,11 +2,11 @@
   "name": "Turnos Cumbria & Guadiana",
   "short_name": "Turnos",
   "description": "Sistema de gestión de turnos para hoteles",
-  "start_url": "live.mobile.html",
+  "start_url": "live.mobile.html?v=2026-04-28b",
   "display": "standalone",
   "background_color": "#1a1d21",
   "theme_color": "#1a1d21",
-  "orientation": "portrait",
+  "orientation": "any",
   "icons": [
     {
       "src": "favicon.png",
