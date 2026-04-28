@@ -1,0 +1,734 @@
+{
+  "Cumbria Spa&Hotel": {
+    "2026-01-04": [
+      "Cristina",
+      "Esther",
+      "Sergio",
+      "Valentín",
+      "Isabel Hidalgo"
+    ],
+    "2026-01-11": [
+      "Sergio",
+      "Cristina",
+      "Esther",
+      "Valentín",
+      "Isabel Hidalgo"
+    ],
+    "2026-01-18": [
+      "Esther",
+      "Sergio",
+      "Cristina",
+      "Valentín",
+      "Isabel Hidalgo"
+    ],
+    "2026-01-25": [
+      "Cristina",
+      "Esther",
+      "Sergio",
+      "Valentín",
+      "Natalio"
+    ],
+    "2026-02-01": [
+      "Sergio",
+      "Cristina",
+      "Esther",
+      "Valentín",
+      "Isabel Hidalgo"
+    ],
+    "2026-02-08": [
+      "Esther",
+      "Sergio",
+      "Cristina",
+      "Valentín",
+      "Isabel Hidalgo"
+    ],
+    "2026-02-15": [
+      "Cristina",
+      "Esther",
+      "Sergio",
+      "Valentín",
+      "Isabel Hidalgo"
+    ],
+    "2026-02-22": [
+      "Sergio",
+      "Cristina",
+      "Esther",
+      "Valentín",
+      "Isabel Hidalgo"
+    ],
+    "2026-03-01": [
+      "Esther",
+      "Sergio",
+      "Cristina",
+      "Valentín",
+      "Isabel Hidalgo"
+    ],
+    "2026-03-08": [
+      "Cristina",
+      "Esther",
+      "Sergio",
+      "Valentín",
+      "Isabel Hidalgo"
+    ],
+    "2026-03-15": [
+      "Sergio",
+      "Cristina",
+      "Esther",
+      "Valentín",
+      "Isabel Hidalgo"
+    ],
+    "2026-03-22": [
+      "Esther",
+      "Sergio",
+      "Cristina",
+      "Valentín",
+      "Isabel Hidalgo"
+    ],
+    "2026-03-29": [
+      "Cristina",
+      "Esther",
+      "Sergio",
+      "Valentín",
+      "Isabel Hidalgo"
+    ],
+    "2026-04-05": [
+      "Sergio",
+      "Cristina",
+      "Esther",
+      "Valentín",
+      "Isabel Hidalgo"
+    ],
+    "2026-04-12": [
+      "Esther",
+      "Sergio",
+      "Cristina",
+      "Valentín",
+      "Isabel Hidalgo"
+    ],
+    "2026-04-19": [
+      "Cristina",
+      "Esther",
+      "Sergio",
+      "Valentín",
+      "Isabel Hidalgo"
+    ],
+    "2026-04-26": [
+      "Sergio",
+      "Cristina",
+      "Esther",
+      "Valentín",
+      "Isabel Hidalgo"
+    ],
+    "2026-05-03": [
+      "Esther",
+      "Sergio",
+      "Cristina",
+      "Valentín",
+      "Isabel Hidalgo"
+    ],
+    "2026-05-10": [
+      "Cristina",
+      "Esther",
+      "Sergio",
+      "Valentín",
+      "Isabel Hidalgo"
+    ],
+    "2026-05-17": [
+      "Sergio",
+      "Cristina",
+      "Esther",
+      "Valentín",
+      "Isabel Hidalgo"
+    ],
+    "2026-05-24": [
+      "Esther",
+      "Sergio",
+      "Cristina",
+      "Valentín",
+      "Isabel Hidalgo"
+    ],
+    "2026-05-31": [
+      "Cristina",
+      "Esther",
+      "Sergio",
+      "Valentín",
+      "Isabel Hidalgo"
+    ],
+    "2026-06-07": [
+      "Sergio",
+      "Cristina",
+      "Esther",
+      "Valentín",
+      "Isabel Hidalgo"
+    ],
+    "2026-06-14": [
+      "Esther",
+      "Sergio",
+      "Cristina",
+      "Valentín",
+      "Isabel Hidalgo"
+    ],
+    "2026-06-21": [
+      "Cristina",
+      "Esther",
+      "Sergio",
+      "Valentín",
+      "Isabel Hidalgo"
+    ],
+    "2026-06-28": [
+      "Sergio",
+      "Cristina",
+      "Esther",
+      "Valentín",
+      "Isabel Hidalgo"
+    ],
+    "2026-07-05": [
+      "Esther",
+      "Sergio",
+      "Cristina",
+      "Valentín",
+      "Isabel Hidalgo"
+    ],
+    "2026-07-12": [
+      "Cristina",
+      "Esther",
+      "Sergio",
+      "Valentín",
+      "Isabel Hidalgo"
+    ],
+    "2026-07-19": [
+      "Sergio",
+      "Cristina",
+      "Esther",
+      "Valentín",
+      "Isabel Hidalgo"
+    ],
+    "2026-07-26": [
+      "Esther",
+      "Sergio",
+      "Cristina",
+      "Valentín",
+      "Isabel Hidalgo"
+    ],
+    "2026-08-02": [
+      "Cristina",
+      "Esther",
+      "Sergio",
+      "Valentín",
+      "Isabel Hidalgo"
+    ],
+    "2026-08-09": [
+      "Sergio",
+      "Cristina",
+      "Esther",
+      "Valentín",
+      "Isabel Hidalgo"
+    ],
+    "2026-08-16": [
+      "Esther",
+      "Sergio",
+      "Cristina",
+      "Valentín",
+      "Isabel Hidalgo"
+    ],
+    "2026-08-23": [
+      "Cristina",
+      "Esther",
+      "Sergio",
+      "Valentín",
+      "Isabel Hidalgo"
+    ],
+    "2026-08-30": [
+      "Sergio",
+      "Cristina",
+      "Esther",
+      "Valentín",
+      "Isabel Hidalgo"
+    ],
+    "2026-09-06": [
+      "Esther",
+      "Sergio",
+      "Cristina",
+      "Valentín",
+      "Isabel Hidalgo"
+    ],
+    "2026-09-13": [
+      "Cristina",
+      "Esther",
+      "Sergio",
+      "Valentín",
+      "Isabel Hidalgo"
+    ],
+    "2026-09-20": [
+      "Sergio",
+      "Cristina",
+      "Esther",
+      "Valentín",
+      "Isabel Hidalgo"
+    ],
+    "2026-09-27": [
+      "Esther",
+      "Sergio",
+      "Cristina",
+      "Valentín",
+      "Isabel Hidalgo"
+    ],
+    "2026-10-04": [
+      "Cristina",
+      "Esther",
+      "Sergio",
+      "Valentín",
+      "Isabel Hidalgo"
+    ],
+    "2026-10-11": [
+      "Sergio",
+      "Cristina",
+      "Esther",
+      "Valentín",
+      "Isabel Hidalgo"
+    ],
+    "2026-10-18": [
+      "Esther",
+      "Sergio",
+      "Cristina",
+      "Valentín",
+      "Isabel Hidalgo"
+    ],
+    "2026-10-25": [
+      "Cristina",
+      "Esther",
+      "Sergio",
+      "Valentín",
+      "Isabel Hidalgo"
+    ],
+    "2026-11-01": [
+      "Sergio",
+      "Cristina",
+      "Esther",
+      "Valentín",
+      "Isabel Hidalgo"
+    ],
+    "2026-11-08": [
+      "Esther",
+      "Sergio",
+      "Cristina",
+      "Valentín",
+      "Isabel Hidalgo"
+    ],
+    "2026-11-15": [
+      "Cristina",
+      "Esther",
+      "Sergio",
+      "Valentín",
+      "Isabel Hidalgo"
+    ],
+    "2026-11-22": [
+      "Sergio",
+      "Cristina",
+      "Esther",
+      "Valentín",
+      "Isabel Hidalgo"
+    ],
+    "2026-11-29": [
+      "Esther",
+      "Sergio",
+      "Cristina",
+      "Valentín",
+      "Isabel Hidalgo"
+    ],
+    "2026-12-06": [
+      "Cristina",
+      "Esther",
+      "Sergio",
+      "Valentín",
+      "Isabel Hidalgo"
+    ],
+    "2026-12-13": [
+      "Sergio",
+      "Cristina",
+      "Esther",
+      "Valentín",
+      "Isabel Hidalgo"
+    ],
+    "2026-12-20": [
+      "Esther",
+      "Sergio",
+      "Cristina",
+      "Valentín",
+      "Isabel Hidalgo"
+    ],
+    "2026-12-27": [
+      "Cristina",
+      "Esther",
+      "Sergio",
+      "Valentín",
+      "Isabel Hidalgo"
+    ]
+  },
+  "Sercotel Guadiana": {
+    "2026-01-04": [
+      "Macarena",
+      "Diana",
+      "Dani",
+      "Federico",
+      "Sergio Sánchez"
+    ],
+    "2026-01-11": [
+      "Dani",
+      "Macarena",
+      "Diana",
+      "Federico",
+      "Sergio Sánchez"
+    ],
+    "2026-01-18": [
+      "Diana",
+      "Dani",
+      "Macarena",
+      "Federico",
+      "Sergio Sánchez"
+    ],
+    "2026-01-25": [
+      "Macarena",
+      "Diana",
+      "Dani",
+      "Federico",
+      "Sergio Sánchez"
+    ],
+    "2026-02-01": [
+      "Dani",
+      "Macarena",
+      "Diana",
+      "Federico",
+      "Sergio Sánchez"
+    ],
+    "2026-02-08": [
+      "Diana",
+      "Dani",
+      "Macarena",
+      "Federico",
+      "Sergio Sánchez"
+    ],
+    "2026-02-15": [
+      "Macarena",
+      "Diana",
+      "Dani",
+      "Federico",
+      "Sergio Sánchez"
+    ],
+    "2026-02-22": [
+      "Dani",
+      "Macarena",
+      "Diana",
+      "Federico",
+      "Sergio Sánchez"
+    ],
+    "2026-03-01": [
+      "Diana",
+      "Dani",
+      "Macarena",
+      "Federico",
+      "Sergio Sánchez"
+    ],
+    "2026-03-08": [
+      "Macarena",
+      "Diana",
+      "Dani",
+      "Federico",
+      "Sergio Sánchez"
+    ],
+    "2026-03-15": [
+      "Dani",
+      "Macarena",
+      "Diana",
+      "Federico",
+      "Sergio Sánchez"
+    ],
+    "2026-03-22": [
+      "Diana",
+      "Dani",
+      "Macarena",
+      "Federico",
+      "Sergio Sánchez"
+    ],
+    "2026-03-29": [
+      "Macarena",
+      "Diana",
+      "Dani",
+      "Federico",
+      "Sergio Sánchez"
+    ],
+    "2026-04-05": [
+      "Dani",
+      "Macarena",
+      "Diana",
+      "Federico",
+      "Sergio Sánchez"
+    ],
+    "2026-04-12": [
+      "Diana",
+      "Dani",
+      "Macarena",
+      "Federico",
+      "Sergio Sánchez"
+    ],
+    "2026-04-19": [
+      "Macarena",
+      "Diana",
+      "Dani",
+      "Federico",
+      "Sergio Sánchez"
+    ],
+    "2026-04-26": [
+      "Dani",
+      "Macarena",
+      "Diana",
+      "Federico",
+      "Sergio Sánchez"
+    ],
+    "2026-05-03": [
+      "Diana",
+      "Dani",
+      "Macarena",
+      "Federico",
+      "Sergio Sánchez"
+    ],
+    "2026-05-10": [
+      "Macarena",
+      "Diana",
+      "Dani",
+      "Federico",
+      "Sergio Sánchez"
+    ],
+    "2026-05-17": [
+      "Dani",
+      "Macarena",
+      "Diana",
+      "Federico",
+      "Sergio Sánchez"
+    ],
+    "2026-05-24": [
+      "Diana",
+      "Dani",
+      "Macarena",
+      "Federico",
+      "Sergio Sánchez"
+    ],
+    "2026-05-31": [
+      "Macarena",
+      "Diana",
+      "Dani",
+      "Federico",
+      "Sergio Sánchez"
+    ],
+    "2026-06-07": [
+      "Dani",
+      "Macarena",
+      "Diana",
+      "Federico",
+      "Sergio Sánchez"
+    ],
+    "2026-06-14": [
+      "Diana",
+      "Dani",
+      "Macarena",
+      "Federico",
+      "Sergio Sánchez"
+    ],
+    "2026-06-21": [
+      "Macarena",
+      "Diana",
+      "Dani",
+      "Federico",
+      "Sergio Sánchez"
+    ],
+    "2026-06-28": [
+      "Dani",
+      "Macarena",
+      "Diana",
+      "Federico",
+      "Sergio Sánchez"
+    ],
+    "2026-07-05": [
+      "Diana",
+      "Dani",
+      "Macarena",
+      "Federico",
+      "Sergio Sánchez"
+    ],
+    "2026-07-12": [
+      "Macarena",
+      "Diana",
+      "Dani",
+      "Federico",
+      "Sergio Sánchez"
+    ],
+    "2026-07-19": [
+      "Dani",
+      "Macarena",
+      "Diana",
+      "Federico",
+      "Sergio Sánchez"
+    ],
+    "2026-07-26": [
+      "Diana",
+      "Dani",
+      "Macarena",
+      "Federico",
+      "Sergio Sánchez"
+    ],
+    "2026-08-02": [
+      "Macarena",
+      "Diana",
+      "Dani",
+      "Federico",
+      "Sergio Sánchez"
+    ],
+    "2026-08-09": [
+      "Dani",
+      "Macarena",
+      "Diana",
+      "Federico",
+      "Sergio Sánchez"
+    ],
+    "2026-08-16": [
+      "Diana",
+      "Dani",
+      "Macarena",
+      "Federico",
+      "Sergio Sánchez"
+    ],
+    "2026-08-23": [
+      "Macarena",
+      "Diana",
+      "Dani",
+      "Federico",
+      "Sergio Sánchez"
+    ],
+    "2026-08-30": [
+      "Dani",
+      "Macarena",
+      "Diana",
+      "Federico",
+      "Sergio Sánchez"
+    ],
+    "2026-09-06": [
+      "Diana",
+      "Dani",
+      "Macarena",
+      "Federico",
+      "Sergio Sánchez"
+    ],
+    "2026-09-13": [
+      "Macarena",
+      "Diana",
+      "Dani",
+      "Federico",
+      "Sergio Sánchez"
+    ],
+    "2026-09-20": [
+      "Dani",
+      "Macarena",
+      "Diana",
+      "Federico",
+      "Sergio Sánchez"
+    ],
+    "2026-09-27": [
+      "Diana",
+      "Dani",
+      "Macarena",
+      "Federico",
+      "Sergio Sánchez"
+    ],
+    "2026-10-04": [
+      "Macarena",
+      "Diana",
+      "Dani",
+      "Federico",
+      "Sergio Sánchez"
+    ],
+    "2026-10-11": [
+      "Dani",
+      "Macarena",
+      "Diana",
+      "Federico",
+      "Sergio Sánchez"
+    ],
+    "2026-10-18": [
+      "Diana",
+      "Dani",
+      "Macarena",
+      "Federico",
+      "Sergio Sánchez"
+    ],
+    "2026-10-25": [
+      "Macarena",
+      "Diana",
+      "Dani",
+      "Federico",
+      "Sergio Sánchez"
+    ],
+    "2026-11-01": [
+      "Dani",
+      "Macarena",
+      "Diana",
+      "Federico",
+      "Sergio Sánchez"
+    ],
+    "2026-11-08": [
+      "Diana",
+      "Dani",
+      "Macarena",
+      "Federico",
+      "Sergio Sánchez"
+    ],
+    "2026-11-15": [
+      "Macarena",
+      "Diana",
+      "Dani",
+      "Federico",
+      "Sergio Sánchez"
+    ],
+    "2026-11-22": [
+      "Dani",
+      "Macarena",
+      "Diana",
+      "Federico",
+      "Sergio Sánchez"
+    ],
+    "2026-11-29": [
+      "Diana",
+      "Dani",
+      "Macarena",
+      "Federico",
+      "Sergio Sánchez"
+    ],
+    "2026-12-06": [
+      "Macarena",
+      "Diana",
+      "Dani",
+      "Federico",
+      "Sergio Sánchez"
+    ],
+    "2026-12-13": [
+      "Dani",
+      "Macarena",
+      "Diana",
+      "Federico",
+      "Sergio Sánchez"
+    ],
+    "2026-12-20": [
+      "Diana",
+      "Dani",
+      "Macarena",
+      "Federico",
+      "Sergio Sánchez"
+    ],
+    "2026-12-27": [
+      "Macarena",
+      "Diana",
+      "Dani",
+      "Federico",
+      "Sergio Sánchez"
+    ]
+  }
+}

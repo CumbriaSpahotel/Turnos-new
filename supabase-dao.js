@@ -822,33 +822,53 @@ window.TurnosDB = {
         const client = window.supabase;
         try {
             if (!empData.id) throw new Error("ID de empleado obligatorio");
-            
-            // Whitelist de columnas seguras (estandarizadas para FASE DE ESTABILIZACIÓN)
+
+            const normalizedData = { ...empData };
+            if (normalizedData.hotel_id === undefined && normalizedData.hotel !== undefined) {
+                normalizedData.hotel_id = normalizedData.hotel;
+            }
+            if (normalizedData.tipo_personal === undefined && normalizedData.tipo !== undefined) {
+                normalizedData.tipo_personal = normalizedData.tipo;
+            }
+            if (normalizedData.estado_empresa === undefined && normalizedData.estado !== undefined) {
+                normalizedData.estado_empresa = normalizedData.estado;
+            }
+            if (normalizedData.observaciones === undefined && normalizedData.notas !== undefined) {
+                normalizedData.observaciones = normalizedData.notas;
+            }
+
             const EMPLEADO_COLUMNS = [
                 'id',
                 'nombre',
                 'hotel_id',
                 'puesto',
-                'tipo',
-                'estado',
+                'tipo_personal',
+                'estado_empresa',
                 'activo',
                 'fecha_baja',
                 'telefono',
                 'email',
-                'notas',
+                'observaciones',
                 'orden',
-                'id_interno'
+                'id_interno',
+                'ajuste_vacaciones_dias',
+                'vacaciones_anuales',
+                'categoria',
+                'contrato',
+                'motivo_baja',
+                'hoteles_asignados',
+                'antiguedad',
+                'vacaciones_regularizadas_pagadas'
             ];
 
             const payload = {};
             EMPLEADO_COLUMNS.forEach(col => {
-                if (empData[col] !== undefined) {
-                    payload[col] = empData[col];
+                if (normalizedData[col] !== undefined) {
+                    payload[col] = normalizedData[col];
                 }
             });
 
-            // Si el estado no es Baja, nos aseguramos de que fecha_baja sea null
-            if (payload.estado !== 'Baja') {
+            if (payload.estado_empresa !== 'Baja') {
                 payload.fecha_baja = null;
             }
 
@@ -858,16 +878,37 @@ window.TurnosDB = {
                 console.log('[UPSERT EMPLEADO PAYLOAD]', payload);
             }
 
-            const { error } = await client.from('empleados').upsert(payload);
+            const retryablePayload = { ...payload };
+            for (let attempt = 0; attempt < 6; attempt++) {
+                const { error } = await client.from('empleados').upsert(retryablePayload);
+                if (!error) return;
 
-            if (error) {
                 console.error("DAO Error (upsertEmpleado detail):", error);
-                // Si el error es 400 o similar, es probable que falten columnas
+
+                const missingColumn = String(
+                    error?.details ||
+                    error?.message ||
+                    error?.hint ||
+                    ''
+                ).match(/'([^']+)' column/)?.[1];
+
+                if (
+                    missingColumn &&
+                    missingColumn !== 'id' &&
+                    Object.prototype.hasOwnProperty.call(retryablePayload, missingColumn)
+                ) {
+                    console.warn(`[upsertEmpleado] Columna no disponible en Supabase, reintentando sin '${missingColumn}'.`);
+                    delete retryablePayload[missingColumn];
+                    continue;
+                }
+
                 if (error.status === 400 || error.code === 'PGRST100' || error.code === '42703') {
-                    throw new Error(`Error al guardar ficha: Supabase rechaza el payload. Es probable que falten columnas nuevas (ej. puesto, tipo, notas) o el esquema no se haya refrescado.`);
+                    throw new Error("Error al guardar ficha: Supabase rechaza el payload. Revisa el esquema de 'empleados' o refresca la cache del API.");
                 }
                 throw error;
             }
+
+            throw new Error("Error al guardar ficha: no fue posible adaptar el payload al esquema de empleados.");
         } catch (err) {
             console.error("DAO Error (upsertEmpleado):", err);
             throw err;

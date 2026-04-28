@@ -1,0 +1,1974 @@
+{
+  "2026-05-04": {
+    "hotel": "Cumbria Spa&Hotel",
+    "semana_inicio": "2026-05-04",
+    "semana_fin": "2026-05-10",
+    "empleados": [
+      {
+        "empleado_id": "Cristina",
+        "nombre": "Cristina",
+        "rowType": "operativo",
+        "puestoOrden": 2,
+        "orden": 2,
+        "tipo_personal": "fijo",
+        "dias": {
+          "2026-05-04": {
+            "code": "T",
+            "label": "Tarde",
+            "type": "NORMAL",
+            "isAbsence": false,
+            "icons": [],
+            "origen": "BASE",
+            "sustituto": null,
+            "titular_cubierto": null
+          },
+          "2026-05-05": {
+            "code": "T",
+            "label": "Tarde",
+            "type": "NORMAL",
+            "isAbsence": false,
+            "icons": [],
+            "origen": "BASE",
+            "sustituto": null,
+            "titular_cubierto": null
+          },
+          "2026-05-06": {
+            "code": "T",
+            "label": "Tarde",
+            "type": "NORMAL",
+            "isAbsence": false,
+            "icons": [],
+            "origen": "BASE",
+            "sustituto": null,
+            "titular_cubierto": null
+          },
+          "2026-05-07": {
+            "code": "T",
+            "label": "Tarde",
+            "type": "NORMAL",
+            "isAbsence": false,
+            "icons": [],
+            "origen": "BASE",
+            "sustituto": null,
+            "titular_cubierto": null
+          },
+          "2026-05-08": {
+            "code": "T",
+            "label": "Tarde",
+            "type": "NORMAL",
+            "isAbsence": false,
+            "icons": [],
+            "origen": "BASE",
+            "sustituto": null,
+            "titular_cubierto": null
+          },
+          "2026-05-09": {
+            "code": "D",
+            "label": "Descanso",
+            "type": "NORMAL",
+            "isAbsence": false,
+            "icons": [],
+            "origen": "BASE",
+            "sustituto": null,
+            "titular_cubierto": null
+          },
+          "2026-05-10": {
+            "code": "D",
+            "label": "Descanso",
+            "type": "NORMAL",
+            "isAbsence": false,
+            "icons": [],
+            "origen": "BASE",
+            "sustituto": null,
+            "titular_cubierto": null
+          }
+        }
+      },
+      {
+        "empleado_id": "Valentín",
+        "nombre": "Valentín",
+        "rowType": "operativo",
+        "puestoOrden": 3,
+        "orden": 3,
+        "tipo_personal": "fijo",
+        "dias": {
+          "2026-05-04": {
+            "code": "D",
+            "label": "Descanso",
+            "type": "NORMAL",
+            "isAbsence": false,
+            "icons": [],
+            "origen": "BASE",
+            "sustituto": null,
+            "titular_cubierto": null
+          },
+          "2026-05-05": {
+            "code": "D",
+            "label": "Descanso",
+            "type": "NORMAL",
+            "isAbsence": false,
+            "icons": [],
+            "origen": "BASE",
+            "sustituto": null,
+            "titular_cubierto": null
+          },
+          "2026-05-06": {
+            "code": "N",
+            "label": "Noche",
+            "type": "NORMAL",
+            "isAbsence": false,
+            "icons": [],
+            "origen": "BASE",
+            "sustituto": null,
+            "titular_cubierto": null
+          },
+          "2026-05-07": {
+            "code": "N",
+            "label": "Noche",
+            "type": "NORMAL",
+            "isAbsence": false,
+            "icons": [],
+            "origen": "BASE",
+            "sustituto": null,
+            "titular_cubierto": null
+          },
+          "2026-05-08": {
+            "code": "N",
+            "label": "Noche",
+            "type": "NORMAL",
+            "isAbsence": false,
+            "icons": [],
+            "origen": "BASE",
+            "sustituto": null,
+            "titular_cubierto": null
+          },
+          "2026-05-09": {
+            "code": "N",
+            "label": "Noche",
+            "type": "NORMAL",
+            "isAbsence": false,
+            "icons": [],
+            "origen": "BASE",
+            "sustituto": null,
+            "titular_cubierto": null
+          },
+          "2026-05-10": {
+            "code": "N",
+            "label": "Noche",
+            "type": "NORMAL",
+            "isAbsence": false,
+            "icons": [],
+            "origen": "BASE",
+            "sustituto": null,
+            "titular_cubierto": null
+          }
+        }
+      },
+      {
+        "empleado_id": "Isabel Hidalgo",
+        "nombre": "Isabel Hidalgo",
+        "rowType": "operativo",
+        "puestoOrden": 4,
+        "orden": 4,
+        "tipo_personal": "ocasional",
+        "dias": {
+          "2026-05-04": {
+            "code": "—",
+            "label": "—",
+            "type": "NORMAL",
+            "isAbsence": false,
+            "icons": [],
+            "origen": "BASE",
+            "sustituto": null,
+            "titular_cubierto": null
+          },
+          "2026-05-05": {
+            "code": "—",
+            "label": "—",
+            "type": "NORMAL",
+            "isAbsence": false,
+            "icons": [],
+            "origen": "BASE",
+            "sustituto": null,
+            "titular_cubierto": null
+          },
+          "2026-05-06": {
+            "code": "—",
+            "label": "—",
+            "type": "NORMAL",
+            "isAbsence": false,
+            "icons": [],
+            "origen": "BASE",
+            "sustituto": null,
+            "titular_cubierto": null
+          },
+          "2026-05-07": {
+            "code": "M",
+            "label": "Mañana",
+            "type": "NORMAL",
+            "isAbsence": false,
+            "icons": [],
+            "origen": "BASE",
+            "sustituto": null,
+            "titular_cubierto": null
+          },
+          "2026-05-08": {
+            "code": "—",
+            "label": "—",
+            "type": "NORMAL",
+            "isAbsence": false,
+            "icons": [],
+            "origen": "BASE",
+            "sustituto": null,
+            "titular_cubierto": null
+          },
+          "2026-05-09": {
+            "code": "—",
+            "label": "—",
+            "type": "NORMAL",
+            "isAbsence": false,
+            "icons": [],
+            "origen": "BASE",
+            "sustituto": null,
+            "titular_cubierto": null
+          },
+          "2026-05-10": {
+            "code": "—",
+            "label": "—",
+            "type": "NORMAL",
+            "isAbsence": false,
+            "icons": [],
+            "origen": "BASE",
+            "sustituto": null,
+            "titular_cubierto": null
+          }
+        }
+      },
+      {
+        "empleado_id": "Esther",
+        "nombre": "Esther",
+        "rowType": "operativo",
+        "puestoOrden": 6,
+        "orden": 6,
+        "tipo_personal": "fijo",
+        "dias": {
+          "2026-05-04": {
+            "code": "N",
+            "label": "Noche",
+            "type": "NORMAL",
+            "isAbsence": false,
+            "icons": [],
+            "origen": "BASE",
+            "sustituto": null,
+            "titular_cubierto": null
+          },
+          "2026-05-05": {
+            "code": "N",
+            "label": "Noche",
+            "type": "NORMAL",
+            "isAbsence": false,
+            "icons": [],
+            "origen": "BASE",
+            "sustituto": null,
+            "titular_cubierto": null
+          },
+          "2026-05-06": {
+            "code": "D",
+            "label": "Descanso",
+            "type": "NORMAL",
+            "isAbsence": false,
+            "icons": [],
+            "origen": "BASE",
+            "sustituto": null,
+            "titular_cubierto": null
+          },
+          "2026-05-07": {
+            "code": "D",
+            "label": "Descanso",
+            "type": "NORMAL",
+            "isAbsence": false,
+            "icons": [],
+            "origen": "BASE",
+            "sustituto": null,
+            "titular_cubierto": null
+          },
+          "2026-05-08": {
+            "code": "M",
+            "label": "Mañana",
+            "type": "NORMAL",
+            "isAbsence": false,
+            "icons": [],
+            "origen": "BASE",
+            "sustituto": null,
+            "titular_cubierto": null
+          },
+          "2026-05-09": {
+            "code": "M",
+            "label": "Mañana",
+            "type": "NORMAL",
+            "isAbsence": false,
+            "icons": [],
+            "origen": "BASE",
+            "sustituto": null,
+            "titular_cubierto": null
+          },
+          "2026-05-10": {
+            "code": "M",
+            "label": "Mañana",
+            "type": "NORMAL",
+            "isAbsence": false,
+            "icons": [],
+            "origen": "BASE",
+            "sustituto": null,
+            "titular_cubierto": null
+          }
+        }
+      },
+      {
+        "empleado_id": "Miriam",
+        "nombre": "Miriam",
+        "rowType": "operativo",
+        "puestoOrden": 8,
+        "orden": 8,
+        "tipo_personal": "sustituto",
+        "dias": {
+          "2026-05-04": {
+            "code": "M",
+            "label": "Mañana",
+            "type": "NORMAL",
+            "isAbsence": false,
+            "icons": [],
+            "origen": "BASE",
+            "sustituto": null,
+            "titular_cubierto": "Sergio"
+          },
+          "2026-05-05": {
+            "code": "M",
+            "label": "Mañana",
+            "type": "NORMAL",
+            "isAbsence": false,
+            "icons": [],
+            "origen": "BASE",
+            "sustituto": null,
+            "titular_cubierto": "Sergio"
+          },
+          "2026-05-06": {
+            "code": "M",
+            "label": "Mañana",
+            "type": "NORMAL",
+            "isAbsence": false,
+            "icons": [],
+            "origen": "BASE",
+            "sustituto": null,
+            "titular_cubierto": "Sergio"
+          },
+          "2026-05-07": {
+            "code": "D",
+            "label": "Descanso",
+            "type": "NORMAL",
+            "isAbsence": false,
+            "icons": [],
+            "origen": "BASE",
+            "sustituto": null,
+            "titular_cubierto": "Sergio"
+          },
+          "2026-05-08": {
+            "code": "D",
+            "label": "Descanso",
+            "type": "NORMAL",
+            "isAbsence": false,
+            "icons": [],
+            "origen": "BASE",
+            "sustituto": null,
+            "titular_cubierto": "Sergio"
+          },
+          "2026-05-09": {
+            "code": "T",
+            "label": "Tarde",
+            "type": "NORMAL",
+            "isAbsence": false,
+            "icons": [],
+            "origen": "BASE",
+            "sustituto": null,
+            "titular_cubierto": "Sergio"
+          },
+          "2026-05-10": {
+            "code": "T",
+            "label": "Tarde",
+            "type": "NORMAL",
+            "isAbsence": false,
+            "icons": [],
+            "origen": "BASE",
+            "sustituto": null,
+            "titular_cubierto": "Sergio"
+          }
+        }
+      },
+      {
+        "empleado_id": "Sergio",
+        "nombre": "Sergio",
+        "rowType": "ausencia_informativa",
+        "puestoOrden": 50,
+        "orden": 50,
+        "tipo_personal": "fijo",
+        "dias": {
+          "2026-05-04": {
+            "code": "VAC",
+            "label": "Vacaciones",
+            "type": "VAC",
+            "isAbsence": true,
+            "icons": [],
+            "origen": "BASE",
+            "sustituto": null,
+            "titular_cubierto": null
+          },
+          "2026-05-05": {
+            "code": "VAC",
+            "label": "Vacaciones",
+            "type": "VAC",
+            "isAbsence": true,
+            "icons": [],
+            "origen": "BASE",
+            "sustituto": null,
+            "titular_cubierto": null
+          },
+          "2026-05-06": {
+            "code": "VAC",
+            "label": "Vacaciones",
+            "type": "VAC",
+            "isAbsence": true,
+            "icons": [],
+            "origen": "BASE",
+            "sustituto": null,
+            "titular_cubierto": null
+          },
+          "2026-05-07": {
+            "code": "VAC",
+            "label": "Vacaciones",
+            "type": "VAC",
+            "isAbsence": true,
+            "icons": [],
+            "origen": "BASE",
+            "sustituto": null,
+            "titular_cubierto": null
+          },
+          "2026-05-08": {
+            "code": "VAC",
+            "label": "Vacaciones",
+            "type": "VAC",
+            "isAbsence": true,
+            "icons": [],
+            "origen": "BASE",
+            "sustituto": null,
+            "titular_cubierto": null
+          },
+          "2026-05-09": {
+            "code": "VAC",
+            "label": "Vacaciones",
+            "type": "VAC",
+            "isAbsence": true,
+            "icons": [],
+            "origen": "BASE",
+            "sustituto": null,
+            "titular_cubierto": null
+          },
+          "2026-05-10": {
+            "code": "VAC",
+            "label": "Vacaciones",
+            "type": "VAC",
+            "isAbsence": true,
+            "icons": [],
+            "origen": "BASE",
+            "sustituto": null,
+            "titular_cubierto": null
+          }
+        }
+      }
+    ],
+    "metadata": {
+      "version_builder": "V12.1-node",
+      "published_at": "2026-04-28T22:33:34.420Z",
+      "titular_ausente": "Sergio",
+      "sustituta": "Miriam"
+    }
+  },
+  "2026-05-11": {
+    "hotel": "Cumbria Spa&Hotel",
+    "semana_inicio": "2026-05-11",
+    "semana_fin": "2026-05-17",
+    "empleados": [
+      {
+        "empleado_id": "Cristina",
+        "nombre": "Cristina",
+        "rowType": "operativo",
+        "puestoOrden": 2,
+        "orden": 2,
+        "tipo_personal": "fijo",
+        "dias": {
+          "2026-05-11": {
+            "code": "D",
+            "label": "Descanso",
+            "type": "NORMAL",
+            "isAbsence": false,
+            "icons": [],
+            "origen": "BASE",
+            "sustituto": null,
+            "titular_cubierto": null
+          },
+          "2026-05-12": {
+            "code": "D",
+            "label": "Descanso",
+            "type": "NORMAL",
+            "isAbsence": false,
+            "icons": [],
+            "origen": "BASE",
+            "sustituto": null,
+            "titular_cubierto": null
+          },
+          "2026-05-13": {
+            "code": "M",
+            "label": "Mañana",
+            "type": "NORMAL",
+            "isAbsence": false,
+            "icons": [],
+            "origen": "BASE",
+            "sustituto": null,
+            "titular_cubierto": null
+          },
+          "2026-05-14": {
+            "code": "M",
+            "label": "Mañana",
+            "type": "NORMAL",
+            "isAbsence": false,
+            "icons": [],
+            "origen": "BASE",
+            "sustituto": null,
+            "titular_cubierto": null
+          },
+          "2026-05-15": {
+            "code": "M",
+            "label": "Mañana",
+            "type": "NORMAL",
+            "isAbsence": false,
+            "icons": [],
+            "origen": "BASE",
+            "sustituto": null,
+            "titular_cubierto": null
+          },
+          "2026-05-16": {
+            "code": "M",
+            "label": "Mañana",
+            "type": "NORMAL",
+            "isAbsence": false,
+            "icons": [],
+            "origen": "BASE",
+            "sustituto": null,
+            "titular_cubierto": null
+          },
+          "2026-05-17": {
+            "code": "M",
+            "label": "Mañana",
+            "type": "NORMAL",
+            "isAbsence": false,
+            "icons": [],
+            "origen": "BASE",
+            "sustituto": null,
+            "titular_cubierto": null
+          }
+        }
+      },
+      {
+        "empleado_id": "Valentín",
+        "nombre": "Valentín",
+        "rowType": "operativo",
+        "puestoOrden": 3,
+        "orden": 3,
+        "tipo_personal": "fijo",
+        "dias": {
+          "2026-05-11": {
+            "code": "N",
+            "label": "Noche",
+            "type": "NORMAL",
+            "isAbsence": false,
+            "icons": [],
+            "origen": "BASE",
+            "sustituto": null,
+            "titular_cubierto": null
+          },
+          "2026-05-12": {
+            "code": "D",
+            "label": "Descanso",
+            "type": "NORMAL",
+            "isAbsence": false,
+            "icons": [],
+            "origen": "BASE",
+            "sustituto": null,
+            "titular_cubierto": null
+          },
+          "2026-05-13": {
+            "code": "D",
+            "label": "Descanso",
+            "type": "NORMAL",
+            "isAbsence": false,
+            "icons": [],
+            "origen": "BASE",
+            "sustituto": null,
+            "titular_cubierto": null
+          },
+          "2026-05-14": {
+            "code": "N",
+            "label": "Noche",
+            "type": "NORMAL",
+            "isAbsence": false,
+            "icons": [],
+            "origen": "BASE",
+            "sustituto": null,
+            "titular_cubierto": null
+          },
+          "2026-05-15": {
+            "code": "N",
+            "label": "Noche",
+            "type": "NORMAL",
+            "isAbsence": false,
+            "icons": [],
+            "origen": "BASE",
+            "sustituto": null,
+            "titular_cubierto": null
+          },
+          "2026-05-16": {
+            "code": "N",
+            "label": "Noche",
+            "type": "NORMAL",
+            "isAbsence": false,
+            "icons": [],
+            "origen": "BASE",
+            "sustituto": null,
+            "titular_cubierto": null
+          },
+          "2026-05-17": {
+            "code": "N",
+            "label": "Noche",
+            "type": "NORMAL",
+            "isAbsence": false,
+            "icons": [],
+            "origen": "BASE",
+            "sustituto": null,
+            "titular_cubierto": null
+          }
+        }
+      },
+      {
+        "empleado_id": "Isabel Hidalgo",
+        "nombre": "Isabel Hidalgo",
+        "rowType": "operativo",
+        "puestoOrden": 4,
+        "orden": 4,
+        "tipo_personal": "ocasional",
+        "dias": {
+          "2026-05-11": {
+            "code": "—",
+            "label": "—",
+            "type": "NORMAL",
+            "isAbsence": false,
+            "icons": [],
+            "origen": "BASE",
+            "sustituto": null,
+            "titular_cubierto": null
+          },
+          "2026-05-12": {
+            "code": "M",
+            "label": "Mañana",
+            "type": "NORMAL",
+            "isAbsence": false,
+            "icons": [],
+            "origen": "BASE",
+            "sustituto": null,
+            "titular_cubierto": null
+          },
+          "2026-05-13": {
+            "code": "—",
+            "label": "—",
+            "type": "NORMAL",
+            "isAbsence": false,
+            "icons": [],
+            "origen": "BASE",
+            "sustituto": null,
+            "titular_cubierto": null
+          },
+          "2026-05-14": {
+            "code": "—",
+            "label": "—",
+            "type": "NORMAL",
+            "isAbsence": false,
+            "icons": [],
+            "origen": "BASE",
+            "sustituto": null,
+            "titular_cubierto": null
+          },
+          "2026-05-15": {
+            "code": "—",
+            "label": "—",
+            "type": "NORMAL",
+            "isAbsence": false,
+            "icons": [],
+            "origen": "BASE",
+            "sustituto": null,
+            "titular_cubierto": null
+          },
+          "2026-05-16": {
+            "code": "—",
+            "label": "—",
+            "type": "NORMAL",
+            "isAbsence": false,
+            "icons": [],
+            "origen": "BASE",
+            "sustituto": null,
+            "titular_cubierto": null
+          },
+          "2026-05-17": {
+            "code": "—",
+            "label": "—",
+            "type": "NORMAL",
+            "isAbsence": false,
+            "icons": [],
+            "origen": "BASE",
+            "sustituto": null,
+            "titular_cubierto": null
+          }
+        }
+      },
+      {
+        "empleado_id": "Miriam",
+        "nombre": "Miriam",
+        "rowType": "operativo",
+        "puestoOrden": 6,
+        "orden": 6,
+        "tipo_personal": "sustituto",
+        "dias": {
+          "2026-05-11": {
+            "code": "M",
+            "label": "Mañana",
+            "type": "NORMAL",
+            "isAbsence": false,
+            "icons": [],
+            "origen": "BASE",
+            "sustituto": null,
+            "titular_cubierto": "Esther"
+          },
+          "2026-05-12": {
+            "code": "N",
+            "label": "Noche",
+            "type": "NORMAL",
+            "isAbsence": false,
+            "icons": [],
+            "origen": "BASE",
+            "sustituto": null,
+            "titular_cubierto": "Esther"
+          },
+          "2026-05-13": {
+            "code": "N",
+            "label": "Noche",
+            "type": "NORMAL",
+            "isAbsence": false,
+            "icons": [],
+            "origen": "BASE",
+            "sustituto": null,
+            "titular_cubierto": "Esther"
+          },
+          "2026-05-14": {
+            "code": "D",
+            "label": "Descanso",
+            "type": "NORMAL",
+            "isAbsence": false,
+            "icons": [],
+            "origen": "BASE",
+            "sustituto": null,
+            "titular_cubierto": "Esther"
+          },
+          "2026-05-15": {
+            "code": "D",
+            "label": "Descanso",
+            "type": "NORMAL",
+            "isAbsence": false,
+            "icons": [],
+            "origen": "BASE",
+            "sustituto": null,
+            "titular_cubierto": "Esther"
+          },
+          "2026-05-16": {
+            "code": "T",
+            "label": "Tarde",
+            "type": "NORMAL",
+            "isAbsence": false,
+            "icons": [],
+            "origen": "BASE",
+            "sustituto": null,
+            "titular_cubierto": "Esther"
+          },
+          "2026-05-17": {
+            "code": "T",
+            "label": "Tarde",
+            "type": "NORMAL",
+            "isAbsence": false,
+            "icons": [],
+            "origen": "BASE",
+            "sustituto": null,
+            "titular_cubierto": "Esther"
+          }
+        }
+      },
+      {
+        "empleado_id": "Sergio",
+        "nombre": "Sergio",
+        "rowType": "operativo",
+        "puestoOrden": 8,
+        "orden": 8,
+        "tipo_personal": "fijo",
+        "dias": {
+          "2026-05-11": {
+            "code": "T",
+            "label": "Tarde",
+            "type": "NORMAL",
+            "isAbsence": false,
+            "icons": [],
+            "origen": "BASE",
+            "sustituto": null,
+            "titular_cubierto": null
+          },
+          "2026-05-12": {
+            "code": "T",
+            "label": "Tarde",
+            "type": "NORMAL",
+            "isAbsence": false,
+            "icons": [],
+            "origen": "BASE",
+            "sustituto": null,
+            "titular_cubierto": null
+          },
+          "2026-05-13": {
+            "code": "T",
+            "label": "Tarde",
+            "type": "NORMAL",
+            "isAbsence": false,
+            "icons": [],
+            "origen": "BASE",
+            "sustituto": null,
+            "titular_cubierto": null
+          },
+          "2026-05-14": {
+            "code": "T",
+            "label": "Tarde",
+            "type": "NORMAL",
+            "isAbsence": false,
+            "icons": [],
+            "origen": "BASE",
+            "sustituto": null,
+            "titular_cubierto": null
+          },
+          "2026-05-15": {
+            "code": "T",
+            "label": "Tarde",
+            "type": "NORMAL",
+            "isAbsence": false,
+            "icons": [],
+            "origen": "BASE",
+            "sustituto": null,
+            "titular_cubierto": null
+          },
+          "2026-05-16": {
+            "code": "D",
+            "label": "Descanso",
+            "type": "NORMAL",
+            "isAbsence": false,
+            "icons": [],
+            "origen": "BASE",
+            "sustituto": null,
+            "titular_cubierto": null
+          },
+          "2026-05-17": {
+            "code": "D",
+            "label": "Descanso",
+            "type": "NORMAL",
+            "isAbsence": false,
+            "icons": [],
+            "origen": "BASE",
+            "sustituto": null,
+            "titular_cubierto": null
+          }
+        }
+      },
+      {
+        "empleado_id": "Esther",
+        "nombre": "Esther",
+        "rowType": "ausencia_informativa",
+        "puestoOrden": 50,
+        "orden": 50,
+        "tipo_personal": "fijo",
+        "dias": {
+          "2026-05-11": {
+            "code": "VAC",
+            "label": "Vacaciones",
+            "type": "VAC",
+            "isAbsence": true,
+            "icons": [],
+            "origen": "BASE",
+            "sustituto": null,
+            "titular_cubierto": null
+          },
+          "2026-05-12": {
+            "code": "VAC",
+            "label": "Vacaciones",
+            "type": "VAC",
+            "isAbsence": true,
+            "icons": [],
+            "origen": "BASE",
+            "sustituto": null,
+            "titular_cubierto": null
+          },
+          "2026-05-13": {
+            "code": "VAC",
+            "label": "Vacaciones",
+            "type": "VAC",
+            "isAbsence": true,
+            "icons": [],
+            "origen": "BASE",
+            "sustituto": null,
+            "titular_cubierto": null
+          },
+          "2026-05-14": {
+            "code": "VAC",
+            "label": "Vacaciones",
+            "type": "VAC",
+            "isAbsence": true,
+            "icons": [],
+            "origen": "BASE",
+            "sustituto": null,
+            "titular_cubierto": null
+          },
+          "2026-05-15": {
+            "code": "VAC",
+            "label": "Vacaciones",
+            "type": "VAC",
+            "isAbsence": true,
+            "icons": [],
+            "origen": "BASE",
+            "sustituto": null,
+            "titular_cubierto": null
+          },
+          "2026-05-16": {
+            "code": "VAC",
+            "label": "Vacaciones",
+            "type": "VAC",
+            "isAbsence": true,
+            "icons": [],
+            "origen": "BASE",
+            "sustituto": null,
+            "titular_cubierto": null
+          },
+          "2026-05-17": {
+            "code": "VAC",
+            "label": "Vacaciones",
+            "type": "VAC",
+            "isAbsence": true,
+            "icons": [],
+            "origen": "BASE",
+            "sustituto": null,
+            "titular_cubierto": null
+          }
+        }
+      }
+    ],
+    "metadata": {
+      "version_builder": "V12.1-node",
+      "published_at": "2026-04-28T22:33:34.738Z",
+      "titular_ausente": "Esther",
+      "sustituta": "Miriam"
+    }
+  },
+  "2026-05-18": {
+    "hotel": "Cumbria Spa&Hotel",
+    "semana_inicio": "2026-05-18",
+    "semana_fin": "2026-05-24",
+    "empleados": [
+      {
+        "empleado_id": "Cristina",
+        "nombre": "Cristina",
+        "rowType": "operativo",
+        "puestoOrden": 2,
+        "orden": 2,
+        "tipo_personal": "fijo",
+        "dias": {
+          "2026-05-18": {
+            "code": "M",
+            "label": "Mañana",
+            "type": "NORMAL",
+            "isAbsence": false,
+            "icons": [],
+            "origen": "BASE",
+            "sustituto": null,
+            "titular_cubierto": null
+          },
+          "2026-05-19": {
+            "code": "N",
+            "label": "Noche",
+            "type": "NORMAL",
+            "isAbsence": false,
+            "icons": [],
+            "origen": "BASE",
+            "sustituto": null,
+            "titular_cubierto": null
+          },
+          "2026-05-20": {
+            "code": "N",
+            "label": "Noche",
+            "type": "NORMAL",
+            "isAbsence": false,
+            "icons": [],
+            "origen": "BASE",
+            "sustituto": null,
+            "titular_cubierto": null
+          },
+          "2026-05-21": {
+            "code": "D",
+            "label": "Descanso",
+            "type": "NORMAL",
+            "isAbsence": false,
+            "icons": [],
+            "origen": "BASE",
+            "sustituto": null,
+            "titular_cubierto": null
+          },
+          "2026-05-22": {
+            "code": "D",
+            "label": "Descanso",
+            "type": "NORMAL",
+            "isAbsence": false,
+            "icons": [],
+            "origen": "BASE",
+            "sustituto": null,
+            "titular_cubierto": null
+          },
+          "2026-05-23": {
+            "code": "T",
+            "label": "Tarde",
+            "type": "NORMAL",
+            "isAbsence": false,
+            "icons": [],
+            "origen": "BASE",
+            "sustituto": null,
+            "titular_cubierto": null
+          },
+          "2026-05-24": {
+            "code": "T",
+            "label": "Tarde",
+            "type": "NORMAL",
+            "isAbsence": false,
+            "icons": [],
+            "origen": "BASE",
+            "sustituto": null,
+            "titular_cubierto": null
+          }
+        }
+      },
+      {
+        "empleado_id": "Valentín",
+        "nombre": "Valentín",
+        "rowType": "operativo",
+        "puestoOrden": 3,
+        "orden": 3,
+        "tipo_personal": "fijo",
+        "dias": {
+          "2026-05-18": {
+            "code": "N",
+            "label": "Noche",
+            "type": "NORMAL",
+            "isAbsence": false,
+            "icons": [],
+            "origen": "BASE",
+            "sustituto": null,
+            "titular_cubierto": null
+          },
+          "2026-05-19": {
+            "code": "D",
+            "label": "Descanso",
+            "type": "NORMAL",
+            "isAbsence": false,
+            "icons": [],
+            "origen": "BASE",
+            "sustituto": null,
+            "titular_cubierto": null
+          },
+          "2026-05-20": {
+            "code": "D",
+            "label": "Descanso",
+            "type": "NORMAL",
+            "isAbsence": false,
+            "icons": [],
+            "origen": "BASE",
+            "sustituto": null,
+            "titular_cubierto": null
+          },
+          "2026-05-21": {
+            "code": "N",
+            "label": "Noche",
+            "type": "NORMAL",
+            "isAbsence": false,
+            "icons": [],
+            "origen": "BASE",
+            "sustituto": null,
+            "titular_cubierto": null
+          },
+          "2026-05-22": {
+            "code": "N",
+            "label": "Noche",
+            "type": "NORMAL",
+            "isAbsence": false,
+            "icons": [],
+            "origen": "BASE",
+            "sustituto": null,
+            "titular_cubierto": null
+          },
+          "2026-05-23": {
+            "code": "N",
+            "label": "Noche",
+            "type": "NORMAL",
+            "isAbsence": false,
+            "icons": [],
+            "origen": "BASE",
+            "sustituto": null,
+            "titular_cubierto": null
+          },
+          "2026-05-24": {
+            "code": "N",
+            "label": "Noche",
+            "type": "NORMAL",
+            "isAbsence": false,
+            "icons": [],
+            "origen": "BASE",
+            "sustituto": null,
+            "titular_cubierto": null
+          }
+        }
+      },
+      {
+        "empleado_id": "Isabel Hidalgo",
+        "nombre": "Isabel Hidalgo",
+        "rowType": "operativo",
+        "puestoOrden": 4,
+        "orden": 4,
+        "tipo_personal": "ocasional",
+        "dias": {
+          "2026-05-18": {
+            "code": "—",
+            "label": "—",
+            "type": "NORMAL",
+            "isAbsence": false,
+            "icons": [],
+            "origen": "BASE",
+            "sustituto": null,
+            "titular_cubierto": null
+          },
+          "2026-05-19": {
+            "code": "M",
+            "label": "Mañana",
+            "type": "NORMAL",
+            "isAbsence": false,
+            "icons": [],
+            "origen": "BASE",
+            "sustituto": null,
+            "titular_cubierto": null
+          },
+          "2026-05-20": {
+            "code": "—",
+            "label": "—",
+            "type": "NORMAL",
+            "isAbsence": false,
+            "icons": [],
+            "origen": "BASE",
+            "sustituto": null,
+            "titular_cubierto": null
+          },
+          "2026-05-21": {
+            "code": "—",
+            "label": "—",
+            "type": "NORMAL",
+            "isAbsence": false,
+            "icons": [],
+            "origen": "BASE",
+            "sustituto": null,
+            "titular_cubierto": null
+          },
+          "2026-05-22": {
+            "code": "—",
+            "label": "—",
+            "type": "NORMAL",
+            "isAbsence": false,
+            "icons": [],
+            "origen": "BASE",
+            "sustituto": null,
+            "titular_cubierto": null
+          },
+          "2026-05-23": {
+            "code": "—",
+            "label": "—",
+            "type": "NORMAL",
+            "isAbsence": false,
+            "icons": [],
+            "origen": "BASE",
+            "sustituto": null,
+            "titular_cubierto": null
+          },
+          "2026-05-24": {
+            "code": "—",
+            "label": "—",
+            "type": "NORMAL",
+            "isAbsence": false,
+            "icons": [],
+            "origen": "BASE",
+            "sustituto": null,
+            "titular_cubierto": null
+          }
+        }
+      },
+      {
+        "empleado_id": "Miriam",
+        "nombre": "Miriam",
+        "rowType": "operativo",
+        "puestoOrden": 6,
+        "orden": 6,
+        "tipo_personal": "sustituto",
+        "dias": {
+          "2026-05-18": {
+            "code": "T",
+            "label": "Tarde",
+            "type": "NORMAL",
+            "isAbsence": false,
+            "icons": [],
+            "origen": "BASE",
+            "sustituto": null,
+            "titular_cubierto": "Esther"
+          },
+          "2026-05-19": {
+            "code": "T",
+            "label": "Tarde",
+            "type": "NORMAL",
+            "isAbsence": false,
+            "icons": [],
+            "origen": "BASE",
+            "sustituto": null,
+            "titular_cubierto": "Esther"
+          },
+          "2026-05-20": {
+            "code": "T",
+            "label": "Tarde",
+            "type": "NORMAL",
+            "isAbsence": false,
+            "icons": [],
+            "origen": "BASE",
+            "sustituto": null,
+            "titular_cubierto": "Esther"
+          },
+          "2026-05-21": {
+            "code": "T",
+            "label": "Tarde",
+            "type": "NORMAL",
+            "isAbsence": false,
+            "icons": [],
+            "origen": "BASE",
+            "sustituto": null,
+            "titular_cubierto": "Esther"
+          },
+          "2026-05-22": {
+            "code": "T",
+            "label": "Tarde",
+            "type": "NORMAL",
+            "isAbsence": false,
+            "icons": [],
+            "origen": "BASE",
+            "sustituto": null,
+            "titular_cubierto": "Esther"
+          },
+          "2026-05-23": {
+            "code": "D",
+            "label": "Descanso",
+            "type": "NORMAL",
+            "isAbsence": false,
+            "icons": [],
+            "origen": "BASE",
+            "sustituto": null,
+            "titular_cubierto": "Esther"
+          },
+          "2026-05-24": {
+            "code": "D",
+            "label": "Descanso",
+            "type": "NORMAL",
+            "isAbsence": false,
+            "icons": [],
+            "origen": "BASE",
+            "sustituto": null,
+            "titular_cubierto": "Esther"
+          }
+        }
+      },
+      {
+        "empleado_id": "Sergio",
+        "nombre": "Sergio",
+        "rowType": "operativo",
+        "puestoOrden": 8,
+        "orden": 8,
+        "tipo_personal": "fijo",
+        "dias": {
+          "2026-05-18": {
+            "code": "D",
+            "label": "Descanso",
+            "type": "NORMAL",
+            "isAbsence": false,
+            "icons": [],
+            "origen": "BASE",
+            "sustituto": null,
+            "titular_cubierto": null
+          },
+          "2026-05-19": {
+            "code": "D",
+            "label": "Descanso",
+            "type": "NORMAL",
+            "isAbsence": false,
+            "icons": [],
+            "origen": "BASE",
+            "sustituto": null,
+            "titular_cubierto": null
+          },
+          "2026-05-20": {
+            "code": "M",
+            "label": "Mañana",
+            "type": "NORMAL",
+            "isAbsence": false,
+            "icons": [],
+            "origen": "BASE",
+            "sustituto": null,
+            "titular_cubierto": null
+          },
+          "2026-05-21": {
+            "code": "M",
+            "label": "Mañana",
+            "type": "NORMAL",
+            "isAbsence": false,
+            "icons": [],
+            "origen": "BASE",
+            "sustituto": null,
+            "titular_cubierto": null
+          },
+          "2026-05-22": {
+            "code": "M",
+            "label": "Mañana",
+            "type": "NORMAL",
+            "isAbsence": false,
+            "icons": [],
+            "origen": "BASE",
+            "sustituto": null,
+            "titular_cubierto": null
+          },
+          "2026-05-23": {
+            "code": "M",
+            "label": "Mañana",
+            "type": "NORMAL",
+            "isAbsence": false,
+            "icons": [],
+            "origen": "BASE",
+            "sustituto": null,
+            "titular_cubierto": null
+          },
+          "2026-05-24": {
+            "code": "M",
+            "label": "Mañana",
+            "type": "NORMAL",
+            "isAbsence": false,
+            "icons": [],
+            "origen": "BASE",
+            "sustituto": null,
+            "titular_cubierto": null
+          }
+        }
+      },
+      {
+        "empleado_id": "Esther",
+        "nombre": "Esther",
+        "rowType": "ausencia_informativa",
+        "puestoOrden": 50,
+        "orden": 50,
+        "tipo_personal": "fijo",
+        "dias": {
+          "2026-05-18": {
+            "code": "VAC",
+            "label": "Vacaciones",
+            "type": "VAC",
+            "isAbsence": true,
+            "icons": [],
+            "origen": "BASE",
+            "sustituto": null,
+            "titular_cubierto": null
+          },
+          "2026-05-19": {
+            "code": "VAC",
+            "label": "Vacaciones",
+            "type": "VAC",
+            "isAbsence": true,
+            "icons": [],
+            "origen": "BASE",
+            "sustituto": null,
+            "titular_cubierto": null
+          },
+          "2026-05-20": {
+            "code": "VAC",
+            "label": "Vacaciones",
+            "type": "VAC",
+            "isAbsence": true,
+            "icons": [],
+            "origen": "BASE",
+            "sustituto": null,
+            "titular_cubierto": null
+          },
+          "2026-05-21": {
+            "code": "VAC",
+            "label": "Vacaciones",
+            "type": "VAC",
+            "isAbsence": true,
+            "icons": [],
+            "origen": "BASE",
+            "sustituto": null,
+            "titular_cubierto": null
+          },
+          "2026-05-22": {
+            "code": "VAC",
+            "label": "Vacaciones",
+            "type": "VAC",
+            "isAbsence": true,
+            "icons": [],
+            "origen": "BASE",
+            "sustituto": null,
+            "titular_cubierto": null
+          },
+          "2026-05-23": {
+            "code": "VAC",
+            "label": "Vacaciones",
+            "type": "VAC",
+            "isAbsence": true,
+            "icons": [],
+            "origen": "BASE",
+            "sustituto": null,
+            "titular_cubierto": null
+          },
+          "2026-05-24": {
+            "code": "VAC",
+            "label": "Vacaciones",
+            "type": "VAC",
+            "isAbsence": true,
+            "icons": [],
+            "origen": "BASE",
+            "sustituto": null,
+            "titular_cubierto": null
+          }
+        }
+      }
+    ],
+    "metadata": {
+      "version_builder": "V12.1-node",
+      "published_at": "2026-04-28T22:33:34.979Z",
+      "titular_ausente": "Esther",
+      "sustituta": "Miriam"
+    }
+  },
+  "2026-05-25": {
+    "hotel": "Cumbria Spa&Hotel",
+    "semana_inicio": "2026-05-25",
+    "semana_fin": "2026-05-31",
+    "empleados": [
+      {
+        "empleado_id": "Miriam",
+        "nombre": "Miriam",
+        "rowType": "operativo",
+        "puestoOrden": 2,
+        "orden": 2,
+        "tipo_personal": "sustituto",
+        "dias": {
+          "2026-05-25": {
+            "code": "T",
+            "label": "Tarde",
+            "type": "NORMAL",
+            "isAbsence": false,
+            "icons": [],
+            "origen": "BASE",
+            "sustituto": null,
+            "titular_cubierto": "Cristina"
+          },
+          "2026-05-26": {
+            "code": "D",
+            "label": "Descanso",
+            "type": "NORMAL",
+            "isAbsence": false,
+            "icons": [],
+            "origen": "BASE",
+            "sustituto": null,
+            "titular_cubierto": "Cristina"
+          },
+          "2026-05-27": {
+            "code": "D",
+            "label": "Descanso",
+            "type": "NORMAL",
+            "isAbsence": false,
+            "icons": [],
+            "origen": "BASE",
+            "sustituto": null,
+            "titular_cubierto": "Cristina"
+          },
+          "2026-05-28": {
+            "code": "T",
+            "label": "Tarde",
+            "type": "NORMAL",
+            "isAbsence": false,
+            "icons": [],
+            "origen": "BASE",
+            "sustituto": null,
+            "titular_cubierto": "Cristina"
+          },
+          "2026-05-29": {
+            "code": "T",
+            "label": "Tarde",
+            "type": "NORMAL",
+            "isAbsence": false,
+            "icons": [],
+            "origen": "BASE",
+            "sustituto": null,
+            "titular_cubierto": "Cristina"
+          },
+          "2026-05-30": {
+            "code": "N",
+            "label": "Noche",
+            "type": "NORMAL",
+            "isAbsence": false,
+            "icons": [],
+            "origen": "BASE",
+            "sustituto": null,
+            "titular_cubierto": "Cristina"
+          },
+          "2026-05-31": {
+            "code": "N",
+            "label": "Noche",
+            "type": "NORMAL",
+            "isAbsence": false,
+            "icons": [],
+            "origen": "BASE",
+            "sustituto": null,
+            "titular_cubierto": "Cristina"
+          }
+        }
+      },
+      {
+        "empleado_id": "Valentín",
+        "nombre": "Valentín",
+        "rowType": "operativo",
+        "puestoOrden": 3,
+        "orden": 3,
+        "tipo_personal": "fijo",
+        "dias": {
+          "2026-05-25": {
+            "code": "N",
+            "label": "Noche",
+            "type": "NORMAL",
+            "isAbsence": false,
+            "icons": [],
+            "origen": "BASE",
+            "sustituto": null,
+            "titular_cubierto": null
+          },
+          "2026-05-26": {
+            "code": "N",
+            "label": "Noche",
+            "type": "NORMAL",
+            "isAbsence": false,
+            "icons": [],
+            "origen": "BASE",
+            "sustituto": null,
+            "titular_cubierto": null
+          },
+          "2026-05-27": {
+            "code": "N",
+            "label": "Noche",
+            "type": "NORMAL",
+            "isAbsence": false,
+            "icons": [],
+            "origen": "BASE",
+            "sustituto": null,
+            "titular_cubierto": null
+          },
+          "2026-05-28": {
+            "code": "N",
+            "label": "Noche",
+            "type": "NORMAL",
+            "isAbsence": false,
+            "icons": [],
+            "origen": "BASE",
+            "sustituto": null,
+            "titular_cubierto": null
+          },
+          "2026-05-29": {
+            "code": "N",
+            "label": "Noche",
+            "type": "NORMAL",
+            "isAbsence": false,
+            "icons": [],
+            "origen": "BASE",
+            "sustituto": null,
+            "titular_cubierto": null
+          },
+          "2026-05-30": {
+            "code": "D",
+            "label": "Descanso",
+            "type": "NORMAL",
+            "isAbsence": false,
+            "icons": [],
+            "origen": "BASE",
+            "sustituto": null,
+            "titular_cubierto": null
+          },
+          "2026-05-31": {
+            "code": "D",
+            "label": "Descanso",
+            "type": "NORMAL",
+            "isAbsence": false,
+            "icons": [],
+            "origen": "BASE",
+            "sustituto": null,
+            "titular_cubierto": null
+          }
+        }
+      },
+      {
+        "empleado_id": "Isabel Hidalgo",
+        "nombre": "Isabel Hidalgo",
+        "rowType": "operativo",
+        "puestoOrden": 4,
+        "orden": 4,
+        "tipo_personal": "ocasional",
+        "dias": {
+          "2026-05-25": {
+            "code": "—",
+            "label": "—",
+            "type": "NORMAL",
+            "isAbsence": false,
+            "icons": [],
+            "origen": "BASE",
+            "sustituto": null,
+            "titular_cubierto": null
+          },
+          "2026-05-26": {
+            "code": "M",
+            "label": "Mañana",
+            "type": "NORMAL",
+            "isAbsence": false,
+            "icons": [],
+            "origen": "BASE",
+            "sustituto": null,
+            "titular_cubierto": null
+          },
+          "2026-05-27": {
+            "code": "—",
+            "label": "—",
+            "type": "NORMAL",
+            "isAbsence": false,
+            "icons": [],
+            "origen": "BASE",
+            "sustituto": null,
+            "titular_cubierto": null
+          },
+          "2026-05-28": {
+            "code": "—",
+            "label": "—",
+            "type": "NORMAL",
+            "isAbsence": false,
+            "icons": [],
+            "origen": "BASE",
+            "sustituto": null,
+            "titular_cubierto": null
+          },
+          "2026-05-29": {
+            "code": "—",
+            "label": "—",
+            "type": "NORMAL",
+            "isAbsence": false,
+            "icons": [],
+            "origen": "BASE",
+            "sustituto": null,
+            "titular_cubierto": null
+          },
+          "2026-05-30": {
+            "code": "—",
+            "label": "—",
+            "type": "NORMAL",
+            "isAbsence": false,
+            "icons": [],
+            "origen": "BASE",
+            "sustituto": null,
+            "titular_cubierto": null
+          },
+          "2026-05-31": {
+            "code": "—",
+            "label": "—",
+            "type": "NORMAL",
+            "isAbsence": false,
+            "icons": [],
+            "origen": "BASE",
+            "sustituto": null,
+            "titular_cubierto": null
+          }
+        }
+      },
+      {
+        "empleado_id": "Esther",
+        "nombre": "Esther",
+        "rowType": "operativo",
+        "puestoOrden": 6,
+        "orden": 6,
+        "tipo_personal": "fijo",
+        "dias": {
+          "2026-05-25": {
+            "code": "D",
+            "label": "Descanso",
+            "type": "NORMAL",
+            "isAbsence": false,
+            "icons": [],
+            "origen": "BASE",
+            "sustituto": null,
+            "titular_cubierto": null
+          },
+          "2026-05-26": {
+            "code": "D",
+            "label": "Descanso",
+            "type": "NORMAL",
+            "isAbsence": false,
+            "icons": [],
+            "origen": "BASE",
+            "sustituto": null,
+            "titular_cubierto": null
+          },
+          "2026-05-27": {
+            "code": "M",
+            "label": "Mañana",
+            "type": "NORMAL",
+            "isAbsence": false,
+            "icons": [],
+            "origen": "BASE",
+            "sustituto": null,
+            "titular_cubierto": null
+          },
+          "2026-05-28": {
+            "code": "M",
+            "label": "Mañana",
+            "type": "NORMAL",
+            "isAbsence": false,
+            "icons": [],
+            "origen": "BASE",
+            "sustituto": null,
+            "titular_cubierto": null
+          },
+          "2026-05-29": {
+            "code": "M",
+            "label": "Mañana",
+            "type": "NORMAL",
+            "isAbsence": false,
+            "icons": [],
+            "origen": "BASE",
+            "sustituto": null,
+            "titular_cubierto": null
+          },
+          "2026-05-30": {
+            "code": "M",
+            "label": "Mañana",
+            "type": "NORMAL",
+            "isAbsence": false,
+            "icons": [],
+            "origen": "BASE",
+            "sustituto": null,
+            "titular_cubierto": null
+          },
+          "2026-05-31": {
+            "code": "M",
+            "label": "Mañana",
+            "type": "NORMAL",
+            "isAbsence": false,
+            "icons": [],
+            "origen": "BASE",
+            "sustituto": null,
+            "titular_cubierto": null
+          }
+        }
+      },
+      {
+        "empleado_id": "Sergio",
+        "nombre": "Sergio",
+        "rowType": "operativo",
+        "puestoOrden": 8,
+        "orden": 8,
+        "tipo_personal": "fijo",
+        "dias": {
+          "2026-05-25": {
+            "code": "M",
+            "label": "Mañana",
+            "type": "NORMAL",
+            "isAbsence": false,
+            "icons": [],
+            "origen": "BASE",
+            "sustituto": null,
+            "titular_cubierto": null
+          },
+          "2026-05-26": {
+            "code": "T",
+            "label": "Tarde",
+            "type": "NORMAL",
+            "isAbsence": false,
+            "icons": [],
+            "origen": "BASE",
+            "sustituto": null,
+            "titular_cubierto": null
+          },
+          "2026-05-27": {
+            "code": "T",
+            "label": "Tarde",
+            "type": "NORMAL",
+            "isAbsence": false,
+            "icons": [],
+            "origen": "BASE",
+            "sustituto": null,
+            "titular_cubierto": null
+          },
+          "2026-05-28": {
+            "code": "D",
+            "label": "Descanso",
+            "type": "NORMAL",
+            "isAbsence": false,
+            "icons": [],
+            "origen": "BASE",
+            "sustituto": null,
+            "titular_cubierto": null
+          },
+          "2026-05-29": {
+            "code": "D",
+            "label": "Descanso",
+            "type": "NORMAL",
+            "isAbsence": false,
+            "icons": [],
+            "origen": "BASE",
+            "sustituto": null,
+            "titular_cubierto": null
+          },
+          "2026-05-30": {
+            "code": "T",
+            "label": "Tarde",
+            "type": "NORMAL",
+            "isAbsence": false,
+            "icons": [],
+            "origen": "BASE",
+            "sustituto": null,
+            "titular_cubierto": null
+          },
+          "2026-05-31": {
+            "code": "T",
+            "label": "Tarde",
+            "type": "NORMAL",
+            "isAbsence": false,
+            "icons": [],
+            "origen": "BASE",
+            "sustituto": null,
+            "titular_cubierto": null
+          }
+        }
+      },
+      {
+        "empleado_id": "Cristina",
+        "nombre": "Cristina",
+        "rowType": "ausencia_informativa",
+        "puestoOrden": 50,
+        "orden": 50,
+        "tipo_personal": "fijo",
+        "dias": {
+          "2026-05-25": {
+            "code": "VAC",
+            "label": "Vacaciones",
+            "type": "VAC",
+            "isAbsence": true,
+            "icons": [],
+            "origen": "BASE",
+            "sustituto": null,
+            "titular_cubierto": null
+          },
+          "2026-05-26": {
+            "code": "VAC",
+            "label": "Vacaciones",
+            "type": "VAC",
+            "isAbsence": true,
+            "icons": [],
+            "origen": "BASE",
+            "sustituto": null,
+            "titular_cubierto": null
+          },
+          "2026-05-27": {
+            "code": "VAC",
+            "label": "Vacaciones",
+            "type": "VAC",
+            "isAbsence": true,
+            "icons": [],
+            "origen": "BASE",
+            "sustituto": null,
+            "titular_cubierto": null
+          },
+          "2026-05-28": {
+            "code": "VAC",
+            "label": "Vacaciones",
+            "type": "VAC",
+            "isAbsence": true,
+            "icons": [],
+            "origen": "BASE",
+            "sustituto": null,
+            "titular_cubierto": null
+          },
+          "2026-05-29": {
+            "code": "VAC",
+            "label": "Vacaciones",
+            "type": "VAC",
+            "isAbsence": true,
+            "icons": [],
+            "origen": "BASE",
+            "sustituto": null,
+            "titular_cubierto": null
+          },
+          "2026-05-30": {
+            "code": "VAC",
+            "label": "Vacaciones",
+            "type": "VAC",
+            "isAbsence": true,
+            "icons": [],
+            "origen": "BASE",
+            "sustituto": null,
+            "titular_cubierto": null
+          },
+          "2026-05-31": {
+            "code": "VAC",
+            "label": "Vacaciones",
+            "type": "VAC",
+            "isAbsence": true,
+            "icons": [],
+            "origen": "BASE",
+            "sustituto": null,
+            "titular_cubierto": null
+          }
+        }
+      }
+    ],
+    "metadata": {
+      "version_builder": "V12.1-node",
+      "published_at": "2026-04-28T22:33:35.211Z",
+      "titular_ausente": "Cristina",
+      "sustituta": "Miriam"
+    }
+  }
+}
