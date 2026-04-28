@@ -63,6 +63,7 @@
   const dateRangeLabel = $("#dateRangeLabel");
   const headerHotel = $("#headerHotel");
   let orientationRefreshTimer = null;
+  let lastViewportSignature = "";
 
   function escapeHtml(value) {
     return String(value ?? "").replace(/[&<>"']/g, ch => ({
@@ -100,6 +101,21 @@
         window.refreshMobileView();
       }
     }, 120);
+  }
+
+  function getViewportSignature() {
+    const vv = window.visualViewport;
+    const width = vv ? Math.round(vv.width) : window.innerWidth;
+    const height = vv ? Math.round(vv.height) : window.innerHeight;
+    const orientation = width > height ? "landscape" : "portrait";
+    return `${width}x${height}:${orientation}`;
+  }
+
+  function watchViewportRotation() {
+    const nextSignature = getViewportSignature();
+    if (nextSignature === lastViewportSignature) return;
+    lastViewportSignature = nextSignature;
+    scheduleOrientationRefresh();
   }
 
   function renderEmptyState(message, detail = "") {
@@ -392,14 +408,28 @@
   if (window.screen && window.screen.orientation && typeof window.screen.orientation.addEventListener === "function") {
     window.screen.orientation.addEventListener("change", scheduleOrientationRefresh);
   }
+  if (window.matchMedia) {
+    const landscapeMq = window.matchMedia("(orientation: landscape)");
+    if (typeof landscapeMq.addEventListener === "function") {
+      landscapeMq.addEventListener("change", scheduleOrientationRefresh);
+    } else if (typeof landscapeMq.addListener === "function") {
+      landscapeMq.addListener(scheduleOrientationRefresh);
+    }
+  }
   window.addEventListener("orientationchange", scheduleOrientationRefresh);
   window.addEventListener("resize", scheduleOrientationRefresh);
+  window.addEventListener("pageshow", scheduleOrientationRefresh);
+  document.addEventListener("visibilitychange", () => {
+    if (!document.hidden) scheduleOrientationRefresh();
+  });
   if (window.visualViewport && typeof window.visualViewport.addEventListener === "function") {
     window.visualViewport.addEventListener("resize", scheduleOrientationRefresh);
   }
+  window.setInterval(watchViewportRotation, 500);
 
   window.initMobileSunc = async function() {
     applyOrientationMode();
+    lastViewportSignature = getViewportSignature();
     await window.refreshMobileView();
   };
 })();
