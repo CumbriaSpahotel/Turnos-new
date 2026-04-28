@@ -1292,8 +1292,8 @@
     }
 
     body.is-portrait .app-viewport {
-      width: min(100vw - 12px, 560px);
-      max-width: 560px;
+      width: min(100vw - 12px, 560px) !important;
+      max-width: 560px !important;
     }
 
     body.is-portrait .date-shell {
@@ -1301,9 +1301,9 @@
     }
 
     body.is-landscape .app-viewport {
-      width: min(100vw - 24px, 820px);
-      max-width: 820px;
-      padding-top: max(8px, env(safe-area-inset-top));
+      width: min(100vw - 24px, 820px) !important;
+      max-width: 820px !important;
+      padding-top: max(8px, env(safe-area-inset-top)) !important;
     }
 
     body.is-landscape header.hotel-selected {

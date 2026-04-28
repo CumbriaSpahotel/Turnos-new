@@ -91,10 +91,27 @@
     return { width, height };
   }
 
+  function detectLandscape(width, height) {
+    const screenOrientation = window.screen && window.screen.orientation && typeof window.screen.orientation.type === "string"
+      ? window.screen.orientation.type
+      : "";
+    if (screenOrientation.includes("landscape")) return true;
+    if (screenOrientation.includes("portrait")) return false;
+
+    if (typeof window.orientation === "number") {
+      const angle = Math.abs(window.orientation);
+      if (angle === 90) return true;
+      if (angle === 0 || angle === 180) return false;
+    }
+
+    if (width >= 700) return true;
+    return width > height;
+  }
+
   function applyOrientationMode() {
     if (!document.body) return { isLandscape: false, width: window.innerWidth, height: window.innerHeight };
     const { width, height } = getViewportMetrics();
-    const isLandscape = width > height;
+    const isLandscape = detectLandscape(width, height);
     document.body.classList.toggle("is-landscape", isLandscape);
     document.body.classList.toggle("is-portrait", !isLandscape);
     document.body.classList.toggle("is-narrow", width <= 430);
