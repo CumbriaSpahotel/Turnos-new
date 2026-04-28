@@ -1,12 +1,23 @@
 {
-  "name": "Cuadrantes de turnos",
+  "name": "Turnos Cumbria & Guadiana",
   "short_name": "Turnos",
+  "description": "Sistema de gestión de turnos para hoteles",
   "start_url": "live.mobile.html",
   "display": "standalone",
-  "background_color": "#121417",
-  "theme_color": "#121417",
+  "background_color": "#1a1d21",
+  "theme_color": "#1a1d21",
+  "orientation": "portrait",
   "icons": [
-    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
-    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png" }
+    {
+      "src": "favicon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "Logo.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    }
   ]
 }

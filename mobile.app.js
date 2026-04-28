@@ -137,6 +137,12 @@
     }[ch]));
   }
 
+  // Mapa de hoteles para vincular selector y datos internos
+  const HOTEL_MAP = {
+    "cumbria":  { dataName: "CUMBRIA SPA&HOTEL", label: "Hotel Cumbria" },
+    "guadiana": { dataName: "SERCOTEL GUADIANA",  label: "Sercotel Guadiana" }
+  };
+
   window.refreshMobileView = async function() {
     if (!dateInput.value) {
         dateInput.value = toISODateUTC(mondayOf(new Date()));
@@ -145,31 +151,57 @@
     const dEnd = new Date(startIso + "T12:00:00");
     dEnd.setDate(dEnd.getDate() + 6);
     const endIso = toISODateUTC(dEnd);
+
+    // Actualizar etiqueta del selector con el nombre amigable
+    const selectedId = hotelSelect.value;
+    const hotelInfo = HOTEL_MAP[selectedId];
+    if (hotelSelect.options[0]) {
+        hotelSelect.options[0].text = hotelInfo ? `🏨 ${hotelInfo.label}` : "🏨 SELECCIONAR HOTEL";
+    }
+
     shiftGrid.innerHTML = `<div style="padding:40px; text-align:center; opacity:0.5; font-weight:700;">Cargando publicación...</div>`;
+    
     try {
         const result = await window.TurnosDB.loadPublishedSchedule({
             semanaInicio: startIso,
             semanaFin: endIso,
-            hotel: hotelSelect.value || null
+            hotel: hotelInfo ? hotelInfo.dataName : null
         });
+
         if (!result.ok) {
             shiftGrid.innerHTML = `<div style="padding:40px; text-align:center; opacity:0.6; color:var(--muted); font-weight:600;"><div style="font-size:2.5rem; margin-bottom:10px;">📅</div>${result.message}</div>`;
             return;
         }
-        const hotelVal = hotelSelect.value || "";
+
         shiftGrid.innerHTML = "";
         for (const snap of result.snapshots) {
-            if (hotelVal && snap.hotel !== hotelVal) continue;
+            if (hotelInfo) {
+                // Normalización para evitar fallos por mayúsculas o espacios
+                const normSnap = (snap.hotel || "").trim().toUpperCase();
+                const normTarget = hotelInfo.dataName.trim().toUpperCase();
+                if (normSnap !== normTarget) continue;
+            }
             await renderSnapshotTable(snap.hotel, snap.data, shiftGrid);
         }
+
         if (shiftGrid.innerHTML === "") {
-            shiftGrid.innerHTML = `<div style="padding:40px; text-align:center; opacity:0.5; color:var(--muted);">No hay cuadrantes publicados para los filtros seleccionados.</div>`;
+            const msg = hotelInfo 
+                ? `No hay turnos cargados para ${hotelInfo.label} en esta semana.`
+                : "No hay cuadrantes publicados para esta semana.";
+            shiftGrid.innerHTML = `<div style="padding:40px; text-align:center; opacity:0.5; color:var(--muted); font-weight:600;">${msg}</div>`;
         }
     } catch(e) { 
         console.error("Error en vista móvil:", e);
-        shiftGrid.innerHTML = `<div style="padding:40px; text-align:center; color:#ef4444;">Error de conexión. Reintente.</div>`;
+        shiftGrid.innerHTML = `<div style="padding:40px; text-align:center; color:#ef4444; font-weight:700;">Error de conexión. Por favor, reintente.</div>`;
     }
   };
+
+  function formatShiftText(text) {
+    if (!text) return "";
+    // Regex para detectar emojis comunes en los turnos
+    const emojiRegex = /([\u{1F300}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}])/gu;
+    return escapeHtml(text).replace(emojiRegex, '<span class="emoji-indicator">$1</span>');
+  }
 
   async function renderSnapshotTable(hotel, snapshotData, container) {
     const empleados = snapshotData.empleados || [];
@@ -181,44 +213,39 @@
         curr.setUTCDate(curr.getUTCDate() + 1);
     }
     const section = document.createElement("div");
-    section.className = "hotel-card";
+    section.className = "hotel-group";
     section.innerHTML = `
-        <div class="hotel-info">
-            <img src="${escapeHtml(logoFor(hotel))}" alt="">
-            <h2>${escapeHtml(hotel)}</h2>
+        <div class="hotel-header">
+            <h2 class="hotel-name">${escapeHtml(hotel)}</h2>
         </div>
-        <div class="table-wrapper">
+        <div class="grid-table">
             <div class="grid-head">
-                <div class="grid-th th-emp" style="font-size:0.7rem; color:var(--muted); text-transform:uppercase;">EMPLEADO</div>
-                ${dates.map((d, i) => {
-                    const dayObj = new Date(d + 'T12:00:00');
-                    const dayLabel = `${dayObj.getUTCDate()}/${monthNames[dayObj.getUTCMonth()]}/${dayObj.getUTCFullYear().toString().slice(-2)}`;
-                    return `<div class="grid-th"><span>${weekdayLong[dayObj.getUTCDay()]}</span><br><span style="opacity:0.6; font-size:0.75rem; font-weight:500;">${dayLabel}</span></div>`;
+                <div class="grid-th th-name">Empleado</div>
+                ${dates.map(f => {
+                    const dObj = new Date(f + 'T12:00:00');
+                    return `<div class="grid-th"><span>${weekdayLong[dObj.getUTCDay()].slice(0,1)}</span></div>`;
                 }).join('')}
             </div>
             <div class="grid-body">
                 ${empleados.sort((a,b) => a.orden - b.orden).map(emp => {
                     const empName = emp.nombre;
                     const daysMap = emp.dias || {};
-                    let n = 0, dCount = 0;
-                    dates.forEach(f => {
-                        const d = daysMap[f] || {};
-                        const c = (d.code || '').toLowerCase();
-                        if (c.startsWith('n')) n++;
-                        if (c.startsWith('d')) dCount++;
-                    });
                     return `
                         <div class="grid-row">
-                            <div class="name-sticky">
-                                <span style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis; color:var(--text); font-family:'Outfit', sans-serif; font-weight:600; font-size:0.8rem; letter-spacing:0.01em;">${escapeHtml(empName)}</span>
+                            <div class="name-cell">
+                                <span class="emp-name">${escapeHtml(empName)}</span>
                             </div>
                             ${dates.map(f => {
                                 const day = daysMap[f] || {};
                                 const display = getPublicCellDisplay(day, { compact: true });
                                 const visual = window.TurnosRules.describeCell(day);
-                                return `<div class="grid-cell" title="${escapeHtml(day.titular_cubierto ? 'Cubriendo a ' + day.titular_cubierto : '')}">
-                                    <span class="badge-shift ${visual.mobileClass}">${escapeHtml(display.text)}</span>
-                                </div>`;
+                                return `
+                                    <div class="grid-cell" title="${escapeHtml(day.titular_cubierto ? 'Cubriendo a ' + day.titular_cubierto : '')}">
+                                        <div class="badge-container">
+                                            <span class="badge-shift ${visual.mobileClass}">${formatShiftText(display.text)}</span>
+                                        </div>
+                                    </div>
+                                `;
                             }).join('')}
                         </div>
                     `;

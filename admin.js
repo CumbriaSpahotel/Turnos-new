@@ -4976,7 +4976,7 @@ window.validatePublishChanges = (changes) => {
         for (const hName of hotelsToProcess) {
             // Intentar recuperar del cache del render actual
             let hotelData = null;
-            if (cache && cache.semana_inicio === weekStart) {
+            if (cache && cache.hoteles && cache.semana_inicio === weekStart && !forceRecalculate) {
                 const found = cache.hoteles.find(h => h.hotel === hName);
                 if (found) hotelData = found.empleados;
             }
@@ -5139,6 +5139,47 @@ window.validatePublishChanges = (changes) => {
                     }
                 });
             });
+
+            // [M] Validación de Cobertura Obligatoria de Eventos
+            // Si existe un evento VAC/BAJA/PERMISO, el snapshot DEBE contenerlo.
+            const events = window.eventosGlobales || [];
+            const weekStart = snap.semana_inicio;
+            const weekEnd = snap.semana_fin;
+
+            events.forEach(ev => {
+                if (ev.estado === 'anulado' || ev.estado === 'rechazado') return;
+                if (ev.hotel_origen !== snap.hotel && ev.hotel_destino !== snap.hotel && ev.payload?.hotel_id !== snap.hotel) return;
+
+                // Intersección con la semana
+                const evStart = ev.fecha_inicio;
+                const evEnd = ev.fecha_fin || ev.fecha_inicio;
+                if (evStart <= weekEnd && evEnd >= weekStart) {
+                    const idNorm = window.normalizeId(ev.empleado_id);
+                    const row = snap.rows.find(r => window.normalizeId(r.empleado_id) === idNorm);
+                    
+                    if (!row) {
+                        // Si el empleado del evento no está en el snapshot, es un error grave de integridad
+                        if (['VAC', 'BAJA', 'PERMISO', 'PERM'].includes(ev.tipo)) {
+                            errors.push(`[BLOQUEO] Evento ${ev.tipo} de ${ev.empleado_id} no existe en el snapshot de ${snap.hotel}`);
+                        }
+                    } else {
+                        // Verificar que los días del evento tengan el código correcto
+                        const dates = Object.keys(row.cells).filter(d => d >= evStart && d <= evEnd && d >= weekStart && d <= weekEnd);
+                        dates.forEach(d => {
+                            const cell = row.cells[d];
+                            const code = cell.code.toUpperCase();
+                            const type = (cell.type || '').toUpperCase();
+                            
+                            const expectedCodes = { 'VAC': 'VAC', 'BAJA': 'BAJA', 'PERMISO': 'PERM', 'PERM': 'PERM' };
+                            const expected = expectedCodes[ev.tipo];
+                            
+                            if (expected && !code.includes(expected) && type !== expected) {
+                                errors.push(`[BLOQUEO] Evento ${ev.tipo} detectado pero no renderizado para ${row.nombreVisible} el ${d} (Visto: "${code}")`);
+                            }
+                        });
+                    }
+                }
+            });
         }
 
         // [B] [E] Duplicados operativos y conflictos de localización
@@ -5256,16 +5297,15 @@ window.publishToSupabase = async () => {
         // --- 3. GENERAR LOG DE AUDITORÍA ---
         await window.TurnosDB.insertLog({
             cambios_totales: flatData.length,
-            empleados_afectados: affectedEmps.size,
-            resumen_json: {
+            resumen: {
+                accion: 'publicar_snapshot_cuadrante',
                 hoteles: Array.from(new Set(changes.map(c => c.hotel))),
                 rango: {
-                    inicio: changes[0].weekStart,
-                    fin: changes[changes.length - 1].weekStart
+                    inicio: changes.length > 0 ? changes[0].weekStart : (weeksAffected[0] || ''),
+                    fin: changes.length > 0 ? changes[changes.length - 1].weekStart : (weeksAffected[0] || '')
                 }
             },
-            cambios_detalle_json: traceabilityDetails,
-            estado: 'ok'
+            cambios_detalle_json: traceabilityDetails
         });
 
         // --- 4. GENERAR Y GUARDAR SNAPSHOTS FINALES (ARQUITECTURA FIJA v12.0) ---

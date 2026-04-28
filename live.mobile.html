@@ -1,48 +1,47 @@
 <!doctype html>
-<html lang="es">
+<html lang="es" class="h-full">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
-  <title>Turnos · Versión Móvil</title>
+  <title>Turnos · Vista Cuadrante</title>
   
-  <!-- PWA (Solo activo en HTTP para evitar errores CORS locales) -->
-  <script>
-    if (window.location.protocol.startsWith('http')) {
-        const link = document.createElement('link');
-        link.rel = 'manifest';
-        link.href = 'manifest.json';
-        document.head.appendChild(link);
-    }
-  </script>
-  
+  <!-- PWA & Mobile Meta Tags -->
+  <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#1a1d21">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="apple-touch-icon" href="Logo.png">
   
+  <!-- Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Outfit:wght@600;700;800&display=swap" rel="stylesheet">
+
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            primary: '#1677ff',
+          }
+        }
+      }
+    }
+  </script>
 
   <style>
     :root {
-      --primary: #1677ff;
-      --bg: #f4f7fb;
-      --bg-header: #1a1d21;
+      --bg: #ffffff;
       --card: #ffffff;
-      --text: #1e2a3a;
+      --text: #1e293b;
       --muted: #64748b;
-      --border: #e2e8f0;
-      
-      --color-m: #2f9e44; --bg-m: #ebfbee;
-      --color-t: #f08c00; --bg-t: #fff9db;
-      --color-n: #364fc7; --bg-n: #edf2ff;
-      --color-d: #fa5252; --bg-d: #fff5f5;
-      --color-v: #0b7285; --bg-v: #e3fafc;
-      --color-b: #fa5252; --bg-b: #fff5f5;
-      --color-p: #7048e8; --bg-p: #f3f0ff;
+      --border: #f1f5f9;
     }
 
-    body.dark-mode {
+    .dark-mode {
       --bg: #0f172a;
       --card: #1e293b;
       --text: #f1f5f9;
@@ -50,170 +49,286 @@
       --border: #334155;
     }
 
-    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-    
     body {
-      margin: 0;
       background: var(--bg);
       color: var(--text);
       font-family: 'Inter', sans-serif;
-      transition: background 0.3s ease;
-      line-height: 1.5;
       -webkit-font-smoothing: antialiased;
+      margin: 0;
+      padding: 0;
     }
 
+    .app-viewport {
+      max-width: 450px;
+      margin: 0 auto;
+      background: var(--bg);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* HEADER */
     header {
       position: sticky;
       top: 0;
-      z-index: 100;
-      background: var(--bg-header);
+      z-index: 1000;
+      background: #1a1d21;
+      padding: 10px 16px;
       color: white;
-      padding: 12px 16px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
     }
 
-    .header-bar { max-width: 800px; margin: 0 auto; display: flex; flex-direction: column; gap: 12px; }
-    .header-top { display: flex; align-items: center; justify-content: space-between; }
-    .brand { display: flex; align-items: center; gap: 10px; }
-    .brand img { width: 32px; height: 32px; border-radius: 8px; filter: brightness(0) invert(1); }
-    .brand h1 { font-family: 'Outfit', sans-serif; font-size: 1.1rem; font-weight: 800; margin: 0; letter-spacing: -0.02em; }
-
-    .controls-scroller { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 2px; scrollbar-width: none; }
-    .controls-scroller::-webkit-scrollbar { display: none; }
-
-    .control-item {
-      background: rgba(255,255,255,0.1);
-      border: 1px solid rgba(255,255,255,0.1);
-      padding: 6px 12px;
-      border-radius: 10px;
-      font-size: 0.8rem;
-      font-weight: 700;
+    .brand-row {
       display: flex;
       align-items: center;
-      gap: 6px;
+      justify-content: space-between;
+      margin-bottom: 8px;
+    }
+
+    .logo-img { height: 22px; }
+
+    #hotelSelect {
+      appearance: none;
+      width: 100%;
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 8px;
+      padding: 8px 32px 8px 12px;
+      color: white;
+      font-weight: 700;
+      font-size: 0.8rem;
+      outline: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='white'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 10px center;
+      background-size: 14px;
+    }
+
+    /* BANNER LOCAL */
+    #corsAlert {
+      background: #fff5f5;
+      color: #c92a2a;
+      padding: 4px;
+      font-size: 0.6rem;
+      font-weight: 800;
+      text-align: center;
+      border-bottom: 1px solid #ffe3e3;
+    }
+
+    /* PLANNING GRID (POLISHED) */
+    #shiftGrid {
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      padding-bottom: 80px;
+    }
+
+    .hotel-header {
+      margin-bottom: 6px;
+      padding-left: 2px;
+    }
+
+    .hotel-name {
+      font-family: 'Outfit', sans-serif;
+      font-size: 0.65rem;
+      font-weight: 800;
+      color: var(--primary);
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      opacity: 0.9;
+    }
+
+    .grid-table {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+    }
+
+    .grid-head, .grid-row {
+      display: grid !important;
+      grid-template-columns: 95px repeat(7, 1fr) !important;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .grid-head {
+      background: #fbfcfd;
+      padding: 4px 0;
+    }
+
+    .dark-mode .grid-head { background: rgba(255,255,255,0.03); }
+
+    .grid-th {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 10px;
+      font-weight: 800;
+      color: var(--muted);
+      text-transform: uppercase;
+    }
+
+    .th-name {
+      justify-content: flex-start;
+      padding-left: 12px;
+      color: var(--text);
+    }
+
+    .grid-row {
+      min-height: 52px;
+      align-items: center;
+    }
+
+    .grid-row:last-child { border-bottom: none; }
+
+    /* COLUMNA STICKY */
+    .name-cell {
+      position: sticky !important;
+      left: 0;
+      z-index: 10;
+      background: var(--card) !important;
+      padding-left: 12px !important;
+      height: 100%;
+      display: flex !important;
+      align-items: center !important;
+      border-right: 1px solid var(--border);
+    }
+
+    .emp-name {
+      font-size: 11px !important;
+      font-weight: 700 !important;
+      color: var(--text);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      opacity: 0.9;
+    }
+
+    .grid-cell {
+      display: flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      height: 100%;
+      padding: 0 !important;
+    }
+
+    .badge-container {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      height: 100%;
+    }
+
+    /* BADGES DE TURNO (REFINADOS - LETRA PRINCIPAL) */
+    .badge-shift {
+      width: 28px !important;
+      height: 28px !important;
+      display: inline-flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      border-radius: 8px !important;
+      font-size: 0.85rem !important;
+      font-weight: 500 !important; /* PESO MEDIO, NO NEGRITA */
+      text-transform: uppercase;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.06);
       white-space: nowrap;
     }
 
-    .control-item select, .control-item input {
-      border: none;
-      background: transparent;
-      color: white;
-      font: inherit;
-      font-weight: 800;
-      outline: none;
+    /* INDICADOR SECUNDARIO (EMOJI PEQUEÑO) */
+    .emoji-indicator {
+      font-size: 0.55em !important;
+      vertical-align: super !important;
+      margin-left: 1px;
+      opacity: 0.9;
+      display: inline-block;
     }
 
-    .btn-action { background: var(--primary); color: white; border: none; padding: 6px 14px; border-radius: 10px; font-weight: 800; font-size: 0.75rem; flex-shrink: 0; }
+    /* PALETA PULIDA */
+    .m { background: #3b82f6 !important; color: #ffffff !important; } /* Mañana */
+    .t { background: #f97316 !important; color: #ffffff !important; } /* Tarde */
+    .n { background: #1e1b4b !important; color: #ffffff !important; } /* Noche */
+    .d { background: #f1f5f9 !important; color: #94a3b8 !important; box-shadow: none !important; } /* Descanso */
+    
+    .v { background: #10b981 !important; color: #ffffff !important; } /* Vacaciones */
+    .b { background: #ef4444 !important; color: #ffffff !important; border: 1px dashed rgba(255,255,255,0.4) !important; } /* Baja */
 
-    main { padding: 16px; padding-bottom: 80px; max-width: 800px; margin: 0 auto; }
-
-    .hotel-card {
-      background: var(--card);
-      border-radius: 20px;
-      border: 1px solid var(--border);
-      overflow: hidden;
-      margin-bottom: 24px;
-      box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
-    }
-
-    .hotel-info {
-      padding: 12px 16px;
+    /* NAVEGACIÓN INFERIOR */
+    .bottom-nav {
+      position: fixed;
+      bottom: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 100%;
+      max-width: 450px;
+      background: var(--bg);
+      border-top: 1px solid var(--border);
+      padding: 8px 16px 20px 16px;
       display: flex;
       align-items: center;
-      gap: 12px;
-      background: var(--bg);
-      border-bottom: 1px solid var(--border);
-    }
-    .hotel-info img { height: 24px; width: 24px; border-radius: 6px; object-fit: cover; }
-    .hotel-info h2 { font-family: 'Outfit', sans-serif; font-size: 0.95rem; font-weight: 800; margin: 0; text-transform: uppercase; letter-spacing: 0.02em; }
-
-    .table-wrapper { overflow-x: auto; -webkit-overflow-scrolling: touch; }
-    .grid-head { display: grid; grid-template-columns: 120px repeat(7, 80px); background: var(--bg); border-bottom: 1px solid var(--border); }
-    .grid-th { padding: 10px 4px; font-size: 0.65rem; font-weight: 900; color: var(--muted); text-transform: uppercase; text-align: center; }
-    
-    .grid-row { display: grid; grid-template-columns: 120px repeat(7, 80px); border-bottom: 1px solid var(--border); }
-    .name-sticky {
-      padding: 10px 12px;
-      font-size: 0.7rem;
-      font-weight: 700;
-      position: sticky;
-      left: 0;
-      background: var(--card);
-      z-index: 10;
-      border-right: 2px solid var(--border);
-      box-shadow: 4px 0 8px rgba(0,0,0,0.03);
-      display: flex;
-      flex-direction: column;
-      color: var(--text);
       justify-content: center;
+      gap: 12px;
+      z-index: 1000;
     }
-    .name-sticky .stats { font-size: 0.6rem; color: var(--muted); margin-top: 2px; font-weight: 600; }
 
-    .grid-cell { padding: 6px 4px; display: flex; align-items: center; justify-content: center; min-height: 58px; border-right: 1px solid var(--border); }
-    
-    .badge-shift {
-      font-size: 0.62rem;
-      font-weight: 700;
-      padding: 6px 4px;
-      border-radius: 8px;
-      width: 90%;
-      text-align: center;
-      text-transform: uppercase;
-      letter-spacing: 0.02em;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    .nav-btn {
+      width: 40px;
+      height: 40px;
+      background: #1a1d21;
+      color: white;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 900;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
     }
-    .m { background: var(--bg-m); color: var(--color-m); border: 1px solid rgba(47,158,68,0.15); }
-    .t { background: var(--bg-t); color: var(--color-t); border: 1px solid rgba(240,140,0,0.15); }
-    .n { background: var(--bg-n); color: var(--color-n); border: 1px solid rgba(54,79,199,0.15); }
-    .d { background: var(--bg-d); color: var(--color-d); border: 1px solid rgba(250,82,82,0.15); }
-    .v { background: var(--bg-v); color: var(--color-v); border: 1px solid rgba(11,114,133,0.15); }
-    .b { background: var(--bg-b); color: var(--color-b); border: 1px dashed var(--color-b); }
-    .p { background: var(--bg-p); color: var(--color-p); border: 1px solid rgba(112,72,232,0.15); }
-    .empty { opacity: 0.2; font-size: 1.2rem; }
 
-    /* Barra de estado CORS */
-    .cors-warning {
-        background: #fff5f5; color: #fa5252; padding: 10px; border-radius: 12px; margin: 10px; 
-        font-size: 0.75rem; font-weight: 700; border: 1px solid #ffe3e3; display: none;
+    #dateInput {
+      background: var(--primary);
+      color: white;
+      border: none;
+      padding: 8px 14px;
+      border-radius: 10px;
+      font-weight: 800;
+      font-size: 0.75rem;
+      box-shadow: 0 4px 8px rgba(22, 119, 255, 0.2);
     }
   </style>
 </head>
-<body>
+<body class="flex flex-col h-full overflow-x-hidden">
 
-  <header>
-    <div class="header-bar">
-      <div class="header-top">
-        <div class="brand">
-          <img src="Logo.png" alt="Logo">
-          <h1>Turnos <span style="color:var(--primary)">App Móvil</span> <span style="font-size: 0.65rem; opacity: 0.6; display: block; font-weight: 400; margin-top: 2px;">(¡Tu cuadrante favorito desde el sofá! 🛋️)</span></h1>
-        </div>
-        <button class="nav-btn" onclick="toggleTheme()" id="themeBtn" style="padding:4px 8px; font-size:1.1rem; background:transparent; border:none; cursor:pointer;">🌙</button>
+  <div class="app-viewport">
+    <header>
+      <div class="brand-row">
+        <img src="Logo.png" alt="Logo" class="logo-img">
+        <button onclick="toggleTheme()" id="themeBtn" class="p-1 opacity-50">🌙</button>
       </div>
+      <select id="hotelSelect" onchange="refreshMobileView()">
+        <option value="">🏨 SELECCIONAR HOTEL</option>
+        <option value="cumbria">Hotel Cumbria</option>
+        <option value="guadiana">Sercotel Guadiana</option>
+      </select>
+    </header>
 
-      <div class="controls-scroller">
-        <div class="control-item">
-          <select id="hotelSelect" onchange="refreshMobileView()">
-            <option value="">Hoteles</option>
-          </select>
-        </div>
-        <div class="control-item">
-          <input type="date" id="dateInput" onchange="refreshMobileView()">
-        </div>
-        <button class="btn-action" onclick="changeWeek(-1)">← Sem</button>
-        <button class="btn-action" onclick="changeWeek(1)">Sem →</button>
+    <div id="corsAlert" class="hidden">⚠️ MODO LOCAL ACTIVO</div>
+
+    <main class="flex-grow">
+      <div id="shiftGrid">
+        <!-- Inyección JS -->
       </div>
-    </div>
-  </header>
+    </main>
 
-  <div id="corsAlert" class="cors-warning">
-    ⚠️ <b>Modo Local Detectado</b>: El navegador bloquea archivos locales (CORS). El orden de Excel se ha desactivado.
+    <footer class="bottom-nav">
+      <button onclick="changeWeek(-1)" class="nav-btn">←</button>
+      <input type="date" id="dateInput" onchange="refreshMobileView()">
+      <button onclick="changeWeek(1)" class="nav-btn">→</button>
+    </footer>
   </div>
 
-  <main>
-    <div id="shiftGrid"></div>
-  </main>
-
-  <!-- SCRIPTS ORDENADOS -->
+  <!-- SCRIPTS -->
   <script src="supabase.js"></script>
   <script src="localforage.js"></script>
   <script src="xlsx.full.min.js"></script>
@@ -228,18 +343,18 @@
 
   <script>
     if (window.location.protocol === 'file:') {
-        document.getElementById('corsAlert').style.display = 'block';
+        document.getElementById('corsAlert').classList.remove('hidden');
     }
 
     function toggleTheme() {
-        document.body.classList.toggle('dark-mode');
-        const isDark = document.body.classList.contains('dark-mode');
+        document.documentElement.classList.toggle('dark-mode');
+        const isDark = document.documentElement.classList.contains('dark-mode');
         document.getElementById('themeBtn').innerText = isDark ? '☀️' : '🌙';
         localStorage.setItem('mobile-theme', isDark ? 'dark' : 'light');
     }
 
     if (localStorage.getItem('mobile-theme') === 'dark') {
-        document.body.classList.add('dark-mode');
+        document.documentElement.classList.add('dark-mode');
         document.getElementById('themeBtn').innerText = '☀️';
     }
 
@@ -250,7 +365,7 @@
     });
 
     if ('serviceWorker' in navigator && window.location.protocol !== 'file:') {
-      navigator.serviceWorker.register('sw.js').catch(err => console.log("SW Fail:", err));
+      navigator.worker.register('sw.js').catch(err => console.log("SW Error:", err));
     }
   </script>
 </body>
