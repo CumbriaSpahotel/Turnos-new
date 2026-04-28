@@ -67,6 +67,7 @@
   const headerHotel = $("#headerHotel");
   let orientationRefreshTimer = null;
   let lastViewportSignature = "";
+  let lastLayoutMode = "";
 
   function escapeHtml(value) {
     return String(value ?? "").replace(/[&<>"']/g, ch => ({
@@ -116,16 +117,38 @@
     document.body.classList.toggle("is-portrait", !isLandscape);
     document.body.classList.toggle("is-narrow", width <= 430);
     document.body.classList.toggle("is-tight", width <= 380);
+    document.body.classList.toggle("is-wide", width >= 700);
     return { isLandscape, width, height };
   }
 
-  function scheduleOrientationRefresh() {
-    applyOrientationMode();
+  function getLabelMode(viewportState) {
+    return viewportState.width <= 380
+      ? "tight"
+      : (viewportState.isLandscape || viewportState.width <= 430 ? "compact" : "full");
+  }
+
+  function updateWeekLabelOnly() {
+    if (!dateInput || !dateInput.value) return;
+    const viewportState = applyOrientationMode();
+    const weekRangeLabel = formatWeekRangeLabel(dateInput.value, getLabelMode(viewportState));
+    dateInput.setAttribute("aria-label", weekRangeLabel);
+    dateInput.title = weekRangeLabel;
+    if (dateRangeLabel) {
+      dateRangeLabel.textContent = weekRangeLabel;
+    }
+  }
+
+  function scheduleOrientationRefresh(forceFullRefresh = false) {
+    const viewportState = applyOrientationMode();
+    const nextLayoutMode = `${viewportState.isLandscape ? "landscape" : "portrait"}:${viewportState.width <= 380 ? "tight" : viewportState.width <= 430 ? "narrow" : viewportState.width >= 700 ? "wide" : "normal"}`;
     if (orientationRefreshTimer) {
       clearTimeout(orientationRefreshTimer);
     }
     orientationRefreshTimer = setTimeout(() => {
-      if (typeof window.refreshMobileView === "function") {
+      const shouldRefresh = forceFullRefresh || (nextLayoutMode !== lastLayoutMode);
+      lastLayoutMode = nextLayoutMode;
+      updateWeekLabelOnly();
+      if (shouldRefresh && typeof window.refreshMobileView === "function") {
         window.refreshMobileView();
       }
     }, 120);
@@ -141,7 +164,7 @@
     const nextSignature = getViewportSignature();
     if (nextSignature === lastViewportSignature) return;
     lastViewportSignature = nextSignature;
-    scheduleOrientationRefresh();
+    scheduleOrientationRefresh(false);
   }
 
   function renderEmptyState(message, detail = "") {
@@ -190,10 +213,7 @@
     dEnd.setDate(dEnd.getDate() + 6);
     const endIso = toISODateUTC(dEnd);
     const viewportState = applyOrientationMode();
-    const labelMode = viewportState.width <= 380
-      ? "tight"
-      : (viewportState.isLandscape || viewportState.width <= 430 ? "compact" : "full");
-    const weekRangeLabel = formatWeekRangeLabel(startIso, labelMode);
+    const weekRangeLabel = formatWeekRangeLabel(startIso, getLabelMode(viewportState));
     if (dateInput) {
         dateInput.setAttribute("aria-label", weekRangeLabel);
         dateInput.title = weekRangeLabel;
@@ -435,30 +455,31 @@
   };
 
   if (window.screen && window.screen.orientation && typeof window.screen.orientation.addEventListener === "function") {
-    window.screen.orientation.addEventListener("change", scheduleOrientationRefresh);
+    window.screen.orientation.addEventListener("change", () => scheduleOrientationRefresh(false));
   }
   if (window.matchMedia) {
     const landscapeMq = window.matchMedia("(orientation: landscape)");
     if (typeof landscapeMq.addEventListener === "function") {
-      landscapeMq.addEventListener("change", scheduleOrientationRefresh);
+      landscapeMq.addEventListener("change", () => scheduleOrientationRefresh(false));
     } else if (typeof landscapeMq.addListener === "function") {
-      landscapeMq.addListener(scheduleOrientationRefresh);
+      landscapeMq.addListener(() => scheduleOrientationRefresh(false));
     }
   }
-  window.addEventListener("orientationchange", scheduleOrientationRefresh);
-  window.addEventListener("resize", scheduleOrientationRefresh);
-  window.addEventListener("pageshow", scheduleOrientationRefresh);
+  window.addEventListener("orientationchange", () => scheduleOrientationRefresh(false));
+  window.addEventListener("resize", () => scheduleOrientationRefresh(false));
+  window.addEventListener("pageshow", () => scheduleOrientationRefresh(true));
   document.addEventListener("visibilitychange", () => {
-    if (!document.hidden) scheduleOrientationRefresh();
+    if (!document.hidden) scheduleOrientationRefresh(true);
   });
   if (window.visualViewport && typeof window.visualViewport.addEventListener === "function") {
-    window.visualViewport.addEventListener("resize", scheduleOrientationRefresh);
+    window.visualViewport.addEventListener("resize", () => scheduleOrientationRefresh(false));
   }
   window.setInterval(watchViewportRotation, 500);
 
   window.initMobileSunc = async function() {
-    applyOrientationMode();
+    const viewportState = applyOrientationMode();
     lastViewportSignature = getViewportSignature();
+    lastLayoutMode = `${viewportState.isLandscape ? "landscape" : "portrait"}:${viewportState.width <= 380 ? "tight" : viewportState.width <= 430 ? "narrow" : viewportState.width >= 700 ? "wide" : "normal"}`;
     await window.refreshMobileView();
   };
 })();
