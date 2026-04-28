@@ -132,6 +132,10 @@
     // Actualizar etiqueta del selector con el nombre amigable
     const selectedId = hotelSelect.value;
     const hotelInfo = HOTEL_MAP[selectedId];
+    const headerEl = document.querySelector("header");
+    if (headerEl) {
+        headerEl.classList.toggle("hotel-selected", !!hotelInfo);
+    }
     if (hotelSelect.options[0]) {
         hotelSelect.options[0].text = hotelInfo ? `🏨 ${hotelInfo.label}` : "🏨 SELECCIONAR HOTEL";
     }

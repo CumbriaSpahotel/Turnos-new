@@ -512,6 +512,9 @@
       position: relative;
       display: block;
       width: 100%;
+      transition: opacity 160ms ease, max-height 180ms ease, margin 180ms ease;
+      max-height: 96px;
+      overflow: hidden;
     }
 
     .select-wrap::before {
@@ -544,6 +547,17 @@
       letter-spacing: 0.01em;
       box-shadow: 0 10px 24px rgba(15, 23, 42, 0.18);
       min-height: 52px;
+    }
+
+    header.hotel-selected .select-wrap {
+      opacity: 0;
+      max-height: 0;
+      margin: 0;
+      pointer-events: none;
+    }
+
+    header.hotel-selected {
+      padding-bottom: 6px;
     }
 
     #corsAlert {
