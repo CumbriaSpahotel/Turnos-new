@@ -19,6 +19,19 @@
     return [date.getUTCFullYear(), pad(date.getUTCMonth() + 1), pad(date.getUTCDate())].join("-");
   }
 
+  function formatWeekRangeLabel(startIso) {
+    if (!startIso) return "";
+    const start = new Date(startIso + "T12:00:00");
+    const end = new Date(startIso + "T12:00:00");
+    end.setDate(end.getDate() + 6);
+    const sameMonth = start.getUTCMonth() === end.getUTCMonth() && start.getUTCFullYear() === end.getUTCFullYear();
+    const startLabel = `${start.getUTCDate()} de ${monthNames[start.getUTCMonth()]}`;
+    const endLabel = sameMonth
+      ? `${end.getUTCDate()} de ${monthNames[end.getUTCMonth()]} de ${end.getUTCFullYear()}`
+      : `${end.getUTCDate()} de ${monthNames[end.getUTCMonth()]} de ${end.getUTCFullYear()}`;
+    return `${startLabel} al ${endLabel}`;
+  }
+
   function logoFor(hotel) {
     if ((hotel || "").toLowerCase().includes("guadiana")) return "guadiana logo.jpg";
     return "cumbria logo.jpg";
@@ -44,6 +57,7 @@
   const dateInput   = $("#dateInput");
   const hotelSelect = $("#hotelSelect");
   const shiftGrid   = $("#shiftGrid");
+  const dateRangeLabel = $("#dateRangeLabel");
 
   function escapeHtml(value) {
     return String(value ?? "").replace(/[&<>"']/g, ch => ({
@@ -106,6 +120,14 @@
     const dEnd = new Date(startIso + "T12:00:00");
     dEnd.setDate(dEnd.getDate() + 6);
     const endIso = toISODateUTC(dEnd);
+    const weekRangeLabel = formatWeekRangeLabel(startIso);
+    if (dateInput) {
+        dateInput.setAttribute("aria-label", weekRangeLabel);
+        dateInput.title = weekRangeLabel;
+    }
+    if (dateRangeLabel) {
+        dateRangeLabel.textContent = weekRangeLabel;
+    }
 
     // Actualizar etiqueta del selector con el nombre amigable
     const selectedId = hotelSelect.value;

@@ -779,6 +779,41 @@
       min-width: 0;
       flex: 1;
       text-align: center;
+      color: transparent;
+      caret-color: transparent;
+      position: relative;
+    }
+
+    #dateInput::-webkit-datetime-edit,
+    #dateInput::-webkit-datetime-edit-fields-wrapper,
+    #dateInput::-webkit-datetime-edit-text,
+    #dateInput::-webkit-datetime-edit-month-field,
+    #dateInput::-webkit-datetime-edit-day-field,
+    #dateInput::-webkit-datetime-edit-year-field {
+      color: transparent;
+    }
+
+    .date-shell {
+      position: relative;
+      flex: 1;
+      min-width: 0;
+    }
+
+    .date-range-label {
+      position: absolute;
+      inset: 0 40px 0 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      pointer-events: none;
+      color: var(--navy);
+      font-size: 0.92rem;
+      font-weight: 800;
+      text-align: center;
+      line-height: 1.2;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
 
     .dark-mode .hotel-name {
@@ -837,6 +872,10 @@
       color: #f8fafc;
       border-color: rgba(148, 163, 184, 0.14);
       box-shadow: inset 0 1px 0 rgba(255,255,255,0.04);
+    }
+
+    .dark-mode .date-range-label {
+      color: #f8fafc;
     }
 
     .dark-mode #hotelSelect {
@@ -998,7 +1037,10 @@
 
     <footer class="bottom-nav">
       <button onclick="changeWeek(-1)" class="nav-btn">←</button>
-      <input type="date" id="dateInput" onchange="refreshMobileView()">
+      <div class="date-shell">
+        <input type="date" id="dateInput" onchange="refreshMobileView()">
+        <div id="dateRangeLabel" class="date-range-label"></div>
+      </div>
       <button onclick="changeWeek(1)" class="nav-btn">→</button>
     </footer>
   </div>
