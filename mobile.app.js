@@ -19,16 +19,19 @@
     return [date.getUTCFullYear(), pad(date.getUTCMonth() + 1), pad(date.getUTCDate())].join("-");
   }
 
-  function formatWeekRangeLabel(startIso) {
+  function formatWeekRangeLabel(startIso, compact = false) {
     if (!startIso) return "";
     const start = new Date(startIso + "T12:00:00");
     const end = new Date(startIso + "T12:00:00");
     end.setDate(end.getDate() + 6);
-    const sameMonth = start.getUTCMonth() === end.getUTCMonth() && start.getUTCFullYear() === end.getUTCFullYear();
+    if (compact) {
+      const sameMonth = start.getUTCMonth() === end.getUTCMonth() && start.getUTCFullYear() === end.getUTCFullYear();
+      return sameMonth
+        ? `${start.getUTCDate()}-${end.getUTCDate()} ${monthNames[end.getUTCMonth()]} ${end.getUTCFullYear()}`
+        : `${start.getUTCDate()} ${monthNames[start.getUTCMonth()]} - ${end.getUTCDate()} ${monthNames[end.getUTCMonth()]} ${end.getUTCFullYear()}`;
+    }
     const startLabel = `${start.getUTCDate()} de ${monthNames[start.getUTCMonth()]}`;
-    const endLabel = sameMonth
-      ? `${end.getUTCDate()} de ${monthNames[end.getUTCMonth()]} de ${end.getUTCFullYear()}`
-      : `${end.getUTCDate()} de ${monthNames[end.getUTCMonth()]} de ${end.getUTCFullYear()}`;
+    const endLabel = `${end.getUTCDate()} de ${monthNames[end.getUTCMonth()]} de ${end.getUTCFullYear()}`;
     return `${startLabel} al ${endLabel}`;
   }
 
@@ -58,6 +61,7 @@
   const hotelSelect = $("#hotelSelect");
   const shiftGrid   = $("#shiftGrid");
   const dateRangeLabel = $("#dateRangeLabel");
+  const headerHotel = $("#headerHotel");
 
   function escapeHtml(value) {
     return String(value ?? "").replace(/[&<>"']/g, ch => ({
@@ -120,7 +124,8 @@
     const dEnd = new Date(startIso + "T12:00:00");
     dEnd.setDate(dEnd.getDate() + 6);
     const endIso = toISODateUTC(dEnd);
-    const weekRangeLabel = formatWeekRangeLabel(startIso);
+    const compactWeekLabel = window.matchMedia && window.matchMedia("(orientation: landscape)").matches;
+    const weekRangeLabel = formatWeekRangeLabel(startIso, compactWeekLabel);
     if (dateInput) {
         dateInput.setAttribute("aria-label", weekRangeLabel);
         dateInput.title = weekRangeLabel;
@@ -135,6 +140,12 @@
     const headerEl = document.querySelector("header");
     if (headerEl) {
         headerEl.classList.toggle("hotel-selected", !!hotelInfo);
+    }
+    if (document.body) {
+        document.body.classList.toggle("hotel-selected-mode", !!hotelInfo);
+    }
+    if (headerHotel) {
+        headerHotel.textContent = hotelInfo ? hotelInfo.label : "";
     }
     if (hotelSelect.options[0]) {
         hotelSelect.options[0].text = hotelInfo ? `🏨 ${hotelInfo.label}` : "🏨 SELECCIONAR HOTEL";
@@ -347,5 +358,13 @@
     dateInput.value = toISODateUTC(mondayOf(d));
     window.refreshMobileView();
   };
+
+  window.goHomeMobileView = function() {
+    if (hotelSelect) {
+      hotelSelect.value = "";
+    }
+    window.refreshMobileView();
+  };
+
   window.initMobileSunc = async function() { await window.refreshMobileView(); };
 })();

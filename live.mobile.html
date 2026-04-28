@@ -463,6 +463,19 @@
       justify-content: center;
       box-shadow: inset 0 1px 0 rgba(255,255,255,0.08);
       flex-shrink: 0;
+      appearance: none;
+      cursor: pointer;
+      transition: transform 120ms ease, background 120ms ease, border-color 120ms ease;
+      padding: 0;
+    }
+
+    .logo-shell:hover {
+      background: linear-gradient(180deg, rgba(255,255,255,0.18), rgba(255,255,255,0.08));
+      border-color: rgba(255,255,255,0.14);
+    }
+
+    .logo-shell:active {
+      transform: scale(0.97);
     }
 
     .logo-img {
@@ -473,16 +486,28 @@
 
     .header-copy {
       min-width: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      flex: 1;
     }
 
     .eyebrow {
-      display: block;
+      display: inline-block;
       font-size: 0.66rem;
       letter-spacing: 0.18em;
       text-transform: uppercase;
       color: rgba(255,255,255,0.52);
-      margin-bottom: 2px;
+      margin-bottom: 0;
       font-weight: 700;
+    }
+
+    .header-meta {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 0;
+      min-height: 18px;
     }
 
     .header-title {
@@ -491,6 +516,29 @@
       line-height: 1.05;
       letter-spacing: 0.01em;
       color: #fff8ef;
+    }
+
+    .header-week-nav {
+      display: none;
+      margin-top: 6px;
+      max-width: 100%;
+      width: 100%;
+    }
+
+    .header-hotel {
+      display: none;
+      font-size: 0.74rem;
+      font-weight: 800;
+      color: rgba(255,255,255,0.88);
+      line-height: 1.2;
+      padding: 4px 8px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.08);
+      white-space: nowrap;
+      max-width: 190px;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
 
     #themeBtn {
@@ -550,14 +598,51 @@
     }
 
     header.hotel-selected .select-wrap {
-      opacity: 0;
-      max-height: 0;
-      margin: 0;
-      pointer-events: none;
+      display: none;
     }
 
     header.hotel-selected {
-      padding-bottom: 6px;
+      padding-top: 8px;
+      padding-bottom: 8px;
+    }
+
+    header.hotel-selected .header-hotel {
+      display: block;
+    }
+
+    header.hotel-selected .header-week-nav {
+      display: flex;
+      justify-content: flex-start;
+    }
+
+    header.hotel-selected .brand-row {
+      margin-bottom: 0;
+      align-items: center;
+    }
+
+    header.hotel-selected .logo-shell {
+      width: 42px;
+      height: 42px;
+      border-radius: 14px;
+    }
+
+    header.hotel-selected .header-title {
+      font-size: 0.82rem;
+      line-height: 1.05;
+    }
+
+    header.hotel-selected .eyebrow {
+      font-size: 0.68rem;
+      letter-spacing: 0.2em;
+    }
+
+    header.hotel-selected #themeBtn {
+      width: 38px;
+      height: 38px;
+    }
+
+    body.hotel-selected-mode .hotel-header {
+      display: none;
     }
 
     #corsAlert {
@@ -702,7 +787,7 @@
     }
 
     .grid-head, .grid-row {
-      grid-template-columns: var(--name-col-w, 116px) repeat(7, minmax(0, 1fr)) !important;
+      grid-template-columns: var(--name-col-w, 98px) repeat(7, minmax(0, 1fr)) !important;
     }
 
     .grid-head {
@@ -721,7 +806,7 @@
 
     .th-name {
       flex-direction: row;
-      padding-left: 14px;
+      padding-left: 10px;
     }
 
     .day-th {
@@ -755,13 +840,13 @@
 
     .name-cell {
       background: linear-gradient(180deg, rgba(255,255,255,0.92), rgba(255,255,255,0.84)) !important;
-      padding-left: 12px !important;
+      padding-left: 10px !important;
     }
 
     .emp-name {
-      font-size: 11px !important;
+      font-size: 10px !important;
       line-height: 1.1;
-      padding-right: 10px;
+      padding-right: 8px;
     }
 
     .grid-cell {
@@ -794,19 +879,23 @@
 
     .bottom-nav {
       bottom: 12px;
-      width: calc(100% - 18px);
-      max-width: 540px;
+      width: auto;
+      min-width: 114px;
       background: rgba(255, 252, 247, 0.82);
       border: 1px solid rgba(255,255,255,0.7);
-      padding: 10px 12px;
-      border-radius: 24px;
+      padding: 8px 10px;
+      border-radius: 20px;
       box-shadow: var(--shadow-soft);
       backdrop-filter: blur(18px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
     }
 
     .nav-btn {
-      width: 42px;
-      height: 42px;
+      width: 40px;
+      height: 40px;
       background: var(--navy);
       border-radius: 14px;
       box-shadow: 0 10px 20px rgba(20, 33, 61, 0.2);
@@ -821,7 +910,7 @@
       font-size: 0.78rem;
       box-shadow: inset 0 1px 0 rgba(255,255,255,0.6);
       min-width: 0;
-      flex: 1;
+      width: 100%;
       text-align: center;
       color: transparent;
       caret-color: transparent;
@@ -839,8 +928,8 @@
 
     .date-shell {
       position: relative;
-      flex: 1;
       min-width: 0;
+      width: min(100%, 206px);
     }
 
     .date-range-label {
@@ -858,6 +947,14 @@
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
+    }
+
+    body.hotel-selected-mode .bottom-nav {
+      display: flex;
+    }
+
+    body:not(.hotel-selected-mode) .bottom-nav {
+      display: none;
     }
 
     .dark-mode .hotel-name {
@@ -885,6 +982,12 @@
     .dark-mode .welcome-feature-text {
       color: #f8fafc;
     }
+
+    .dark-mode .header-hotel {
+      background: rgba(255,255,255,0.06);
+      border-color: rgba(255,255,255,0.06);
+    }
+
 
     .dark-mode .grid-head {
       background: linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.02));
@@ -941,11 +1044,11 @@
       }
 
       .grid-head, .grid-row {
-        grid-template-columns: var(--name-col-w, 108px) repeat(7, minmax(0, 1fr)) !important;
+        grid-template-columns: var(--name-col-w, 92px) repeat(7, minmax(0, 1fr)) !important;
       }
 
       .emp-name {
-        font-size: 10px !important;
+        font-size: 9px !important;
       }
 
       .welcome-card {
@@ -975,7 +1078,7 @@
 
     @media (max-width: 430px) {
       .grid-head, .grid-row {
-        grid-template-columns: var(--name-col-w, 106px) repeat(7, minmax(0, 1fr)) !important;
+        grid-template-columns: var(--name-col-w, 94px) repeat(7, minmax(0, 1fr)) !important;
       }
 
       .th-name {
@@ -983,16 +1086,16 @@
       }
 
       .day-th {
-        min-height: 48px;
-        padding: 4px 0 3px;
+        min-height: 46px;
+        padding: 3px 0 3px;
       }
 
       .day-letter {
-        font-size: 0.56rem;
+        font-size: 0.54rem;
       }
 
       .day-date {
-        font-size: 0.72rem;
+        font-size: 0.68rem;
         font-weight: 800;
       }
     }
@@ -1006,6 +1109,10 @@
       .bottom-nav {
         width: calc(100% - 18px);
       }
+
+      .date-shell {
+        width: min(100%, 248px);
+      }
     }
 
     @media (orientation: landscape) {
@@ -1015,14 +1122,109 @@
         padding-top: max(8px, env(safe-area-inset-top));
       }
 
+      header.hotel-selected {
+        padding: 6px 12px 5px;
+      }
+
+      header.hotel-selected .brand-row {
+        gap: 8px;
+      }
+
+      header.hotel-selected .brand-block {
+        gap: 8px;
+      }
+
+      header.hotel-selected .logo-shell {
+        width: 34px;
+        height: 34px;
+        border-radius: 11px;
+      }
+
+      header.hotel-selected .logo-img {
+        width: 19px;
+        height: 19px;
+      }
+
+      header.hotel-selected .header-copy {
+        gap: 1px;
+      }
+
+      header.hotel-selected .header-meta {
+        min-height: 12px;
+        gap: 6px;
+      }
+
+      header.hotel-selected .eyebrow {
+        font-size: 0.56rem;
+        letter-spacing: 0.16em;
+      }
+
+      header.hotel-selected .header-hotel {
+        max-width: 138px;
+        font-size: 0.62rem;
+        padding: 2px 6px;
+      }
+
+      header.hotel-selected .header-title {
+        font-size: 0.74rem;
+      }
+
+      header.hotel-selected .header-week-nav {
+        margin-top: 1px;
+      }
+
+      #themeBtn {
+        width: 34px;
+        height: 34px;
+        border-radius: 11px;
+        font-size: 0.92rem;
+      }
+
       #shiftGrid {
         padding-left: 16px;
         padding-right: 16px;
       }
 
       .bottom-nav {
-        width: min(100% - 24px, 760px);
-        max-width: 760px;
+        padding: 6px 8px;
+        gap: 8px;
+      }
+
+      .date-shell {
+        width: min(100%, 168px);
+      }
+
+      .date-range-label {
+        font-size: 0.72rem;
+        inset: 0 34px 0 12px;
+      }
+
+      .nav-btn {
+        width: 36px;
+        height: 36px;
+        border-radius: 12px;
+      }
+
+      .grid-head, .grid-row {
+        grid-template-columns: var(--name-col-w, 106px) repeat(7, minmax(0, 1fr)) !important;
+      }
+
+      .day-th {
+        min-height: 44px;
+        padding: 2px 0;
+      }
+
+      .day-letter {
+        font-size: 0.58rem;
+      }
+
+      .day-date {
+        font-size: 0.8rem;
+        letter-spacing: -0.02em;
+      }
+
+      .th-name {
+        font-size: 0.7rem;
       }
 
       .welcome-state {
@@ -1051,12 +1253,21 @@
     <header>
       <div class="brand-row">
         <div class="brand-block">
-          <div class="logo-shell">
+          <button class="logo-shell" onclick="goHomeMobileView()" aria-label="Volver al inicio" title="Volver al inicio">
             <img src="Logo.png" alt="Logo" class="logo-img">
-          </div>
+          </button>
           <div class="header-copy">
-            <span class="eyebrow">Turnos</span>
+            <div class="header-meta">
+              <span class="eyebrow">Turnos</span>
+              <div id="headerHotel" class="header-hotel"></div>
+            </div>
             <strong class="header-title">Vista m&oacute;vil del cuadrante</strong>
+            <div class="header-week-nav">
+              <div class="date-shell">
+                <input type="date" id="dateInput" onchange="refreshMobileView()">
+                <div id="dateRangeLabel" class="date-range-label"></div>
+              </div>
+            </div>
           </div>
         </div>
         <button onclick="toggleTheme()" id="themeBtn" class="p-1 opacity-50">🌙</button>
@@ -1080,12 +1291,8 @@
     </main>
 
     <footer class="bottom-nav">
-      <button onclick="changeWeek(-1)" class="nav-btn">←</button>
-      <div class="date-shell">
-        <input type="date" id="dateInput" onchange="refreshMobileView()">
-        <div id="dateRangeLabel" class="date-range-label"></div>
-      </div>
-      <button onclick="changeWeek(1)" class="nav-btn">→</button>
+      <button onclick="changeWeek(-1)" class="nav-btn" aria-label="Semana anterior">&larr;</button>
+      <button onclick="changeWeek(1)" class="nav-btn" aria-label="Semana siguiente">&rarr;</button>
     </footer>
   </div>
 
