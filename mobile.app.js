@@ -19,12 +19,15 @@
     return [date.getUTCFullYear(), pad(date.getUTCMonth() + 1), pad(date.getUTCDate())].join("-");
   }
 
-  function formatWeekRangeLabel(startIso, compact = false) {
+  function formatWeekRangeLabel(startIso, mode = "full") {
     if (!startIso) return "";
     const start = new Date(startIso + "T12:00:00");
     const end = new Date(startIso + "T12:00:00");
     end.setDate(end.getDate() + 6);
-    if (compact) {
+    if (mode === "tight") {
+      return `${start.getUTCDate()} ${monthNames[start.getUTCMonth()]} - ${end.getUTCDate()} ${monthNames[end.getUTCMonth()]}`;
+    }
+    if (mode === "compact") {
       const sameMonth = start.getUTCMonth() === end.getUTCMonth() && start.getUTCFullYear() === end.getUTCFullYear();
       return sameMonth
         ? `${start.getUTCDate()}-${end.getUTCDate()} ${monthNames[end.getUTCMonth()]} ${end.getUTCFullYear()}`
@@ -81,14 +84,22 @@
     "guadiana": { dataName: "Sercotel Guadiana",  label: "Sercotel Guadiana" }
   };
 
+  function getViewportMetrics() {
+    const vv = window.visualViewport;
+    const width = vv ? Math.round(vv.width) : window.innerWidth;
+    const height = vv ? Math.round(vv.height) : window.innerHeight;
+    return { width, height };
+  }
+
   function applyOrientationMode() {
-    if (!document.body) return false;
-    const isLandscape = window.matchMedia
-      ? window.matchMedia("(orientation: landscape)").matches
-      : window.innerWidth > window.innerHeight;
+    if (!document.body) return { isLandscape: false, width: window.innerWidth, height: window.innerHeight };
+    const { width, height } = getViewportMetrics();
+    const isLandscape = width > height;
     document.body.classList.toggle("is-landscape", isLandscape);
     document.body.classList.toggle("is-portrait", !isLandscape);
-    return isLandscape;
+    document.body.classList.toggle("is-narrow", width <= 430);
+    document.body.classList.toggle("is-tight", width <= 380);
+    return { isLandscape, width, height };
   }
 
   function scheduleOrientationRefresh() {
@@ -104,9 +115,7 @@
   }
 
   function getViewportSignature() {
-    const vv = window.visualViewport;
-    const width = vv ? Math.round(vv.width) : window.innerWidth;
-    const height = vv ? Math.round(vv.height) : window.innerHeight;
+    const { width, height } = getViewportMetrics();
     const orientation = width > height ? "landscape" : "portrait";
     return `${width}x${height}:${orientation}`;
   }
@@ -163,8 +172,11 @@
     const dEnd = new Date(startIso + "T12:00:00");
     dEnd.setDate(dEnd.getDate() + 6);
     const endIso = toISODateUTC(dEnd);
-    const compactWeekLabel = applyOrientationMode();
-    const weekRangeLabel = formatWeekRangeLabel(startIso, compactWeekLabel);
+    const viewportState = applyOrientationMode();
+    const labelMode = viewportState.width <= 380
+      ? "tight"
+      : (viewportState.isLandscape || viewportState.width <= 430 ? "compact" : "full");
+    const weekRangeLabel = formatWeekRangeLabel(startIso, labelMode);
     if (dateInput) {
         dateInput.setAttribute("aria-label", weekRangeLabel);
         dateInput.title = weekRangeLabel;

@@ -946,6 +946,56 @@
       text-overflow: ellipsis;
     }
 
+    body.is-narrow .week-toolbar {
+      grid-template-columns: 38px minmax(0, 1fr) 38px;
+      gap: 8px;
+      margin: 10px 10px 6px;
+      width: calc(100% - 20px);
+    }
+
+    body.is-narrow .nav-btn {
+      width: 38px;
+      height: 38px;
+      border-radius: 12px;
+    }
+
+    body.is-narrow .date-shell {
+      max-width: 100%;
+    }
+
+    body.is-narrow #dateInput {
+      padding: 10px 12px;
+    }
+
+    body.is-narrow .date-range-label {
+      font-size: 0.84rem;
+      inset: 0 36px 0 12px;
+    }
+
+    body.is-tight .week-toolbar {
+      grid-template-columns: 36px minmax(0, 1fr) 36px;
+      gap: 6px;
+      margin: 8px 8px 6px;
+      width: calc(100% - 16px);
+    }
+
+    body.is-tight .nav-btn {
+      width: 36px;
+      height: 36px;
+      border-radius: 11px;
+    }
+
+    body.is-tight #dateInput {
+      padding: 9px 10px;
+      border-radius: 12px;
+    }
+
+    body.is-tight .date-range-label {
+      font-size: 0.76rem;
+      inset: 0 32px 0 10px;
+      letter-spacing: -0.01em;
+    }
+
     body.hotel-selected-mode .week-toolbar {
       display: grid;
     }
