@@ -71,6 +71,16 @@
     `;
   }
 
+  function renderInitialState() {
+    shiftGrid.innerHTML = `
+      <div class="empty-state" style="padding:52px 24px; text-align:center; color:var(--muted);">
+        <div class="empty-icon" style="font-size:2.8rem; margin-bottom:12px;">🏨</div>
+        <div class="empty-title" style="font-weight:800; font-size:1.08rem; line-height:1.35; margin-bottom:8px;">Selecciona un hotel para ver el cuadrante</div>
+        <div class="empty-detail" style="font-weight:600; font-size:0.9rem; line-height:1.45; opacity:0.9;">Elige <strong style="color:var(--text);">Cumbria Spa&amp;Hotel</strong> o <strong style="color:var(--text);">Sercotel Guadiana</strong> en el selector superior.</div>
+      </div>
+    `;
+  }
+
   window.refreshMobileView = async function() {
     if (!dateInput.value) {
         dateInput.value = toISODateUTC(mondayOf(new Date()));
@@ -85,6 +95,11 @@
     const hotelInfo = HOTEL_MAP[selectedId];
     if (hotelSelect.options[0]) {
         hotelSelect.options[0].text = hotelInfo ? `🏨 ${hotelInfo.label}` : "🏨 SELECCIONAR HOTEL";
+    }
+
+    if (!hotelInfo) {
+        renderInitialState();
+        return;
     }
 
     shiftGrid.innerHTML = `<div style="padding:40px; text-align:center; opacity:0.5; font-weight:700;">Cargando publicación...</div>`;
@@ -156,9 +171,18 @@
   }
 
   function getMobileShiftLabel(displayText, visualClass) {
-    const normalized = String(displayText || "").trim().toUpperCase();
+    const raw = String(displayText || "").trim();
+    const normalized = raw.toUpperCase();
     if (visualClass === "v" || normalized.includes("VAC")) return "🏖️";
-    return formatShiftText(displayText);
+
+    const base = raw.split(/\s+/)[0] || "";
+    const hasChange = raw.includes("🔄");
+
+    if (visualClass === "m" || visualClass === "t" || visualClass === "n" || visualClass === "d" || visualClass === "b" || visualClass === "p") {
+      return `${escapeHtml(base)}${hasChange ? '<span class="emoji-indicator change-indicator">↻</span>' : ''}`;
+    }
+
+    return formatShiftText(raw);
   }
 
   function getMobileShiftToken(displayText, visualClass) {
