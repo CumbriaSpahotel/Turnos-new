@@ -27,93 +27,11 @@
   /**
    * Helper visual compartido para vista pública/móvil
    */
-  function getPublicCellDisplay(cell, options = {}) {
-    const compact = !!options.compact;
-    const rawLabel = String(cell?.label || cell?.displayLabel || '').trim();
-    const code = String(cell?.code || cell?.tipo || '').toUpperCase().trim();
 
-    let label = rawLabel;
-
-    // Normalización a nombres completos primero
-    if (!label || ['M','T','N','D','VAC','BAJA','PERM','PERMISO','FORM'].includes(label.toUpperCase())) {
-        const key = label.toUpperCase() || code;
-        label = {
-            M: 'Mañana',
-            T: 'Tarde',
-            N: 'Noche',
-            D: 'Descanso',
-            VAC: 'Vacaciones',
-            BAJA: 'Baja',
-            PERM: 'Permiso',
-            PERMISO: 'Permiso',
-            FORM: 'Formación'
-        }[key] || label || '—';
-    }
-
-    const icons = new Set();
-    const origen = String(cell?.origen || cell?.source || cell?.tipo_evento || '').toLowerCase();
-    const explicitIcons = Array.isArray(cell?.icons) ? cell.icons : [];
-
-    explicitIcons.forEach(i => {
-        if (['🌙','🏖️','🗓️','🤒','🎓','🔄'].includes(i)) icons.add(i);
-    });
-
-    if (/noche/i.test(label) || code === 'N') icons.add('🌙');
-    if (/vacaciones/i.test(label) || code === 'VAC') icons.add('🏖️');
-    if (/permiso/i.test(label) || code === 'PERM' || code === 'PERMISO') icons.add('🗓️');
-    if (/baja/i.test(label) || code === 'BAJA') icons.add('🤒');
-    if (/formaci/i.test(label) || code === 'FORM') icons.add('🎓');
-
-    const isRealChange =
-        (origen.includes('ct') ||
-         origen.includes('cambio') ||
-         origen.includes('intercambio') ||
-         String(cell?.tipo_evento || '').toUpperCase().includes('INTERCAMBIO') ||
-         String(cell?.tipo_evento || '').toUpperCase() === 'CT') &&
-        !origen.includes('sustitucion') &&
-        !origen.includes('vacaciones') &&
-        !origen.includes('ausencia');
-
-    if (isRealChange) icons.add('🔄');
-
-    const absenceCodes = ['VAC', 'BAJA', 'PERM', 'PERMISO', 'FORM'];
-    const isAbsence = absenceCodes.includes(code)
-        || /vacaciones|baja|permiso|formaci/i.test(label);
-
-    if (isAbsence) {
-        icons.delete('🔄');
-    }
-
-    // Eliminar iconos decorativos no deseados en Mañana/Tarde/Descanso
-    if (label === 'Mañana') { icons.delete('☀️'); icons.delete('🌞'); icons.delete('🌅'); }
-    if (label === 'Tarde')  { icons.delete('☀️'); icons.delete('🌞'); icons.delete('🌅'); }
-    if (label === 'Descanso' && !isRealChange) { icons.delete('🔄'); }
-
-    // Si es compacto (móvil), convertir label completo a código corto
-    if (compact) {
-        const compactMap = {
-            'Mañana': 'M',
-            'Tarde': 'T',
-            'Noche': 'N',
-            'Descanso': 'D',
-            'Vacaciones': 'VAC',
-            'Baja': 'BAJA',
-            'Permiso': 'PERM',
-            'Formación': 'FORM'
-        };
-        label = compactMap[label] || label;
-    }
-
-    return {
-        label,
-        icons: Array.from(icons),
-        text: label === '—' ? '—' : `${label}${icons.size ? ' ' + Array.from(icons).join(' ') : ''}`
-    };
-  }
 
   function getDisplayInfo(item) {
     if (!item) return { label: '·', cls: 'empty', icon: '', title: '' };
-    const display = getPublicCellDisplay(item, { compact: true });
+    const display = window.TurnosRules.getPublicCellDisplay(item, { compact: true });
     const visual = window.TurnosRules.describeCell(item);
     return {
       label: display.text,
@@ -174,7 +92,23 @@
         }
 
         shiftGrid.innerHTML = "";
-        for (const snap of result.snapshots) {
+        // Función de orden estable de hoteles
+        const getHotelOrder = (h) => {
+            const n = (h || "").toLowerCase();
+            if (n.includes("cumbria")) return 1;
+            if (n.includes("guadiana")) return 2;
+            return 999;
+        };
+
+        // Ordenar snapshots antes de renderizar
+        const snapshots = (result.snapshots || []).sort((a, b) => {
+            const orderA = getHotelOrder(a.hotel);
+            const orderB = getHotelOrder(b.hotel);
+            if (orderA !== orderB) return orderA - orderB;
+            return (a.semana_inicio || "").localeCompare(b.semana_inicio || "");
+        });
+
+        for (const snap of snapshots) {
             if (hotelInfo) {
                 // Normalización para evitar fallos por mayúsculas o espacios
                 const normSnap = (snap.hotel || "").trim().toUpperCase();
@@ -227,17 +161,17 @@
                 }).join('')}
             </div>
             <div class="grid-body">
-                ${empleados.sort((a,b) => a.orden - b.orden).map(emp => {
+                ${empleados.sort((a,b) => (Number(a.puestoOrden) || Number(a.orden) || 9999) - (Number(b.puestoOrden) || Number(b.orden) || 9999)).map(emp => {
                     const empName = emp.nombre;
-                    const daysMap = emp.dias || {};
+                    const daysMap = emp.dias || emp.cells || {};
                     return `
-                        <div class="grid-row">
+                        <div class="grid-row" style="${emp.rowType === 'ausencia_informativa' ? 'opacity:0.6;' : ''}">
                             <div class="name-cell">
                                 <span class="emp-name">${escapeHtml(empName)}</span>
                             </div>
                             ${dates.map(f => {
                                 const day = daysMap[f] || {};
-                                const display = getPublicCellDisplay(day, { compact: true });
+                                const display = window.TurnosRules.getPublicCellDisplay(day, { compact: true });
                                 const visual = window.TurnosRules.describeCell(day);
                                 return `
                                     <div class="grid-cell" title="${escapeHtml(day.titular_cubierto ? 'Cubriendo a ' + day.titular_cubierto : '')}">

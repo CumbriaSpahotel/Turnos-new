@@ -191,12 +191,82 @@
         };
     };
 
+    const getPublicCellDisplay = (cell, options = {}) => {
+        const compact = !!options.compact;
+        const code = String(cell?.code || '').trim().toUpperCase();
+        const type = String(cell?.type || '').trim().toUpperCase();
+        const rawLabel = String(cell?.label || '').trim();
+
+        // PRIORIDAD DE VALOR: code > type (si no es normal) > label
+        let label = '';
+        if (code && code !== '—') {
+            label = code;
+        } else if (type && type !== 'NORMAL') {
+            label = type;
+        } else {
+            label = rawLabel || '—';
+        }
+
+        // Normalización a nombres completos para visualización (si no es compacto)
+        if (!compact && label !== '—') {
+            const fullMap = {
+                'M': 'Mañana', 'MANANA': 'Mañana',
+                'T': 'Tarde', 'TARDE': 'Tarde',
+                'N': 'Noche', 'NOCHE': 'Noche',
+                'D': 'Descanso', 'DESCANSO': 'Descanso',
+                'VAC': 'Vacaciones', 'VACACIONES': 'Vacaciones',
+                'BAJA': 'Baja', 'IT': 'Baja', 'BM': 'Baja',
+                'PERM': 'Permiso', 'PERMISO': 'Permiso',
+                'FORM': 'Formación', 'FORMACION': 'Formación'
+            };
+            const up = label.toUpperCase();
+            if (fullMap[up]) label = fullMap[up];
+        }
+
+        const icons = new Set();
+        const explicitIcons = Array.isArray(cell?.icons) ? cell.icons : [];
+        explicitIcons.forEach(i => {
+            if (['🌙','🏖️','🗓️','🤒','🎓','🔄'].includes(i)) icons.add(i);
+        });
+
+        // Iconos por regla estructural (Snapshot V12)
+        const isNoche = /noche/i.test(label) || code === 'N' || type === 'NOCHE';
+        const isVac   = /vacaciones/i.test(label) || code === 'VAC' || type === 'VAC';
+        const isBaja  = /baja|it|bm/i.test(label) || code === 'BAJA' || type === 'BAJA' || type === 'IT';
+        const isPerm  = /permiso/i.test(label) || code === 'PERM' || type === 'PERM' || type === 'PERMISO';
+        const isForm  = /formaci/i.test(label) || code === 'FORM' || type === 'FORM' || type === 'FORMACION';
+        const isChanged = !!cell?.changed || !!cell?.intercambio;
+
+        if (isNoche) icons.add('🌙');
+        if (isVac)   icons.add('🏖️');
+        if (isBaja)  icons.add('🤒');
+        if (isPerm)  icons.add('🗓️');
+        if (isForm)  icons.add('🎓');
+        if (isChanged && !isVac && !isBaja && !isPerm && !isForm) icons.add('🔄');
+
+        // Compactación para móvil
+        if (compact) {
+            const compactMap = {
+                'Mañana': 'M', 'Tarde': 'T', 'Noche': 'N', 'Descanso': 'D',
+                'Vacaciones': 'VAC', 'Baja': 'BAJA', 'Permiso': 'PERM', 'Formación': 'FORM'
+            };
+            label = compactMap[label] || label;
+        }
+
+        return {
+            label,
+            icons: Array.from(icons),
+            text: label === '—' ? '—' : `${label}${icons.size ? ' ' + Array.from(icons).join(' ') : ''}`
+        };
+    };
+
     window.TurnosRules = {
         normalizeText,
         shiftKey,
         isCtType,
         isAbsenceType,
         describeCell,
+        getPublicCellDisplay,
         definitions
     };
 })();

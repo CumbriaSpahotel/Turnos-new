@@ -258,14 +258,15 @@
 
       .preview-table-v2 th:first-child,
       .preview-table-v2 td.emp-cell {
-          width: 200px !important;
+          width: 250px !important;
           min-width: 200px !important;
-          max-width: 200px !important;
+          max-width: 350px !important;
           position: sticky !important;
           left: 0 !important;
           z-index: 10 !important;
           background: var(--surface) !important;
           border-right: 1px solid var(--border) !important;
+          overflow: visible !important;
       }
 
       .preview-table-v2 th:first-child {
@@ -375,32 +376,34 @@
       .v-form .v-pill     { background: #ecfdf5 !important; color: #065f46 !important; border: 1px solid #a7f3d0 !important; }
 
       .employee-row {
-          height: 100%;
           width: 100%;
           display: flex;
-          align-items: center;
-          justify-content: space-between;
-          gap: 12px;
-          padding: 0 16px;
+          flex-direction: column;
+          align-items: flex-start;
+          justify-content: center;
+          gap: 4px;
+          padding: 8px 16px;
       }
 
       .employee-name {
-          min-width: 0;
+          width: 100%;
           color: var(--text);
-          font-size: 0.92rem;
-          font-weight: 700;
+          font-size: 1rem;
+          font-weight: 800;
           font-family: 'Outfit', sans-serif;
           letter-spacing: -0.01em;
           line-height: 1.2;
-          overflow: hidden;
-          text-overflow: ellipsis;
-          white-space: nowrap;
+          overflow: visible !important;
+          text-overflow: clip !important;
+          white-space: normal !important;
+          word-break: normal;
+          overflow-wrap: anywhere;
       }
 
       .employee-stats {
           display: flex;
           align-items: center;
-          gap: 9px;
+          gap: 6px;
           flex: 0 0 auto;
       }
 
@@ -553,19 +556,24 @@
 
           .preview-table-v2 th:first-child,
           .preview-table-v2 td.emp-cell {
-              width: 155px !important;
-              min-width: 155px !important;
-              max-width: 155px !important;
+              width: 160px !important;
+              min-width: 160px !important;
+              max-width: 160px !important;
               box-shadow: 4px 0 8px rgba(0,0,0,0.05) !important;
           }
 
           .employee-row {
-              padding: 0 8px 0 10px;
-              gap: 6px;
+              padding: 8px 10px;
+              flex-direction: column;
+              align-items: flex-start;
+              gap: 4px;
           }
 
           .employee-name {
-              font-size: 0.75rem;
+              font-size: 0.85rem !important;
+              white-space: normal !important;
+              overflow: visible !important;
+              text-overflow: clip !important;
           }
 
           .emp-badge-n,
@@ -927,6 +935,23 @@
             }
 
             area.innerHTML = '';
+            
+            // Función de orden estable de hoteles
+            const getHotelOrder = (h) => {
+                const n = (h || "").toLowerCase();
+                if (n.includes("cumbria")) return 1;
+                if (n.includes("guadiana")) return 2;
+                return 999;
+            };
+
+            // Ordenar por Hotel y luego por Semana
+            result.snapshots.sort((a, b) => {
+                const orderA = getHotelOrder(a.hotel);
+                const orderB = getHotelOrder(b.hotel);
+                if (orderA !== orderB) return orderA - orderB;
+                return (a.semana_inicio || "").localeCompare(b.semana_inicio || "");
+            });
+
             const nightSummaryGroups = [];
 
             // Filtrar y renderizar snapshots
@@ -965,89 +990,7 @@
         }
     };
 
-    function getPublicCellDisplay(cell, options = {}) {
-        const compact = !!options.compact;
-        const rawLabel = String(cell?.label || cell?.displayLabel || '').trim();
-        const code = String(cell?.code || cell?.tipo || '').toUpperCase().trim();
 
-        let label = rawLabel;
-
-        // Normalización a nombres completos primero
-        if (!label || ['M','T','N','D','VAC','BAJA','PERM','PERMISO','FORM'].includes(label.toUpperCase())) {
-            const key = label.toUpperCase() || code;
-            label = {
-                M: 'Mañana',
-                T: 'Tarde',
-                N: 'Noche',
-                D: 'Descanso',
-                VAC: 'Vacaciones',
-                BAJA: 'Baja',
-                PERM: 'Permiso',
-                PERMISO: 'Permiso',
-                FORM: 'Formación'
-            }[key] || label || '—';
-        }
-
-        const icons = new Set();
-        const origen = String(cell?.origen || cell?.source || cell?.tipo_evento || '').toLowerCase();
-        const explicitIcons = Array.isArray(cell?.icons) ? cell.icons : [];
-
-        explicitIcons.forEach(i => {
-            if (['🌙','🏖️','🗓️','🤒','🎓','🔄'].includes(i)) icons.add(i);
-        });
-
-        if (/noche/i.test(label) || code === 'N') icons.add('🌙');
-        if (/vacaciones/i.test(label) || code === 'VAC') icons.add('🏖️');
-        if (/permiso/i.test(label) || code === 'PERM' || code === 'PERMISO') icons.add('🗓️');
-        if (/baja/i.test(label) || code === 'BAJA') icons.add('🤒');
-        if (/formaci/i.test(label) || code === 'FORM') icons.add('🎓');
-
-        const isRealChange =
-            (origen.includes('ct') ||
-             origen.includes('cambio') ||
-             origen.includes('intercambio') ||
-             String(cell?.tipo_evento || '').toUpperCase().includes('INTERCAMBIO') ||
-             String(cell?.tipo_evento || '').toUpperCase() === 'CT') &&
-            !origen.includes('sustitucion') &&
-            !origen.includes('vacaciones') &&
-            !origen.includes('ausencia');
-
-        if (isRealChange) icons.add('🔄');
-
-        const absenceCodes = ['VAC', 'BAJA', 'PERM', 'PERMISO', 'FORM'];
-        const isAbsence = absenceCodes.includes(code)
-            || /vacaciones|baja|permiso|formaci/i.test(label);
-
-        if (isAbsence) {
-            icons.delete('🔄');
-        }
-
-        // Eliminar iconos decorativos no deseados en Mañana/Tarde/Descanso
-        if (label === 'Mañana') { icons.delete('☀️'); icons.delete('🌞'); icons.delete('🌅'); }
-        if (label === 'Tarde')  { icons.delete('☀️'); icons.delete('🌞'); icons.delete('🌅'); }
-        if (label === 'Descanso' && !isRealChange) { icons.delete('🔄'); }
-
-        // Si es compacto (móvil), usar etiquetas cortas
-        if (compact) {
-            const compactMap = {
-                'Mañana': 'M',
-                'Tarde': 'T',
-                'Noche': 'N',
-                'Descanso': 'D',
-                'Vacaciones': 'VAC',
-                'Baja': 'BAJA',
-                'Permiso': 'PERM',
-                'Formación': 'FORM'
-            };
-            label = compactMap[label] || label;
-        }
-
-        return {
-            label,
-            icons: Array.from(icons),
-            text: label === '—' ? '—' : `${label}${icons.size ? ' ' + Array.from(icons).join(' ') : ''}`
-        };
-    }
 
     function renderSnapshotInContainer(container, snapshotData, hotelName) {
         // En el nuevo formato, snapshotData tiene { semana_inicio, semana_fin, hotel, empleados: [...] }
@@ -1081,32 +1024,21 @@
         table.renderCellContent = (cell, dayData, empName, fecha) => {
             const data = dayData || {};
             const isCompact = window.matchMedia('(max-width: 640px)').matches;
-            const display = getPublicCellDisplay(data, { compact: isCompact });
-            const visual = window.TurnosRules.describeCell({ turno: data.code, tipo: data.tipo });
+            const display = window.TurnosRules.getPublicCellDisplay(data, { compact: isCompact });
             
-            // Mapeo robusto de clase visual basado en el label normalizado y el código
-            let cls = (visual.publicClass || 'v-empty').replace('mañana', 'manana');
+            // Clase visual basada en el label normalizado (reglas del Snapshot V12)
             const norm = (display.label || '').toLowerCase();
-            const code = (data.code || '').toUpperCase();
+            let cls = 'v-empty';
 
-            if (norm.includes('vacaciones') || norm.includes('vac') || code === 'VAC' || code === 'V') {
-                cls = 'v-vac';
-            } else if (norm.includes('mañana') || norm === 'm' || code === 'M') {
-                cls = 'v-manana';
-            } else if (norm.includes('tarde') || norm === 't' || code === 'T') {
-                cls = 'v-tarde';
-            } else if (norm.includes('noche') || norm === 'n' || code === 'N') {
-                cls = 'v-noche';
-            } else if (norm.includes('descanso') || norm === 'd' || code === 'D') {
-                cls = 'v-descanso';
-            } else if (norm.includes('baja')) {
-                cls = 'v-baja';
-            } else if (norm.includes('permiso')) {
-                cls = 'v-perm';
-            } else if (norm.includes('formación') || norm.includes('formacion') || norm === 'form') {
-                cls = 'v-form';
-            }
-
+            if (norm.includes('vac')) cls = 'v-vac';
+            else if (norm.includes('mañana') || norm === 'm') cls = 'v-manana';
+            else if (norm.includes('tarde') || norm === 't') cls = 'v-tarde';
+            else if (norm.includes('noche') || norm === 'n') cls = 'v-noche';
+            else if (norm.includes('descanso') || norm === 'd') cls = 'v-descanso';
+            else if (norm.includes('baja') || norm === 'it') cls = 'v-baja';
+            else if (norm.includes('permiso') || norm === 'perm') cls = 'v-perm';
+            else if (norm.includes('formación') || norm.includes('formacion') || norm === 'form') cls = 'v-form';
+            
             if (data.titular_cubierto) cell.title = `Cubriendo a ${data.titular_cubierto}`;
 
             cell.className = `v-cell ${cls}`;
@@ -1125,8 +1057,9 @@
 
             // Cálculo de resúmenes visuales desde los datos horneados
             let nights = 0, rests = 0;
+            const daysMap = rowData.dias || rowData.cells || {};
             dates.forEach(f => {
-                const d = rowData.dias[f] || {};
+                const d = daysMap[f] || {};
                 const c = (d.code || '').toUpperCase();
                 if (c.startsWith('N')) nights++;
                 if (c.startsWith('D')) rests++;
@@ -1138,10 +1071,11 @@
             const profile = window._publicEmployeesMap?.get(window.normalizeId(rowData.empleado_id || rowData.nombre));
             const showCounters = window.shouldShowEmployeeCounters && window.shouldShowEmployeeCounters(profile || rowData, rowData);
 
+            const isAbsent = rowData.rowType === 'ausencia_informativa';
             tds[0].innerHTML = `
-                <div class="employee-row">
+                <div class="employee-row" style="${isAbsent ? 'opacity:0.6;' : ''}">
                     <span class="employee-name">${escapeHtml(rowData.nombre)}</span>
-                    ${(isCompact || !showCounters) ? '' : `
+                    ${(isCompact || !showCounters || isAbsent) ? '' : `
                     <div class="employee-stats">
                         <span class="emp-badge-n" title="Noches: ${nights}"><span class="badge-icon" aria-hidden="true">&#x1F319;</span> ${nights}</span>
                         <span class="emp-badge-d" title="Descansos: ${rests}"><span class="badge-icon" aria-hidden="true">D</span> ${rests}</span>
@@ -1156,7 +1090,11 @@
             }
         };
 
-        table.setData(empleados.sort((a,b) => a.orden - b.orden));
+        table.setData(empleados.sort((a,b) => {
+            const valA = Number(a.puestoOrden) || Number(a.orden) || 9999;
+            const valB = Number(b.puestoOrden) || Number(b.orden) || 9999;
+            return valA - valB;
+        }));
         return { rows: empleados, columns };
     }
 

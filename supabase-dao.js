@@ -1103,11 +1103,19 @@ window.TurnosDB = {
             }
 
             // DEDUPLICACIÓN DEFENSA SECUNDARIA
+            // CLAVE: hotel + semana_inicio (no solo hotel)
+            // Bug anterior: clave solo por hotel → rango multi-semana devolvía solo 1 semana por hotel.
             const deduped = [];
-            const seenHotels = new Set();
+            const seenKeys = new Set();
             
-            // Ordenamos por versión desc y fecha desc
+            // Ordenamos por semana asc, luego versión desc y fecha desc
+            // para que cada semana devuelva su snapshot de mayor versión
             const sortedData = [...data].sort((a, b) => {
+                // Primero por semana (asc)
+                if (a.semana_inicio !== b.semana_inicio) return a.semana_inicio.localeCompare(b.semana_inicio);
+                // Luego hotel (asc)
+                if (a.hotel !== b.hotel) return a.hotel.localeCompare(b.hotel);
+                // Dentro de misma semana+hotel: mayor versión primero
                 if (b.version !== a.version) return b.version - a.version;
                 return new Date(b.fecha_publicacion) - new Date(a.fecha_publicacion);
             });
@@ -1118,7 +1126,9 @@ window.TurnosDB = {
                     continue;
                 }
 
-                if (!seenHotels.has(d.hotel)) {
+                // Clave única: hotel + semana_inicio
+                const key = `${d.hotel}::${d.semana_inicio}`;
+                if (!seenKeys.has(key)) {
                     deduped.push({
                         hotel: d.hotel,
                         semanaInicio: d.semana_inicio,
@@ -1126,7 +1136,7 @@ window.TurnosDB = {
                         version: d.version,
                         data: d.snapshot_json
                     });
-                    seenHotels.add(d.hotel);
+                    seenKeys.add(key);
                 }
             }
 

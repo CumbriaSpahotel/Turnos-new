@@ -2847,7 +2847,7 @@ window.createPuestosPreviewModel = ({
         if (window.eventoPerteneceAHotel && !window.eventoPerteneceAHotel(ev, hotel)) return;
 
         const sustitutoRaw = ev.empleado_destino_id || ev.sustituto_id ||
-            ev.sustituto || ev.payload?.sustituto_id || ev.payload?.sustituto;
+            ev.sustituto || ev.payload?.sustituto_id || ev.payload?.sustituto || ev.payload?.sustituto_nombre;
         if (!sustitutoRaw) return;
 
         const titularRaw = ev.empleado_id;
@@ -2999,14 +2999,18 @@ window.createPuestosPreviewModel = ({
 
     const getEmployees = (viewType = 'weekly') => {
         const firstDate = dates[0] || '';
-        const allRows = [];
-        const handledEmps = new Set();
+        const operationalRows = [];
+        const absentRows = [];
+        const extraRefuerzoRows = [];
+        const assignedNorms = new Set(); // Empleados ya colocados en puestos operativos
         
-        // --- 1. PROCESAR FILAS BASE Y SUS POSIBLES SUSTITUCIONES ---
-        const weekStatus = new Map(); 
+        // 1. PRE-PROCESAR ESTADO DE LA SEMANA
+        const weekStatus = new Map(); // normTitular -> { tipo, sustitutoId, ... }
+        const substitutesMap = new Map(); // normSustituto -> { normTitular, ... } (para saber quién cubre a quién)
+        
         eventos.forEach(ev => {
             const tipo = window.normalizeTipo(ev.tipo);
-            if (!['VAC', 'BAJA', 'PERM', 'PERMISO', 'FORMACION', 'REFUERZO'].includes(tipo)) return;
+            if (!['VAC', 'BAJA', 'PERM', 'PERMISO', 'FORMACION'].includes(tipo)) return;
             if (window.normalizeEstado(ev.estado) === 'anulado') return;
             if (window.eventoPerteneceAHotel && !window.eventoPerteneceAHotel(ev, hotel)) return;
 
@@ -3018,84 +3022,117 @@ window.createPuestosPreviewModel = ({
             if (!tId) return;
             const normT = window.normalizeId(tId);
             const sRaw = ev.empleado_destino_id || ev.sustituto_id || ev.sustituto || ev.payload?.sustituto_id || ev.payload?.sustituto;
+            const normS = sRaw ? window.normalizeId(sRaw) : null;
             
+            // Prioridad a eventos con sustituto
             const existing = weekStatus.get(normT);
             if (existing && existing.sustitutoId && !sRaw) return;
 
-            weekStatus.set(normT, { 
+            const statusData = { 
                 tipo, 
-                sustitutoId: sRaw ? window.normalizeId(sRaw) : null, 
+                sustitutoId: normS, 
                 rawSust: sRaw, 
                 titularId: tId,
                 event_id: ev.id,
                 payload: ev.payload,
                 meta: ev.meta
-            });
+            };
+            weekStatus.set(normT, statusData);
+            if (normS) substitutesMap.set(normS, statusData);
         });
 
+        // 2. PROCESAR FILAS EXCEL (ESTRUCTURA BASE)
         sourceRows.forEach(r => {
             if (String(r.empleadoId || '').includes('---') || String(r.empleadoId || '').includes('___')) return;
-            const normT = window.normalizeId(r.empleadoId);
+            
+            const normTitular = window.normalizeId(r.empleadoId);
             const v9Order = window.getV9ExcelOrder(hotel, r.week_start || firstDate, r.empleadoId) || 500;
-            const status = weekStatus.get(normT);
+            const status = weekStatus.get(normTitular);
 
-            // A) Fila Operativa (quien trabaja el puesto)
-            let occupantId = r.empleadoId;
-            let isSustitucion = false;
-            let isVacante = false;
-            let eventRef = null;
-
+            // CASO A: TITULAR ESTÁ AUSENTE
             if (status) {
-                if (status.sustitutoId) {
-                    occupantId = status.rawSust;
-                    isSustitucion = true;
-                    eventRef = status;
-                } else if (status.tipo !== 'REFUERZO') {
-                    occupantId = 'VACANTE-' + normT;
-                    isVacante = true;
-                    eventRef = status;
-                }
-            }
-
-            const normOcc = window.normalizeId(occupantId);
-            if (!handledEmps.has(normOcc)) {
-                const occProfile = employees.find(e => window.normalizeId(e.id) === normOcc || window.normalizeId(e.nombre) === normOcc);
-                allRows.push({
-                    ...r,
-                    employee_id: occupantId,
-                    empleadoId: occupantId,
-                    nombre: occProfile?.nombre || occupantId,
-                    displayName: occProfile?.nombre || occupantId,
-                    isVacante,
-                    isSustitucion,
-                    puestoOrden: v9Order,
-                    rowType: isSustitucion ? 'employee' : 'base',
-                    origenOrden: isSustitucion ? 'cobertura_evento' : 'excel_map',
-                    titularOriginal: r.displayName || r.empleadoId,
-                    evento_id: eventRef?.event_id
-                });
-                handledEmps.add(normOcc);
-            }
-
-            // B) Fila de Titular Ausente (Informativa) - Si es sustituido o está vacante
-            if (status && status.tipo !== 'REFUERZO' && !handledEmps.has(normT)) {
-                const tProfile = employees.find(e => window.normalizeId(e.id) === normT || window.normalizeId(e.nombre) === normT);
-                allRows.push({
+                // 1. Añadir a AbsentRows (Informativo al final)
+                const tProfile = employees.find(e => window.normalizeId(e.id) === normTitular || window.normalizeId(e.nombre) === normTitular);
+                absentRows.push({
                     ...r,
                     employee_id: r.empleadoId,
                     nombre: tProfile?.nombre || r.empleadoId,
                     isAbsentInformative: true,
                     rowType: 'ausencia_informativa',
-                    puestoOrden: v9Order + 1000, // Al final del bloque operativo, pero ordenado por su v9Order original
+                    puestoOrden: v9Order + 1000,
+                    evento_id: status.event_id,
+                    titularOriginalId: r.empleadoId
+                });
+
+                // 2. Determinar quién ocupa su puesto operativo
+                let occupantId = null;
+                let isSustitucion = false;
+                let isVacante = false;
+
+                if (status.sustitutoId) {
+                    // Hay sustituto. ¿Ya está asignado en otro puesto antes? (Regla 5)
+                    // Nota: En esta fase asignamos el sustituto aunque aparezca después en Excel.
+                    occupantId = status.rawSust;
+                    isSustitucion = true;
+                } else {
+                    occupantId = 'VACANTE-' + normTitular;
+                    isVacante = true;
+                }
+
+                const normOcc = window.normalizeId(occupantId);
+                // Si el sustituto ya fue asignado a OTRO puesto operativo (duplicado), este puesto queda vacante
+                if (isSustitucion && assignedNorms.has(normOcc)) {
+                    occupantId = 'VACANTE-' + normTitular;
+                    isVacante = true;
+                    isSustitucion = false;
+                }
+
+                const occProfile = employees.find(e => window.normalizeId(e.id) === normOcc || window.normalizeId(e.nombre) === normOcc);
+                operationalRows.push({
+                    ...r,
+                    employee_id: occupantId,
+                    empleadoId: occupantId,
+                    nombre: isVacante ? 'VACANTE' : (occProfile?.nombre || occupantId),
+                    displayName: isVacante ? 'VACANTE' : (occProfile?.nombre || occupantId),
+                    isVacante,
+                    isSustitucion,
+                    puestoOrden: v9Order,
+                    rowType: 'operativo',
+                    titularOriginal: r.displayName || r.empleadoId,
+                    titularOriginalId: r.empleadoId,
                     evento_id: status.event_id
                 });
-                handledEmps.add(normT);
+                if (occupantId && !isVacante) assignedNorms.add(normOcc);
+
+            } 
+            // CASO B: TITULAR ESTÁ PRESENTE
+            else {
+                // ¿Este titular ya está ocupando otro puesto como sustituto? (Regla 5)
+                if (substitutesMap.has(normTitular)) {
+                    // Se salta su puesto original, ya está cubriendo a otro
+                    return;
+                }
+
+                if (!assignedNorms.has(normTitular)) {
+                    const profile = employees.find(e => window.normalizeId(e.id) === normTitular || window.normalizeId(e.nombre) === normTitular);
+                    operationalRows.push({
+                        ...r,
+                        employee_id: r.empleadoId,
+                        empleadoId: r.empleadoId,
+                        nombre: profile?.nombre || r.empleadoId,
+                        displayName: profile?.nombre || r.empleadoId,
+                        puestoOrden: v9Order,
+                        rowType: 'operativo',
+                        titularOriginal: r.displayName || r.empleadoId
+                    });
+                    assignedNorms.add(normTitular);
+                }
             }
         });
 
-        // --- 2. PROCESAR REFUERZOS EXPLÍCITOS (NO EN EXCEL) ---
+        // 3. PROCESAR REFUERZOS EXPLÍCITOS (FUERA DE EXCEL)
         eventos.forEach(ev => {
-            const isExplicitRef = Boolean(ev.isRefuerzo === true || ev.origen === 'refuerzo' || ev.payload?.tipo_modulo === 'refuerzo');
+            const isExplicitRef = Boolean(ev.isRefuerzo === true || ev.origen === 'refuerzo' || ev.payload?.tipo_modulo === 'refuerzo' || ev.meta?.refuerzo === true);
             if (!isExplicitRef) return;
             if (window.normalizeEstado(ev.estado) === 'anulado') return;
             if (window.eventoPerteneceAHotel && !window.eventoPerteneceAHotel(ev, hotel)) return;
@@ -3106,10 +3143,12 @@ window.createPuestosPreviewModel = ({
 
             const empId = ev.empleado_id;
             const normEmpId = window.normalizeId(empId);
-            if (handledEmps.has(normEmpId)) return;
+            
+            // Si el refuerzo ya está asignado en un puesto Excel (como sustituto o titular), no se duplica aquí
+            if (assignedNorms.has(normEmpId)) return;
 
             const empProfile = employees.find(e => window.normalizeId(e.id) === normEmpId || window.normalizeId(e.nombre) === normEmpId);
-            allRows.push({ 
+            extraRefuerzoRows.push({ 
                 hotel, 
                 employee_id: empId, 
                 nombre: empProfile?.nombre || empId, 
@@ -3118,21 +3157,15 @@ window.createPuestosPreviewModel = ({
                 origenOrden: 'refuerzo_explicito',
                 evento_id: ev.id
             });
-            handledEmps.add(normEmpId);
+            assignedNorms.add(normEmpId);
         });
 
-        // --- 3. FINALIZACIÓN Y ORDEN ---
-        let result = allRows.filter(row => {
-            const clean = window.formatDisplayName(row.nombre || row.displayName || '').trim();
-            return clean && clean.length > 0;
-        });
+        // 4. ENSAMBLAJE FINAL
+        operationalRows.sort((a, b) => a.puestoOrden - b.puestoOrden);
+        absentRows.sort((a, b) => a.puestoOrden - b.puestoOrden);
+        extraRefuerzoRows.sort((a, b) => (a.nombre || '').localeCompare(b.nombre || ''));
 
-        result.sort((a, b) => {
-            if (a.puestoOrden !== b.puestoOrden) return a.puestoOrden - b.puestoOrden;
-            return String(a.nombre || '').localeCompare(String(b.nombre || ''));
-        });
-
-        return result;
+        return [...operationalRows, ...absentRows, ...extraRefuerzoRows];
     };
 
     return {
@@ -3787,7 +3820,8 @@ window.renderPreview = async () => {
                     return {
                         nombre: employee.nombre || employee.employee_id,
                         empleado_id: employee.employee_id,
-                        orden: idx + 1,
+                        // ORDEN: usar puestoOrden del modelo (Excel map), nunca idx secuencial
+                        orden: employee.puestoOrden || (idx + 1),
                         dias: daysMap
                     };
                 })
@@ -4976,7 +5010,7 @@ window.validatePublishChanges = (changes) => {
         for (const hName of hotelsToProcess) {
             // Intentar recuperar del cache del render actual
             let hotelData = null;
-            if (cache && cache.hoteles && cache.semana_inicio === weekStart && !forceRecalculate) {
+            if (cache && cache.hoteles && cache.semana_inicio === weekStart) {
                 const found = cache.hoteles.find(h => h.hotel === hName);
                 if (found) hotelData = found.empleados;
             }
@@ -5013,11 +5047,22 @@ window.validatePublishChanges = (changes) => {
                 hotelData = deduplicated.map((emp, idx) => {
                     const daysMap = {};
                     dates.forEach(fecha => {
-                        const resolved = previewModel.getTurnoEmpleado(emp.employee_id, fecha);
+                        // REGLA DE ORO: Si es una fila operativa, resolver para el titular original (el puesto)
+                        // pero manteniendo el contexto del ocupante si fuera necesario.
+                        const resolveId = (emp.rowType === 'operativo' && emp.titularOriginalId) ? emp.titularOriginalId : emp.employee_id;
+                        const resolved = previewModel.getTurnoEmpleado(resolveId, fecha);
                         const visual = window.TurnosRules ? window.TurnosRules.describeCell(resolved) : { label: resolved.turno };
+                        // B4 FIX: Si hay incidencia (VAC/BAJA/PERM), el code DEBE ser el código de incidencia,
+                        // nunca vacío ni null. El motor pone turno=null en ausencias, pero el snapshot
+                        // necesita el código canónico para que index.html lo renderice correctamente.
+                        const absCode = resolved.incidencia
+                            ? (resolved.incidencia === 'PERMISO' ? 'PERM'
+                               : resolved.incidencia === 'FORMACION' ? 'FORM'
+                               : resolved.incidencia)
+                            : null;
                         daysMap[fecha] = {
-                            label: visual.label || resolved.turno || '',
-                            code: resolved.turno || '',
+                            label: visual.label || absCode || resolved.turno || '',
+                            code: absCode || resolved.turno || '',
                             icons: visual.icon ? [visual.icon] : (resolved.icon ? [resolved.icon] : []),
                             type: resolved.incidencia || 'NORMAL',
                             changed: !!resolved.cambio,
@@ -5033,12 +5078,12 @@ window.validatePublishChanges = (changes) => {
                     
                     return {
                         rowType: emp.rowType || 'employee',
-                        puestoOrden: idx + 1,
+                        // ORDEN: usar puestoOrden del modelo (Excel map), nunca idx secuencial
+                        puestoOrden: emp.puestoOrden || (idx + 1),
                         nombreVisible: emp.nombre || emp.employee_id,
                         nombre: emp.nombre || emp.employee_id, // Alias legacy
                         empleado_id: emp.employee_id,
-                        titularOriginal: emp.titularOriginal || null,
-                        incidenciaTitular: emp.incidencia || null,
+                        titularOriginalId: emp.titularOriginalId,
                         cells: daysMap,
                         dias: daysMap, // Alias legacy
                         // Metadatos adicionales para el index
@@ -5138,46 +5183,81 @@ window.validatePublishChanges = (changes) => {
                         warnings.push(`[AVISO] Ausencia sin sustituto: ${empName} (${cell.type}) el ${fecha}`);
                     }
                 });
+                
+                // [N] Validación de Filas Vacías (Regla 6)
+                const cellsArray = Object.values(row.cells);
+                const hasAnyContent = cellsArray.some(c => {
+                    const code = (c.code || '').toUpperCase().trim();
+                    return code && code !== '\u2014' && code !== '—' && code !== '';
+                });
+
+                if (row.rowType === 'operativo' && !hasAnyContent) {
+                    errors.push(`[BLOQUEO] Fila operativa sin turnos (vacía): "${empName}" en ${hName}`);
+                }
+                
+                if (row.rowType === 'ausencia_informativa') {
+                    const hasIncidence = cellsArray.some(c => c.isAbsence || ['VAC','BAJA','PERM','FORM','IT'].includes((c.type || '').toUpperCase()));
+                    if (!hasIncidence) {
+                        errors.push(`[BLOQUEO] Fila informativa de ausencia sin incidencias visibles: "${empName}" en ${hName}`);
+                    }
+                }
+
+                if (row.rowType === 'refuerzo' && !hasAnyContent) {
+                    errors.push(`[BLOQUEO] Fila de refuerzo sin turnos: "${empName}" en ${hName}`);
+                }
             });
 
-            // [M] Validación de Cobertura Obligatoria de Eventos
-            // Si existe un evento VAC/BAJA/PERMISO, el snapshot DEBE contenerlo.
+            // [M] Validación de Cobertura Obligatoria de Eventos (B2/B3 FIX)
+            // B2: snap usa week_start/week_end/hotel_id, NO semana_inicio/semana_fin/hotel
+            // B3: normalizar estado del evento con normalizeEstado(); comparar hotel con hotel_id
             const events = window.eventosGlobales || [];
-            const weekStart = snap.semana_inicio;
-            const weekEnd = snap.semana_fin;
+            const wStart = snap.week_start || snap.semana_inicio || '';
+            const wEnd   = snap.week_end   || snap.semana_fin   || '';
+            const snapHotelId = snap.hotel_id || snap.hotel || snap.hotel_nombre || '';
 
             events.forEach(ev => {
-                if (ev.estado === 'anulado' || ev.estado === 'rechazado') return;
-                if (ev.hotel_origen !== snap.hotel && ev.hotel_destino !== snap.hotel && ev.payload?.hotel_id !== snap.hotel) return;
+                if (window.normalizeEstado(ev.estado) === 'anulado') return;
+                // Filtro de hotel: usar normalizeId + todos los campos posibles del evento
+                const evHotel = window.normalizeId(window.getEventoHotel ? window.getEventoHotel(ev) : (ev.hotel || ev.hotel_origen || ev.hotel_destino || ev.payload?.hotel_id || ''));
+                const snapHotelNorm = window.normalizeId(snapHotelId);
+                if (evHotel && snapHotelNorm && evHotel !== snapHotelNorm) return;
+
+                const tipoEv = window.normalizeTipo(ev.tipo);
+                if (!['VAC', 'BAJA', 'PERM', 'PERMISO'].includes(tipoEv)) return;
 
                 // Intersección con la semana
-                const evStart = ev.fecha_inicio;
-                const evEnd = ev.fecha_fin || ev.fecha_inicio;
-                if (evStart <= weekEnd && evEnd >= weekStart) {
-                    const idNorm = window.normalizeId(ev.empleado_id);
-                    const row = snap.rows.find(r => window.normalizeId(r.empleado_id) === idNorm);
-                    
-                    if (!row) {
-                        // Si el empleado del evento no está en el snapshot, es un error grave de integridad
-                        if (['VAC', 'BAJA', 'PERMISO', 'PERM'].includes(ev.tipo)) {
-                            errors.push(`[BLOQUEO] Evento ${ev.tipo} de ${ev.empleado_id} no existe en el snapshot de ${snap.hotel}`);
+                const evStart = window.normalizeDate ? window.normalizeDate(ev.fecha_inicio) : (ev.fecha_inicio || '');
+                const evEnd   = window.normalizeDate ? window.normalizeDate(ev.fecha_fin || ev.fecha_inicio) : (ev.fecha_fin || ev.fecha_inicio || '');
+                if (!evStart || !wStart || evStart > wEnd || evEnd < wStart) return;
+
+                const idNorm = window.normalizeId(ev.empleado_id);
+                const row = snap.rows.find(r => window.normalizeId(r.empleado_id) === idNorm);
+
+                if (!row) {
+                    errors.push(`[BLOQUEO] Evento ${tipoEv} de ${ev.empleado_id} no aparece en el snapshot de ${snapHotelId}`);
+                } else {
+                    // Verificar que cada día de la ausencia tenga el código correcto en el snapshot
+                    const cellDates = Object.keys(row.cells).filter(d =>
+                        d >= evStart && d <= evEnd && d >= wStart && d <= wEnd
+                    );
+                    cellDates.forEach(d => {
+                        const cell = row.cells[d];
+                        if (!cell) {
+                            errors.push(`[BLOQUEO] Celda faltante para ${row.nombreVisible} el ${d} (evento ${tipoEv})`);
+                            return;
                         }
-                    } else {
-                        // Verificar que los días del evento tengan el código correcto
-                        const dates = Object.keys(row.cells).filter(d => d >= evStart && d <= evEnd && d >= weekStart && d <= weekEnd);
-                        dates.forEach(d => {
-                            const cell = row.cells[d];
-                            const code = cell.code.toUpperCase();
-                            const type = (cell.type || '').toUpperCase();
-                            
-                            const expectedCodes = { 'VAC': 'VAC', 'BAJA': 'BAJA', 'PERMISO': 'PERM', 'PERM': 'PERM' };
-                            const expected = expectedCodes[ev.tipo];
-                            
-                            if (expected && !code.includes(expected) && type !== expected) {
-                                errors.push(`[BLOQUEO] Evento ${ev.tipo} detectado pero no renderizado para ${row.nombreVisible} el ${d} (Visto: "${code}")`);
-                            }
-                        });
-                    }
+                        const code = String(cell.code || '').toUpperCase();
+                        const type = String(cell.type || '').toUpperCase();
+
+                        // Códigos esperados: VAC→VAC, BAJA→BAJA, PERMISO/PERM→PERM
+                        const expectedCodes = { 'VAC': 'VAC', 'BAJA': 'BAJA', 'PERMISO': 'PERM', 'PERM': 'PERM' };
+                        const expected = expectedCodes[tipoEv];
+
+                        const isRendered = expected && (code === expected || code.startsWith(expected) || type === expected);
+                        if (!isRendered) {
+                            errors.push(`[BLOQUEO] Evento ${tipoEv} no renderizado para ${row.nombreVisible} el ${d} — snapshot tiene code="${code}" type="${type}"`);
+                        }
+                    });
                 }
             });
         }
@@ -5400,10 +5480,17 @@ window.publishToSupabase = async () => {
                             dates.forEach(fecha => {
                                 const resolved = previewModel.getTurnoEmpleado(emp.employee_id, fecha);
                                 const visual = window.TurnosRules ? window.TurnosRules.describeCell(resolved) : { label: resolved.turno };
+                                // B4 FIX (publicar path): mismo que en buildPublicationSnapshotPreview
+                                const absCode = resolved.incidencia
+                                    ? (resolved.incidencia === 'PERMISO' ? 'PERM'
+                                       : resolved.incidencia === 'FORMACION' ? 'FORM'
+                                       : resolved.incidencia)
+                                    : null;
                                 daysMap[fecha] = {
-                                    label: visual.label || resolved.turno || '',
-                                    code: resolved.turno || '',
+                                    label: visual.label || absCode || resolved.turno || '',
+                                    code: absCode || resolved.turno || '',
                                     icons: visual.icon ? [visual.icon] : (resolved.icon ? [resolved.icon] : []),
+                                    type: resolved.incidencia || 'NORMAL',
                                     estado: (resolved.isAbsent || resolved.incidencia) ? 'ausente' : 'operativo',
                                     origen: resolved.incidencia || resolved.origen || 'base',
                                     titular_cubierto: resolved.titular || null,

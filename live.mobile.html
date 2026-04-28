@@ -149,7 +149,7 @@
 
     .grid-head, .grid-row {
       display: grid !important;
-      grid-template-columns: 95px repeat(7, 1fr) !important;
+      grid-template-columns: 140px repeat(7, 1fr) !important;
       border-bottom: 1px solid var(--border);
     }
 
@@ -197,13 +197,15 @@
     }
 
     .emp-name {
-      font-size: 11px !important;
+      font-size: 13px !important;
       font-weight: 700 !important;
       color: var(--text);
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      opacity: 0.9;
+      white-space: normal !important;
+      overflow: visible !important;
+      text-overflow: clip !important;
+      word-break: break-word;
+      line-height: 1.2;
+      opacity: 1;
     }
 
     .grid-cell {
