@@ -62,6 +62,7 @@
   const shiftGrid   = $("#shiftGrid");
   const dateRangeLabel = $("#dateRangeLabel");
   const headerHotel = $("#headerHotel");
+  let orientationRefreshTimer = null;
 
   function escapeHtml(value) {
     return String(value ?? "").replace(/[&<>"']/g, ch => ({
@@ -78,6 +79,28 @@
     "cumbria":  { dataName: "Cumbria Spa&Hotel", label: "Cumbria Spa&Hotel" },
     "guadiana": { dataName: "Sercotel Guadiana",  label: "Sercotel Guadiana" }
   };
+
+  function applyOrientationMode() {
+    if (!document.body) return false;
+    const isLandscape = window.matchMedia
+      ? window.matchMedia("(orientation: landscape)").matches
+      : window.innerWidth > window.innerHeight;
+    document.body.classList.toggle("is-landscape", isLandscape);
+    document.body.classList.toggle("is-portrait", !isLandscape);
+    return isLandscape;
+  }
+
+  function scheduleOrientationRefresh() {
+    applyOrientationMode();
+    if (orientationRefreshTimer) {
+      clearTimeout(orientationRefreshTimer);
+    }
+    orientationRefreshTimer = setTimeout(() => {
+      if (typeof window.refreshMobileView === "function") {
+        window.refreshMobileView();
+      }
+    }, 120);
+  }
 
   function renderEmptyState(message, detail = "") {
     shiftGrid.innerHTML = `
@@ -124,7 +147,7 @@
     const dEnd = new Date(startIso + "T12:00:00");
     dEnd.setDate(dEnd.getDate() + 6);
     const endIso = toISODateUTC(dEnd);
-    const compactWeekLabel = window.matchMedia && window.matchMedia("(orientation: landscape)").matches;
+    const compactWeekLabel = applyOrientationMode();
     const weekRangeLabel = formatWeekRangeLabel(startIso, compactWeekLabel);
     if (dateInput) {
         dateInput.setAttribute("aria-label", weekRangeLabel);
@@ -366,5 +389,17 @@
     window.refreshMobileView();
   };
 
-  window.initMobileSunc = async function() { await window.refreshMobileView(); };
+  if (window.screen && window.screen.orientation && typeof window.screen.orientation.addEventListener === "function") {
+    window.screen.orientation.addEventListener("change", scheduleOrientationRefresh);
+  }
+  window.addEventListener("orientationchange", scheduleOrientationRefresh);
+  window.addEventListener("resize", scheduleOrientationRefresh);
+  if (window.visualViewport && typeof window.visualViewport.addEventListener === "function") {
+    window.visualViewport.addEventListener("resize", scheduleOrientationRefresh);
+  }
+
+  window.initMobileSunc = async function() {
+    applyOrientationMode();
+    await window.refreshMobileView();
+  };
 })();

@@ -3805,16 +3805,26 @@ window.renderPreview = async () => {
                     const daysMap = {};
                     columns.forEach(c => {
                         const resolved = previewModel.getTurnoEmpleado(employee.employee_id, c.date);
-                        // Asegurar que describeCell recibe el estado final real
                         const visual = window.TurnosRules ? window.TurnosRules.describeCell(resolved) : { label: resolved.turno };
+                        
+                        // B4 FIX: Garantizar códigos canónicos para ausencias en el cache
+                        const absCode = resolved.incidencia
+                            ? (resolved.incidencia === 'PERMISO' ? 'PERM'
+                               : resolved.incidencia === 'FORMACION' ? 'FORM'
+                               : resolved.incidencia === 'BAJA' ? 'BAJA'
+                               : resolved.incidencia === 'VAC' ? 'VAC'
+                               : resolved.incidencia)
+                            : null;
+
                         daysMap[c.date] = {
-                            label: visual.label || resolved.turno || '',
-                            code: resolved.turno || '',
-                            icons: visual.icon ? [visual.icon] : (resolved.icon ? [resolved.icon] : []),
+                            label: visual.label || absCode || resolved.turno || '',
+                            code: absCode || resolved.turno || '',
+                            icons: visual.icons || (visual.icon ? [visual.icon] : (resolved.icon ? [resolved.icon] : [])),
                             estado: (resolved.isAbsent || resolved.incidencia) ? 'ausente' : 'operativo',
                             origen: resolved.incidencia || resolved.origen || 'base',
                             titular_cubierto: resolved.titular || null,
-                            sustituto: resolved.sustituidoPor || null
+                            sustituto: resolved.sustituidoPor || null,
+                            changed: !!resolved.cambio
                         };
                     });
                     return {
@@ -5047,23 +5057,27 @@ window.validatePublishChanges = (changes) => {
                 hotelData = deduplicated.map((emp, idx) => {
                     const daysMap = {};
                     dates.forEach(fecha => {
-                        // REGLA DE ORO: Si es una fila operativa, resolver para el titular original (el puesto)
-                        // pero manteniendo el contexto del ocupante si fuera necesario.
-                        const resolveId = (emp.rowType === 'operativo' && emp.titularOriginalId) ? emp.titularOriginalId : emp.employee_id;
+                        // REGLA DE ORO V12.1: Siempre resolver para el ID del ocupante de esta fila (emp.employee_id).
+                        // El motor (getTurnoEmpleadoExtended) ya se encarga de heredar el turno del titular
+                        // si este empleado es un sustituto. Si resolvemos para el titular, obtendríamos
+                        // su incidencia (VAC/BAJA), lo cual es incorrecto para la fila operativa del sustituto.
+                        const resolveId = emp.employee_id;
                         const resolved = previewModel.getTurnoEmpleado(resolveId, fecha);
                         const visual = window.TurnosRules ? window.TurnosRules.describeCell(resolved) : { label: resolved.turno };
-                        // B4 FIX: Si hay incidencia (VAC/BAJA/PERM), el code DEBE ser el código de incidencia,
-                        // nunca vacío ni null. El motor pone turno=null en ausencias, pero el snapshot
-                        // necesita el código canónico para que index.html lo renderice correctamente.
+                        
+                        // B4 FIX: Garantizar códigos canónicos para ausencias.
                         const absCode = resolved.incidencia
                             ? (resolved.incidencia === 'PERMISO' ? 'PERM'
                                : resolved.incidencia === 'FORMACION' ? 'FORM'
+                               : resolved.incidencia === 'BAJA' ? 'BAJA'
+                               : resolved.incidencia === 'VAC' ? 'VAC'
                                : resolved.incidencia)
                             : null;
+
                         daysMap[fecha] = {
                             label: visual.label || absCode || resolved.turno || '',
                             code: absCode || resolved.turno || '',
-                            icons: visual.icon ? [visual.icon] : (resolved.icon ? [resolved.icon] : []),
+                            icons: visual.icons || (visual.icon ? [visual.icon] : (resolved.icon ? [resolved.icon] : [])),
                             type: resolved.incidencia || 'NORMAL',
                             changed: !!resolved.cambio,
                             isAbsence: !!resolved.incidencia,
@@ -5077,8 +5091,7 @@ window.validatePublishChanges = (changes) => {
                     const profile = profiles.find(p => window.normalizeId(p.id) === window.normalizeId(emp.employee_id) || window.normalizeId(p.nombre) === window.normalizeId(emp.employee_id));
                     
                     return {
-                        rowType: emp.rowType || 'employee',
-                        // ORDEN: usar puestoOrden del modelo (Excel map), nunca idx secuencial
+                        rowType: emp.rowType || 'operativo',
                         puestoOrden: emp.puestoOrden || (idx + 1),
                         nombreVisible: emp.nombre || emp.employee_id,
                         nombre: emp.nombre || emp.employee_id, // Alias legacy
@@ -5095,15 +5108,15 @@ window.validatePublishChanges = (changes) => {
                     };
                 });
             } else {
-                // Adaptar el cache al formato de Snapshot V12
+                // TAREA CODEX: El cache debe preservar la integridad estructural de V12
                 hotelData = hotelData.map(emp => ({
                     ...emp,
-                    rowType: 'employee',
-                    puestoOrden: emp.orden,
-                    nombreVisible: emp.nombre,
+                    rowType: emp.rowType || 'operativo',
+                    puestoOrden: emp.puestoOrden || emp.orden || 999,
+                    nombreVisible: emp.nombreVisible || emp.nombre,
                     nombre: emp.nombre,
-                    cells: emp.dias,
-                    dias: emp.dias
+                    cells: emp.cells || emp.dias,
+                    dias: emp.cells || emp.dias
                 }));
             }
 
