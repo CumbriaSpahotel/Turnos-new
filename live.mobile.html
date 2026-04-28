@@ -249,9 +249,46 @@
     }
 
     .change-indicator {
-      font-size: 0.6em !important;
-      margin-left: 2px;
+      font-size: 0.56em !important;
+      margin-left: 3px;
+      opacity: 1;
+      width: 0.95rem;
+      height: 0.95rem;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.24);
+      color: #fff;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      vertical-align: middle !important;
+      box-shadow: 0 2px 6px rgba(15, 23, 42, 0.16);
+    }
+
+    .night-indicator {
+      font-size: 0.46em !important;
+      margin-left: 1px;
+      vertical-align: super !important;
       opacity: 0.95;
+    }
+
+    .change-indicator-bottom {
+      position: absolute;
+      left: 50%;
+      bottom: -5px;
+      transform: translateX(-50%);
+      width: 0.92rem;
+      height: 0.92rem;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.92);
+      color: #334155;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.54rem;
+      font-weight: 900;
+      box-shadow: 0 3px 8px rgba(15, 23, 42, 0.18);
+      border: 1px solid rgba(255,255,255,0.85);
+      line-height: 1;
     }
 
     /* PALETA PULIDA */
@@ -336,12 +373,16 @@
       background:
         radial-gradient(circle at top left, rgba(217, 119, 6, 0.12), transparent 35%),
         linear-gradient(180deg, var(--bg-soft) 0%, var(--bg) 48%, #f8fafc 100%);
+      min-height: 100vh;
+      overflow-x: hidden;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
     }
 
     .app-viewport {
       background: transparent;
       position: relative;
-      overflow: hidden;
+      overflow: visible;
       padding-top: max(10px, env(safe-area-inset-top));
       width: min(100vw - 12px, 560px);
       max-width: 560px;
@@ -500,6 +541,98 @@
       gap: 10px;
     }
 
+    .welcome-state {
+      min-height: 44vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 4px 4px 16px;
+    }
+
+    .welcome-card {
+      width: 100%;
+      max-width: 520px;
+      padding: 22px 20px 18px;
+      border-radius: 28px;
+      background:
+        radial-gradient(circle at top, rgba(217, 119, 6, 0.12), transparent 34%),
+        linear-gradient(180deg, rgba(255,255,255,0.92), rgba(255,255,255,0.78));
+      border: 1px solid rgba(255,255,255,0.72);
+      box-shadow: 0 24px 48px rgba(15, 23, 42, 0.1);
+      text-align: center;
+      backdrop-filter: blur(18px);
+    }
+
+    .welcome-icon {
+      font-size: 2.4rem;
+      line-height: 1;
+      margin-bottom: 8px;
+    }
+
+    .welcome-eyebrow {
+      font-size: 0.68rem;
+      font-weight: 800;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--primary);
+      margin-bottom: 8px;
+    }
+
+    .welcome-title {
+      font-family: 'Outfit', sans-serif;
+      font-size: 1.34rem;
+      line-height: 1.08;
+      color: var(--text);
+      margin-bottom: 10px;
+    }
+
+    .welcome-detail {
+      font-size: 0.94rem;
+      line-height: 1.45;
+      color: var(--muted);
+      max-width: 34ch;
+      margin: 0 auto 14px;
+      font-weight: 600;
+    }
+
+    .welcome-features {
+      display: grid;
+      gap: 8px;
+    }
+
+    .welcome-feature {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 14px;
+      border-radius: 18px;
+      background: rgba(255,255,255,0.72);
+      border: 1px solid rgba(148, 163, 184, 0.16);
+      text-align: left;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.65);
+    }
+
+    .welcome-feature-icon {
+      width: 32px;
+      height: 32px;
+      border-radius: 999px;
+      background: var(--navy);
+      color: #fff;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.9rem;
+      flex-shrink: 0;
+    }
+
+    .welcome-feature-text {
+      font-size: 0.9rem;
+      font-weight: 700;
+      color: var(--text);
+      line-height: 1.2;
+      text-align: left;
+    }
+
     .hotel-name {
       font-size: 0.83rem;
       color: #334155;
@@ -599,6 +732,8 @@
       font-weight: 700 !important;
       box-shadow: 0 8px 18px rgba(15, 23, 42, 0.1);
       border: 1px solid rgba(255,255,255,0.46);
+      position: relative;
+      overflow: visible;
     }
 
     .m { background: linear-gradient(180deg, #4f8dfd, #2563eb) !important; color: #ffffff !important; }
@@ -648,6 +783,28 @@
 
     .dark-mode .hotel-name {
       color: #e5edf7;
+    }
+
+    .dark-mode .welcome-card {
+      background:
+        radial-gradient(circle at top, rgba(245, 158, 11, 0.12), transparent 34%),
+        linear-gradient(180deg, rgba(23, 32, 51, 0.96), rgba(15, 23, 42, 0.92));
+      border-color: rgba(148, 163, 184, 0.14);
+      box-shadow: 0 24px 48px rgba(2, 6, 23, 0.24);
+    }
+
+    .dark-mode .welcome-detail {
+      color: #a8b4c7;
+    }
+
+    .dark-mode .welcome-feature {
+      background: rgba(15, 23, 42, 0.44);
+      border-color: rgba(148, 163, 184, 0.12);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.04);
+    }
+
+    .dark-mode .welcome-feature-text {
+      color: #f8fafc;
     }
 
     .dark-mode .grid-head {
@@ -708,14 +865,52 @@
         font-size: 10px !important;
       }
 
+      .welcome-card {
+        padding: 18px 16px 16px;
+        border-radius: 24px;
+      }
+
+      .welcome-title {
+        font-size: 1.18rem;
+      }
+
+      .welcome-detail {
+        font-size: 0.86rem;
+      }
+
       .day-date {
         font-size: 0.61rem;
+        letter-spacing: 0;
       }
 
       .badge-shift {
         width: 28px !important;
         height: 28px !important;
         font-size: 0.78rem !important;
+      }
+    }
+
+    @media (max-width: 430px) {
+      .grid-head, .grid-row {
+        grid-template-columns: var(--name-col-w, 106px) repeat(7, minmax(0, 1fr)) !important;
+      }
+
+      .th-name {
+        padding-left: 10px;
+      }
+
+      .day-th {
+        min-height: 48px;
+        padding: 4px 0 3px;
+      }
+
+      .day-letter {
+        font-size: 0.56rem;
+      }
+
+      .day-date {
+        font-size: 0.72rem;
+        font-weight: 800;
       }
     }
 
@@ -746,6 +941,24 @@
         width: min(100% - 24px, 760px);
         max-width: 760px;
       }
+
+      .welcome-state {
+        min-height: 38vh;
+      }
+
+      .welcome-card {
+        max-width: 640px;
+        padding-left: 28px;
+        padding-right: 28px;
+      }
+
+      .welcome-features {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .welcome-feature:last-child {
+        grid-column: 1 / -1;
+      }
     }
   </style>
 </head>
@@ -769,7 +982,7 @@
       <span class="toolbar-label">Elegir hotel</span>
       <select id="hotelSelect" onchange="refreshMobileView()">
         <option value="">🏨 SELECCIONAR HOTEL</option>
-        <option value="cumbria">Hotel Cumbria</option>
+        <option value="cumbria">Cumbria Spa&amp;Hotel</option>
         <option value="guadiana">Sercotel Guadiana</option>
       </select>
       </div>

@@ -73,10 +73,27 @@
 
   function renderInitialState() {
     shiftGrid.innerHTML = `
-      <div class="empty-state" style="padding:52px 24px; text-align:center; color:var(--muted);">
-        <div class="empty-icon" style="font-size:2.8rem; margin-bottom:12px;">🏨</div>
-        <div class="empty-title" style="font-weight:800; font-size:1.08rem; line-height:1.35; margin-bottom:8px;">Selecciona un hotel para ver el cuadrante</div>
-        <div class="empty-detail" style="font-weight:600; font-size:0.9rem; line-height:1.45; opacity:0.9;">Elige <strong style="color:var(--text);">Cumbria Spa&amp;Hotel</strong> o <strong style="color:var(--text);">Sercotel Guadiana</strong> en el selector superior.</div>
+      <div class="welcome-state">
+        <div class="welcome-card">
+          <div class="welcome-icon">🏨</div>
+          <div class="welcome-eyebrow">Vista publicada</div>
+          <div class="welcome-title">Consulta turnos, descansos y cambios de la semana en un solo vistazo</div>
+          <div class="welcome-detail">Esta vista móvil te permite revisar el cuadrante publicado con una lectura rápida, clara y adaptada al teléfono.</div>
+          <div class="welcome-features">
+            <div class="welcome-feature">
+              <span class="welcome-feature-icon">📅</span>
+              <span class="welcome-feature-text">Semana actual siempre visible</span>
+            </div>
+            <div class="welcome-feature">
+              <span class="welcome-feature-icon">🏷️</span>
+              <span class="welcome-feature-text">Turnos y descansos identificados por color</span>
+            </div>
+            <div class="welcome-feature">
+              <span class="welcome-feature-icon">📲</span>
+              <span class="welcome-feature-text">Diseño optimizado para móvil vertical y horizontal</span>
+            </div>
+          </div>
+        </div>
       </div>
     `;
   }
@@ -177,9 +194,13 @@
 
     const base = raw.split(/\s+/)[0] || "";
     const hasChange = raw.includes("🔄");
+    const isNight = visualClass === "n" || base === "N";
 
     if (visualClass === "m" || visualClass === "t" || visualClass === "n" || visualClass === "d" || visualClass === "b" || visualClass === "p") {
-      return `${escapeHtml(base)}${hasChange ? '<span class="emoji-indicator change-indicator">↻</span>' : ''}`;
+      const mainLabel = isNight
+        ? `${escapeHtml(base)}<span class="emoji-indicator night-indicator" aria-hidden="true">🌙</span>`
+        : escapeHtml(base);
+      return `${mainLabel}${hasChange ? '<span class="change-indicator-bottom" aria-label="Cambio de turno">↺</span>' : ''}`;
     }
 
     return formatShiftText(raw);
@@ -205,6 +226,7 @@
   async function renderSnapshotTable(hotel, snapshotData, container) {
     const empleados = snapshotData.empleados || [];
     const semanaInicio = snapshotData.semana_inicio;
+    const isNarrowMobile = window.innerWidth <= 430;
     const longestNameLength = empleados.reduce((max, emp) => {
       const nameLength = String(emp?.nombre || "").trim().length;
       return Math.max(max, nameLength);
@@ -227,7 +249,10 @@
                 <div class="grid-th th-name">Empleado</div>
                 ${dates.map(f => {
                     const dObj = new Date(f + 'T12:00:00');
-                    return `<div class="grid-th day-th"><span class="day-letter">${weekdayLong[dObj.getUTCDay()].slice(0,1)}</span><span class="day-date">${dObj.getUTCDate()}/${monthNames[dObj.getUTCMonth()]}</span></div>`;
+                    const dateLabel = isNarrowMobile
+                      ? `${dObj.getUTCDate()}`
+                      : `${dObj.getUTCDate()}/${monthNames[dObj.getUTCMonth()]}`;
+                    return `<div class="grid-th day-th"><span class="day-letter">${weekdayLong[dObj.getUTCDay()].slice(0,1)}</span><span class="day-date">${dateLabel}</span></div>`;
                 }).join('')}
             </div>
             <div class="grid-body">
