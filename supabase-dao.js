@@ -1076,6 +1076,69 @@ window.TurnosDB = {
         }
     },
 
+    isValidPublicSnapshot(snapshot) {
+        if (!snapshot) return false;
+        const data = snapshot.snapshot_json || snapshot.data || snapshot;
+        const emps = data.empleados || data.rows || [];
+        if (!Array.isArray(emps) || emps.length === 0) return false;
+
+        // 1. VALIDACIÓN ESTRUCTURAL (Orden y Metadatos)
+        const orders = emps.map(e => Number(e.puestoOrden || e.orden || 9999));
+        const all999 = orders.every(o => o === 999);
+        if (all999) return false;
+
+        // Regla: Todas las filas base (no extras ni refuerzos) deben tener un puestoOrden real (< 900)
+        // Esto descarta versiones con reparaciones parciales donde el orden se rompió (ej. PO=1347 o 1999 para titulares)
+        const baseRows = emps.filter(e => e.rowType !== 'extra' && e.rowType !== 'refuerzo');
+        const hasValidBaseOrder = baseRows.length > 0 && baseRows.every(e => {
+            const po = Number(e.puestoOrden || e.orden || 9999);
+            return po < 900;
+        });
+        if (!hasValidBaseOrder) return false;
+
+        if (emps.some(e => (e.nombreVisible || e.nombre || "").includes("_DUP"))) return false;
+
+        const hName = (snapshot.hotel || data.hotel || "").toUpperCase();
+        if (hName.includes("TEST")) return false;
+
+        // 2. VALIDACIÓN SEMÁNTICA (Integridad de Incidencias)
+        // Regla: Si una celda tiene un tipo de incidencia, el código no puede estar vacío o ser un guion
+        for (const emp of emps) {
+            const cells = emp.dias || emp.cells || {};
+            let hasAnyIncidenceInRow = false;
+            
+            for (const fecha in cells) {
+                const c = cells[fecha];
+                const type = (c.type || "").toUpperCase();
+                const code = (c.code || "").toUpperCase().trim();
+                
+                if (["VAC", "BAJA", "IT", "PERM", "PERMISO", "FORM"].includes(type)) {
+                    hasAnyIncidenceInRow = true;
+                    // B4 FIX: No aceptamos celdas de incidencia con código vacío o genérico "—"
+                    if (!code || code === "—" || code === "" || code === "-") return false;
+                    
+                    // Consistencia básica
+                    if (type === "VAC" && !code.includes("VAC")) return false;
+                    if (["BAJA", "IT"].includes(type) && (!code.includes("BAJA") && !code.includes("IT"))) return false;
+                }
+            }
+
+            // Regla: Una fila base (titular) no puede estar vacía toda la semana.
+            // Si tiene todo "—" o vacío, es un síntoma de snapshot corrupto o pre-fix B4.
+            const isBase = !emp.rowType || (emp.rowType !== 'extra' && emp.rowType !== 'refuerzo');
+            if (isBase) {
+                const codes = Object.values(cells).map(c => String(c.code || '').trim());
+                const allEmpty = codes.every(code => code === '' || code === '—' || code === '-');
+                if (allEmpty) return false;
+            }
+
+            // Regla específica para filas informativas de ausencia
+            if (emp.rowType === 'ausencia_informativa' && !hasAnyIncidenceInRow) return false;
+        }
+
+        return true;
+    },
+
     async loadPublishedSchedule(params, maybeSemanaFin, maybeHotel) {
         const { semanaInicio: rawStart, semanaFin: rawEnd, hotel } = (typeof params === 'object' && params !== null)
             ? params
@@ -1085,6 +1148,7 @@ window.TurnosDB = {
         const semanaFin = this.normalizeDate(rawEnd);
         const client = window.supabase;
         try {
+            // Buscamos todas las versiones activas para poder elegir la mejor válida
             let query = client
                 .from('publicaciones_cuadrante')
                 .select('*')
@@ -1093,51 +1157,46 @@ window.TurnosDB = {
             if (semanaInicio) query = query.gte('semana_fin', semanaInicio);
             if (semanaFin) query = query.lte('semana_inicio', semanaFin);
             if (hotel) query = query.eq('hotel', hotel);
-            query = query.order('semana_inicio', { ascending: true }).order('hotel', { ascending: true });
 
             const { data, error } = await query;
-            
             if (error) throw error;
             if (!data || data.length === 0) {
                 return { ok: false, reason: "NO_PUBLICATION", message: "No hay cuadrante publicado para esta semana." };
             }
 
-            // DEDUPLICACIÓN DEFENSA SECUNDARIA
-            // CLAVE: hotel + semana_inicio (no solo hotel)
-            // Bug anterior: clave solo por hotel → rango multi-semana devolvía solo 1 semana por hotel.
+            // DEDUPLICACIÓN CON FILTRADO DE VALIDEZ
             const deduped = [];
             const seenKeys = new Set();
             
-            // Ordenamos por semana asc, luego versión desc y fecha desc
-            // para que cada semana devuelva su snapshot de mayor versión
+            // Ordenamos: semana (asc), hotel (asc), versión (desc)
             const sortedData = [...data].sort((a, b) => {
-                // Primero por semana (asc)
                 if (a.semana_inicio !== b.semana_inicio) return a.semana_inicio.localeCompare(b.semana_inicio);
-                // Luego hotel (asc)
                 if (a.hotel !== b.hotel) return a.hotel.localeCompare(b.hotel);
-                // Dentro de misma semana+hotel: mayor versión primero
                 if (b.version !== a.version) return b.version - a.version;
-                return new Date(b.fecha_publicacion) - new Date(a.fecha_publicacion);
+                return new Date(b.created_at || 0) - new Date(a.created_at || 0);
             });
 
-            for (const d of sortedData) {
-                const hName = String(d.hotel || '').toUpperCase();
-                if (hName.includes('TEST') || hName.includes('MOCK') || hName.includes('SAMPLE')) {
-                    continue;
-                }
-
+            for (const item of sortedData) {
                 // Clave única: hotel + semana_inicio
-                const key = `${d.hotel}::${d.semana_inicio}`;
-                if (!seenKeys.has(key)) {
+                const key = `${item.hotel}::${item.semana_inicio}`;
+                if (seenKeys.has(key)) continue;
+
+                if (this.isValidPublicSnapshot(item)) {
                     deduped.push({
-                        hotel: d.hotel,
-                        semanaInicio: d.semana_inicio,
-                        semanaFin: d.semana_fin,
-                        version: d.version,
-                        data: d.snapshot_json
+                        hotel: item.hotel,
+                        semanaInicio: item.semana_inicio,
+                        semanaFin: item.semana_fin,
+                        version: item.version,
+                        data: item.snapshot_json
                     });
                     seenKeys.add(key);
+                } else {
+                    console.warn(`[SNAPSHOT] Skipped version ${item.version} for ${item.hotel} (${item.semana_inicio}): invalid structural data (puestoOrden error or corruption).`);
                 }
+            }
+
+            if (deduped.length === 0) {
+                return { ok: false, reason: "NO_VALID_SNAPSHOT", message: "No hay versiones válidas publicadas." };
             }
 
             return {

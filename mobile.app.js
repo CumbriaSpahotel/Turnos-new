@@ -57,9 +57,19 @@
 
   // Mapa de hoteles para vincular selector y datos internos
   const HOTEL_MAP = {
-    "cumbria":  { dataName: "CUMBRIA SPA&HOTEL", label: "Hotel Cumbria" },
-    "guadiana": { dataName: "SERCOTEL GUADIANA",  label: "Sercotel Guadiana" }
+    "cumbria":  { dataName: "Cumbria Spa&Hotel", label: "Cumbria Spa&Hotel" },
+    "guadiana": { dataName: "Sercotel Guadiana",  label: "Sercotel Guadiana" }
   };
+
+  function renderEmptyState(message, detail = "") {
+    shiftGrid.innerHTML = `
+      <div class="empty-state" style="padding:40px 24px; text-align:center; color:var(--muted);">
+        <div class="empty-icon" style="font-size:2.5rem; margin-bottom:10px;">📅</div>
+        <div class="empty-title" style="font-weight:700; font-size:1rem; line-height:1.35; margin-bottom:${detail ? "8px" : "0"};">${escapeHtml(message)}</div>
+        ${detail ? `<div class="empty-detail" style="font-weight:600; font-size:0.88rem; line-height:1.45; opacity:0.9;">${escapeHtml(detail)}</div>` : ""}
+      </div>
+    `;
+  }
 
   window.refreshMobileView = async function() {
     if (!dateInput.value) {
@@ -119,10 +129,18 @@
         }
 
         if (shiftGrid.innerHTML === "") {
-            const msg = hotelInfo 
-                ? `No hay turnos cargados para ${hotelInfo.label} en esta semana.`
+            const availableHotels = [...new Set(
+                snapshots
+                  .map(s => String(s.hotel || "").trim())
+                  .filter(Boolean)
+            )];
+            const msg = hotelInfo
+                ? `Has elegido ${hotelInfo.label}, pero no hay cuadrante publicado para esa semana.`
                 : "No hay cuadrantes publicados para esta semana.";
-            shiftGrid.innerHTML = `<div style="padding:40px; text-align:center; opacity:0.5; color:var(--muted); font-weight:600;">${msg}</div>`;
+            const detail = hotelInfo && availableHotels.length
+                ? `<div style="margin-top:8px; font-size:0.9rem; font-weight:700;">Publicación disponible en: ${escapeHtml(availableHotels.join(", "))}.</div>`
+                : "";
+            shiftGrid.innerHTML = `<div style="padding:40px 24px; text-align:center; opacity:0.78; color:var(--muted); font-weight:600;"><div style="font-size:2.5rem; margin-bottom:10px;">📅</div><div style="font-size:1rem; line-height:1.4;">${escapeHtml(msg)}</div>${detail}</div>`;
         }
     } catch(e) { 
         console.error("Error en vista móvil:", e);
@@ -137,9 +155,37 @@
     return escapeHtml(text).replace(emojiRegex, '<span class="emoji-indicator">$1</span>');
   }
 
+  function getMobileShiftLabel(displayText, visualClass) {
+    const normalized = String(displayText || "").trim().toUpperCase();
+    if (visualClass === "v" || normalized.includes("VAC")) return "🏖️";
+    return formatShiftText(displayText);
+  }
+
+  function getMobileShiftToken(displayText, visualClass) {
+    const normalized = String(displayText || "")
+      .replace(/[\u{1F300}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/gu, "")
+      .trim()
+      .toUpperCase();
+
+    if (visualClass && visualClass !== "empty") return visualClass;
+    if (normalized === "D" || normalized.includes("DESC")) return "d";
+    if (normalized === "M" || normalized.includes("MAN")) return "m";
+    if (normalized === "T" || normalized.includes("TAR")) return "t";
+    if (normalized === "N" || normalized.includes("NOC")) return "n";
+    if (normalized.includes("VAC")) return "v";
+    if (normalized.includes("BAJA") || normalized === "IT" || normalized === "BM") return "b";
+    if (normalized.includes("PERM")) return "p";
+    return visualClass || "empty";
+  }
+
   async function renderSnapshotTable(hotel, snapshotData, container) {
     const empleados = snapshotData.empleados || [];
     const semanaInicio = snapshotData.semana_inicio;
+    const longestNameLength = empleados.reduce((max, emp) => {
+      const nameLength = String(emp?.nombre || "").trim().length;
+      return Math.max(max, nameLength);
+    }, "Empleado".length);
+    const nameColWidth = Math.max(88, Math.min(122, Math.round(longestNameLength * 6.2 + 20)));
     const dates = [];
     let curr = new Date(semanaInicio + "T12:00:00");
     for (let i = 0; i < 7; i++) {
@@ -152,16 +198,46 @@
         <div class="hotel-header">
             <h2 class="hotel-name">${escapeHtml(hotel)}</h2>
         </div>
-        <div class="grid-table">
+        <div class="grid-table" style="--name-col-w:${nameColWidth}px;">
             <div class="grid-head">
                 <div class="grid-th th-name">Empleado</div>
                 ${dates.map(f => {
                     const dObj = new Date(f + 'T12:00:00');
-                    return `<div class="grid-th"><span>${weekdayLong[dObj.getUTCDay()].slice(0,1)}</span></div>`;
+                    return `<div class="grid-th day-th"><span class="day-letter">${weekdayLong[dObj.getUTCDay()].slice(0,1)}</span><span class="day-date">${dObj.getUTCDate()}/${monthNames[dObj.getUTCMonth()]}</span></div>`;
                 }).join('')}
             </div>
             <div class="grid-body">
-                ${empleados.sort((a,b) => (Number(a.puestoOrden) || Number(a.orden) || 9999) - (Number(b.puestoOrden) || Number(b.orden) || 9999)).map(emp => {
+                ${(() => {
+                    // De-duplicación y Orden Estricto (Operativos -> Ausentes)
+                    const uniqueEmpsMap = new Map();
+                    const norm = (str) => {
+                        if (window.normalizeId) return window.normalizeId(str);
+                        if (window.TurnosDB && window.TurnosDB.normalizeString) return window.TurnosDB.normalizeString(str);
+                        return String(str || '').toLowerCase().trim();
+                    };
+
+                    empleados.forEach(e => {
+                        const id = norm(e.empleado_id || e.nombre);
+                        const isAbsent = e.rowType === 'ausencia_informativa';
+                        if (!uniqueEmpsMap.has(id)) {
+                            uniqueEmpsMap.set(id, e);
+                        } else {
+                            const existing = uniqueEmpsMap.get(id);
+                            if (existing.rowType === 'ausencia_informativa' && !isAbsent) {
+                                uniqueEmpsMap.set(id, e);
+                            }
+                        }
+                    });
+
+                    return Array.from(uniqueEmpsMap.values()).sort((a,b) => {
+                        const isAbsentA = a.rowType === 'ausencia_informativa';
+                        const isAbsentB = b.rowType === 'ausencia_informativa';
+                        if (isAbsentA !== isAbsentB) return isAbsentA ? 1 : -1;
+                        const valA = Number(a.puestoOrden) || Number(a.orden) || 9999;
+                        const valB = Number(b.puestoOrden) || Number(b.orden) || 9999;
+                        return valA - valB;
+                    });
+                })().map(emp => {
                     const empName = emp.nombre;
                     const daysMap = emp.dias || emp.cells || {};
                     return `
@@ -173,10 +249,11 @@
                                 const day = daysMap[f] || {};
                                 const display = window.TurnosRules.getPublicCellDisplay(day, { compact: true });
                                 const visual = window.TurnosRules.describeCell(day);
+                                const shiftToken = getMobileShiftToken(display.text, visual.mobileClass);
                                 return `
                                     <div class="grid-cell" title="${escapeHtml(day.titular_cubierto ? 'Cubriendo a ' + day.titular_cubierto : '')}">
                                         <div class="badge-container">
-                                            <span class="badge-shift ${visual.mobileClass}">${formatShiftText(display.text)}</span>
+                                            <span class="badge-shift ${shiftToken}" data-shift="${escapeHtml(shiftToken)}">${getMobileShiftLabel(display.text, shiftToken)}</span>
                                         </div>
                                     </div>
                                 `;

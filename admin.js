@@ -5260,6 +5260,41 @@ window.validatePublishChanges = (changes) => {
                     });
                 }
             });
+
+            // [O] Validación de Consistencia de Cambios de Turno / Intercambios
+            events.forEach(ev => {
+                if (window.normalizeEstado(ev.estado) === 'anulado') return;
+                const tipoEv = window.normalizeTipo(ev.tipo);
+                if (tipoEv !== 'CAMBIO_TURNO' && tipoEv !== 'INTERCAMBIO_TURNO') return;
+
+                const evStart = window.normalizeDate ? window.normalizeDate(ev.fecha_inicio) : (ev.fecha_inicio || '');
+                if (!evStart || !wStart || evStart > wEnd || evStart < wStart) return;
+
+                const idOrig = window.normalizeId(ev.empleado_id);
+                const idDest = window.normalizeId(ev.empleado_destino_id || ev.sustituto_id);
+                
+                const rowOrig = snap.rows.find(r => window.normalizeId(r.empleado_id) === idOrig);
+                const rowDest = idDest ? snap.rows.find(r => window.normalizeId(r.empleado_id) === idDest) : null;
+
+                const checkCell = (row, id, role) => {
+                    if (!row) return; 
+                    const cell = row.cells[evStart];
+                    if (!cell) return;
+                    const isChanged = !!cell.changed || !!cell.intercambio || (cell.origen && cell.origen.includes('CAMBIO'));
+                    const hasIcon = Array.isArray(cell.icons) && cell.icons.includes('🔄');
+                    if (!isChanged && !hasIcon) {
+                        errors.push(`[BLOQUEO] El ${role} del cambio (${id}) no muestra el icono 🔄 el ${evStart} en ${snapHotelId}`);
+                    }
+                };
+
+                checkCell(rowOrig, ev.empleado_id, 'Origen');
+                if (idDest) checkCell(rowDest, ev.empleado_destino_id || ev.sustituto_id, 'Destino');
+
+                // [O.1] Verificación de Existencia de Sustituto en Cuadrante
+                if (idDest && !rowDest) {
+                    errors.push(`[BLOQUEO] El sustituto ${idDest} para ${idOrig} el ${evStart} no existe en las filas del snapshot.`);
+                }
+            });
         }
 
         // [B] [E] Duplicados operativos y conflictos de localización
@@ -5489,10 +5524,11 @@ window.publishToSupabase = async () => {
                                 daysMap[fecha] = {
                                     label: visual.label || absCode || resolved.turno || '',
                                     code: absCode || resolved.turno || '',
-                                    icons: visual.icon ? [visual.icon] : (resolved.icon ? [resolved.icon] : []),
+                                    icons: [...new Set([...(visual.icon ? [visual.icon] : (resolved.icon ? [resolved.icon] : [])), ...((resolved.cambio || resolved.intercambio) ? ['🔄'] : [])])],
                                     type: resolved.incidencia || 'NORMAL',
                                     estado: (resolved.isAbsent || resolved.incidencia) ? 'ausente' : 'operativo',
                                     origen: resolved.incidencia || resolved.origen || 'base',
+                                    changed: !!(resolved.cambio || resolved.intercambio),
                                     titular_cubierto: resolved.titular || null,
                                     sustituto: resolved.sustituidoPor || null
                                 };

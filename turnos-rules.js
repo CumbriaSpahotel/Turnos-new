@@ -235,7 +235,7 @@
         const isBaja  = /baja|it|bm/i.test(label) || code === 'BAJA' || type === 'BAJA' || type === 'IT';
         const isPerm  = /permiso/i.test(label) || code === 'PERM' || type === 'PERM' || type === 'PERMISO';
         const isForm  = /formaci/i.test(label) || code === 'FORM' || type === 'FORM' || type === 'FORMACION';
-        const isChanged = !!cell?.changed || !!cell?.intercambio;
+        const isChanged = !!cell?.changed || !!cell?.intercambio || (cell?.origen && (cell.origen.includes('CAMBIO') || cell.origen.includes('INTERCAMBIO')));
 
         if (isNoche) icons.add('🌙');
         if (isVac)   icons.add('🏖️');
