@@ -1,0 +1,462 @@
+{
+  "generated_at": "2026-04-29T19:06:55.314Z",
+  "range": "2026-01-01 to 2026-03-31",
+  "stats": {
+    "total_weeks": 26,
+    "aptas": 25,
+    "bloqueadas": 1,
+    "avisos": 0
+  },
+  "weeks": [
+    {
+      "hotel": "Cumbria Spa&Hotel",
+      "weekStart": "2026-01-04",
+      "status": "APTA",
+      "errors": [],
+      "warnings": [],
+      "summary": {
+        "operational": 5,
+        "absent": 1,
+        "vacancies": 0
+      }
+    },
+    {
+      "hotel": "Cumbria Spa&Hotel",
+      "weekStart": "2026-01-11",
+      "status": "APTA",
+      "errors": [],
+      "warnings": [],
+      "summary": {
+        "operational": 5,
+        "absent": 1,
+        "vacancies": 0
+      }
+    },
+    {
+      "hotel": "Cumbria Spa&Hotel",
+      "weekStart": "2026-01-18",
+      "status": "APTA",
+      "errors": [],
+      "warnings": [],
+      "summary": {
+        "operational": 5,
+        "absent": 1,
+        "vacancies": 0
+      }
+    },
+    {
+      "hotel": "Cumbria Spa&Hotel",
+      "weekStart": "2026-01-25",
+      "status": "APTA",
+      "errors": [],
+      "warnings": [],
+      "summary": {
+        "operational": 5,
+        "absent": 1,
+        "vacancies": 0
+      }
+    },
+    {
+      "hotel": "Cumbria Spa&Hotel",
+      "weekStart": "2026-02-01",
+      "status": "APTA",
+      "errors": [],
+      "warnings": [],
+      "summary": {
+        "operational": 5,
+        "absent": 1,
+        "vacancies": 0
+      }
+    },
+    {
+      "hotel": "Cumbria Spa&Hotel",
+      "weekStart": "2026-02-08",
+      "status": "APTA",
+      "errors": [],
+      "warnings": [],
+      "summary": {
+        "operational": 5,
+        "absent": 1,
+        "vacancies": 0
+      }
+    },
+    {
+      "hotel": "Cumbria Spa&Hotel",
+      "weekStart": "2026-02-15",
+      "status": "APTA",
+      "errors": [],
+      "warnings": [],
+      "summary": {
+        "operational": 5,
+        "absent": 1,
+        "vacancies": 0
+      }
+    },
+    {
+      "hotel": "Cumbria Spa&Hotel",
+      "weekStart": "2026-02-22",
+      "status": "APTA",
+      "errors": [],
+      "warnings": [],
+      "summary": {
+        "operational": 5,
+        "absent": 1,
+        "vacancies": 0
+      }
+    },
+    {
+      "hotel": "Cumbria Spa&Hotel",
+      "weekStart": "2026-03-01",
+      "status": "APTA",
+      "errors": [],
+      "warnings": [],
+      "summary": {
+        "operational": 5,
+        "absent": 1,
+        "vacancies": 0
+      }
+    },
+    {
+      "hotel": "Cumbria Spa&Hotel",
+      "weekStart": "2026-03-08",
+      "status": "APTA",
+      "errors": [],
+      "warnings": [],
+      "summary": {
+        "operational": 5,
+        "absent": 1,
+        "vacancies": 0
+      }
+    },
+    {
+      "hotel": "Cumbria Spa&Hotel",
+      "weekStart": "2026-03-15",
+      "status": "APTA",
+      "errors": [],
+      "warnings": [],
+      "summary": {
+        "operational": 5,
+        "absent": 0,
+        "vacancies": 0
+      }
+    },
+    {
+      "hotel": "Cumbria Spa&Hotel",
+      "weekStart": "2026-03-22",
+      "status": "APTA",
+      "errors": [],
+      "warnings": [],
+      "summary": {
+        "operational": 5,
+        "absent": 1,
+        "vacancies": 0
+      }
+    },
+    {
+      "hotel": "Cumbria Spa&Hotel",
+      "weekStart": "2026-03-29",
+      "status": "BLOQUEADA",
+      "errors": [
+        "Filas operativas vacías"
+      ],
+      "warnings": [],
+      "summary": {
+        "operational": 5,
+        "absent": 2,
+        "vacancies": 1
+      }
+    },
+    {
+      "hotel": "Sercotel Guadiana",
+      "weekStart": "2026-01-04",
+      "status": "APTA",
+      "errors": [],
+      "warnings": [],
+      "summary": {
+        "operational": 5,
+        "absent": 0,
+        "vacancies": 0
+      }
+    },
+    {
+      "hotel": "Sercotel Guadiana",
+      "weekStart": "2026-01-11",
+      "status": "APTA",
+      "errors": [],
+      "warnings": [],
+      "summary": {
+        "operational": 5,
+        "absent": 0,
+        "vacancies": 0
+      }
+    },
+    {
+      "hotel": "Sercotel Guadiana",
+      "weekStart": "2026-01-18",
+      "status": "APTA",
+      "errors": [],
+      "warnings": [],
+      "summary": {
+        "operational": 5,
+        "absent": 0,
+        "vacancies": 0
+      }
+    },
+    {
+      "hotel": "Sercotel Guadiana",
+      "weekStart": "2026-01-25",
+      "status": "APTA",
+      "errors": [],
+      "warnings": [],
+      "summary": {
+        "operational": 5,
+        "absent": 0,
+        "vacancies": 0
+      }
+    },
+    {
+      "hotel": "Sercotel Guadiana",
+      "weekStart": "2026-02-01",
+      "status": "APTA",
+      "errors": [],
+      "warnings": [],
+      "summary": {
+        "operational": 5,
+        "absent": 0,
+        "vacancies": 0
+      }
+    },
+    {
+      "hotel": "Sercotel Guadiana",
+      "weekStart": "2026-02-08",
+      "status": "APTA",
+      "errors": [],
+      "warnings": [],
+      "summary": {
+        "operational": 5,
+        "absent": 0,
+        "vacancies": 0
+      }
+    },
+    {
+      "hotel": "Sercotel Guadiana",
+      "weekStart": "2026-02-15",
+      "status": "APTA",
+      "errors": [],
+      "warnings": [],
+      "summary": {
+        "operational": 5,
+        "absent": 1,
+        "vacancies": 0
+      }
+    },
+    {
+      "hotel": "Sercotel Guadiana",
+      "weekStart": "2026-02-22",
+      "status": "APTA",
+      "errors": [],
+      "warnings": [],
+      "summary": {
+        "operational": 5,
+        "absent": 0,
+        "vacancies": 0
+      }
+    },
+    {
+      "hotel": "Sercotel Guadiana",
+      "weekStart": "2026-03-01",
+      "status": "APTA",
+      "errors": [],
+      "warnings": [],
+      "summary": {
+        "operational": 5,
+        "absent": 1,
+        "vacancies": 0
+      }
+    },
+    {
+      "hotel": "Sercotel Guadiana",
+      "weekStart": "2026-03-08",
+      "status": "APTA",
+      "errors": [],
+      "warnings": [],
+      "summary": {
+        "operational": 5,
+        "absent": 1,
+        "vacancies": 0
+      }
+    },
+    {
+      "hotel": "Sercotel Guadiana",
+      "weekStart": "2026-03-15",
+      "status": "APTA",
+      "errors": [],
+      "warnings": [],
+      "summary": {
+        "operational": 5,
+        "absent": 0,
+        "vacancies": 0
+      }
+    },
+    {
+      "hotel": "Sercotel Guadiana",
+      "weekStart": "2026-03-22",
+      "status": "APTA",
+      "errors": [],
+      "warnings": [],
+      "summary": {
+        "operational": 5,
+        "absent": 0,
+        "vacancies": 0
+      }
+    },
+    {
+      "hotel": "Sercotel Guadiana",
+      "weekStart": "2026-03-29",
+      "status": "APTA",
+      "errors": [],
+      "warnings": [],
+      "summary": {
+        "operational": 5,
+        "absent": 0,
+        "vacancies": 0
+      }
+    }
+  ],
+  "samples": {
+    "substitute": {
+      "hotel": "Cumbria Spa&Hotel",
+      "weekStart": "2026-01-04",
+      "rows": [
+        {
+          "id": "Cristina",
+          "type": "operativo",
+          "order": 1
+        },
+        {
+          "id": "Esther",
+          "type": "operativo",
+          "order": 2
+        },
+        {
+          "id": "Miriam",
+          "type": "operativo",
+          "order": 3
+        },
+        {
+          "id": "Valentín",
+          "type": "operativo",
+          "order": 4
+        },
+        {
+          "id": "Isabel Hidalgo",
+          "type": "operativo",
+          "order": 5
+        },
+        {
+          "id": "Sergio",
+          "type": "ausencia_informativa",
+          "order": 902
+        }
+      ]
+    },
+    "no_incidents": {
+      "hotel": "Cumbria Spa&Hotel",
+      "weekStart": "2026-03-15",
+      "rows": [
+        {
+          "id": "Sergio",
+          "type": "operativo",
+          "order": 1
+        },
+        {
+          "id": "Cristina",
+          "type": "operativo",
+          "order": 2
+        },
+        {
+          "id": "Esther",
+          "type": "operativo",
+          "order": 3
+        },
+        {
+          "id": "Valentín",
+          "type": "operativo",
+          "order": 4
+        },
+        {
+          "id": "Isabel Hidalgo",
+          "type": "operativo",
+          "order": 5
+        }
+      ]
+    },
+    "vacation": {
+      "hotel": "Cumbria Spa&Hotel",
+      "weekStart": "2026-03-22",
+      "rows": [
+        {
+          "id": "Esther",
+          "type": "operativo",
+          "order": 1
+        },
+        {
+          "id": "Sergio",
+          "type": "operativo",
+          "order": 2
+        },
+        {
+          "id": "Miriam",
+          "type": "operativo",
+          "order": 3
+        },
+        {
+          "id": "Valentín",
+          "type": "operativo",
+          "order": 4
+        },
+        {
+          "id": "Isabel Hidalgo",
+          "type": "operativo",
+          "order": 5
+        },
+        {
+          "id": "Cristina",
+          "type": "ausencia_informativa",
+          "order": 902
+        }
+      ]
+    },
+    "shift_change": {
+      "hotel": "Sercotel Guadiana",
+      "weekStart": "2026-02-08",
+      "rows": [
+        {
+          "id": "Diana",
+          "type": "operativo",
+          "order": 1
+        },
+        {
+          "id": "Dani",
+          "type": "operativo",
+          "order": 2
+        },
+        {
+          "id": "Macarena",
+          "type": "operativo",
+          "order": 3
+        },
+        {
+          "id": "Federico",
+          "type": "operativo",
+          "order": 4
+        },
+        {
+          "id": "Sergio Sánchez",
+          "type": "operativo",
+          "order": 5
+        }
+      ]
+    }
+  }
+}

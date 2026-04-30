@@ -40,7 +40,13 @@ function addDays(dateStr, n) {
 }
 
 function buildCell(code, extra = {}) {
-    const c = (code || '').toUpperCase().trim();
+    let c = (code || '').toUpperCase().trim();
+    // Normalizar para que coincida con ABSENCE_TYPES
+    if (c.startsWith('VAC')) c = 'VAC';
+    else if (c.startsWith('BAJA')) c = 'BAJA';
+    else if (c.startsWith('PERM')) c = 'PERM';
+    else if (c.startsWith('FORM')) c = 'FORM';
+
     const isAbsence = ABSENCE_TYPES.has(c);
     return {
         code: c || '—',
@@ -75,10 +81,16 @@ async function runMaster() {
         .lte('fecha_inicio','2026-12-31')
         .gte('fecha_fin','2026-01-01');
 
-    const eventos = (eventosRaw || []).filter(ev =>
-        !/anulad|rechazad/i.test(ev.estado || '') &&
-        ABSENCE_TYPES.has((ev.tipo || '').toUpperCase())
-    );
+    const eventos = (eventosRaw || []).filter(ev => {
+        const type = (ev.tipo || '').toUpperCase().trim();
+        const normalizedType = type.startsWith('VAC') ? 'VAC' : 
+                               type.startsWith('PERM') ? 'PERM' : 
+                               type.startsWith('FORM') ? 'FORM' : 
+                               type.startsWith('BAJA') ? 'BAJA' : type;
+        
+        return !/anulad|rechazad/i.test(ev.estado || '') &&
+               ABSENCE_TYPES.has(normalizedType);
+    });
 
     console.log(`   - Turnos cargados: ${todosTurnos.length}`);
     console.log(`   - Eventos de ausencia: ${eventos.length}`);
@@ -90,7 +102,12 @@ async function runMaster() {
 
     const ausenciaMap = {};
     eventos.forEach(ev => {
-        const tipo = (ev.tipo || '').toUpperCase();
+        let tipo = (ev.tipo || '').toUpperCase().trim();
+        if (tipo.startsWith('VAC')) tipo = 'VAC';
+        else if (tipo.startsWith('BAJA')) tipo = 'BAJA';
+        else if (tipo.startsWith('PERM')) tipo = 'PERM';
+        else if (tipo.startsWith('FORM')) tipo = 'FORM';
+
         const hotel = ev.hotel_origen;
         const sustituto = ev.sustituto_id || ev.sustituto || null;
         let d = ev.fecha_inicio;

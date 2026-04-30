@@ -611,6 +611,89 @@
             }
         }
 
+        function getFallbackCoverageShift({ empleadoId, hotelName, date, eventos, baseIndex, baseRows = [] }) {
+            if (!empleadoId || !date || !window.normalizeId) return null;
+
+            const targetId = window.normalizeId(empleadoId);
+            const targetHotel = window.normalizeId(hotelName || '');
+            const isCoverageType = (tipo) => {
+                const normalized = window.normalizeTipo ? window.normalizeTipo(tipo) : String(tipo || '').toUpperCase();
+                return normalized === 'SUSTITUCION' || normalized === 'COBERTURA';
+            };
+            const isAbsenceType = (tipo) => {
+                const normalized = window.normalizeTipo ? window.normalizeTipo(tipo) : String(tipo || '').toUpperCase();
+                return normalized === 'VAC' || normalized === 'BAJA' || normalized === 'PERM' || normalized === 'PERMISO' || normalized === 'FORM' || normalized === 'FORMACION';
+            };
+
+            const matchingEvent = Array.isArray(eventos) ? eventos.find(ev => {
+                if (!window.eventoAplicaEnFecha || !window.eventoAplicaEnFecha(ev, date)) return false;
+                if (!isCoverageType(ev.tipo)) return false;
+
+                const destinationId = window.normalizeId(
+                    ev.empleado_destino_id || ev.empleado_b_id || ev.destino_id || ev.sustituto_id || ev.empleado_destino || ev.sustituto
+                );
+                if (destinationId !== targetId) return false;
+
+                if (!targetHotel || !window.getEventoHotel) return true;
+                const eventHotel = window.normalizeId(window.getEventoHotel(ev));
+                return !eventHotel || eventHotel === targetHotel;
+            }) : null;
+
+            if (matchingEvent) {
+                const titularId = window.normalizeId(
+                    matchingEvent.empleado_id || matchingEvent.titular_id || matchingEvent.titular || matchingEvent.participante_a
+                );
+                if (titularId && window.getTurnoBaseDeEmpleado) {
+                    const coveredShift = window.getTurnoBaseDeEmpleado(titularId, date, baseIndex);
+                    if (coveredShift) return coveredShift;
+                }
+            }
+
+            const matchingAbsenceEvent = Array.isArray(eventos) ? eventos.find(ev => {
+                if (!window.eventoAplicaEnFecha || !window.eventoAplicaEnFecha(ev, date)) return false;
+                if (!isAbsenceType(ev.tipo)) return false;
+
+                const eventSubstitute = window.normalizeId(
+                    ev.sustituto || ev.empleado_destino_id || ev.sustituto_id || ev.payload?.sustituto || ev.payload?.empleado_destino_id
+                );
+                if (eventSubstitute !== targetId) return false;
+
+                if (!targetHotel || !window.getEventoHotel) return true;
+                const eventHotel = window.normalizeId(window.getEventoHotel(ev));
+                return !eventHotel || eventHotel === targetHotel;
+            }) : null;
+
+            if (matchingAbsenceEvent) {
+                const titularId = window.normalizeId(
+                    matchingAbsenceEvent.empleado_id || matchingAbsenceEvent.titular_id || matchingAbsenceEvent.titular || matchingAbsenceEvent.participante_a
+                );
+                if (titularId && window.getTurnoBaseDeEmpleado) {
+                    const coveredShift = window.getTurnoBaseDeEmpleado(titularId, date, baseIndex);
+                    if (coveredShift) return coveredShift;
+                }
+            }
+
+            const matchingBaseRow = Array.isArray(baseRows) ? baseRows.find(row => {
+                if ((row.fecha || '') !== date) return false;
+                const rowHotel = window.normalizeId(row.hotel_id || row.hotel || '');
+                if (targetHotel && rowHotel && rowHotel !== targetHotel) return false;
+                const rowSubstitute = window.normalizeId(
+                    row.sustituto || row.empleado_destino_id || row.sustituto_id || row.covered_by || row.payload?.sustituto
+                );
+                return rowSubstitute === targetId;
+            }) : null;
+
+            return matchingBaseRow?.turno || null;
+        }
+
+        function getResolvedShiftLabel(result, fallbackShift = null) {
+            const primaryShift = result?.turnoFinal || result?.turno || null;
+            const usablePrimary = primaryShift && primaryShift !== '—' ? primaryShift : null;
+            const rawShift = usablePrimary || fallbackShift || "—";
+            const cleanShift = window.cleanTurnoLabel ? window.cleanTurnoLabel(rawShift) : rawShift;
+            return { rawShift, cleanShift };
+        }
+
         async function autoFillShifts() {
             const solId = $("#solicitante").value;
             const compId = $("#companero").value;
@@ -653,9 +736,9 @@
                     });
 
                     const solLabelEl = row.querySelector(`#cur-sol-${id} .shift-val`);
-                    const turnoSol = resSol.turnoFinal || resSol.turno || "—";
-                    solLabelEl.textContent = window.cleanTurnoLabel ? window.cleanTurnoLabel(turnoSol) : turnoSol;
-                    solLabelEl.dataset.val = turnoSol;
+                    const solResolved = getResolvedShiftLabel(resSol);
+                    solLabelEl.textContent = solResolved.cleanShift;
+                    solLabelEl.dataset.val = solResolved.rawShift;
 
                     // 2. Resolve Compañero
                     const compBox = row.querySelector(`#cur-comp-${id}`);
@@ -669,17 +752,24 @@
                             baseIndex: baseIndex
                         });
                         const compLabelEl = compBox.querySelector(".shift-val");
-                        const turnoComp = resComp.turnoFinal || resComp.turno || "—";
-                        compLabelEl.textContent = window.cleanTurnoLabel ? window.cleanTurnoLabel(turnoComp) : turnoComp;
-                        compLabelEl.dataset.val = turnoComp;
+                        const fallbackCompShift = getFallbackCoverageShift({
+                            empleadoId: compId,
+                            hotelName,
+                            date,
+                            eventos,
+                            baseIndex,
+                            baseRows
+                        });
+                        const compResolved = getResolvedShiftLabel(resComp, fallbackCompShift);
+                        compLabelEl.textContent = compResolved.cleanShift;
+                        compLabelEl.dataset.val = compResolved.rawShift;
 
                         // AUTO-FILL DESTINO: Si no se ha tocado manualmente, ponemos el del compañero
                         const destinoSelect = row.querySelector(".row-destino");
-                        const cleanComp = window.cleanTurnoLabel ? window.cleanTurnoLabel(turnoComp) : turnoComp;
-                        if (destinoSelect && !destinoSelect.dataset.manual && cleanComp !== '—') {
+                        if (destinoSelect && !destinoSelect.dataset.manual && compResolved.cleanShift !== '—') {
                             // Buscar la opción que coincida con cleanComp
                             for (let opt of destinoSelect.options) {
-                                if (opt.value === cleanComp) {
+                                if (opt.value === compResolved.cleanShift) {
                                     destinoSelect.value = opt.value;
                                     break;
                                 }

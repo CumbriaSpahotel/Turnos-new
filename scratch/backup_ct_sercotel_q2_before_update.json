@@ -1,0 +1,71 @@
+[
+  {
+    "id": "d6b8a402-0502-4f3b-b112-bf03723ff8ce",
+    "tipo": "CAMBIO",
+    "estado": "activo",
+    "empleado_id": "Diana",
+    "empleado_destino_id": null,
+    "hotel_origen": "Sercotel Guadiana",
+    "hotel_destino": null,
+    "fecha_inicio": "2026-04-06",
+    "fecha_fin": "2026-04-06",
+    "turno_original": null,
+    "turno_nuevo": null,
+    "observaciones": "Macarena",
+    "payload": {
+      "importado_v9": true
+    },
+    "created_at": "2026-04-26T00:16:26.56281+00:00",
+    "updated_at": "2026-04-26T00:16:26.56281+00:00",
+    "updated_by": null,
+    "empleado_uuid": "1aa10fff-e93d-4fef-8c60-386bad025a6d",
+    "empleado_destino_uuid": null,
+    "sustituto_uuid": null
+  },
+  {
+    "id": "b49b4f09-a98e-4717-b65f-cd34dd200bad",
+    "tipo": "CAMBIO",
+    "estado": "activo",
+    "empleado_id": "Diana",
+    "empleado_destino_id": null,
+    "hotel_origen": "Sercotel Guadiana",
+    "hotel_destino": null,
+    "fecha_inicio": "2026-04-10",
+    "fecha_fin": "2026-04-10",
+    "turno_original": null,
+    "turno_nuevo": null,
+    "observaciones": "Dani",
+    "payload": {
+      "importado_v9": true
+    },
+    "created_at": "2026-04-26T00:16:26.56281+00:00",
+    "updated_at": "2026-04-26T00:16:26.56281+00:00",
+    "updated_by": null,
+    "empleado_uuid": "1aa10fff-e93d-4fef-8c60-386bad025a6d",
+    "empleado_destino_uuid": null,
+    "sustituto_uuid": null
+  },
+  {
+    "id": "e8b0acd3-b683-4a14-8d5e-caf9d56e28d7",
+    "tipo": "CAMBIO",
+    "estado": "activo",
+    "empleado_id": "Dani",
+    "empleado_destino_id": null,
+    "hotel_origen": "Sercotel Guadiana",
+    "hotel_destino": null,
+    "fecha_inicio": "2026-04-26",
+    "fecha_fin": "2026-04-26",
+    "turno_original": null,
+    "turno_nuevo": null,
+    "observaciones": "Macarena",
+    "payload": {
+      "importado_v9": true
+    },
+    "created_at": "2026-04-26T00:16:26.56281+00:00",
+    "updated_at": "2026-04-26T00:16:26.56281+00:00",
+    "updated_by": null,
+    "empleado_uuid": "2166b0e8-b626-4dc8-9fee-7c7ea47b7202",
+    "empleado_destino_uuid": null,
+    "sustituto_uuid": null
+  }
+]

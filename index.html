@@ -4,1058 +4,674 @@
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <title>TurnosWeb — Cuadrante Público</title>
-  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
-  <meta http-equiv="Pragma" content="no-cache" />
-  <meta http-equiv="Expires" content="0" />
-  <link rel="stylesheet" href="flatpickr.min.css">
-  <link rel="icon" type="image/png" href="favicon.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="flatpickr.min.css">
   <style>
       :root {
-          --accent: #2563eb;
-          --accent-hover: #1d4ed8;
-          --border: #dfe6ef;
-          --border-soft: #edf1f5;
-          --bg: #e2e8f0; /* Fondo algo más oscuro en modo claro */
-          --bg2: #ffffff;
-          --bg3: #eef2f6;
+          --bg: #eef2f6;
+          --toolbar-bg: rgba(255, 255, 255, 0.92);
           --surface: #ffffff;
-          --text: #06142d;
-          --text-dim: #5f6f84;
-          --shadow-sm: 0 8px 22px rgba(15, 23, 42, 0.04);
-          --shadow-lg: 0 14px 36px rgba(15, 23, 42, 0.05);
+          --surface-soft: #f6f9fc;
+          --border: #d7dee8;
+          --grid: #d6dde6;
+          --text: #0c2138;
+          --text-dim: #64748b;
+          --accent: #1f4f82;
+          --accent-soft: #e2eefb;
+          --mint-bg: #d8efda;
+          --mint-text: #0b6044;
+          --amber-bg: #ffefbd;
+          --amber-text: #9d6a00;
+          --rose-bg: #f9d8db;
+          --rose-text: #a11c24;
+          --slate-bg: #e7ebef;
+          --slate-text: #223247;
+          --cyan-bg: #ccecf7;
+          --cyan-text: #075a74;
+          --toolbar-shadow: 0 10px 30px rgba(12, 33, 56, 0.08);
       }
 
-      body.dark-mode {
-          --bg: #0f172a;
-          --bg2: #1e293b;
-          --bg3: #334155;
-          --surface: #1e293b;
-          --text: #f8fafc;
-          --text-dim: #94a3b8;
-          --border: #334155;
-          --border-soft: #1e293b;
-          --shadow-sm: 0 8px 22px rgba(0, 0, 0, 0.2);
-          --shadow-lg: 0 14px 36px rgba(0, 0, 0, 0.3);
+      body.night-mode {
+          --bg: #0f1724;
+          --toolbar-bg: rgba(15, 23, 36, 0.9);
+          --surface: #132033;
+          --surface-soft: #18283d;
+          --border: #28405b;
+          --grid: #29415c;
+          --text: #e5edf6;
+          --text-dim: #9db1c7;
+          --accent: #84b8ff;
+          --accent-soft: rgba(132, 184, 255, 0.18);
+          --mint-bg: #183d31;
+          --mint-text: #bdebd0;
+          --amber-bg: #473811;
+          --amber-text: #ffe19a;
+          --rose-bg: #45232a;
+          --rose-text: #ffc2c8;
+          --slate-bg: #243345;
+          --slate-text: #d8e3ef;
+          --cyan-bg: #173a45;
+          --cyan-text: #afe7f5;
+          --toolbar-shadow: 0 10px 32px rgba(0, 0, 0, 0.28);
       }
 
       * { box-sizing: border-box; }
 
       body {
-          background: var(--bg);
-          font-family: 'Inter', -apple-system, system-ui, sans-serif;
+          background:
+              radial-gradient(circle at top left, rgba(255,255,255,0.92), transparent 22%),
+              linear-gradient(180deg, #f7f9fb 0%, var(--bg) 100%);
+          font-family: 'Manrope', sans-serif;
           color: var(--text);
           margin: 0;
           min-height: 100vh;
-          overflow-x: auto;
       }
+
+      svg { max-width: 100%; height: auto; }
+      .flatpickr-calendar svg { width: 14px; height: 14px; }
 
       .site-toolbar {
           display: flex;
           justify-content: space-between;
           align-items: center;
-          gap: 18px;
-          min-height: 74px;
-          padding: 0 22px 0 36px;
-          background: #1a1d21;
-          color: #ffffff;
+          padding: 0 28px;
+          height: 78px;
+          background: var(--toolbar-bg);
+          color: var(--text);
           position: sticky;
           top: 0;
           z-index: 1000;
-          border: 2px solid #2a2f36;
-          box-shadow: 0 4px 18px rgba(15, 23, 42, 0.2);
+          backdrop-filter: blur(14px);
+          border-bottom: 1px solid rgba(215, 222, 232, 0.9);
+          box-shadow: var(--toolbar-shadow);
       }
 
-      .toolbar-brand {
-          display: flex;
-          align-items: center;
-          gap: 18px;
-          min-width: 360px;
-      }
-
-      .toolbar-brand img {
-          width: 44px;
-          height: 44px;
-          object-fit: contain;
-          border-radius: 9px;
-          border: 0;
-          background: transparent;
-          padding: 0;
-          filter: brightness(0) invert(1);
-      }
-
+      .toolbar-brand { display: flex; flex-direction: column; }
       .toolbar-title {
-          font-family: 'Outfit', sans-serif;
-          font-size: 1.48rem;
+          font-weight: 800;
+          font-size: 1.18rem;
           line-height: 1.05;
-          font-weight: 900;
-          letter-spacing: 0;
-          color: #ffffff;
+          letter-spacing: -0.03em;
       }
-
       .toolbar-subtitle {
-          color: #cbd5e1;
-          font-size: 0.84rem;
-          line-height: 1.1;
-          font-weight: 800;
-          letter-spacing: 0;
-          text-transform: none;
-          margin-top: 2px;
-      }
-
-      .toolbar-controls {
-          display: flex;
-          align-items: center;
-          justify-content: flex-end;
-          gap: 10px;
-          flex-wrap: wrap;
-      }
-
-      .toolbar-divider {
-          width: 1px;
-          height: 31px;
-          background: rgba(255,255,255,0.12);
-          margin: 0 12px;
-      }
-
-      .nav-btn,
-      .toolbar-select,
-      .toolbar-date,
-      .request-link {
-          min-height: 35px;
-          border: 1px solid #3b4048;
-          border-radius: 8px;
-          font-family: inherit;
-          font-size: 0.87rem;
-          font-weight: 800;
-          text-decoration: none;
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-          gap: 6px;
-          transition: border-color 0.18s ease, color 0.18s ease, background 0.18s ease;
-      }
-
-      .nav-btn {
-          min-width: 62px;
-          background: #2a2e35;
-          color: #ffffff;
-          padding: 7px 16px;
-          cursor: pointer;
-      }
-
-      .toolbar-select,
-      .toolbar-date {
-          background: #2a2e35;
-          color: #ffffff;
-          padding: 7px 15px;
-          outline: none;
-      }
-
-      .toolbar-select { min-width: 185px; }
-      .toolbar-date { width: 240px; }
-
-      .request-link {
-          min-width: 172px;
-          background: var(--accent);
-          border-color: var(--accent);
-          color: #ffffff;
-          padding: 7px 16px;
-      }
-
-      .nav-btn:hover,
-      .toolbar-select:focus,
-      .toolbar-date:focus {
-          border-color: var(--accent);
-          color: #ffffff;
-          background: #313844;
-      }
-
-      .request-link:hover {
-          background: var(--accent-hover);
-          border-color: var(--accent-hover);
-      }
-
-      .public-main {
-          width: 100%;
-          padding: 22px 0 24px;
-      }
-
-      .preview-week.week {
-          background: var(--surface);
-          border: 1px solid var(--border);
-          border-radius: 24px;
-          margin: 0 0 24px;
-          overflow: hidden;
-          box-shadow: var(--shadow-lg);
-      }
-
-      .preview-week-header.week-head {
-          min-height: 122px;
-          display: flex;
-          align-items: center;
-          gap: 18px;
-          padding: 24px 40px;
-          border-bottom: 1px solid var(--border);
-          background: var(--surface);
-      }
-
-      .preview-week-header.week-head img {
-          width: 68px;
-          height: 68px;
-          border-radius: 10px;
-          object-fit: contain;
-          border: 1px solid var(--border);
-          padding: 7px;
-          background: var(--surface);
-      }
-
-      .preview-week-header.week-head h3 {
-          margin: 0;
-          font-size: 1.42rem;
-          font-weight: 900;
-          color: var(--text);
-          font-family: 'Outfit', sans-serif;
-          letter-spacing: 0;
+          font-size: 0.72rem;
+          font-weight: 700;
+          letter-spacing: 0.08em;
+          color: var(--text-dim);
           text-transform: uppercase;
       }
 
-      .viewport {
-          border-radius: 20px !important;
+      .toolbar-controls { display: flex; align-items: center; gap: 10px; }
+      .toolbar-controls > div:first-child {
+          display: flex;
+          background: #f8fafc !important;
+          border-radius: 999px !important;
+          padding: 4px !important;
           border: 1px solid var(--border) !important;
-          box-shadow: var(--shadow-sm) !important;
-          min-height: unset !important;
-          height: auto !important;
-          max-height: 80vh !important;
-          overflow-x: auto !important;
-          overflow-y: auto !important;
-          background: var(--surface) !important;
-          margin: 0 40px 30px;
-          padding: 0;
       }
 
+      .btn-nav, .toolbar-select, .toolbar-date {
+          background: #ffffff;
+          border: 1px solid var(--border);
+          color: var(--text);
+          padding: 8px 14px;
+          border-radius: 12px;
+          font-size: 0.83rem;
+          font-weight: 700;
+          cursor: pointer;
+          outline: none;
+          box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03);
+      }
+      .toolbar-controls > div:first-child .btn-nav {
+          border: none !important;
+          background: transparent !important;
+          box-shadow: none !important;
+      }
+      .toolbar-controls > div:first-child .btn-nav:nth-child(2) {
+          background: #ffffff !important;
+          border-radius: 999px !important;
+          border-left: 1px solid var(--border) !important;
+          border-right: 1px solid var(--border) !important;
+      }
+      .toolbar-select { min-width: 160px; }
+      .toolbar-date { width: 178px; text-align: center; }
+
+      .btn-request {
+          background: var(--accent);
+          color: #ffffff;
+          padding: 10px 18px;
+          border-radius: 999px;
+          font-weight: 800;
+          text-decoration: none;
+          font-size: 0.85rem;
+          margin-left: 10px;
+          display: flex; align-items: center; gap: 6px;
+          box-shadow: 0 8px 20px rgba(31, 79, 130, 0.18);
+      }
+
+      .public-main { padding: 22px 0 34px; }
+      
+      .hotel-card {
+          background: var(--surface);
+          margin: 0 auto 24px;
+          max-width: 96%;
+          border-radius: 18px;
+          border: 1px solid var(--border);
+          box-shadow: 0 18px 44px rgba(12, 33, 56, 0.06);
+          overflow: hidden;
+      }
+
+      .hotel-header {
+          padding: 26px 28px 16px;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 16px;
+          background: linear-gradient(180deg, var(--surface-soft) 0%, var(--surface) 100%);
+      }
+      .hotel-heading {
+          display: flex;
+          align-items: center;
+          gap: 16px;
+      }
+      .hotel-logo {
+          width: 56px; height: 56px;
+          border: 1px solid var(--border);
+          border-radius: 14px;
+          display: flex; align-items: center; justify-content: center;
+          padding: 6px; background: #fff;
+          box-shadow: 0 10px 24px rgba(12, 33, 56, 0.08);
+      }
+      .hotel-logo img { max-width: 100%; max-height: 100%; object-fit: contain; }
+
+      .hotel-info h2 {
+          margin: 0;
+          font-size: 1.14rem;
+          font-weight: 800;
+          letter-spacing: -0.02em;
+          text-transform: uppercase;
+      }
+      .hotel-info .week-label {
+          font-size: 0.82rem;
+          font-weight: 800;
+          color: var(--accent);
+          text-transform: uppercase;
+          margin-top: 4px;
+      }
+      .header-mode {
+          display: inline-flex;
+          align-items: center;
+          gap: 4px;
+          padding: 4px;
+          border: 1px solid var(--border);
+          border-radius: 999px;
+          background: rgba(255,255,255,0.55);
+      }
+      .mode-btn {
+          border: none;
+          background: transparent;
+          color: var(--text-dim);
+          padding: 8px 12px;
+          border-radius: 999px;
+          font: inherit;
+          font-size: 0.75rem;
+          font-weight: 800;
+          cursor: pointer;
+      }
+      .mode-btn.active {
+          background: var(--accent-soft);
+          color: var(--accent);
+      }
+
+      .hotel-card > .viewport { padding: 0 22px 22px; }
+      .hotel-card > .viewport > .viewport {
+          height: 70vh !important;
+          min-height: 520px !important;
+          background: linear-gradient(180deg, var(--surface-soft) 0%, var(--surface) 100%) !important;
+          border: 1px solid var(--grid) !important;
+          border-radius: 12px !important;
+          box-shadow: none !important;
+      }
+      
       .preview-table-v2 {
           width: 100%;
-          min-width: 1200px;
-          table-layout: fixed;
-          border-collapse: separate !important;
-          border-spacing: 0 8px !important;
-          background: transparent !important;
-          margin-top: -8px; /* Compensar espaciado inicial */
+          border-collapse: collapse !important;
+          border-spacing: 0 !important;
+          table-layout: auto;
       }
-
+      
       .preview-table-v2 th {
-          height: 50px;
-          background: var(--bg3) !important;
-          padding: 8px 6px !important;
-          border-bottom: 1px solid var(--border) !important;
-          border-right: none !important;
-          font-weight: 800;
-          color: var(--text-dim);
+          background: var(--accent-soft) !important;
+          padding: 16px 8px 14px !important;
           text-align: center;
-      }
-
-      .preview-table-v2 th:first-child,
-      .preview-table-v2 td.emp-cell {
-          width: 250px !important;
-          min-width: 200px !important;
-          max-width: 350px !important;
-          position: sticky !important;
-          left: 0 !important;
-          z-index: 10 !important;
-          background: var(--surface) !important;
-          border-right: 1px solid var(--border) !important;
-          overflow: visible !important;
-      }
-
-      .preview-table-v2 th:first-child {
-          z-index: 20 !important;
-          background: var(--bg3) !important;
-      }
-
-      .preview-table-v2 th:first-child {
-          color: #53647a !important;
-          font-size: 0.8rem !important;
-          letter-spacing: 0.05em;
-      }
-
-      .preview-table-v2 thead th > div:first-child {
-          color: #53647a !important;
-          font-family: 'Inter', sans-serif !important;
-          font-size: 0.75rem !important;
-          line-height: 1.1;
-          font-weight: 700 !important;
-          letter-spacing: 0.05em;
-      }
-
-      .preview-table-v2 thead th > div:last-child {
-          color: #06142d !important;
-          font-family: 'Inter', sans-serif !important;
-          font-size: 1.05rem !important;
-          line-height: 1.2;
-          font-weight: 500 !important;
-          margin-top: 2px;
-          letter-spacing: -0.01em;
+          font-weight: 700;
+          color: var(--text-dim);
+          text-transform: capitalize;
+          font-size: 0.72rem;
+          border: 1px solid var(--grid);
+          vertical-align: middle;
       }
 
       .preview-table-v2 td {
-          height: 70px;
-          padding: 0 !important;
-          border-bottom: none !important;
+          padding: 10px 8px !important;
+          border: 1px solid var(--grid);
           vertical-align: middle;
-          background: transparent;
-      }
-
-      .preview-table-v2 tr:not(.header-row) td {
           background: var(--surface);
-          border-top: 1px solid var(--border-soft);
-          border-bottom: 1px solid var(--border-soft);
       }
 
-      .preview-table-v2 td.emp-cell {
-          padding: 0 !important;
-          border-right: 1px solid var(--border) !important;
-          background: var(--surface) !important;
+      .emp-cell {
+          width: 220px;
+          min-width: 220px;
+          padding-left: 0 !important;
+          background: var(--surface);
+          position: sticky;
+          left: 0;
+          z-index: 10;
       }
-
-      .v-cell {
-          text-align: center !important;
-          vertical-align: middle !important;
-          padding: 4px 8px !important;
-          min-width: 130px;
-      }
-
-      .v-pill {
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-          gap: 6px;
-          width: auto !important;
-          min-width: 92px;
-          max-width: 150px;
-          height: 36px;
-          padding: 0 16px;
-          border-radius: 999px;
-          font-size: 0.88rem;
-          font-weight: 700;
-          line-height: 1;
-          white-space: nowrap;
-          box-shadow: 0 2px 5px rgba(15, 23, 42, 0.05);
-          transition: all 0.2s ease;
-      }
-
-      @media (max-width: 768px) {
-          .v-pill {
-              height: 22px;
-              min-width: 64px;
-              font-size: 0.58rem;
-              font-weight: 600;
-              border-radius: 5px;
-          }
-      }
-
-      .v-empty .v-pill {
-          background: transparent !important;
-          border: none !important;
-          box-shadow: none !important;
-          color: #0f1f3a !important;
-          min-width: 40px !important;
-          font-weight: 800;
-          opacity: 0.6;
-      }
-
-      /* Colores premium para píldoras (Index Only) */
-      .v-manana .v-pill   { background: #eaf9ee !important; color: #1c7331 !important; border: 1px solid #b7ebc5 !important; }
-      .v-tarde .v-pill    { background: #fff8d9 !important; color: #b46a00 !important; border: 1px solid #ffe899 !important; }
-      .v-noche .v-pill    { background: #f1f5f9 !important; color: #334155 !important; border: 1px solid #cbd5e1 !important; }
-      .v-descanso .v-pill { background: #fee2e2 !important; color: #991b1b !important; border: 1px solid #fecaca !important; }
-      .v-vac .v-pill      { background: #e0f2fe !important; color: #0369a1 !important; border: 1px solid #bae6fd !important; }
-      .v-baja .v-pill     { background: #fff1f2 !important; color: #9f1239 !important; border: 1px dashed #fecdd3 !important; }
-      .v-perm .v-pill     { background: #f5f3ff !important; color: #5b21b6 !important; border: 1px solid #ddd6fe !important; }
-      .v-form .v-pill     { background: #ecfdf5 !important; color: #065f46 !important; border: 1px solid #a7f3d0 !important; }
-
-      .employee-row {
-          width: 100%;
+      .employee-head {
           display: flex;
-          flex-direction: column;
-          align-items: flex-start;
-          justify-content: center;
-          gap: 4px;
-          padding: 8px 16px;
+          align-items: center;
+          justify-content: space-between;
+          gap: 10px;
       }
-
+      
       .employee-name {
-          width: 100%;
+          font-weight: 700;
           color: var(--text);
           font-size: 1rem;
-          font-weight: 800;
-          font-family: 'Outfit', sans-serif;
-          letter-spacing: -0.01em;
-          line-height: 1.2;
-          overflow: visible !important;
-          text-overflow: clip !important;
-          white-space: normal !important;
-          word-break: normal;
-          overflow-wrap: anywhere;
+          line-height: 1.15;
       }
-
-      .employee-stats {
-          display: flex;
-          align-items: center;
-          gap: 6px;
-          flex: 0 0 auto;
-      }
-
-      .emp-badge-n, .emp-badge-d {
+      
+      .emp-badges { display: flex; gap: 6px; flex-shrink: 0; }
+      
+      .badge {
           display: inline-flex;
           align-items: center;
-          gap: 4px;
-          padding: 2px 10px;
-          border-radius: 99px;
-          background: #ffffff;
-          border: 1px solid #e2e8f0;
-          font-size: 0.75rem;
-          font-weight: 600;
-          color: #1e293b;
-          box-shadow: 0 1px 2px rgba(0,0,0,0.02);
+          gap: 3px;
+          padding: 4px 10px;
+          border-radius: 999px;
+          background: var(--surface);
+          color: var(--text-dim);
+          font-size: 0.74rem;
+          font-weight: 700;
+          border: 1px solid var(--border);
       }
-      .emp-badge-n .badge-icon, .emp-badge-d .badge-icon {
-          font-size: 0.8rem;
-      }
-      .emp-badge-d .badge-icon {
-          color: #2563eb;
-          font-weight: 800;
+      
+      .badge-icon { font-size: 0.85rem; }
+
+      .turno-pill {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          padding: 8px 12px;
+          border-radius: 999px;
+          font-weight: 700;
+          font-size: 0.82rem;
+          min-width: 92px;
+          width: auto;
+          max-width: 100%;
+          gap: 6px;
+          margin: 0 auto;
+          border: 1px solid transparent;
+          box-shadow: inset 0 -1px 0 rgba(255,255,255,0.4);
       }
 
-      .badge-icon {
-          font-size: 0.58rem;
-          opacity: 0.7;
-          margin-left: 1px;
+      .v-m, .v-manana { background: var(--mint-bg); color: var(--mint-text); border-color: #c7e5ca; }
+      .v-t, .v-tarde { background: var(--amber-bg); color: var(--amber-text); border-color: #f3df9b; }
+      .v-n, .v-noche { background: var(--slate-bg); color: var(--slate-text); border-color: #d8dee5; }
+      .v-d, .v-descanso { background: var(--rose-bg); color: var(--rose-text); border-color: #efc3c7; }
+      .v-vac { background: var(--cyan-bg); color: var(--cyan-text); border-color: #aeddeb; }
+      .v-baja { background: #fde7d5; color: #a24b14; border-color: #f5cfaf; }
+      .v-p, .v-permiso { background: #ece6ff; color: #5c3bc4; border-color: #dcd0ff; }
+
+      .icon-sync { font-size: 0.7rem; color: #339af0; }
+      .icon-moon { font-size: 0.78rem; color: #d48a00; }
+      .icon-vac { font-size: 0.82rem; }
+      .empty-dash {
+          color: #c0c8d2;
+          font-weight: 600;
+          text-align: center;
+          display: block;
+          font-size: 1.05rem;
       }
+
+      .preview-table-v2 tr:hover td { background: var(--surface-soft); }
+      .preview-table-v2 tr:hover .emp-cell { background: var(--surface-soft); }
+      .preview-table-v2 th:first-child,
+      .preview-table-v2 td:first-child { border-left: 1px solid var(--grid); }
+      .preview-table-v2 th:first-child {
+          width: 220px !important;
+          min-width: 220px !important;
+          background: var(--accent-soft) !important;
+      }
+      .preview-table-v2 th.today > div:last-child { color: var(--accent); }
+      .preview-table-v2 th.weekend { background: color-mix(in srgb, var(--accent-soft) 62%, var(--surface) 38%) !important; }
 
       .night-summary {
-          background: var(--surface);
-          border: 1px solid var(--border);
-          border-radius: 18px;
-          box-shadow: var(--shadow-lg);
-          margin: 0 0 24px;
-          padding: 26px 28px 30px;
+          max-width: 96%;
+          margin: 0 auto;
+          padding: 4px 0 12px;
       }
-
       .night-summary-title {
-          margin: 0 0 18px;
-          font-family: 'Outfit', sans-serif;
-          font-size: 1.18rem;
-          font-weight: 900;
+          margin: 0 0 16px;
+          font-size: 1.12rem;
+          font-weight: 800;
           color: var(--text);
       }
-
-      .night-summary-month {
-          margin-top: 24px;
+      .night-month {
+          margin: 0 0 22px;
       }
-
-      .night-summary-month:first-child {
-          margin-top: 0;
-      }
-
-      .night-summary-month h4 {
-          margin: 0 0 14px;
-          font-size: 1rem;
-          font-weight: 900;
+      .night-month h3 {
+          margin: 0 0 12px;
+          font-size: 1.4rem;
+          font-weight: 800;
           color: var(--text);
           text-transform: lowercase;
       }
-
-      .night-summary-grid {
-          display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(310px, 1fr));
-          gap: 18px;
-      }
-
-      .night-summary-table {
-          width: 100%;
-          border-collapse: collapse;
+      .night-hotel {
           background: var(--surface);
           border: 1px solid var(--border);
+          border-radius: 16px;
+          overflow: hidden;
+          box-shadow: 0 14px 30px rgba(12, 33, 56, 0.06);
+          margin-bottom: 16px;
       }
-
-      .night-summary-table th,
-      .night-summary-table td {
-          border: 1px solid var(--border);
-          padding: 13px 16px;
-          font-size: 0.86rem;
+      .night-table {
+          width: 100%;
+          border-collapse: collapse;
       }
-
-      .night-summary-table th {
-          background: var(--bg3);
-          color: var(--text-dim);
+      .night-table th,
+      .night-table td {
+          border: 1px solid var(--grid);
+          padding: 14px 16px;
+          background: var(--surface);
+      }
+      .night-table th {
+          font-size: 0.95rem;
           font-weight: 700;
+          color: var(--accent);
+          background: var(--surface-soft);
+      }
+      .night-table td:last-child,
+      .night-table th:last-child {
+          width: 150px;
           text-align: center;
       }
-
-      .night-summary-table td:first-child {
-          font-weight: 800;
-          color: var(--text);
-      }
-
-      .night-summary-table td:last-child {
-          width: 120px;
+      .night-empty {
+          padding: 30px;
           text-align: center;
-          font-weight: 800;
-          color: var(--text);
-      }
-
-      .night-summary-empty {
-          margin: 0;
           color: var(--text-dim);
           font-weight: 700;
+          border: 1px dashed var(--border);
+          border-radius: 16px;
+          background: rgba(255,255,255,0.35);
       }
 
-      @media (max-width: 980px) {
+      @media (max-width: 1100px) {
           .site-toolbar {
-              align-items: flex-start;
+              height: auto;
+              padding: 16px 18px;
               flex-direction: column;
-              padding: 14px 14px 0;
+              align-items: flex-start;
+              gap: 14px;
           }
 
           .toolbar-controls {
-              justify-content: flex-start;
               width: 100%;
+              flex-wrap: wrap;
           }
 
-          .toolbar-divider { display: none; }
-          .public-main { padding: 12px 14px 24px; }
-          .preview-week.week { border-radius: 18px; margin-bottom: 24px; }
-          .preview-week-header.week-head {
-              min-height: 70px;
-              padding: 12px 16px;
-              gap: 12px;
+          .hotel-card > .viewport {
+              padding: 0 12px 14px;
           }
 
-          .preview-week-header.week-head img {
-              display: none !important;
-          }
-
-          .preview-week-header.week-head h3 {
-              font-size: 0.95rem;
-          }
-
-          .viewport {
-              margin: 0 !important;
-              border-radius: 0 0 18px 18px !important;
-              border-left: none !important;
-              border-right: none !important;
-              border-bottom: none !important;
-          }
-
-          .preview-table-v2 {
-              min-width: 800px;
-              border-spacing: 0 !important;
-          }
-
-          .preview-table-v2 th:first-child,
-          .preview-table-v2 td.emp-cell {
-              width: 160px !important;
-              min-width: 160px !important;
-              max-width: 160px !important;
-              box-shadow: 4px 0 8px rgba(0,0,0,0.05) !important;
-          }
-
-          .employee-row {
-              padding: 8px 10px;
-              flex-direction: column;
-              align-items: flex-start;
-              gap: 4px;
-          }
-
-          .employee-name {
-              font-size: 0.85rem !important;
-              white-space: normal !important;
-              overflow: visible !important;
-              text-overflow: clip !important;
-          }
-
-          .emp-badge-n,
-          .emp-badge-d {
-              width: 24px;
-              height: 24px;
-              padding: 0;
-              justify-content: center;
-              font-size: 0.6rem;
-          }
-          .emp-badge-n .badge-icon, .emp-badge-d .badge-icon { display: none; }
-
-          .preview-table-v2 thead th > div:first-child {
-              font-size: 0.65rem !important;
-          }
-          .preview-table-v2 thead th > div:last-child {
-              font-size: 0.85rem !important;
-          }
-
-          .night-summary {
-              border-radius: 0;
-              margin: 0;
-              padding: 20px 16px;
-              border-left: none;
-              border-right: none;
+          .emp-cell,
+          .preview-table-v2 th:first-child {
+              width: 220px !important;
+              min-width: 220px !important;
           }
       }
   </style>
 </head>
 <body>
-  <header class="site-toolbar">
+  <div class="site-toolbar">
     <div class="toolbar-brand">
-      <img src="Logo.png" alt="Logo">
-      <div>
-        <div class="toolbar-title">Cuadrantes de turnos Recepción</div>
-        <div class="toolbar-subtitle">Sercotel Guadiana / Cumbria Spa&Hotel</div>
-      </div>
+      <div class="toolbar-title">Cuadrantes de turnos Recepción</div>
+      <div class="toolbar-subtitle">Sercotel Guadiana / Cumbria Spa&Hotel</div>
     </div>
     <div class="toolbar-controls">
-      <button class="nav-btn" onclick="toggleTheme()" id="themeBtn" title="Cambiar Modo" style="font-size: 1.1rem; padding: 4px 10px;">🌙</button>
-      <div class="toolbar-divider"></div>
-      <button class="nav-btn" onclick="changeWeek(-1)">← Semana</button>
-      <button class="nav-btn" onclick="goToday()">Hoy</button>
-      <button class="nav-btn" onclick="changeWeek(1)">semana →</button>
-      <div class="toolbar-divider"></div>
+      <div style="display:flex; background:#2a2e35; border-radius:8px; padding:2px; border:1px solid #3b4048;">
+        <button class="btn-nav" style="border:none; background:transparent;" onclick="changeWeek(-1)">← Semana</button>
+        <button class="btn-nav" style="border:none; background:transparent; border-left:1px solid #3b4048; border-right:1px solid #3b4048;" onclick="goToday()">Hoy</button>
+        <button class="btn-nav" style="border:none; background:transparent;" onclick="changeWeek(1)">semana →</button>
+      </div>
       <select id="hotelSelect" class="toolbar-select" onchange="renderPublicView()">
-        <option value="">Todos los Hoteles</option>
+        <option value="">Ambos hoteles</option>
+        <option value="Sercotel Guadiana">Sercotel Guadiana</option>
+        <option value="Cumbria Spa&Hotel">Cumbria Spa&Hotel</option>
       </select>
-      <input type="text" id="dateRange" class="toolbar-date">
-      <a href="solicitud.html" class="request-link">↩ Solicitar Cambio</a>
+      <input type="text" id="dateRange" class="toolbar-date" readonly>
+      <a href="solicitud.html" class="btn-request">
+        <span>🔄 Solicitar Cambio</span>
+      </a>
     </div>
-  </header>
-  
-  <main id="app" class="public-main"></main>
-  
-  <script src="supabase.js"></script>
-  <script src="localforage.js"></script>
-  <script src="xlsx.full.min.js"></script>
+  </div>
+
+  <div id="publicContainer" class="public-main"></div>
+
   <script src="flatpickr.js"></script>
-  <script src="flatpickr_es.js"></script>
-  <script src="virtualizer.js?v=8.5"></script>
-  <script src="supabase-config.js?v=9.8"></script>
-  <script src="supabase-dao.js?v=9.14"></script>
-  <script src="turnos-rules.js?v=4.1"></script>
-  <script src="shift-resolver.js?v=4.1"></script>
-  <script src="turnos-engine.js?v=4.1"></script>
-  <script src="excel-loader.js?v=1.0"></script>
-  
+  <script src="supabase.js"></script>
+  <script src="supabase-config.js"></script>
+  <script src="supabase-dao.js"></script>
+  <script src="turnos-rules.js"></script>
+  <script src="virtualizer.js"></script>
   <script>
-    const $ = (s) => document.querySelector(s);
-    if (window.location.protocol === 'file:') {
-        console.error("ERROR DE SEGURIDAD: Estás abriendo el archivo vía file://. Usa http://localhost:8080 para cargar los datos correctamente.");
-        alert("⚠️ ATENCIÓN: No uses el archivo directo. Usa el enlace de servidor local (localhost) para que el cuadrante funcione.");
-    }
     let _picker;
-    const logoFor = (h) => String(h || '').toLowerCase().includes('guadiana') ? 'guadiana logo.jpg' : 'cumbria logo.jpg';
-    const escapeHtml = (value) => String(value ?? '').replace(/[&<>"']/g, (char) => ({
-        '&': '&amp;',
-        '<': '&lt;',
-        '>': '&gt;',
-        '"': '&quot;',
-        "'": '&#39;'
-    }[char]));
-    const shiftInitial = (value) => {
-        const text = String(value || '').trim().toLowerCase();
-        if (!text) return '';
-        if (text.startsWith('m') || text.includes('mañana') || text.includes('manana')) return 'manana';
-        if (text.startsWith('t') || text.includes('tarde')) return 'T';
-        if (text.startsWith('n') || text.includes('noche')) return 'N';
-        if (text.startsWith('d') || text.includes('descanso')) return 'D';
-        return '';
-    };
-    const EXCEL_SOURCE_FILE = 'Plantilla%20Cuadrante%20Turnos%20v.8.0.xlsx';
-    const EXCEL_HOTEL_SHEETS = ['Cumbria Spa&Hotel', 'Sercotel Guadiana'];
-    const EXCEL_DAY_COLUMNS = [
-        { offset: 0 }, { offset: 1 }, { offset: 2 }, { offset: 3 },
-        { offset: 4 }, { offset: 5 }, { offset: 6 }
-    ];
-    const localIsoDate = (date) => {
-        if (!(date instanceof Date) || Number.isNaN(date.getTime())) return null;
-        return [
-            date.getFullYear(),
-            String(date.getMonth() + 1).padStart(2, '0'),
-            String(date.getDate()).padStart(2, '0')
-        ].join('-');
-    };
-    const isoToLocalDate = (dateStr) => new Date(`${dateStr}T12:00:00`);
-    const addDaysIso = (dateStr, days) => {
-        const date = isoToLocalDate(dateStr);
-        date.setDate(date.getDate() + days);
-        return localIsoDate(date);
-    };
-    const mondayOfIso = (dateStr) => {
-        const date = isoToLocalDate(dateStr);
-        const day = date.getDay() || 7;
-        date.setDate(date.getDate() - day + 1);
-        return localIsoDate(date);
-    };
-    const sundayOfIso = (dateStr) => addDaysIso(mondayOfIso(dateStr), 6);
-    const buildWeekRanges = (startIso, endIso) => {
-        const weeks = [];
-        let weekStart = mondayOfIso(startIso);
-        const lastWeekStart = mondayOfIso(endIso);
-        while (weekStart <= lastWeekStart) {
-            weeks.push({ start: weekStart, end: addDaysIso(weekStart, 6) });
-            weekStart = addDaysIso(weekStart, 7);
-        }
-        return weeks;
-    };
-    // excelCellDate y shiftFromExcel eliminadas — las provee window.ExcelLoader (excel-loader.js)
-    const monthKeyFromDate = (dateStr) => String(dateStr || '').slice(0, 7);
-    const monthLabel = (monthKey) => {
-        const [year, month] = String(monthKey || '').split('-').map(Number);
-        if (!year || !month) return '';
-        return new Date(year, month - 1, 1).toLocaleDateString('es-ES', { month: 'long', year: 'numeric' });
-    };
-    const normalizePublishedScheduleRows = (raw) => {
-        if (!Array.isArray(raw)) return [];
-        return raw.map(item => {
-            let hotel = item.hotel || 'Sin Hotel';
-            let empleados = item.rows || item.empleados || item.employees || (item.data && item.data.empleados) || [];
-            let columns = item.columns || [];
-            
-            return {
-                hotel,
-                empleados: Array.isArray(empleados) ? empleados : [],
-                columns: Array.isArray(columns) ? columns : []
-            };
-        });
+    const $ = s => document.querySelector(s);
+    const escapeHtml = s => String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    const monthNamesFull = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+
+    const formatDateLocal = (date) => {
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
     };
 
-    const buildNightSummary = (groups) => {
-        const normalized = normalizePublishedScheduleRows(groups);
-        const byMonth = new Map();
+    const isNightCode = (value) => String(value || '').toUpperCase().startsWith('N');
 
-        normalized.forEach(group => {
-            group.empleados.forEach(emp => {
-                // EXCLUSIÓN REQUERIDA: No contar noches para personal de apoyo/ocasional puro
-                // Cruzamos con el mapa global por si el snapshot no trae metadatos
-                const profile = window._publicEmployeesMap?.get(window.normalizeId(emp.empleado_id || emp.nombre));
-                const showCounters = window.shouldShowEmployeeCounters && window.shouldShowEmployeeCounters(profile || emp, emp);
-                
-                if (!showCounters) return;
-
-                const dias = emp.cells || emp.dias || emp.days || {};
-                
-                // Si hay columnas definidas (formato renderSnapshotInContainer), las usamos como guía
-                if (group.columns && group.columns.length > 0) {
-                    group.columns.forEach((col, idx) => {
-                        const date = col.dbFecha;
-                        const cell = dias[date] || (emp.cells && emp.cells[idx]) || {};
-                        const turno = cell.code || cell.turno || cell.label || '';
-                        
-                        if (shiftInitial(turno) !== 'N') return;
-                        
-                        const month = monthKeyFromDate(date);
-                        if (!month) return;
-                        
-                        if (!byMonth.has(month)) byMonth.set(month, new Map());
-                        const hotels = byMonth.get(month);
-                        if (!hotels.has(group.hotel)) hotels.set(group.hotel, new Map());
-                        const employees = hotels.get(group.hotel);
-                        const empName = emp.nombre || emp.name || 'Empleado';
-                        employees.set(empName, (employees.get(empName) || 0) + 1);
-                    });
-                } else {
-                    // Si no hay columnas, iteramos sobre las llaves del objeto 'dias'
-                    Object.entries(dias).forEach(([date, cell]) => {
-                        const turno = cell.code || cell.turno || cell.label || '';
-                        if (shiftInitial(turno) !== 'N') return;
-                        
-                        const month = monthKeyFromDate(date);
-                        if (!month) return;
-                        
-                        if (!byMonth.has(month)) byMonth.set(month, new Map());
-                        const hotels = byMonth.get(month);
-                        if (!hotels.has(group.hotel)) hotels.set(group.hotel, new Map());
-                        const employees = hotels.get(group.hotel);
-                        const empName = emp.nombre || emp.name || 'Empleado';
-                        employees.set(empName, (employees.get(empName) || 0) + 1);
-                    });
-                }
-            });
-        });
-
-        return Array.from(byMonth.entries())
-            .sort(([a], [b]) => a.localeCompare(b))
-            .map(([month, hotels]) => ({
-                month,
-                hotels: Array.from(hotels.entries())
-                    .sort(([a], [b]) => a.localeCompare(b, 'es', { sensitivity: 'base' }))
-                    .map(([hotel, employees]) => ({
-                        hotel,
-                        employees: Array.from(employees.entries())
-                            .sort(([nameA, countA], [nameB, countB]) => countB - countA || nameA.localeCompare(nameB, 'es', { sensitivity: 'base' }))
-                    }))
-            }));
-    };
-    const renderNightSummary = (groups) => {
-        if (!groups || !Array.isArray(groups)) return '';
-        
-        try {
-            const summary = buildNightSummary(groups);
-            if (!summary.length) {
-                return `
-                    <section class="night-summary">
-                        <h3 class="night-summary-title">Resumen de noches</h3>
-                        <p class="night-summary-empty">No hay noches en las fechas publicadas.</p>
-                    </section>
-                `;
-            }
-
-            return `
-                <section class="night-summary">
-                    <h3 class="night-summary-title">Resumen de noches</h3>
-                    ${summary.map(monthGroup => `
-                        <div class="night-summary-month">
-                            <h4>${escapeHtml(monthLabel(monthGroup.month))}</h4>
-                            <div class="night-summary-grid">
-                                ${monthGroup.hotels.map(hotelGroup => `
-                                    <table class="night-summary-table">
-                                        <thead>
-                                            <tr>
-                                                <th>${escapeHtml(hotelGroup.hotel)}</th>
-                                                <th>Noches</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            ${hotelGroup.employees.map(([name, count]) => `
-                                                <tr>
-                                                    <td>${escapeHtml(name)}</td>
-                                                    <td>${count}</td>
-                                                </tr>
-                                            `).join('')}
-                                        </tbody>
-                                    </table>
-                                `).join('')}
-                            </div>
-                        </div>
-                    `).join('')}
-                </section>
-            `;
-        } catch (err) {
-            console.error("[NIGHT SUMMARY ERROR]", err);
-            return `<section class="night-summary" style="opacity:0.6;">
-                <h3 class="night-summary-title">Resumen de noches</h3>
-                <p class="night-summary-empty">Temporalmente no disponible.</p>
-            </section>`;
-        }
-    };
-    async function loadExcelSourceRows() {
-        if (window._publicExcelSourceRows) return window._publicExcelSourceRows;
-        if (!window.XLSX) return {};
-        const response = await fetch(EXCEL_SOURCE_FILE, { cache: 'no-store' });
-        if (!response.ok) throw new Error(`No se pudo leer el Excel original (${response.status})`);
-        const buffer = await response.arrayBuffer();
-        const workbook = XLSX.read(buffer, { type: 'array', cellDates: true });
-        const result = {};
-
-        EXCEL_HOTEL_SHEETS.forEach(hotel => {
-            const sheet = workbook.Sheets[hotel];
-            if (!sheet) return;
-            const matrix = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '', raw: true });
-            result[hotel] = matrix.slice(1).map((row, index) => ({
-                hotel,
-                rowIndex: index,
-                weekStart: excelCellDate(row[0]),
-                displayName: String(row[1] || '').trim(),
-                empleadoId: String(row[1] || '').trim(),
-                values: EXCEL_DAY_COLUMNS.map((_, i) => shiftFromExcel(row[i + 2]))
-            })).filter(row => row.weekStart && row.empleadoId);
-        });
-
-        window._publicExcelSourceRows = result;
-        return result;
+    function accumulateNightSummary(summaryByMonth, hotelName, employeeName, fecha) {
+        const dt = new Date(`${fecha}T12:00:00`);
+        const monthKey = `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}`;
+        if (!summaryByMonth.has(monthKey)) summaryByMonth.set(monthKey, new Map());
+        const hotels = summaryByMonth.get(monthKey);
+        if (!hotels.has(hotelName)) hotels.set(hotelName, new Map());
+        const employees = hotels.get(hotelName);
+        employees.set(employeeName, (employees.get(employeeName) || 0) + 1);
     }
-    
 
+    function renderNightSummary(container, summaryByMonth, hasRows) {
+        const section = document.createElement('section');
+        section.className = 'night-summary';
 
-    /**
-     * ARQUITECTURA CRÍTICA:
-     * Esta vista es de solo lectura.
-     * Admin resuelve turnos, ausencias, sustituciones y cambios.
-     * Esta vista solo lee snapshots publicados y renderiza.
-     * No usar eventos_cuadrante aquí para reconstruir el cuadrante.
-     */
-    const CONSUMER_VIEW_MODE = 'READ_ONLY_PUBLISHED_SNAPSHOT';
+        if (!hasRows || !summaryByMonth.size) {
+            section.innerHTML = `
+                <h2 class="night-summary-title">Resumen de noches</h2>
+                <div class="night-empty">No hay noches en el periodo seleccionado.</div>
+            `;
+            container.appendChild(section);
+            return;
+        }
+
+        let html = '<h2 class="night-summary-title">Resumen de noches</h2>';
+        [...summaryByMonth.entries()].sort((a, b) => a[0].localeCompare(b[0])).forEach(([monthKey, hotels]) => {
+            const [year, month] = monthKey.split('-').map(Number);
+            html += `<div class="night-month"><h3>${monthNamesFull[month - 1]} de ${year}</h3>`;
+
+            [...hotels.entries()].sort((a, b) => a[0].localeCompare(b[0], 'es')).forEach(([hotelName, employees]) => {
+                const rows = [...employees.entries()]
+                    .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], 'es'))
+                    .map(([employeeName, total]) => `
+                        <tr>
+                            <td>${escapeHtml(employeeName)}</td>
+                            <td>${total}</td>
+                        </tr>
+                    `).join('');
+
+                html += `
+                    <div class="night-hotel">
+                        <table class="night-table">
+                            <thead>
+                                <tr>
+                                    <th>${escapeHtml(hotelName)}</th>
+                                    <th>Noches</th>
+                                </tr>
+                            </thead>
+                            <tbody>${rows}</tbody>
+                        </table>
+                    </div>
+                `;
+            });
+
+            html += '</div>';
+        });
+
+        section.innerHTML = html;
+        container.appendChild(section);
+    }
+
+    function applyTheme(theme) {
+        document.body.classList.toggle('night-mode', theme === 'night');
+        document.querySelectorAll('.mode-btn').forEach(btn => {
+            btn.classList.toggle('active', btn.dataset.theme === theme);
+        });
+        localStorage.setItem('public-theme', theme);
+    }
+
+    window.setVisualTheme = (theme) => applyTheme(theme);
 
     window.renderPublicView = async () => {
-        if (window.DEBUG_MODE) {
-            console.warn('[ARCHITECTURE] Vista de consumo: no recalcular reglas operativas aquí. Leer snapshot publicado.');
+        const hotel = $('#hotelSelect').value;
+        const range = _picker.selectedDates;
+        if (range.length < 2) return;
+        const start = formatDateLocal(range[0]);
+        const end = formatDateLocal(range[1]);
+        
+        const container = $('#publicContainer');
+        container.innerHTML = '<div style="padding:100px; text-align:center; font-weight:700; color:#5f6f84;">Cargando cuadrante...</div>';
+
+        const { data: snaps } = await window.TurnosDB.client
+            .from('publicaciones_cuadrante')
+            .select('*')
+            .eq('estado', 'activo')
+            .gte('semana_inicio', start)
+            .lte('semana_inicio', end)
+            .order('semana_inicio', { ascending: true })
+            .order('hotel', { ascending: true })
+            .order('version', { ascending: false });
+
+        if (!snaps || snaps.length === 0) {
+            container.innerHTML = '<div style="padding:100px; text-align:center; font-weight:700; color:#5f6f84;">No hay cuadrantes publicados desde esta fecha.</div>';
+            return;
         }
 
-        const area = document.getElementById('app');
-        if (!area) return;
-
-        // Carga opcional de metadatos de empleados para enriquecer snapshots antiguos
-        if (!window._publicEmployeesMap) {
-            try {
-                const emps = await window.TurnosDB.getEmpleados().catch(() => []);
-                window._publicEmployeesMap = new Map(emps.map(e => [window.normalizeId(e.id || e.nombre), e]));
-            } catch (e) { console.warn("No se pudieron cargar metadatos de empleados para el cruce visual."); }
-        }
-        const selHotel = document.getElementById('hotelSelect').value;
-        const rangeStr = document.getElementById('dateRange').value;
-
-        let startIso, endIso;
-        if (rangeStr.includes(" a ")) {
-            [startIso, endIso] = rangeStr.split(" a ");
-        } else if (/^\d{4}-\d{2}-\d{2}$/.test(rangeStr)) {
-            startIso = rangeStr;
-            endIso = rangeStr;
-        } else {
-            const d = new Date();
-            const off = (d.getDay() === 0 ? -6 : 1 - d.getDay());
-            d.setDate(d.getDate() + off);
-            startIso = d.toISOString().split('T')[0];
-            const endD = new Date(d);
-            endD.setDate(endD.getDate() + 6);
-            endIso = endD.toISOString().split('T')[0];
-        }
-        if (endIso < startIso) [startIso, endIso] = [endIso, startIso];
-
-        area.innerHTML = `<div style="padding:4rem; text-align:center; opacity:0.5; font-weight:700;">Cargando cuadrante publicado...</div>`;
-
-        try {
-            // ÚNICA FUENTE DE VERDAD PARA CONSUMO: Snapshots horneados por Admin
-            const result = await window.TurnosDB.loadPublishedSchedule({ 
-                semanaInicio: startIso, 
-                semanaFin: endIso 
-            });
-            
-            if (!result.ok) {
-                area.innerHTML = `<div style="padding:4rem; text-align:center; opacity:0.8; font-weight:600; color:var(--text-dim);">
-                    <div style="font-size:3rem; margin-bottom:1rem;">📅</div>
-                    ${result.message}
-                </div>`;
-                return;
-            }
-
-            area.innerHTML = '';
-            
-            // Función de orden estable de hoteles
-            const getHotelOrder = (h) => {
-                const n = (h || "").toLowerCase();
-                if (n.includes("cumbria")) return 1;
-                if (n.includes("guadiana")) return 2;
-                return 999;
-            };
-
-            // Ordenar por Hotel y luego por Semana
-            result.snapshots.sort((a, b) => {
-                const orderA = getHotelOrder(a.hotel);
-                const orderB = getHotelOrder(b.hotel);
-                if (orderA !== orderB) return orderA - orderB;
-                return (a.semana_inicio || "").localeCompare(b.semana_inicio || "");
-            });
-
-            const nightSummaryGroups = [];
-
-            // Filtrar y renderizar snapshots
-            result.snapshots.forEach(snap => {
-                if (selHotel && snap.hotel !== selHotel) return;
-
-                const hName = snap.hotel;
-                const rosterGrid = snap.data; // El Snapshot es el resultado de buildRosterGrid de Admin
-                const weekStart = snap.semanaInicio || rosterGrid.semana_inicio;
-
-                const safeId = `${hName}-${weekStart}`.replace(/[^a-z0-9]/gi, '-');
-                const card = document.createElement('div');
-                card.className = 'preview-week week';
-                card.innerHTML = `
-                    <div class="preview-week-header week-head">
-                        <img src="${logoFor(hName)}" alt="${escapeHtml(hName)}">
-                        <h3>${escapeHtml(hName.toUpperCase())} <span style="display:block; margin-top:5px; color:var(--text-dim); font-size:0.82rem; font-weight:800;">Semana del ${escapeHtml(window.TurnosDB.fmtDateLegacy(weekStart))}</span></h3>
-                    </div>
-                    <div id="grid-container-${safeId}" style="padding:0;"></div>
-                `;
-                area.appendChild(card);
-
-                const container = card.querySelector(`#grid-container-${safeId}`);
-                const rendered = renderSnapshotInContainer(container, rosterGrid, hName);
-                nightSummaryGroups.push({ hotel: hName, ...rendered });
-            });
-
-            if (area.children.length === 0) {
-                area.innerHTML = `<div style="padding:4rem; text-align:center; opacity:0.5;">No hay cuadrante publicado para los filtros seleccionados.</div>`;
-            } else {
-                area.insertAdjacentHTML('beforeend', renderNightSummary(nightSummaryGroups));
-            }
-        } catch (e) {
-            console.error(e);
-            area.innerHTML = `<div style="padding:4rem; text-align:center; color:red;">Error de carga: ${e.message}</div>`;
-        }
+        container.innerHTML = '';
+        
+        // Agrupar por hotel y semana para solo mostrar la última versión de cada combinación
+        const seen = new Set();
+        const summaryByMonth = new Map();
+        let hasRows = false;
+        snaps.forEach(s => {
+            const key = `${s.hotel}_${s.semana_inicio}`;
+            if (seen.has(key)) return;
+            if (hotel && s.hotel !== hotel) return;
+            seen.add(key);
+            hasRows = true;
+            renderHotelSection(container, s, start, end, summaryByMonth);
+        });
+        renderNightSummary(container, summaryByMonth, hasRows);
+        applyTheme(localStorage.getItem('public-theme') || 'day');
     };
 
+    function renderHotelSection(container, snap, rangeStart, rangeEnd, summaryByMonth) {
+        const div = document.createElement('div');
+        div.className = 'hotel-card';
+        const logoUrl = snap.hotel.includes('Sercotel') ? 'guadiana logo.jpg' : 'cumbria logo.jpg';
+        const formattedWeek = snap.semana_inicio.split('-').reverse().join('/');
 
-
-    function renderSnapshotInContainer(container, snapshotData, hotelName) {
-        // En el nuevo formato, snapshotData tiene { semana_inicio, semana_fin, hotel, empleados: [...] }
-        const empleados = snapshotData.empleados || [];
-        const semanaInicio = snapshotData.semana_inicio;
+        div.innerHTML = `
+            <div class="hotel-header">
+                <div class="hotel-heading">
+                    <div class="hotel-logo"><img src="${logoUrl}"></div>
+                    <div class="hotel-info">
+                        <h2>${snap.hotel}</h2>
+                        <div class="week-label">SEMANA DEL ${formattedWeek}</div>
+                    </div>
+                </div>
+                <div class="header-mode">
+                    <button type="button" class="mode-btn" data-theme="day" onclick="setVisualTheme('day')">Día</button>
+                    <button type="button" class="mode-btn" data-theme="night" onclick="setVisualTheme('night')">Noche</button>
+                </div>
+            </div>
+            <div class="viewport"></div>
+        `;
+        container.appendChild(div);
         
-        // Calcular fechas de la semana desde el snapshot
+        const viewport = div.querySelector('.viewport');
+        const rows = snap.snapshot_json.rows || snap.snapshot_json.empleados || [];
+        
         const dates = [];
-        let curr = new Date(semanaInicio + "T12:00:00");
-        for (let i = 0; i < 7; i++) {
-            dates.push(window.TurnosDB.normalizeDate(curr));
-            curr.setDate(curr.getDate() + 1);
+        let d = new Date(snap.semana_inicio + 'T12:00:00');
+        for(let i=0; i<7; i++){
+            dates.push(formatDateLocal(d));
+            d.setDate(d.getDate()+1);
         }
 
-        const dayNames = ['DOMINGO','LUNES','MARTES','MIÉRCOLES','JUEVES','VIERNES','SÁBADO'];
-        const monthNames = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
-
-        const columns = dates.map(iso => {
-            const d = new Date(iso + "T12:00:00");
+        const days = ['DOMINGO','LUNES','MARTES','MIÉRCOLES','JUEVES','VIERNES','SÁBADO'];
+        const todayKey = formatDateLocal(new Date());
+        const columns = dates.map((f, idx) => {
+            const dt = new Date(f + 'T12:00:00');
             return {
-                dbFecha: iso,
-                title: dayNames[d.getDay()],
-                subtitle: `${d.getDate()}/${monthNames[d.getMonth()]}/${d.getFullYear().toString().slice(-2)}`,
-                isWeekend: d.getDay() === 0 || d.getDay() === 6,
-                isToday: iso === new Date().toISOString().split('T')[0]
+                title: days[dt.getDay()],
+                subtitle: `${dt.getDate()}/${['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'][dt.getMonth()]}/${String(dt.getFullYear()).slice(-2)}`,
+                dbFecha: f,
+                width: 140,
+                isWeekend: dt.getDay() === 0 || dt.getDay() === 6,
+                isToday: f === todayKey
             };
         });
 
-        const table = new window.VirtualTable(container, { columns, rowHeight: 76 });
+        const table = new window.VirtualTable(viewport, { columns, rowHeight: 62 });
 
-        table.renderCellContent = (cell, dayData, empName, fecha) => {
-            const data = dayData || {};
-            const isCompact = window.matchMedia('(max-width: 640px)').matches;
-            const display = window.TurnosRules.getPublicCellDisplay(data, { compact: isCompact });
+        table.renderCellContent = function(cell, data, empName, fecha) {
+            if (!data || data.code === '—' || data.code === '') {
+                return cell.innerHTML = '<span class="empty-dash">—</span>';
+            }
+            const display = window.TurnosRules.getPublicCellDisplay(data, { compact: false });
+            const cls = window.TurnosRules.shiftKey(data.code, data.type);
             
-            // Clase visual basada en el label normalizado (reglas del Snapshot V12)
-            const norm = (display.label || '').toLowerCase();
-            let cls = 'v-empty';
-
-            if (norm.includes('vac')) cls = 'v-vac';
-            else if (norm.includes('mañana') || norm === 'm') cls = 'v-manana';
-            else if (norm.includes('tarde') || norm === 't') cls = 'v-tarde';
-            else if (norm.includes('noche') || norm === 'n') cls = 'v-noche';
-            else if (norm.includes('descanso') || norm === 'd') cls = 'v-descanso';
-            else if (norm.includes('baja') || norm === 'it') cls = 'v-baja';
-            else if (norm.includes('permiso') || norm === 'perm') cls = 'v-perm';
-            else if (norm.includes('formación') || norm.includes('formacion') || norm === 'form') cls = 'v-form';
-            
-            if (data.titular_cubierto) cell.title = `Cubriendo a ${data.titular_cubierto}`;
-
-            cell.className = `v-cell ${cls}`;
             cell.innerHTML = '';
-            
             const pill = document.createElement('div');
-            pill.className = 'v-pill';
-            pill.textContent = display.text;
+            pill.className = `turno-pill v-${cls}`;
+            pill.textContent = display.label;
+            if (cls === 'vac') {
+                pill.innerHTML += ' <span class="icon-vac">🏖️</span>';
+            }
             
+            if (cls === 'n' || cls === 'noche') {
+                pill.innerHTML += ' <span class="icon-moon">🌙</span>';
+            }
+            
+            if (display.icons && display.icons.includes('🔄')) {
+                pill.innerHTML += ' <span class="icon-sync">🔄</span>';
+            }
             cell.appendChild(pill);
         };
 
         table.renderRow = function(tr, rowData) {
             const tds = tr.children;
-            tds[0].colSpan = 1; tds[0].style.display = '';
-
-            // Cálculo de resúmenes visuales desde los datos horneados
             let nights = 0, rests = 0;
             const daysMap = rowData.dias || rowData.cells || {};
             dates.forEach(f => {
@@ -1065,120 +681,80 @@
                 if (c.startsWith('D')) rests++;
             });
 
-            const isCompact = window.matchMedia('(max-width: 640px)').matches;
-            
-            // Detección de chips: Regla operativa vs Apoyo estructural
-            const profile = window._publicEmployeesMap?.get(window.normalizeId(rowData.empleado_id || rowData.nombre));
-            const showCounters = window.shouldShowEmployeeCounters && window.shouldShowEmployeeCounters(profile || rowData, rowData);
-
             const isAbsent = rowData.rowType === 'ausencia_informativa';
+            const displayName = rowData.nombreVisible || rowData.nombre || 'Pendiente';
+
             tds[0].innerHTML = `
-                <div class="employee-row" style="${isAbsent ? 'opacity:0.6;' : ''}">
-                    <span class="employee-name">${escapeHtml(rowData.nombre)}</span>
-                    ${(isCompact || !showCounters || isAbsent) ? '' : `
-                    <div class="employee-stats">
-                        <span class="emp-badge-n" title="Noches: ${nights}"><span class="badge-icon" aria-hidden="true">&#x1F319;</span> ${nights}</span>
-                        <span class="emp-badge-d" title="Descansos: ${rests}"><span class="badge-icon" aria-hidden="true">D</span> ${rests}</span>
+                <div class="emp-cell ${isAbsent ? 'ausencia-row' : ''}">
+                    <div class="employee-head">
+                        <div class="employee-name">${escapeHtml(displayName)}</div>
+                    ${isAbsent ? '' : `
+                    <div class="emp-badges">
+                        <span class="badge"><span class="badge-icon">🌙</span> ${nights}</span>
+                        <span class="badge">D ${rests}</span>
                     </div>
                     `}
+                    </div>
                 </div>
             `;
 
-            for (let i = 0; i < this.columns.length; i++) {
-                const f = this.columns[i].dbFecha;
-                this.renderCellContent(tds[i+1], rowData.dias[f], rowData.nombre, f);
-            }
+            dates.forEach((f, i) => {
+                table.renderCellContent(tds[i+1], daysMap[f], rowData.nombre, f);
+            });
         };
 
-        // REGLA OBLIGATORIA: De-duplicación y Orden Estricto (Operativos -> Ausentes)
-        const uniqueEmpsMap = new Map();
-        const norm = (str) => {
-            if (window.normalizeId) return window.normalizeId(str);
-            if (window.TurnosDB && window.TurnosDB.normalizeString) return window.TurnosDB.normalizeString(str);
-            return String(str || '').toLowerCase().trim();
-        };
+        const sorted = [...rows].sort((a,b) => {
+            const isAbsA = a.rowType === 'ausencia_informativa';
+            const isAbsB = b.rowType === 'ausencia_informativa';
+            if (isAbsA !== isAbsB) return isAbsA ? 1 : -1;
+            return (a.puestoOrden || 999) - (b.puestoOrden || 999);
+        });
 
-        empleados.forEach(e => {
-            const id = norm(e.empleado_id || e.nombre);
-            const isAbsent = e.rowType === 'ausencia_informativa';
-            
-            if (!uniqueEmpsMap.has(id)) {
-                uniqueEmpsMap.set(id, e);
-            } else {
-                const existing = uniqueEmpsMap.get(id);
-                // Preferimos la fila operativa sobre la de ausencia informativa
-                if (existing.rowType === 'ausencia_informativa' && !isAbsent) {
-                    uniqueEmpsMap.set(id, e);
+        sorted.forEach(rowData => {
+            const daysMap = rowData.dias || rowData.cells || {};
+            dates.forEach(f => {
+                const dayData = daysMap[f] || {};
+                const code = String(dayData.code || dayData.turno || '').toUpperCase();
+                if (f >= rangeStart && f <= rangeEnd && isNightCode(code)) {
+                    accumulateNightSummary(summaryByMonth, snap.hotel, rowData.nombreVisible || rowData.nombre || 'Pendiente', f);
                 }
-            }
+            });
         });
 
-        const finalEmps = Array.from(uniqueEmpsMap.values()).sort((a,b) => {
-            const isAbsentA = a.rowType === 'ausencia_informativa';
-            const isAbsentB = b.rowType === 'ausencia_informativa';
-            
-            // 1. Prioridad: Operativos antes que Ausencias Informativas
-            if (isAbsentA !== isAbsentB) return isAbsentA ? 1 : -1;
-            
-            // 2. Orden secundario: puestoOrden (Excel)
-            const valA = Number(a.puestoOrden) || Number(a.orden) || 9999;
-            const valB = Number(b.puestoOrden) || Number(b.orden) || 9999;
-            return valA - valB;
-        });
-
-        table.setData(finalEmps);
-        return { rows: empleados, columns };
+        table.setData(sorted);
     }
 
     window.changeWeek = (delta) => {
         const current = _picker.selectedDates[0] || new Date();
         current.setDate(current.getDate() + (delta * 7));
-        const monday = new Date(current);
-        monday.setDate(monday.getDate() + (monday.getDay() === 0 ? -6 : 1 - monday.getDay()));
-        const sunday = new Date(monday);
-        sunday.setDate(sunday.getDate() + 6);
-        _picker.setDate([monday, sunday]);
+        setWeekRange(current);
         window.renderPublicView();
     };
 
-    window.goToday = () => {
-        const d = new Date();
-        const monday = new Date(d);
-        monday.setDate(monday.getDate() + (monday.getDay() === 0 ? -6 : 1 - monday.getDay()));
+    function setWeekRange(date) {
+        const d = new Date(date);
+        const day = d.getDay();
+        const diff = d.getDate() - day + (day === 0 ? -6 : 1); 
+        const monday = new Date(d.setDate(diff));
+        monday.setHours(12, 0, 0, 0);
         const sunday = new Date(monday);
-        sunday.setDate(sunday.getDate() + 6);
+        sunday.setDate(monday.getDate() + 6);
         _picker.setDate([monday, sunday]);
-        window.renderPublicView();
-    };
-
-    window.toggleTheme = () => {
-        document.body.classList.toggle('dark-mode');
-        const isDark = document.body.classList.contains('dark-mode');
-        localStorage.setItem('public-theme', isDark ? 'dark' : 'light');
-        const btn = document.getElementById('themeBtn');
-        if (btn) btn.innerText = isDark ? '&#x2600;&#xFE0F;' : '&#x1F319;';
-    };
-
-    if (localStorage.getItem('public-theme') === 'dark') {
-        document.body.classList.add('dark-mode');
     }
 
+    window.goToday = () => {
+        setWeekRange(new Date());
+        window.renderPublicView();
+    };
+
     document.addEventListener('DOMContentLoaded', async () => {
-        const btn = document.getElementById('themeBtn');
-        if (btn && document.body.classList.contains('dark-mode')) {
-            btn.innerText = '&#x2600;&#xFE0F;';
-        }
+        applyTheme(localStorage.getItem('public-theme') || 'day');
         _picker = flatpickr("#dateRange", {
             mode: "range",
             dateFormat: "Y-m-d",
-            altInput: true,
-            altFormat: "Y-m-d",
             locale: { ...flatpickr.l10ns.es, firstDayOfWeek: 1 },
             onChange: () => window.renderPublicView()
         });
-        const hotels = await window.TurnosDB.getHotels();
-        $('#hotelSelect').innerHTML = '<option value="">Todos los Hoteles</option>' +
-            hotels.map(h => '<option value="' + h + '">' + h + '</option>').join('');
         window.goToday();
     });
   </script>

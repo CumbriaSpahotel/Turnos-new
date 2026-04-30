@@ -6415,3 +6415,634 @@ select.edit-input { cursor: pointer; height: 30px; }
 /* Soft pending style for support/occasional staff */
 .turno-pendiente-soft { background:#f1f5f9 !important; color:#94a3b8 !important; border-color:#cbd5e1 !important; }
 .turno-pendiente-soft option { color:#475569; }
+
+/* FICHA EMPLEADO: REFUERZO VISUAL PROFESIONAL */
+#empDrawer.drawer-overlay {
+  background: rgba(15, 23, 42, 0.58) !important;
+  backdrop-filter: blur(8px);
+}
+
+#empDrawer.drawer-overlay .drawer-content {
+  width: min(96vw, 1500px) !important;
+  max-height: 94vh !important;
+  padding: 0 !important;
+  border-radius: 28px !important;
+  border: 1px solid rgba(148, 163, 184, 0.28) !important;
+  background:
+    radial-gradient(circle at top left, rgba(59, 130, 246, 0.08), transparent 30%),
+    linear-gradient(180deg, #f8fbff 0%, #f4f7fb 100%) !important;
+  box-shadow: 0 30px 80px rgba(15, 23, 42, 0.22) !important;
+  overflow: hidden;
+}
+
+#empDrawer .drawer-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 26px;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.2);
+  background: rgba(255, 255, 255, 0.84);
+  backdrop-filter: blur(10px);
+}
+
+#empDrawer .drawer-header h3 {
+  margin: 0;
+  font-size: 1.15rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: #0f172a;
+}
+
+#empDrawer .btn-close-drawer {
+  width: 38px;
+  height: 38px;
+  border: 1px solid #dbe4ef;
+  border-radius: 12px;
+  background: #fff;
+  color: #475569;
+  font-size: 1.2rem;
+  line-height: 1;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+#empDrawer .btn-close-drawer:hover {
+  background: #eff6ff;
+  border-color: #93c5fd;
+  color: #1d4ed8;
+}
+
+#empDrawer #drawerBody.drawer-body {
+  padding: 0 !important;
+  overflow-y: auto;
+  background: transparent;
+}
+
+#empDrawer .employee-profile-container {
+  padding: 0 !important;
+}
+
+#empDrawer .emp-premium-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 28px 28px 22px !important;
+  background:
+    linear-gradient(135deg, rgba(255,255,255,0.98) 0%, rgba(241,245,249,0.95) 100%),
+    linear-gradient(90deg, #eff6ff, #f8fafc);
+  border-bottom: 1px solid rgba(226, 232, 240, 0.9);
+}
+
+#empDrawer .emp-header-info {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  min-width: 0;
+}
+
+#empDrawer .emp-premium-header .emp-avatar {
+  width: 64px !important;
+  height: 64px !important;
+  border-radius: 20px !important;
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%) !important;
+  color: #fff !important;
+  box-shadow: 0 14px 28px rgba(37, 99, 235, 0.24) !important;
+}
+
+#empDrawer .emp-title-block h2 {
+  display: flex !important;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 0 !important;
+  font-size: 2rem !important;
+  font-weight: 800 !important;
+  line-height: 1.05;
+  color: #0f172a !important;
+}
+
+#empDrawer .emp-title-block h2 span {
+  display: inline-flex;
+  align-items: center;
+  padding: 5px 10px;
+  border-radius: 999px;
+  background: #eef2f7 !important;
+  color: #64748b !important;
+  font-size: 0.76rem !important;
+  font-weight: 700 !important;
+  opacity: 1 !important;
+}
+
+#empDrawer .emp-subtitle {
+  display: flex !important;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px !important;
+  margin-top: 10px !important;
+  color: #475569 !important;
+}
+
+#empDrawer .emp-subtitle > span:not(.status-pill) {
+  display: inline-flex;
+  align-items: center;
+  min-height: 30px;
+  padding: 0 12px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid #e2e8f0;
+  font-size: 0.76rem !important;
+  font-weight: 700;
+  color: #48617d;
+}
+
+#empDrawer .emp-subtitle i {
+  display: none;
+}
+
+#empDrawer .emp-header-actions .btn-premium {
+  min-height: 44px;
+  padding: 0 18px !important;
+  border-radius: 14px !important;
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%) !important;
+  color: #fff !important;
+  border: 0 !important;
+  font-weight: 800 !important;
+  box-shadow: 0 12px 24px rgba(37, 99, 235, 0.2);
+}
+
+#empDrawer .emp-kpi-grid {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)) !important;
+  gap: 14px !important;
+  margin: 0 !important;
+  padding: 22px 28px 18px !important;
+  background: rgba(255, 255, 255, 0.66);
+  border-bottom: 1px solid rgba(226, 232, 240, 0.9);
+}
+
+#empDrawer .emp-kpi-card {
+  min-height: 96px;
+  padding: 16px 18px !important;
+  border-radius: 20px !important;
+  border: 1px solid rgba(226, 232, 240, 0.95) !important;
+  background: rgba(255,255,255,0.92) !important;
+  box-shadow: 0 10px 25px rgba(15, 23, 42, 0.08);
+}
+
+#empDrawer .emp-kpi-card label {
+  margin-bottom: 10px !important;
+  font-size: 0.68rem !important;
+  font-weight: 800 !important;
+  letter-spacing: 0.06em;
+  color: #64748b !important;
+}
+
+#empDrawer .emp-kpi-card strong {
+  font-size: 1.7rem !important;
+  line-height: 1.05;
+  font-weight: 800 !important;
+  color: #0f172a !important;
+}
+
+#empDrawer .emp-tabs-nav {
+  display: flex !important;
+  flex-wrap: wrap;
+  gap: 10px !important;
+  padding: 18px 28px 0 !important;
+  margin-bottom: 0 !important;
+  border-bottom: 0 !important;
+  background: transparent !important;
+}
+
+#empDrawer .emp-tab-btn {
+  padding: 11px 16px !important;
+  border-radius: 14px !important;
+  border: 1px solid transparent !important;
+  background: rgba(255, 255, 255, 0.74) !important;
+  color: #64748b !important;
+  font-size: 0.78rem !important;
+  font-weight: 800 !important;
+  box-shadow: inset 0 0 0 1px rgba(226, 232, 240, 0.7);
+}
+
+#empDrawer .emp-tab-btn:hover {
+  color: #0f172a !important;
+  background: #fff !important;
+}
+
+#empDrawer .emp-tab-btn.active {
+  color: #1d4ed8 !important;
+  background: #eff6ff !important;
+  border-color: #bfdbfe !important;
+  box-shadow: none;
+}
+
+#empDrawer .emp-content-area {
+  min-height: 400px !important;
+  padding: 24px 28px 28px !important;
+}
+
+#empDrawer .emp-content-area .emp-grid {
+  gap: 22px !important;
+}
+
+#empDrawer .emp-content-area .emp-card {
+  padding: 28px !important;
+  border-radius: 26px !important;
+  border: 1px solid rgba(226, 232, 240, 0.95) !important;
+  background: rgba(255,255,255,0.92) !important;
+  box-shadow: 0 14px 35px rgba(15, 23, 42, 0.08);
+}
+
+#empDrawer .emp-content-area .emp-card h3 {
+  margin: 0 0 20px !important;
+  font-size: 0.8rem !important;
+  font-weight: 900 !important;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #0f172a !important;
+}
+
+#empDrawer .emp-content-area .emp-card > div[style*='display:grid; gap:12px'] {
+  gap: 14px !important;
+}
+
+#empDrawer .emp-ficha-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 14px 16px;
+  border-radius: 16px;
+  background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+  border: 1px solid #e2e8f0;
+}
+
+#empDrawer .emp-ficha-field label {
+  font-size: 0.66rem !important;
+  font-weight: 800 !important;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: #64748b !important;
+}
+
+#empDrawer .emp-ficha-field-value {
+  font-size: 1rem !important;
+  font-weight: 700 !important;
+  color: #0f172a !important;
+}
+
+#empDrawer .emp-profile-field label {
+  font-size: 0.72rem !important;
+  font-weight: 800 !important;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #64748b !important;
+}
+
+#empDrawer .emp-profile-field input,
+#empDrawer .emp-profile-field select {
+  height: 44px !important;
+  border-radius: 14px !important;
+  border: 1px solid #dbe4ef !important;
+  background: #fff !important;
+  color: #0f172a !important;
+}
+
+#empDrawer .emp-profile-field input:focus,
+#empDrawer .emp-profile-field select:focus {
+  border-color: #93c5fd !important;
+  box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.12) !important;
+}
+
+#empDrawer .employee-profile-container > div:last-child[style*='border-top'] {
+  margin-top: 28px !important;
+  padding: 16px 28px 22px !important;
+  border-top: 1px solid #e2e8f0 !important;
+  color: #64748b !important;
+}
+
+@media (max-width: 980px) {
+  #empDrawer.drawer-overlay .drawer-content {
+    width: min(98vw, 98vw) !important;
+    border-radius: 22px !important;
+  }
+
+  #empDrawer .emp-premium-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  #empDrawer .emp-header-actions {
+    width: 100%;
+  }
+
+  #empDrawer .emp-header-actions .btn-premium {
+    width: 100%;
+    justify-content: center;
+  }
+
+  #empDrawer .emp-content-area .emp-grid,
+  #empDrawer .emp-content-area > div[style*='grid-template-columns: 1fr 400px'],
+  #empDrawer .emp-content-area > div[style*='grid-template-columns: 1fr 300px'],
+  #empDrawer .emp-content-area > div[style*='grid-template-columns: 1fr 1fr'] {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+@media (max-width: 640px) {
+  #empDrawer .drawer-header,
+  #empDrawer .emp-premium-header,
+  #empDrawer .emp-kpi-grid,
+  #empDrawer .emp-tabs-nav,
+  #empDrawer .emp-content-area {
+    padding-left: 18px !important;
+    padding-right: 18px !important;
+  }
+
+  #empDrawer .emp-title-block h2 {
+    font-size: 1.55rem !important;
+  }
+
+  #empDrawer .emp-kpi-grid {
+    grid-template-columns: 1fr 1fr !important;
+  }
+}
+/* FICHA EMPLEADO: AJUSTE DE ESCALA */
+#empDrawer .emp-premium-header {
+  gap: 16px !important;
+  padding: 16px 20px 12px !important;
+}
+
+#empDrawer .emp-header-info {
+  gap: 12px !important;
+}
+
+#empDrawer .emp-premium-header .emp-avatar {
+  width: 50px !important;
+  height: 50px !important;
+  border-radius: 15px !important;
+}
+
+#empDrawer .emp-title-block h2 {
+  font-size: 1.2rem !important;
+  gap: 8px !important;
+}
+
+#empDrawer .emp-title-block h2 span {
+  padding: 4px 8px !important;
+  font-size: 0.72rem !important;
+}
+
+#empDrawer .emp-subtitle {
+  gap: 7px !important;
+  margin-top: 6px !important;
+}
+
+#empDrawer .emp-subtitle > span:not(.status-pill) {
+  min-height: 24px !important;
+  padding: 0 10px !important;
+  font-size: 0.74rem !important;
+}
+
+#empDrawer .emp-header-actions .btn-premium {
+  min-height: 36px !important;
+  padding: 0 14px !important;
+  border-radius: 11px !important;
+  font-size: 0.78rem !important;
+}
+
+#empDrawer .emp-kpi-grid {
+  grid-template-columns: repeat(auto-fit, minmax(155px, 1fr)) !important;
+  gap: 10px !important;
+  padding: 14px 20px 12px !important;
+}
+
+#empDrawer .emp-kpi-card {
+  min-height: 74px !important;
+  padding: 11px 14px !important;
+  border-radius: 16px !important;
+}
+
+#empDrawer .emp-kpi-card label {
+  margin-bottom: 6px !important;
+  font-size: 0.62rem !important;
+}
+
+#empDrawer .emp-kpi-card strong {
+  font-size: 1.05rem !important;
+}
+
+#empDrawer .emp-tabs-nav {
+  gap: 8px !important;
+  padding: 10px 20px 0 !important;
+}
+
+#empDrawer .emp-tab-btn {
+  padding: 8px 13px !important;
+  border-radius: 11px !important;
+  font-size: 0.76rem !important;
+}
+
+#empDrawer .emp-content-area {
+  min-height: 0 !important;
+  padding: 14px 20px 18px !important;
+}
+
+#empDrawer .emp-content-area .emp-grid {
+  gap: 14px !important;
+  align-items: start !important;
+}
+
+#empDrawer .emp-content-area .emp-card {
+  display: block !important;
+  align-items: stretch !important;
+  justify-content: flex-start !important;
+  cursor: default !important;
+  padding: 18px !important;
+  border-radius: 20px !important;
+  min-height: 0 !important;
+  height: auto !important;
+}
+
+#empDrawer .emp-content-area .emp-card h3 {
+  margin: 0 0 12px !important;
+  font-size: 0.72rem !important;
+}
+
+#empDrawer .emp-content-area .emp-card > div[style*='display:grid; gap:12px'] {
+  gap: 10px !important;
+}
+
+#empDrawer .emp-ficha-field {
+  gap: 5px !important;
+  padding: 10px 12px !important;
+  border-radius: 12px !important;
+}
+
+#empDrawer .emp-ficha-field label {
+  font-size: 0.64rem !important;
+}
+
+#empDrawer .emp-ficha-field-value {
+  font-size: 0.84rem !important;
+}
+
+@media (max-width: 640px) {
+  #empDrawer .emp-title-block h2 {
+    font-size: 1.05rem !important;
+  }
+
+  #empDrawer .emp-kpi-grid {
+    grid-template-columns: 1fr 1fr !important;
+  }
+}
+/* FICHA EMPLEADO: PESTANAS EN CABECERA */
+#empDrawer .emp-tabs-nav {
+  padding: 0 20px 10px !important;
+  margin-top: -2px !important;
+  background: linear-gradient(180deg, rgba(255,255,255,0.96) 0%, rgba(248,250,252,0.84) 100%) !important;
+  border-bottom: 1px solid rgba(226, 232, 240, 0.85) !important;
+  position: relative;
+  z-index: 2;
+}
+
+#empDrawer .emp-tab-btn {
+  background: rgba(255,255,255,0.92) !important;
+}
+
+#empDrawer .emp-kpi-grid {
+  padding-top: 12px !important;
+}
+
+@media (max-width: 640px) {
+  #empDrawer .emp-tabs-nav {
+    padding: 0 18px 10px !important;
+  }
+}
+/* FICHA EMPLEADO: ORDEN VISUAL DE CABECERA */
+#empDrawer .employee-profile-container {
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+#empDrawer .emp-premium-header { order: 1; }
+#empDrawer .emp-tabs-nav { order: 2; }
+#empDrawer .emp-kpi-grid { order: 3; }
+#empDrawer .emp-content-area { order: 4; }
+#empDrawer .employee-profile-container > div:last-child[style*='border-top'] { order: 5; }/* FICHA EMPLEADO: TABS EN CABECERA REAL */
+#empDrawer .drawer-header {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: stretch !important;
+  gap: 0 !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+}
+
+#empDrawer .emp-drawer-topbar {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 16px !important;
+  padding: 22px 34px 16px !important;
+  border-bottom: 1px solid rgba(226, 232, 240, 0.9) !important;
+  background: rgba(255,255,255,0.98) !important;
+}
+
+#empDrawer .emp-drawer-topbar h3 {
+  margin: 0 !important;
+  font-size: 0.98rem !important;
+  font-weight: 800 !important;
+  color: #0f172a !important;
+}
+
+#empDrawer .emp-drawer-topbar .btn-close-drawer {
+  margin-left: auto !important;
+}
+
+#empDrawer .drawer-header > .emp-tabs-nav {
+  padding: 12px 34px 12px !important;
+  margin: 0 !important;
+  border-bottom: 1px solid rgba(226, 232, 240, 0.9) !important;
+  background: linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(248,250,252,0.95) 100%) !important;
+}
+
+#empDrawer .employee-profile-container {
+  padding-top: 0 !important;
+}
+
+@media (max-width: 640px) {
+  #empDrawer .emp-drawer-topbar {
+    padding: 18px 18px 14px !important;
+  }
+
+  #empDrawer .drawer-header > .emp-tabs-nav {
+    padding: 10px 18px 10px !important;
+  }
+}
+/* FICHA EMPLEADO: COMPACTACION FINAL */
+#empDrawer.drawer-overlay .drawer-content {
+  width: min(92vw, 1320px) !important;
+}
+
+#empDrawer .emp-drawer-topbar {
+  padding: 16px 24px 12px !important;
+}
+
+#empDrawer .drawer-header > .emp-tabs-nav {
+  padding: 8px 24px 10px !important;
+}
+
+#empDrawer .emp-premium-header {
+  padding: 12px 18px 10px !important;
+}
+
+#empDrawer .emp-kpi-grid {
+  grid-template-columns: repeat(auto-fit, minmax(145px, 1fr)) !important;
+  gap: 8px !important;
+  padding: 10px 18px 10px !important;
+}
+
+#empDrawer .emp-kpi-card {
+  min-height: 64px !important;
+  padding: 9px 12px !important;
+}
+
+#empDrawer .emp-kpi-card strong {
+  font-size: 0.92rem !important;
+}
+
+#empDrawer .emp-content-area {
+  padding: 10px 18px 16px !important;
+}
+
+#empDrawer .emp-content-area .emp-card {
+  padding: 14px !important;
+  border-radius: 18px !important;
+}
+
+#empDrawer .emp-content-area .emp-grid,
+#empDrawer .emp-content-area > div[style*='display:grid; gap:20px'],
+#empDrawer .emp-content-area > div[style*='grid-template-columns: 1fr 300px'],
+#empDrawer .emp-content-area > div[style*='grid-template-columns: 1fr 400px'] {
+  gap: 12px !important;
+}
+
+#empDrawer .emp-ficha-field {
+  padding: 8px 10px !important;
+}
+
+#empDrawer .emp-ficha-field-value {
+  font-size: 0.8rem !important;
+}
+
+#empDrawer .emp-profile-field input,
+#empDrawer .emp-profile-field select {
+  height: 38px !important;
+}
+
+#empDrawer .btn-publish-premium {
+  min-height: 40px !important;
+  padding: 0 22px !important;
+}

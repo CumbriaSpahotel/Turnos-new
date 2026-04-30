@@ -1,0 +1,335 @@
+{
+  "meta": {
+    "range": "Q2 2026",
+    "totalWeeks": 28
+  },
+  "stats": {
+    "aptas": 27,
+    "bloqueadas": 1,
+    "ct_legacy": 13,
+    "ct_resueltos": 12,
+    "ct_bloqueados": 1
+  },
+  "results": [
+    {
+      "week": "2026-03-30",
+      "hotel": "Cumbria Spa&Hotel",
+      "status": "BLOQUEADA",
+      "issues": [
+        "CT persistente: Cristina/Miriam en 2026-04-01"
+      ],
+      "ct_log": [
+        {
+          "fecha": "2026-04-01",
+          "emps": [
+            "Cristina",
+            "Miriam"
+          ],
+          "status": "BLOCKED"
+        }
+      ]
+    },
+    {
+      "week": "2026-03-30",
+      "hotel": "Sercotel Guadiana",
+      "status": "OK",
+      "issues": [],
+      "ct_log": []
+    },
+    {
+      "week": "2026-04-06",
+      "hotel": "Cumbria Spa&Hotel",
+      "status": "OK",
+      "issues": [],
+      "ct_log": []
+    },
+    {
+      "week": "2026-04-06",
+      "hotel": "Sercotel Guadiana",
+      "status": "OK",
+      "issues": [],
+      "ct_log": []
+    },
+    {
+      "week": "2026-04-13",
+      "hotel": "Cumbria Spa&Hotel",
+      "status": "OK",
+      "issues": [],
+      "ct_log": [
+        {
+          "fecha": "2026-04-16",
+          "emps": [
+            "Cristina",
+            "Miriam"
+          ],
+          "status": "RESOLVED",
+          "turno": "Mañana"
+        },
+        {
+          "fecha": "2026-04-17",
+          "emps": [
+            "Cristina",
+            "Miriam"
+          ],
+          "status": "RESOLVED",
+          "turno": "Mañana"
+        },
+        {
+          "fecha": "2026-04-15",
+          "emps": [
+            "Cristina",
+            "Miriam"
+          ],
+          "status": "RESOLVED",
+          "turno": "Mañana"
+        }
+      ]
+    },
+    {
+      "week": "2026-04-13",
+      "hotel": "Sercotel Guadiana",
+      "status": "OK",
+      "issues": [],
+      "ct_log": [
+        {
+          "fecha": "2026-04-18",
+          "emps": [
+            "Dani",
+            "Macarena"
+          ],
+          "status": "RESOLVED",
+          "turno": "D"
+        },
+        {
+          "fecha": "2026-04-19",
+          "emps": [
+            "Dani",
+            "Macarena"
+          ],
+          "status": "RESOLVED",
+          "turno": "D"
+        }
+      ]
+    },
+    {
+      "week": "2026-04-20",
+      "hotel": "Cumbria Spa&Hotel",
+      "status": "OK",
+      "issues": [],
+      "ct_log": []
+    },
+    {
+      "week": "2026-04-20",
+      "hotel": "Sercotel Guadiana",
+      "status": "OK",
+      "issues": [],
+      "ct_log": []
+    },
+    {
+      "week": "2026-04-27",
+      "hotel": "Cumbria Spa&Hotel",
+      "status": "OK",
+      "issues": [],
+      "ct_log": []
+    },
+    {
+      "week": "2026-04-27",
+      "hotel": "Sercotel Guadiana",
+      "status": "OK",
+      "issues": [],
+      "ct_log": [
+        {
+          "fecha": "2026-05-02",
+          "emps": [
+            "Dani",
+            "Diana"
+          ],
+          "status": "RESOLVED",
+          "turno": "N"
+        },
+        {
+          "fecha": "2026-05-03",
+          "emps": [
+            "Dani",
+            "Diana"
+          ],
+          "status": "RESOLVED",
+          "turno": "N"
+        }
+      ]
+    },
+    {
+      "week": "2026-05-04",
+      "hotel": "Cumbria Spa&Hotel",
+      "status": "OK",
+      "issues": [],
+      "ct_log": []
+    },
+    {
+      "week": "2026-05-04",
+      "hotel": "Sercotel Guadiana",
+      "status": "OK",
+      "issues": [],
+      "ct_log": [
+        {
+          "fecha": "2026-05-04",
+          "emps": [
+            "Dani",
+            "Diana"
+          ],
+          "status": "RESOLVED",
+          "turno": "M"
+        },
+        {
+          "fecha": "2026-05-05",
+          "emps": [
+            "Dani",
+            "Diana"
+          ],
+          "status": "RESOLVED",
+          "turno": "M"
+        },
+        {
+          "fecha": "2026-05-06",
+          "emps": [
+            "Dani",
+            "Diana"
+          ],
+          "status": "RESOLVED",
+          "turno": "M"
+        },
+        {
+          "fecha": "2026-05-08",
+          "emps": [
+            "Dani",
+            "Diana"
+          ],
+          "status": "RESOLVED",
+          "turno": "D"
+        }
+      ]
+    },
+    {
+      "week": "2026-05-11",
+      "hotel": "Cumbria Spa&Hotel",
+      "status": "OK",
+      "issues": [],
+      "ct_log": []
+    },
+    {
+      "week": "2026-05-11",
+      "hotel": "Sercotel Guadiana",
+      "status": "OK",
+      "issues": [],
+      "ct_log": [
+        {
+          "fecha": "2026-05-15",
+          "emps": [
+            "Dani",
+            "Diana"
+          ],
+          "status": "RESOLVED",
+          "turno": "T"
+        }
+      ]
+    },
+    {
+      "week": "2026-05-18",
+      "hotel": "Cumbria Spa&Hotel",
+      "status": "OK",
+      "issues": [],
+      "ct_log": []
+    },
+    {
+      "week": "2026-05-18",
+      "hotel": "Sercotel Guadiana",
+      "status": "OK",
+      "issues": [],
+      "ct_log": []
+    },
+    {
+      "week": "2026-05-25",
+      "hotel": "Cumbria Spa&Hotel",
+      "status": "OK",
+      "issues": [],
+      "ct_log": []
+    },
+    {
+      "week": "2026-05-25",
+      "hotel": "Sercotel Guadiana",
+      "status": "OK",
+      "issues": [],
+      "ct_log": []
+    },
+    {
+      "week": "2026-06-01",
+      "hotel": "Cumbria Spa&Hotel",
+      "status": "OK",
+      "issues": [],
+      "ct_log": []
+    },
+    {
+      "week": "2026-06-01",
+      "hotel": "Sercotel Guadiana",
+      "status": "OK",
+      "issues": [],
+      "ct_log": []
+    },
+    {
+      "week": "2026-06-08",
+      "hotel": "Cumbria Spa&Hotel",
+      "status": "OK",
+      "issues": [],
+      "ct_log": []
+    },
+    {
+      "week": "2026-06-08",
+      "hotel": "Sercotel Guadiana",
+      "status": "OK",
+      "issues": [],
+      "ct_log": []
+    },
+    {
+      "week": "2026-06-15",
+      "hotel": "Cumbria Spa&Hotel",
+      "status": "OK",
+      "issues": [],
+      "ct_log": []
+    },
+    {
+      "week": "2026-06-15",
+      "hotel": "Sercotel Guadiana",
+      "status": "OK",
+      "issues": [],
+      "ct_log": []
+    },
+    {
+      "week": "2026-06-22",
+      "hotel": "Cumbria Spa&Hotel",
+      "status": "OK",
+      "issues": [],
+      "ct_log": []
+    },
+    {
+      "week": "2026-06-22",
+      "hotel": "Sercotel Guadiana",
+      "status": "OK",
+      "issues": [],
+      "ct_log": []
+    },
+    {
+      "week": "2026-06-29",
+      "hotel": "Cumbria Spa&Hotel",
+      "status": "OK",
+      "issues": [],
+      "ct_log": []
+    },
+    {
+      "week": "2026-06-29",
+      "hotel": "Sercotel Guadiana",
+      "status": "OK",
+      "issues": [],
+      "ct_log": []
+    }
+  ]
+}

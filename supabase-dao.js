@@ -1128,7 +1128,7 @@ window.TurnosDB = {
         const all999 = orders.every(o => o === 999);
         if (all999) return false;
 
-        // Regla: Todas las filas base (no extras ni refuerzos) deben tener un puestoOrden real (< 900)
+        // Regla: Todas las filas base (no extras ni refuerzos) deben tener un puestoOrden real (< 10000)
         // Esto descarta versiones con reparaciones parciales donde el orden se rompió (ej. PO=1347 o 1999 para titulares)
         const baseRows = emps.filter(e => e.rowType !== 'extra' && e.rowType !== 'refuerzo');
         const hasValidBaseOrder = baseRows.length > 0 && baseRows.every(e => {
@@ -1223,12 +1223,19 @@ window.TurnosDB = {
                 if (seenKeys.has(key)) continue;
 
                 if (this.isValidPublicSnapshot(item)) {
+                    // Normalización crítica para compatibilidad con index.html (espera 'empleados')
+                    const snapData = item.snapshot_json || {};
+                    const normalizedSnapshot = { ...snapData };
+                    if (!normalizedSnapshot.empleados && normalizedSnapshot.rows) {
+                        normalizedSnapshot.empleados = normalizedSnapshot.rows;
+                    }
+
                     deduped.push({
                         hotel: item.hotel,
                         semanaInicio: item.semana_inicio,
                         semanaFin: item.semana_fin,
                         version: item.version,
-                        data: item.snapshot_json
+                        data: normalizedSnapshot
                     });
                     seenKeys.add(key);
                 } else {

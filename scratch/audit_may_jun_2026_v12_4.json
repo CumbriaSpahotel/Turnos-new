@@ -1,0 +1,594 @@
+{
+  "weeks": [
+    {
+      "weekStart": "2026-05-04",
+      "hotel": "Cumbria Spa&Hotel",
+      "apt": true,
+      "issues": [],
+      "rowCount": 6,
+      "substitutions": [
+        {
+          "substitute": "Miriam",
+          "titular": "Sergio"
+        }
+      ],
+      "currentSnaps": [
+        {
+          "version": 122,
+          "pub": "IA_V12_1_FINAL",
+          "hasCT": false
+        },
+        {
+          "version": 121,
+          "pub": "IA_V12_1_FINAL",
+          "hasCT": false
+        },
+        {
+          "version": 121,
+          "pub": "IA_V12_1_FINAL",
+          "hasCT": false
+        },
+        {
+          "version": 10,
+          "pub": "V12.1-EXCEL-STRICT",
+          "hasCT": false
+        },
+        {
+          "version": 9,
+          "pub": "V12.1-republish",
+          "hasCT": false
+        },
+        {
+          "version": 8,
+          "pub": "ADMIN",
+          "hasCT": false
+        },
+        {
+          "version": 7,
+          "pub": "admin_fix_mayo_v12",
+          "hasCT": false
+        },
+        {
+          "version": 6,
+          "pub": "admin_fix_mayo_v12",
+          "hasCT": false
+        },
+        {
+          "version": 5,
+          "pub": "FIX_V5_DEFINITIVO",
+          "hasCT": false
+        },
+        {
+          "version": 4,
+          "pub": "ADMIN_FIX_ORDEN",
+          "hasCT": false
+        },
+        {
+          "version": 3,
+          "pub": "ADMIN_FIX_B4",
+          "hasCT": false
+        },
+        {
+          "version": 2,
+          "pub": "ADMIN",
+          "hasCT": false
+        },
+        {
+          "version": 1,
+          "pub": "ADMIN",
+          "hasCT": false
+        }
+      ]
+    },
+    {
+      "weekStart": "2026-05-04",
+      "hotel": "Sercotel Guadiana",
+      "apt": true,
+      "issues": [],
+      "rowCount": 5,
+      "substitutions": [],
+      "currentSnaps": [
+        {
+          "version": 122,
+          "pub": "IA_V12_1_FINAL",
+          "hasCT": false
+        },
+        {
+          "version": 121,
+          "pub": "IA_V12_1_FINAL",
+          "hasCT": false
+        },
+        {
+          "version": 121,
+          "pub": "IA_V12_1_FINAL",
+          "hasCT": false
+        },
+        {
+          "version": 7,
+          "pub": "admin_fix_mayo_v12",
+          "hasCT": false
+        },
+        {
+          "version": 6,
+          "pub": "admin_fix_mayo_v12",
+          "hasCT": false
+        },
+        {
+          "version": 2,
+          "pub": "ADMIN",
+          "hasCT": false
+        },
+        {
+          "version": 1,
+          "pub": "ADMIN",
+          "hasCT": false
+        }
+      ]
+    },
+    {
+      "weekStart": "2026-05-11",
+      "hotel": "Cumbria Spa&Hotel",
+      "apt": true,
+      "issues": [],
+      "rowCount": 6,
+      "substitutions": [
+        {
+          "substitute": "Miriam",
+          "titular": "Esther"
+        }
+      ],
+      "currentSnaps": [
+        {
+          "version": 122,
+          "pub": "IA_V12_1_FINAL",
+          "hasCT": false
+        },
+        {
+          "version": 121,
+          "pub": "IA_V12_1_FINAL",
+          "hasCT": false
+        },
+        {
+          "version": 121,
+          "pub": "IA_V12_1_FINAL",
+          "hasCT": false
+        },
+        {
+          "version": 9,
+          "pub": "V12.1-EXCEL-STRICT",
+          "hasCT": false
+        },
+        {
+          "version": 8,
+          "pub": "V12.1-republish",
+          "hasCT": false
+        },
+        {
+          "version": 7,
+          "pub": "admin_fix_mayo_v12",
+          "hasCT": false
+        },
+        {
+          "version": 6,
+          "pub": "admin_fix_mayo_v12",
+          "hasCT": false
+        },
+        {
+          "version": 2,
+          "pub": "ADMIN",
+          "hasCT": false
+        },
+        {
+          "version": 1,
+          "pub": "ADMIN",
+          "hasCT": false
+        }
+      ]
+    },
+    {
+      "weekStart": "2026-05-11",
+      "hotel": "Sercotel Guadiana",
+      "apt": true,
+      "issues": [],
+      "rowCount": 5,
+      "substitutions": [],
+      "currentSnaps": [
+        {
+          "version": 122,
+          "pub": "IA_V12_1_FINAL",
+          "hasCT": false
+        },
+        {
+          "version": 121,
+          "pub": "IA_V12_1_FINAL",
+          "hasCT": false
+        },
+        {
+          "version": 121,
+          "pub": "IA_V12_1_FINAL",
+          "hasCT": false
+        },
+        {
+          "version": 7,
+          "pub": "admin_fix_mayo_v12",
+          "hasCT": false
+        },
+        {
+          "version": 6,
+          "pub": "admin_fix_mayo_v12",
+          "hasCT": false
+        },
+        {
+          "version": 2,
+          "pub": "ADMIN",
+          "hasCT": false
+        },
+        {
+          "version": 1,
+          "pub": "ADMIN",
+          "hasCT": false
+        }
+      ]
+    },
+    {
+      "weekStart": "2026-05-18",
+      "hotel": "Cumbria Spa&Hotel",
+      "apt": true,
+      "issues": [],
+      "rowCount": 6,
+      "substitutions": [
+        {
+          "substitute": "Miriam",
+          "titular": "Esther"
+        }
+      ],
+      "currentSnaps": [
+        {
+          "version": 122,
+          "pub": "IA_V12_1_FINAL",
+          "hasCT": false
+        },
+        {
+          "version": 121,
+          "pub": "IA_V12_1_FINAL",
+          "hasCT": false
+        },
+        {
+          "version": 121,
+          "pub": "IA_V12_1_FINAL",
+          "hasCT": false
+        },
+        {
+          "version": 9,
+          "pub": "V12.1-EXCEL-STRICT",
+          "hasCT": false
+        },
+        {
+          "version": 8,
+          "pub": "V12.1-republish",
+          "hasCT": false
+        },
+        {
+          "version": 7,
+          "pub": "admin_fix_mayo_v12",
+          "hasCT": false
+        },
+        {
+          "version": 6,
+          "pub": "admin_fix_mayo_v12",
+          "hasCT": false
+        },
+        {
+          "version": 2,
+          "pub": "ADMIN",
+          "hasCT": false
+        },
+        {
+          "version": 1,
+          "pub": "ADMIN",
+          "hasCT": false
+        }
+      ]
+    },
+    {
+      "weekStart": "2026-05-18",
+      "hotel": "Sercotel Guadiana",
+      "apt": true,
+      "issues": [],
+      "rowCount": 5,
+      "substitutions": [],
+      "currentSnaps": [
+        {
+          "version": 122,
+          "pub": "IA_V12_1_FINAL",
+          "hasCT": false
+        },
+        {
+          "version": 121,
+          "pub": "IA_V12_1_FINAL",
+          "hasCT": false
+        },
+        {
+          "version": 121,
+          "pub": "IA_V12_1_FINAL",
+          "hasCT": false
+        },
+        {
+          "version": 7,
+          "pub": "admin_fix_mayo_v12",
+          "hasCT": false
+        },
+        {
+          "version": 6,
+          "pub": "admin_fix_mayo_v12",
+          "hasCT": false
+        },
+        {
+          "version": 2,
+          "pub": "ADMIN",
+          "hasCT": false
+        },
+        {
+          "version": 1,
+          "pub": "ADMIN",
+          "hasCT": false
+        }
+      ]
+    },
+    {
+      "weekStart": "2026-05-25",
+      "hotel": "Cumbria Spa&Hotel",
+      "apt": true,
+      "issues": [],
+      "rowCount": 6,
+      "substitutions": [
+        {
+          "substitute": "Miriam",
+          "titular": "Cristina"
+        }
+      ],
+      "currentSnaps": [
+        {
+          "version": 122,
+          "pub": "IA_V12_1_FINAL",
+          "hasCT": false
+        },
+        {
+          "version": 121,
+          "pub": "IA_V12_1_FINAL",
+          "hasCT": false
+        },
+        {
+          "version": 121,
+          "pub": "IA_V12_1_FINAL",
+          "hasCT": false
+        },
+        {
+          "version": 9,
+          "pub": "V12.1-EXCEL-STRICT",
+          "hasCT": false
+        },
+        {
+          "version": 8,
+          "pub": "V12.1-republish",
+          "hasCT": false
+        },
+        {
+          "version": 7,
+          "pub": "admin_fix_mayo_v12",
+          "hasCT": false
+        },
+        {
+          "version": 6,
+          "pub": "admin_fix_mayo_v12",
+          "hasCT": false
+        },
+        {
+          "version": 2,
+          "pub": "ADMIN",
+          "hasCT": false
+        },
+        {
+          "version": 1,
+          "pub": "ADMIN",
+          "hasCT": false
+        }
+      ]
+    },
+    {
+      "weekStart": "2026-05-25",
+      "hotel": "Sercotel Guadiana",
+      "apt": true,
+      "issues": [],
+      "rowCount": 5,
+      "substitutions": [],
+      "currentSnaps": [
+        {
+          "version": 122,
+          "pub": "IA_V12_1_FINAL",
+          "hasCT": false
+        },
+        {
+          "version": 121,
+          "pub": "IA_V12_1_FINAL",
+          "hasCT": false
+        },
+        {
+          "version": 121,
+          "pub": "IA_V12_1_FINAL",
+          "hasCT": false
+        },
+        {
+          "version": 7,
+          "pub": "admin_fix_mayo_v12",
+          "hasCT": false
+        },
+        {
+          "version": 6,
+          "pub": "admin_fix_mayo_v12",
+          "hasCT": false
+        },
+        {
+          "version": 2,
+          "pub": "ADMIN",
+          "hasCT": false
+        },
+        {
+          "version": 1,
+          "pub": "ADMIN",
+          "hasCT": false
+        }
+      ]
+    },
+    {
+      "weekStart": "2026-06-01",
+      "hotel": "Cumbria Spa&Hotel",
+      "apt": false,
+      "issues": [
+        "BLANK_ROWS"
+      ],
+      "rowCount": 9,
+      "substitutions": [
+        {
+          "substitute": "Miriam",
+          "titular": "Esther"
+        }
+      ],
+      "currentSnaps": []
+    },
+    {
+      "weekStart": "2026-06-01",
+      "hotel": "Sercotel Guadiana",
+      "apt": true,
+      "issues": [],
+      "rowCount": 3,
+      "substitutions": [],
+      "currentSnaps": []
+    },
+    {
+      "weekStart": "2026-06-08",
+      "hotel": "Cumbria Spa&Hotel",
+      "apt": false,
+      "issues": [
+        "BLANK_ROWS"
+      ],
+      "rowCount": 9,
+      "substitutions": [
+        {
+          "substitute": "Miriam",
+          "titular": "Valentín"
+        }
+      ],
+      "currentSnaps": []
+    },
+    {
+      "weekStart": "2026-06-08",
+      "hotel": "Sercotel Guadiana",
+      "apt": true,
+      "issues": [],
+      "rowCount": 3,
+      "substitutions": [],
+      "currentSnaps": []
+    },
+    {
+      "weekStart": "2026-06-15",
+      "hotel": "Cumbria Spa&Hotel",
+      "apt": true,
+      "issues": [],
+      "rowCount": 6,
+      "substitutions": [
+        {
+          "substitute": "Miriam",
+          "titular": "Sergio"
+        }
+      ],
+      "currentSnaps": [
+        {
+          "version": 122,
+          "pub": "IA_V12_1_FINAL",
+          "hasCT": false
+        },
+        {
+          "version": 121,
+          "pub": "IA_V12_1_FINAL",
+          "hasCT": false
+        },
+        {
+          "version": 121,
+          "pub": "IA_V12_1_FINAL",
+          "hasCT": false
+        },
+        {
+          "version": 1,
+          "pub": "ADMIN_FIX",
+          "hasCT": false
+        }
+      ]
+    },
+    {
+      "weekStart": "2026-06-15",
+      "hotel": "Sercotel Guadiana",
+      "apt": true,
+      "issues": [],
+      "rowCount": 7,
+      "substitutions": [
+        {
+          "substitute": "¿?",
+          "titular": "Federico"
+        }
+      ],
+      "currentSnaps": [
+        {
+          "version": 122,
+          "pub": "IA_V12_1_FINAL",
+          "hasCT": false
+        },
+        {
+          "version": 121,
+          "pub": "IA_V12_1_FINAL",
+          "hasCT": false
+        },
+        {
+          "version": 121,
+          "pub": "IA_V12_1_FINAL",
+          "hasCT": false
+        },
+        {
+          "version": 1,
+          "pub": "ADMIN_FIX",
+          "hasCT": false
+        }
+      ]
+    },
+    {
+      "weekStart": "2026-06-22",
+      "hotel": "Cumbria Spa&Hotel",
+      "apt": false,
+      "issues": [
+        "BLANK_ROWS"
+      ],
+      "rowCount": 9,
+      "substitutions": [
+        {
+          "substitute": "Miriam",
+          "titular": "Sergio"
+        }
+      ],
+      "currentSnaps": []
+    },
+    {
+      "weekStart": "2026-06-22",
+      "hotel": "Sercotel Guadiana",
+      "apt": true,
+      "issues": [],
+      "rowCount": 4,
+      "substitutions": [
+        {
+          "substitute": "¿?",
+          "titular": "Macarena"
+        }
+      ],
+      "currentSnaps": []
+    }
+  ]
+}

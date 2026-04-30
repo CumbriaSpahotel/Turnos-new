@@ -20,36 +20,42 @@ console.log("[ShiftResolver] Iniciando carga v5.0...");
             .toLowerCase();
     };
 
-    /**
-     * Detecta si un empleado es ocasional, de apoyo, refuerzo, etc.
-     * Basado en múltiples campos de texto y tags.
-     */
-    window.isEmpleadoOcasionalOApoyo = (emp) => {
-        if (!emp) return false;
-        
-        // Flags explícitos y booleanos
-        if (emp.excludeCounters || 
-            emp.tipo_trabajador === 'apoyo' || 
-            emp.es_apoyo === true || 
-            emp.apoyo === true || 
-            emp.occasional === true || 
-            emp.eventual === true) return true;
+    window.getEmployeeStructuralType = (emp) => {
+        if (!emp) return 'fijo';
+
+        const idNorm = window.normalizeId(emp.id || emp.nombre || '');
+        if (!idNorm || idNorm.includes('vacante') || idNorm.includes('placeholder') || emp.isVacante === true || emp.placeholder === true) return 'placeholder';
+        if (emp.activo === false || window.normalizeId(emp.estado_empresa || emp.estado || '').includes('baja')) return 'baja_empresa';
+
+        if (emp.tipo_trabajador === 'apoyo' || emp.es_apoyo === true || emp.apoyo === true) return 'apoyo';
+        if (emp.occasional === true || emp.eventual === true) return 'ocasional';
 
         const text = [
+            emp.tipo_personal,
             emp.tipo,
-            emp.puesto,
+            emp.contrato,
             emp.categoria,
-            emp.rol,
-            emp.notas,
-            Array.isArray(emp.tags) ? emp.tags.join(' ') : emp.tags,
-            emp.tipo_personal
+            emp.tags
         ].filter(Boolean).join(' ');
 
         const normalizedText = window.normalizeId(text);
-        
-        // El regex busca palabras clave normalizadas (normalizeId quita tildes)
-        // SUSTITUTO NO debe ser motivo de ocultación aquí si es sustituto operativo
-        return /apoyo|ocasional|eventual|refuerzo|extra|personal de apoyo|trabajador ocasional/.test(normalizedText);
+        if (/temporada|seasonal|campana/.test(normalizedText)) return 'temporada';
+        if (/apoyo|personal de apoyo/.test(normalizedText)) return 'apoyo';
+        if (/ocasional|eventual|trabajador ocasional/.test(normalizedText)) return 'ocasional';
+        if (/placeholder|vacante/.test(normalizedText)) return 'placeholder';
+        if (/baja_empresa|inactivo/.test(normalizedText)) return 'baja_empresa';
+        return 'fijo';
+    };
+
+    /**
+     * Detecta si un empleado pertenece al tipo estructural apoyo/ocasional.
+     * No incluye refuerzo ni sustituto, porque ambos son roles operativos temporales.
+     */
+    window.isEmpleadoOcasionalOApoyo = (emp) => {
+        if (!emp) return false;
+        if (emp.excludeCounters) return true;
+        const structuralType = window.getEmployeeStructuralType(emp);
+        return structuralType === 'apoyo' || structuralType === 'ocasional';
     };
 
     /**

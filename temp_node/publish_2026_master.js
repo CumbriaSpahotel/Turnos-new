@@ -12,13 +12,32 @@
  * 5. Reporte de Auditoría / Publicación.
  */
 
-const { createClient } = require('@supabase/supabase-js');
+const SUPABASE_URL = 'https://drvmxranbpumianmlzqr.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_MEpdfeO_ZGkMkg0_eKZKnQ_QCJxDrfZ';
 const fs = require('fs');
 const path = require('path');
+const https = require('https');
 
-const SUPABASE_URL = 'https://drvmxranbpumianmlzqr.supabase.co';
-const SUPABASE_KEY = 'sb_publishable_MEpdfeO_ZGkMkg0_eKZKnQ_QCJxDrfZ'; // Nota: En producción usar SERVICE_ROLE para escrituras masivas
-const client = createClient(SUPABASE_URL, SUPABASE_KEY);
+async function fetchFromSupabase(table, query) {
+    return new Promise((resolve, reject) => {
+        const url = `${SUPABASE_URL}/rest/v1/${table}?${query}`;
+        const options = {
+            headers: {
+                'apikey': SUPABASE_KEY,
+                'Authorization': `Bearer ${SUPABASE_KEY}`
+            }
+        };
+        https.get(url, options, (res) => {
+            let data = '';
+            res.on('data', (chunk) => data += chunk);
+            res.on('end', () => {
+                try {
+                    resolve(JSON.parse(data));
+                } catch(e) { resolve([]); }
+            });
+        }).on('error', reject);
+    });
+}
 
 const STRUCTURE_PATH = path.join(__dirname, 'excel_structure_2026.json');
 const REPORT_PATH = path.join(__dirname, 'audit_report_2026.json');
@@ -40,7 +59,13 @@ function addDays(dateStr, n) {
 }
 
 function buildCell(code, extra = {}) {
-    const c = (code || '').toUpperCase().trim();
+    let c = (code || '').toUpperCase().trim();
+    // Normalizar para que coincida con ABSENCE_TYPES
+    if (c.startsWith('VAC')) c = 'VAC';
+    else if (c.startsWith('BAJA')) c = 'BAJA';
+    else if (c.startsWith('PERM')) c = 'PERM';
+    else if (c.startsWith('FORM')) c = 'FORM';
+
     const isAbsence = ABSENCE_TYPES.has(c);
     return {
         code: c || '—',
@@ -66,19 +91,19 @@ async function runMaster() {
     const structure = JSON.parse(fs.readFileSync(STRUCTURE_PATH, 'utf8'));
 
     console.log('1. Cargando datos de Supabase...');
-    const { data: todosTurnos } = await client.from('turnos')
-        .select('empleado_id,fecha,turno,tipo,hotel_id')
-        .gte('fecha','2026-01-01').lte('fecha','2026-12-31');
+    const todosTurnos = await fetchFromSupabase('turnos', 'fecha=gte.2026-01-01&fecha=lte.2026-12-31&limit=10000');
+    const eventosRaw = await fetchFromSupabase('eventos_cuadrante', 'fecha_inicio=gte.2026-01-01&fecha_inicio=lte.2026-12-31&limit=5000');
 
-    const { data: eventosRaw } = await client.from('eventos_cuadrante')
-        .select('empleado_id,tipo,fecha_inicio,fecha_fin,estado,hotel_origen,sustituto_id,sustituto')
-        .lte('fecha_inicio','2026-12-31')
-        .gte('fecha_fin','2026-01-01');
-
-    const eventos = (eventosRaw || []).filter(ev =>
-        !/anulad|rechazad/i.test(ev.estado || '') &&
-        ABSENCE_TYPES.has((ev.tipo || '').toUpperCase())
-    );
+    const eventos = (eventosRaw || []).filter(ev => {
+        const type = (ev.tipo || '').toUpperCase().trim();
+        const normalizedType = type.startsWith('VAC') ? 'VAC' : 
+                               type.startsWith('PERM') ? 'PERM' : 
+                               type.startsWith('FORM') ? 'FORM' : 
+                               type.startsWith('BAJA') ? 'BAJA' : type;
+        
+        return !/anulad|rechazad/i.test(ev.estado || '') &&
+               ABSENCE_TYPES.has(normalizedType);
+    });
 
     console.log(`   - Turnos cargados: ${todosTurnos.length}`);
     console.log(`   - Eventos de ausencia: ${eventos.length}`);
@@ -90,7 +115,12 @@ async function runMaster() {
 
     const ausenciaMap = {};
     eventos.forEach(ev => {
-        const tipo = (ev.tipo || '').toUpperCase();
+        let tipo = (ev.tipo || '').toUpperCase().trim();
+        if (tipo.startsWith('VAC')) tipo = 'VAC';
+        else if (tipo.startsWith('BAJA')) tipo = 'BAJA';
+        else if (tipo.startsWith('PERM')) tipo = 'PERM';
+        else if (tipo.startsWith('FORM')) tipo = 'FORM';
+
         const hotel = ev.hotel_origen;
         const sustituto = ev.sustituto_id || ev.sustituto || null;
         let d = ev.fecha_inicio;

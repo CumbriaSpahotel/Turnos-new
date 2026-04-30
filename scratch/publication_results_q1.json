@@ -1,0 +1,256 @@
+{
+  "published": [],
+  "skipped": [
+    {
+      "hotel": "Cumbria Spa&Hotel",
+      "weekStart": "2026-01-04",
+      "error": {
+        "code": "42501",
+        "details": null,
+        "hint": null,
+        "message": "new row violates row-level security policy for table \"publicaciones_cuadrante\""
+      }
+    },
+    {
+      "hotel": "Cumbria Spa&Hotel",
+      "weekStart": "2026-01-11",
+      "error": {
+        "code": "42501",
+        "details": null,
+        "hint": null,
+        "message": "new row violates row-level security policy for table \"publicaciones_cuadrante\""
+      }
+    },
+    {
+      "hotel": "Cumbria Spa&Hotel",
+      "weekStart": "2026-01-18",
+      "error": {
+        "code": "42501",
+        "details": null,
+        "hint": null,
+        "message": "new row violates row-level security policy for table \"publicaciones_cuadrante\""
+      }
+    },
+    {
+      "hotel": "Cumbria Spa&Hotel",
+      "weekStart": "2026-01-25",
+      "error": {
+        "code": "42501",
+        "details": null,
+        "hint": null,
+        "message": "new row violates row-level security policy for table \"publicaciones_cuadrante\""
+      }
+    },
+    {
+      "hotel": "Cumbria Spa&Hotel",
+      "weekStart": "2026-02-01",
+      "error": {
+        "code": "42501",
+        "details": null,
+        "hint": null,
+        "message": "new row violates row-level security policy for table \"publicaciones_cuadrante\""
+      }
+    },
+    {
+      "hotel": "Cumbria Spa&Hotel",
+      "weekStart": "2026-02-08",
+      "error": {
+        "code": "42501",
+        "details": null,
+        "hint": null,
+        "message": "new row violates row-level security policy for table \"publicaciones_cuadrante\""
+      }
+    },
+    {
+      "hotel": "Cumbria Spa&Hotel",
+      "weekStart": "2026-02-15",
+      "error": {
+        "code": "42501",
+        "details": null,
+        "hint": null,
+        "message": "new row violates row-level security policy for table \"publicaciones_cuadrante\""
+      }
+    },
+    {
+      "hotel": "Cumbria Spa&Hotel",
+      "weekStart": "2026-02-22",
+      "error": {
+        "code": "42501",
+        "details": null,
+        "hint": null,
+        "message": "new row violates row-level security policy for table \"publicaciones_cuadrante\""
+      }
+    },
+    {
+      "hotel": "Cumbria Spa&Hotel",
+      "weekStart": "2026-03-01",
+      "error": {
+        "code": "42501",
+        "details": null,
+        "hint": null,
+        "message": "new row violates row-level security policy for table \"publicaciones_cuadrante\""
+      }
+    },
+    {
+      "hotel": "Cumbria Spa&Hotel",
+      "weekStart": "2026-03-08",
+      "error": {
+        "code": "42501",
+        "details": null,
+        "hint": null,
+        "message": "new row violates row-level security policy for table \"publicaciones_cuadrante\""
+      }
+    },
+    {
+      "hotel": "Cumbria Spa&Hotel",
+      "weekStart": "2026-03-15",
+      "error": {
+        "code": "42501",
+        "details": null,
+        "hint": null,
+        "message": "new row violates row-level security policy for table \"publicaciones_cuadrante\""
+      }
+    },
+    {
+      "hotel": "Cumbria Spa&Hotel",
+      "weekStart": "2026-03-22",
+      "error": {
+        "code": "42501",
+        "details": null,
+        "hint": null,
+        "message": "new row violates row-level security policy for table \"publicaciones_cuadrante\""
+      }
+    },
+    {
+      "hotel": "Sercotel Guadiana",
+      "weekStart": "2026-01-04",
+      "error": {
+        "code": "42501",
+        "details": null,
+        "hint": null,
+        "message": "new row violates row-level security policy for table \"publicaciones_cuadrante\""
+      }
+    },
+    {
+      "hotel": "Sercotel Guadiana",
+      "weekStart": "2026-01-11",
+      "error": {
+        "code": "42501",
+        "details": null,
+        "hint": null,
+        "message": "new row violates row-level security policy for table \"publicaciones_cuadrante\""
+      }
+    },
+    {
+      "hotel": "Sercotel Guadiana",
+      "weekStart": "2026-01-18",
+      "error": {
+        "code": "42501",
+        "details": null,
+        "hint": null,
+        "message": "new row violates row-level security policy for table \"publicaciones_cuadrante\""
+      }
+    },
+    {
+      "hotel": "Sercotel Guadiana",
+      "weekStart": "2026-01-25",
+      "error": {
+        "code": "42501",
+        "details": null,
+        "hint": null,
+        "message": "new row violates row-level security policy for table \"publicaciones_cuadrante\""
+      }
+    },
+    {
+      "hotel": "Sercotel Guadiana",
+      "weekStart": "2026-02-01",
+      "error": {
+        "code": "42501",
+        "details": null,
+        "hint": null,
+        "message": "new row violates row-level security policy for table \"publicaciones_cuadrante\""
+      }
+    },
+    {
+      "hotel": "Sercotel Guadiana",
+      "weekStart": "2026-02-08",
+      "error": {
+        "code": "42501",
+        "details": null,
+        "hint": null,
+        "message": "new row violates row-level security policy for table \"publicaciones_cuadrante\""
+      }
+    },
+    {
+      "hotel": "Sercotel Guadiana",
+      "weekStart": "2026-02-15",
+      "error": {
+        "code": "42501",
+        "details": null,
+        "hint": null,
+        "message": "new row violates row-level security policy for table \"publicaciones_cuadrante\""
+      }
+    },
+    {
+      "hotel": "Sercotel Guadiana",
+      "weekStart": "2026-02-22",
+      "error": {
+        "code": "42501",
+        "details": null,
+        "hint": null,
+        "message": "new row violates row-level security policy for table \"publicaciones_cuadrante\""
+      }
+    },
+    {
+      "hotel": "Sercotel Guadiana",
+      "weekStart": "2026-03-01",
+      "error": {
+        "code": "42501",
+        "details": null,
+        "hint": null,
+        "message": "new row violates row-level security policy for table \"publicaciones_cuadrante\""
+      }
+    },
+    {
+      "hotel": "Sercotel Guadiana",
+      "weekStart": "2026-03-08",
+      "error": {
+        "code": "42501",
+        "details": null,
+        "hint": null,
+        "message": "new row violates row-level security policy for table \"publicaciones_cuadrante\""
+      }
+    },
+    {
+      "hotel": "Sercotel Guadiana",
+      "weekStart": "2026-03-15",
+      "error": {
+        "code": "42501",
+        "details": null,
+        "hint": null,
+        "message": "new row violates row-level security policy for table \"publicaciones_cuadrante\""
+      }
+    },
+    {
+      "hotel": "Sercotel Guadiana",
+      "weekStart": "2026-03-22",
+      "error": {
+        "code": "42501",
+        "details": null,
+        "hint": null,
+        "message": "new row violates row-level security policy for table \"publicaciones_cuadrante\""
+      }
+    },
+    {
+      "hotel": "Sercotel Guadiana",
+      "weekStart": "2026-03-29",
+      "error": {
+        "code": "42501",
+        "details": null,
+        "hint": null,
+        "message": "new row violates row-level security policy for table \"publicaciones_cuadrante\""
+      }
+    }
+  ],
+  "logs": []
+}

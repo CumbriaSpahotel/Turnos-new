@@ -1,65 +1,85 @@
 {
-  "generated_at": "2026-04-28T22:44:46.774Z",
+  "generated_at": "2026-04-29T18:58:16.199Z",
   "weeks": [
     {
       "hotel": "Cumbria Spa&Hotel",
       "weekStart": "2026-01-04",
-      "row_count": 5,
-      "absences": []
+      "row_count": 6,
+      "absences": [
+        "Sergio"
+      ]
     },
     {
       "hotel": "Cumbria Spa&Hotel",
       "weekStart": "2026-01-11",
-      "row_count": 5,
-      "absences": []
+      "row_count": 6,
+      "absences": [
+        "Sergio"
+      ]
     },
     {
       "hotel": "Cumbria Spa&Hotel",
       "weekStart": "2026-01-18",
-      "row_count": 5,
-      "absences": []
+      "row_count": 6,
+      "absences": [
+        "Sergio"
+      ]
     },
     {
       "hotel": "Cumbria Spa&Hotel",
       "weekStart": "2026-01-25",
-      "row_count": 5,
-      "absences": []
+      "row_count": 6,
+      "absences": [
+        "Sergio"
+      ]
     },
     {
       "hotel": "Cumbria Spa&Hotel",
       "weekStart": "2026-02-01",
-      "row_count": 5,
-      "absences": []
+      "row_count": 6,
+      "absences": [
+        "Sergio"
+      ]
     },
     {
       "hotel": "Cumbria Spa&Hotel",
       "weekStart": "2026-02-08",
-      "row_count": 5,
-      "absences": []
+      "row_count": 6,
+      "absences": [
+        "Sergio"
+      ]
     },
     {
       "hotel": "Cumbria Spa&Hotel",
       "weekStart": "2026-02-15",
-      "row_count": 5,
-      "absences": []
+      "row_count": 6,
+      "absences": [
+        "Sergio"
+      ]
     },
     {
       "hotel": "Cumbria Spa&Hotel",
       "weekStart": "2026-02-22",
-      "row_count": 5,
-      "absences": []
+      "row_count": 6,
+      "absences": [
+        "Sergio"
+      ]
     },
     {
       "hotel": "Cumbria Spa&Hotel",
       "weekStart": "2026-03-01",
-      "row_count": 5,
-      "absences": []
+      "row_count": 6,
+      "absences": [
+        "Sergio"
+      ]
     },
     {
       "hotel": "Cumbria Spa&Hotel",
       "weekStart": "2026-03-08",
-      "row_count": 5,
-      "absences": []
+      "row_count": 6,
+      "absences": [
+        "Sergio"
+      ]
     },
     {
       "hotel": "Cumbria Spa&Hotel",
@@ -70,134 +90,193 @@
     {
       "hotel": "Cumbria Spa&Hotel",
       "weekStart": "2026-03-22",
-      "row_count": 5,
-      "absences": []
+      "row_count": 6,
+      "absences": [
+        "Cristina"
+      ]
     },
     {
       "hotel": "Cumbria Spa&Hotel",
       "weekStart": "2026-03-29",
-      "row_count": 5,
-      "absences": []
+      "row_count": 7,
+      "absences": [
+        "Cristina",
+        "Esther"
+      ]
     },
     {
       "hotel": "Cumbria Spa&Hotel",
       "weekStart": "2026-04-05",
-      "row_count": 5,
-      "absences": []
+      "row_count": 7,
+      "absences": [
+        "Esther",
+        "Valentín"
+      ]
     },
     {
       "hotel": "Cumbria Spa&Hotel",
       "weekStart": "2026-04-12",
-      "row_count": 5,
-      "absences": []
+      "row_count": 7,
+      "absences": [
+        "Esther",
+        "Valentín"
+      ]
     },
     {
       "hotel": "Cumbria Spa&Hotel",
       "weekStart": "2026-04-19",
-      "row_count": 5,
-      "absences": []
+      "row_count": 7,
+      "absences": [
+        "Cristina",
+        "Esther"
+      ]
     },
     {
       "hotel": "Cumbria Spa&Hotel",
       "weekStart": "2026-04-26",
-      "row_count": 5,
-      "absences": []
+      "row_count": 6,
+      "absences": [
+        "Cristina"
+      ]
     },
     {
       "hotel": "Cumbria Spa&Hotel",
       "weekStart": "2026-05-03",
-      "row_count": 5,
-      "absences": []
+      "row_count": 7,
+      "absences": [
+        "Sergio",
+        "Cristina"
+      ]
     },
     {
       "hotel": "Cumbria Spa&Hotel",
       "weekStart": "2026-05-10",
-      "row_count": 5,
-      "absences": []
+      "row_count": 7,
+      "absences": [
+        "Esther",
+        "Sergio"
+      ]
     },
     {
       "hotel": "Cumbria Spa&Hotel",
       "weekStart": "2026-05-17",
-      "row_count": 5,
-      "absences": []
+      "row_count": 6,
+      "absences": [
+        "Esther"
+      ]
     },
     {
       "hotel": "Cumbria Spa&Hotel",
       "weekStart": "2026-05-24",
-      "row_count": 5,
-      "absences": []
+      "row_count": 7,
+      "absences": [
+        "Esther",
+        "Cristina"
+      ]
     },
     {
       "hotel": "Cumbria Spa&Hotel",
       "weekStart": "2026-05-31",
-      "row_count": 5,
-      "absences": []
+      "row_count": 7,
+      "absences": [
+        "Cristina",
+        "Esther"
+      ]
     },
     {
       "hotel": "Cumbria Spa&Hotel",
       "weekStart": "2026-06-07",
-      "row_count": 5,
-      "absences": []
+      "row_count": 7,
+      "absences": [
+        "Esther",
+        "Valentín"
+      ]
     },
     {
       "hotel": "Cumbria Spa&Hotel",
       "weekStart": "2026-06-14",
-      "row_count": 5,
-      "absences": []
+      "row_count": 7,
+      "absences": [
+        "Sergio",
+        "Valentín"
+      ]
     },
     {
       "hotel": "Cumbria Spa&Hotel",
       "weekStart": "2026-06-21",
-      "row_count": 5,
-      "absences": []
+      "row_count": 6,
+      "absences": [
+        "Sergio"
+      ]
     },
     {
       "hotel": "Cumbria Spa&Hotel",
       "weekStart": "2026-06-28",
-      "row_count": 5,
-      "absences": []
+      "row_count": 7,
+      "absences": [
+        "Sergio",
+        "Valentín"
+      ]
     },
     {
       "hotel": "Cumbria Spa&Hotel",
       "weekStart": "2026-07-05",
-      "row_count": 5,
-      "absences": []
+      "row_count": 7,
+      "absences": [
+        "Sergio",
+        "Valentín"
+      ]
     },
     {
       "hotel": "Cumbria Spa&Hotel",
       "weekStart": "2026-07-12",
-      "row_count": 5,
-      "absences": []
+      "row_count": 7,
+      "absences": [
+        "Sergio",
+        "Valentín"
+      ]
     },
     {
       "hotel": "Cumbria Spa&Hotel",
       "weekStart": "2026-07-19",
-      "row_count": 5,
-      "absences": []
+      "row_count": 7,
+      "absences": [
+        "Cristina",
+        "Valentín"
+      ]
     },
     {
       "hotel": "Cumbria Spa&Hotel",
       "weekStart": "2026-07-26",
-      "row_count": 5,
-      "absences": []
+      "row_count": 6,
+      "absences": [
+        "Cristina"
+      ]
     },
     {
       "hotel": "Cumbria Spa&Hotel",
       "weekStart": "2026-08-02",
-      "row_count": 5,
-      "absences": []
+      "row_count": 7,
+      "absences": [
+        "Cristina",
+        "Esther"
+      ]
     },
     {
       "hotel": "Cumbria Spa&Hotel",
       "weekStart": "2026-08-09",
-      "row_count": 5,
-      "absences": []
+      "row_count": 6,
+      "absences": [
+        "Esther"
+      ]
     },
     {
       "hotel": "Cumbria Spa&Hotel",
       "weekStart": "2026-08-16",
-      "row_count": 5,
-      "absences": []
+      "row_count": 6,
+      "absences": [
+        "Esther"
+      ]
     },
     {
       "hotel": "Cumbria Spa&Hotel",
@@ -352,8 +431,10 @@
     {
       "hotel": "Sercotel Guadiana",
       "weekStart": "2026-02-15",
-      "row_count": 5,
-      "absences": []
+      "row_count": 6,
+      "absences": [
+        "Sergio Sánchez"
+      ]
     },
     {
       "hotel": "Sercotel Guadiana",
@@ -364,14 +445,18 @@
     {
       "hotel": "Sercotel Guadiana",
       "weekStart": "2026-03-01",
-      "row_count": 5,
-      "absences": []
+      "row_count": 6,
+      "absences": [
+        "Diana"
+      ]
     },
     {
       "hotel": "Sercotel Guadiana",
       "weekStart": "2026-03-08",
-      "row_count": 5,
-      "absences": []
+      "row_count": 6,
+      "absences": [
+        "Diana"
+      ]
     },
     {
       "hotel": "Sercotel Guadiana",
@@ -394,8 +479,10 @@
     {
       "hotel": "Sercotel Guadiana",
       "weekStart": "2026-04-05",
-      "row_count": 5,
-      "absences": []
+      "row_count": 6,
+      "absences": [
+        "Sergio Sánchez"
+      ]
     },
     {
       "hotel": "Sercotel Guadiana",
@@ -412,8 +499,10 @@
     {
       "hotel": "Sercotel Guadiana",
       "weekStart": "2026-04-26",
-      "row_count": 5,
-      "absences": []
+      "row_count": 6,
+      "absences": [
+        "Sergio Sánchez"
+      ]
     },
     {
       "hotel": "Sercotel Guadiana",
@@ -442,158 +531,229 @@
     {
       "hotel": "Sercotel Guadiana",
       "weekStart": "2026-05-31",
-      "row_count": 5,
-      "absences": []
+      "row_count": 6,
+      "absences": [
+        "Dani"
+      ]
     },
     {
       "hotel": "Sercotel Guadiana",
       "weekStart": "2026-06-07",
-      "row_count": 5,
-      "absences": []
+      "row_count": 7,
+      "absences": [
+        "Dani",
+        "Diana"
+      ]
     },
     {
       "hotel": "Sercotel Guadiana",
       "weekStart": "2026-06-14",
-      "row_count": 5,
-      "absences": []
+      "row_count": 7,
+      "absences": [
+        "Diana",
+        "Federico"
+      ]
     },
     {
       "hotel": "Sercotel Guadiana",
       "weekStart": "2026-06-21",
-      "row_count": 5,
-      "absences": []
+      "row_count": 7,
+      "absences": [
+        "Macarena",
+        "Federico"
+      ]
     },
     {
       "hotel": "Sercotel Guadiana",
       "weekStart": "2026-06-28",
-      "row_count": 5,
-      "absences": []
+      "row_count": 7,
+      "absences": [
+        "Macarena",
+        "Federico"
+      ]
     },
     {
       "hotel": "Sercotel Guadiana",
       "weekStart": "2026-07-05",
-      "row_count": 5,
-      "absences": []
+      "row_count": 6,
+      "absences": [
+        "Federico"
+      ]
     },
     {
       "hotel": "Sercotel Guadiana",
       "weekStart": "2026-07-12",
-      "row_count": 5,
-      "absences": []
+      "row_count": 7,
+      "absences": [
+        "Macarena",
+        "Federico"
+      ]
     },
     {
       "hotel": "Sercotel Guadiana",
       "weekStart": "2026-07-19",
-      "row_count": 5,
-      "absences": []
+      "row_count": 6,
+      "absences": [
+        "Macarena"
+      ]
     },
     {
       "hotel": "Sercotel Guadiana",
       "weekStart": "2026-07-26",
-      "row_count": 5,
-      "absences": []
+      "row_count": 7,
+      "absences": [
+        "Dani",
+        "Macarena"
+      ]
     },
     {
       "hotel": "Sercotel Guadiana",
       "weekStart": "2026-08-02",
-      "row_count": 5,
-      "absences": []
+      "row_count": 7,
+      "absences": [
+        "Diana",
+        "Dani"
+      ]
     },
     {
       "hotel": "Sercotel Guadiana",
       "weekStart": "2026-08-09",
-      "row_count": 5,
-      "absences": []
+      "row_count": 6,
+      "absences": [
+        "Diana"
+      ]
     },
     {
       "hotel": "Sercotel Guadiana",
       "weekStart": "2026-08-16",
-      "row_count": 5,
-      "absences": []
+      "row_count": 7,
+      "absences": [
+        "Diana",
+        "Dani"
+      ]
     },
     {
       "hotel": "Sercotel Guadiana",
       "weekStart": "2026-08-23",
-      "row_count": 5,
-      "absences": []
+      "row_count": 7,
+      "absences": [
+        "Macarena",
+        "Dani"
+      ]
     },
     {
       "hotel": "Sercotel Guadiana",
       "weekStart": "2026-08-30",
-      "row_count": 5,
-      "absences": []
+      "row_count": 7,
+      "absences": [
+        "Macarena",
+        "Federico"
+      ]
     },
     {
       "hotel": "Sercotel Guadiana",
       "weekStart": "2026-09-06",
-      "row_count": 5,
-      "absences": []
+      "row_count": 6,
+      "absences": [
+        "Federico"
+      ]
     },
     {
       "hotel": "Sercotel Guadiana",
       "weekStart": "2026-09-13",
-      "row_count": 5,
-      "absences": []
+      "row_count": 7,
+      "absences": [
+        "Dani",
+        "Federico"
+      ]
     },
     {
       "hotel": "Sercotel Guadiana",
       "weekStart": "2026-09-20",
-      "row_count": 5,
-      "absences": []
+      "row_count": 7,
+      "absences": [
+        "Dani",
+        "Macarena"
+      ]
     },
     {
       "hotel": "Sercotel Guadiana",
       "weekStart": "2026-09-27",
-      "row_count": 5,
-      "absences": []
+      "row_count": 7,
+      "absences": [
+        "Diana",
+        "Macarena"
+      ]
     },
     {
       "hotel": "Sercotel Guadiana",
       "weekStart": "2026-10-04",
-      "row_count": 5,
-      "absences": []
+      "row_count": 6,
+      "absences": [
+        "Diana"
+      ]
     },
     {
       "hotel": "Sercotel Guadiana",
       "weekStart": "2026-10-11",
-      "row_count": 5,
-      "absences": []
+      "row_count": 7,
+      "absences": [
+        "Dani",
+        "Diana"
+      ]
     },
     {
       "hotel": "Sercotel Guadiana",
       "weekStart": "2026-10-18",
-      "row_count": 5,
-      "absences": []
+      "row_count": 7,
+      "absences": [
+        "Dani",
+        "Macarena"
+      ]
     },
     {
       "hotel": "Sercotel Guadiana",
       "weekStart": "2026-10-25",
-      "row_count": 5,
-      "absences": []
+      "row_count": 7,
+      "absences": [
+        "Macarena",
+        "Dani"
+      ]
     },
     {
       "hotel": "Sercotel Guadiana",
       "weekStart": "2026-11-01",
-      "row_count": 5,
-      "absences": []
+      "row_count": 7,
+      "absences": [
+        "Dani",
+        "Diana"
+      ]
     },
     {
       "hotel": "Sercotel Guadiana",
       "weekStart": "2026-11-08",
-      "row_count": 5,
-      "absences": []
+      "row_count": 7,
+      "absences": [
+        "Diana",
+        "Federico"
+      ]
     },
     {
       "hotel": "Sercotel Guadiana",
       "weekStart": "2026-11-15",
-      "row_count": 5,
-      "absences": []
+      "row_count": 7,
+      "absences": [
+        "Dani",
+        "Federico"
+      ]
     },
     {
       "hotel": "Sercotel Guadiana",
       "weekStart": "2026-11-22",
-      "row_count": 5,
-      "absences": []
+      "row_count": 6,
+      "absences": [
+        "Dani"
+      ]
     },
     {
       "hotel": "Sercotel Guadiana",
