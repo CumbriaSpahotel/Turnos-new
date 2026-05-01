@@ -146,7 +146,7 @@ console.log("[ShiftResolver] Iniciando carga v5.0...");
             .replace(/_+$/, ''); // quitar _ finales
         
         if (v.startsWith('VAC')) return 'VAC'; // VAC, VACACIONES, VAC_🏖️ quitado el emoji
-        if (['BAJA', 'BAJA_MEDICA', 'BM'].includes(v)) return 'BAJA';
+        if (['BAJA', 'BAJA_MEDICA', 'BM', 'IT', 'INCAPACIDAD'].includes(v)) return 'BAJA';
         if (v.startsWith('PERM')) return 'PERM'; // unify PERMISO → PERM
         
         if (v === 'CT' || v === 'CAMBIO_TURNO' || v === 'CAMBIO_DE_TURNO' || v === 'CAMBIO_DE_TURNOS') return 'CAMBIO_TURNO';
@@ -184,16 +184,45 @@ console.log("[ShiftResolver] Iniciando carga v5.0...");
 
     window.eventoPerteneceAHotel = (evento, hotel) => {
         const eventHotel = window.normalizeId(window.getEventoHotel(evento));
+        if (!eventHotel) return true; // Si el evento no especifica hotel, permitimos que aplique (permissivo)
+        
         const rowHotel = window.normalizeId(hotel);
-        const matches = !!eventHotel && !!rowHotel && eventHotel === rowHotel;
+        const matches = !!rowHotel && eventHotel === rowHotel;
         if (!matches && window.DEBUG_MODE === true) {
             console.warn('[MATCH HOTEL DESCARTADO]', {
-                eventoHotel: eventHotel || '(sin hotel)',
+                eventoHotel: eventHotel,
                 filaHotel: rowHotel || '(sin hotel)',
                 evento
             });
         }
         return matches;
+    };
+
+    window.isTitularOfAbsence = (evento, empleadoId, context = {}) => {
+        const target = window.normalizeId(empleadoId);
+        if (!target) return false;
+
+        const candidatosTitular = [
+            evento.empleado_id,
+            evento.empleado_a_id,
+            evento.origen_id,
+            evento.empleado,
+            evento.empleado_nombre,
+            evento.nombre,
+            evento.titular,
+            evento.titular_id,
+            evento.id_empleado,
+            evento.participante_a,
+            evento.payload?.empleado_id
+        ].filter(Boolean).map(window.normalizeId);
+
+        // Si hay una lista de resolución de IDs (aliases), normalizamos el target
+        const normalizedTarget = context.resolveId ? context.resolveId(target) : target;
+        
+        return candidatosTitular.some(c => {
+            const normalizedC = context.resolveId ? context.resolveId(c) : c;
+            return normalizedC === normalizedTarget;
+        });
     };
 
     window.eventoPerteneceAEmpleado = (evento, empleadoId, context = {}) => {
@@ -224,7 +253,7 @@ console.log("[ShiftResolver] Iniciando carga v5.0...");
         ].filter(Boolean).map(window.normalizeId);
 
         // Campos del destino/sustituto — solo para CT/INTERCAMBIO/COBERTURA
-        const candidatosDestino = esAusencia ? [] : [
+        const candidatosDestino = [
             evento.empleado_destino_id,
             evento.empleado_b_id,
             evento.destino_id,
@@ -268,11 +297,40 @@ console.log("[ShiftResolver] Iniciando carga v5.0...");
 
     window.getOtroEmpleadoDelCambio = (evento, empleadoId) => {
         const target = window.normalizeId(empleadoId);
-        const a = window.normalizeId(evento.empleado_id || evento.empleado_a_id || evento.origen_id || evento.empleado || evento.participante_a || evento.titular_id);
-        const b = window.normalizeId(evento.empleado_destino_id || evento.empleado_b_id || evento.destino_id || evento.sustituto_id || evento.empleado_destino || evento.participante_b || evento.sustituto);
+        
+        const candidatosA = [
+            evento.empleado_id,
+            evento.empleado_a_id,
+            evento.origen_id,
+            evento.empleado,
+            evento.empleado_nombre,
+            evento.nombre,
+            evento.titular,
+            evento.titular_id,
+            evento.id_empleado,
+            evento.participante_a,
+            evento.payload?.empleado_id
+        ].filter(Boolean).map(window.normalizeId);
 
-        if (target === a) return b;
-        if (target === b) return a;
+        const candidatosB = [
+            evento.empleado_destino_id,
+            evento.empleado_b_id,
+            evento.destino_id,
+            evento.sustituto_id,
+            evento.empleado_destino,
+            evento.empleado_destino_nombre,
+            evento.sustituto,
+            evento.participante_b,
+            evento.payload?.empleado_destino_id,
+            evento.payload?.sustituto_id,
+            evento.payload?.sustituto
+        ].filter(Boolean).map(window.normalizeId);
+
+        const isA = candidatosA.includes(target);
+        const isB = candidatosB.includes(target);
+
+        if (isA) return candidatosB[0] || '';
+        if (isB) return candidatosA[0] || '';
         return '';
     };
 
@@ -366,8 +424,38 @@ console.log("[ShiftResolver] Iniciando carga v5.0...");
         return null;
     };
 
+    // --- 1. MOTOR DE RESOLUCIÓN GENERAL (V12.5.21) ---
+    // NO añadir parches por fecha o empleado aquí.
+    
     window.getTurnoOperativoBase = (empleadoId, fecha, context = {}) => {
         const baseIndex = context.baseIndex || context;
+        const events = context.eventos || [];
+        const empIdNorm = window.normalizeId(empleadoId);
+
+        // 1. Ver si está sustituyendo a alguien en los eventos de hoy
+        const subEvent = events.find(ev => {
+            const fi = window.normalizeDate(ev.fecha_inicio || ev.desde || ev.fecha);
+            const ff = window.normalizeDate(ev.fecha_fin || ev.hasta || ev.fecha_inicio || ev.fecha);
+            if (fecha < fi || fecha > ff) return false;
+
+            const t = window.normalizeTipo(ev.tipo);
+            if (t !== 'SUSTITUCION' && t !== 'COBERTURA' && t !== 'VAC' && t !== 'BAJA' && t !== 'PERMISO') return false;
+            
+            const destId = window.normalizeId(ev.empleado_destino_id || ev.destino_id || ev.sustituto_id || ev.participante_b);
+            const sustNombre = ev.sustituto ? window.normalizeId(ev.sustituto) : null;
+            
+            return destId === empIdNorm || sustNombre === empIdNorm;
+        });
+
+        if (subEvent) {
+            const titularId = window.normalizeId(subEvent.empleado_id || subEvent.titular_id || subEvent.titular);
+            if (titularId) {
+                const titularTurno = window.getTurnoBaseDeEmpleado(titularId, fecha, baseIndex);
+                if (titularTurno) return titularTurno;
+            }
+        }
+
+        // 2. Fallback al base propio
         const turno = window.getTurnoBaseDeEmpleado(empleadoId, fecha, baseIndex);
         return turno === null || turno === undefined || String(turno).trim() === '' ? null : turno;
     };
@@ -392,6 +480,25 @@ console.log("[ShiftResolver] Iniciando carga v5.0...");
         'SIN_TURNO': 8
     };
 
+    window.isValidShiftValue = (value) => {
+        const t = String(value || "").trim().toUpperCase();
+        return ["M", "T", "N", "D", "MAÑANA", "MANANA", "TARDE", "NOCHE", "DESCANSO"].includes(t);
+    };
+
+    window.isInvalidLegacyChangeValue = (value) => {
+        const t = String(value || "").trim().toUpperCase();
+        return ["CT", "CAMBIO", "CAMBIO_TURNO", "INTERCAMBIO", "INTERCAMBIO_TURNO"].includes(t);
+    };
+
+    window.normalizeShiftValue = (value) => {
+        const t = String(value || "").trim().toUpperCase();
+        if (t === "M" || t === "MAÑANA" || t === "MANANA") return "M";
+        if (t === "T" || t === "TARDE") return "T";
+        if (t === "N" || t === "NOCHE") return "N";
+        if (t === "D" || t === "DESCANSO") return "D";
+        return null;
+    };
+
     // --- 3. RESOLVE EMPLOYEE DAY ---
 
     window.resolveEmployeeDay = ({
@@ -401,7 +508,9 @@ console.log("[ShiftResolver] Iniciando carga v5.0...");
         fecha,
         turnoBase,
         eventos = [],
-        baseIndex = null
+        baseIndex = null,
+        allEvents = [], // V12.5: Contexto global para detectar estados de otros empleados (ej. titular de permiso)
+        resolveId // V12.5: Helper de identidad opcional
     }) => {
         const empId = window.normalizeId(empleadoId || empleado?.id || empleado?.nombre);
         const date = window.normalizeDate(fecha);
@@ -446,60 +555,228 @@ console.log("[ShiftResolver] Iniciando carga v5.0...");
             result.origen = 'SIN_TURNO';
         }
 
+        const isDiagTarget = false; // V12.5.21: Desactivado debug por empleado específico
+
+        // V12.5: Detección proactiva de Conflictos Multi-Hotel (Natalio Case)
+        if (allEvents && allEvents.length > 0) {
+            const crossHotelEvents = allEvents.filter(ev => {
+                if (window.normalizeEstado(ev.estado) === 'anulado') return false;
+                const evHotel = window.normalizeId(ev.hotel_id || ev.hotel);
+                const targetHotel = window.normalizeId(hotel);
+                if (!evHotel || !targetHotel || evHotel === targetHotel) return false;
+                
+                const evTitularId = resolveId ? resolveId(ev.empleado_id || ev.titular_id || ev.participante_a) : window.normalizeId(ev.empleado_id || ev.titular_id || ev.participante_a);
+                const evSustitutoId = resolveId ? resolveId(ev.empleado_destino_id || ev.sustituto_id || ev.participante_b) : window.normalizeId(ev.empleado_destino_id || ev.sustituto_id || ev.participante_b);
+                
+                return evTitularId === empId || evSustitutoId === empId;
+            });
+            if (crossHotelEvents.length > 0) {
+                result.conflicto = true;
+                result.multiHotel = true;
+                result.errores.push(`Conflicto multi-hotel: El empleado ya tiene actividad en otro hotel este día.`);
+            }
+        }
+
         // 1. Buscar eventos aplicables
-        const eventosActivos = eventos.filter(ev => {
-            if (window.normalizeEstado(ev.estado) === 'anulado') return false;
+        let eventosActivos = eventos.filter(ev => {
+            const estado = (ev.estado || 'activo').toLowerCase();
+            if (estado === 'anulado' || estado === 'rechazado' || estado === 'borrador') return false;
+            
             return window.eventoAplicaEnFecha(ev, date) &&
                 window.eventoPerteneceAHotel(ev, hotel) &&
                 window.eventoPerteneceAEmpleado(ev, empId, { hotel });
         });
 
+        // 1.1 DEDUPLICACIÓN LÓGICA (V12.5.19)
+        // Si existen INTERCAMBIO_TURNO y CAMBIO_TURNO para los mismos participantes y fecha, priorizar el primero.
+        if (eventosActivos.length > 1) {
+            const seen = new Map();
+            const filtered = [];
+            
+            // Primero identificamos intercambios
+            const intercambios = eventosActivos.filter(ev => window.normalizeTipo(ev.tipo) === 'INTERCAMBIO_TURNO');
+            
+            eventosActivos.forEach(ev => {
+                const tipo = window.normalizeTipo(ev.tipo);
+                if (tipo === 'CAMBIO_TURNO' || tipo === 'CAMBIO') {
+                    const otroId = window.getOtroEmpleadoDelCambio(ev, empId);
+                    const duplicado = intercambios.find(inc => {
+                        const incOtro = window.getOtroEmpleadoDelCambio(inc, empId);
+                        return incOtro === otroId;
+                    });
+                    
+                    if (duplicado) {
+                        console.warn('[DUPLICATE_CHANGE_SKIPPED]', {
+                            fecha: date,
+                            hotel: hotel,
+                            participantes: `${empId} <-> ${otroId}`,
+                            eventoPrincipal: duplicado.id,
+                            eventoIgnorado: ev.id,
+                            motivo: "duplicado CAMBIO vs INTERCAMBIO"
+                        });
+                        return; // Ignorar este evento
+                    }
+                }
+                filtered.push(ev);
+            });
+            eventosActivos = filtered;
+        }
+
         if (eventosActivos.length > 0) {
-            // Ordenar por prioridad
+            // Ordenar por prioridad (1=Máxima, 8=Mínima)
             eventosActivos.sort((a, b) => {
                 const pA = PRIORITY_RANK[window.normalizeTipo(a.tipo)] || 99;
                 const pB = PRIORITY_RANK[window.normalizeTipo(b.tipo)] || 99;
                 return pA - pB;
             });
 
-            const ev = eventosActivos[0];
-            const tipo = window.normalizeTipo(ev.tipo);
-            result.evento = ev;
-            result.origen = tipo;
+            for (const ev of eventosActivos) {
+                const tipo = window.normalizeTipo(ev.tipo);
+                const estado = (ev.estado || 'activo').toLowerCase();
+                const isApproved = estado === 'activo' || estado === 'aprobado';
+                if (!isApproved) continue;
 
-            if (['BAJA', 'VAC', 'PERMISO', 'PERM', 'FORMACION', 'FORM'].includes(tipo)) {
-                result.incidencia = (tipo === 'PERM' ? 'PERMISO' : (tipo === 'FORM' ? 'FORMACION' : tipo));
-                result.turno = null;
-                result.cambio = true;
-                
-                // Relación de sustitución (para el titular)
-                const otroId = window.getOtroEmpleadoDelCambio(ev, empId);
-                if (otroId) result.sustituidoPor = otroId;
-            } else if (tipo === 'COBERTURA' || tipo === 'SUSTITUCION') {
-                const titularId = window.normalizeId(ev.empleado_id || ev.titular_id || ev.titular || ev.participante_a);
-                if (empId !== titularId) {
-                    // Soy el sustituto operativo de una ausencia
-                    result.sustituyeA = titularId;
-                    const titularTurnoBase = window.getTurnoBaseDeEmpleado(titularId, date, baseIndex);
-                    // Regla: usa el turno de la posición cubierta, no el propio
-                    result.turno = titularTurnoBase || '—';
-                    result.cambio = true;
+                const isActuallyIncidenceForMe = ['BAJA', 'VAC', 'PERMISO', 'PERM', 'FORMACION', 'FORM', 'IT'].includes(tipo) && 
+                    window.isTitularOfAbsence(ev, empId, { resolveId });
+
+                if (isActuallyIncidenceForMe) {
+                    // SOY EL TITULAR DE UNA AUSENCIA (Final de resolución para el titular)
+                    result.incidencia = (tipo === 'PERM' ? 'PERMISO' : (tipo === 'FORM' ? 'FORMACION' : tipo));
+                    result.turno = null;
+                    result.cambio = false; 
+                    result.origen = tipo;
+                    const otroId = window.getOtroEmpleadoDelCambio(ev, empId);
+                    if (otroId) result.sustituidoPor = otroId;
+                    break; // Las ausencias del titular son terminales
+                } 
+
+
+                // CASO: SOY EL SUSTITUTO DE UNA AUSENCIA (VAC, BAJA, PERMISO, etc.)
+                const isAbsence = ['BAJA', 'PERMISO', 'PERM', 'FORMACION', 'FORM', 'IT', 'VAC'].includes(tipo);
+                const titularId = window.normalizeId(ev.empleado_id || ev.titular_id || ev.titular || ev.participante_a || ev.nombre || ev.empleado);
+                const isSubstitute = isAbsence && (window.normalizeId(empId) !== titularId);
+
+                if (isSubstitute || tipo === 'COBERTURA' || tipo === 'SUSTITUCION') {
+                    const finalTitularId = isSubstitute ? titularId : window.normalizeId(ev.empleado_id || ev.titular_id || ev.titular || ev.participante_a || ev.nombre || ev.empleado);
+                    result.sustituyeA = finalTitularId;
+                    const titularTurnoBase = window.getTurnoBaseDeEmpleado(finalTitularId, date, baseIndex);
+                    // Si no encontramos el turno del titular, mantenemos el nuestro (o D por defecto)
+                    // pero si estamos sustituyendo, lo normal es heredar el turno del titular.
+                    result.turno = titularTurnoBase || result.turno || '—';
+                    result.turnoBase = titularTurnoBase || result.turnoBase || '—';
                     result.origen = 'SUSTITUCION';
-                } else {
-                    // Soy el titular (cubierto por otro)
-                    result.sustituidoPor = window.getOtroEmpleadoDelCambio(ev, empId);
+
+                    // Marcador 📌 solo para ausencias médicas/permisos (NO para vacaciones)
+                    if (['BAJA', 'PERMISO', 'PERM', 'FORMACION', 'FORM', 'IT'].includes(tipo)) {
+                        result.icon = '\u{1F4CC}';
+                        result.icons = ['\u{1F4CC}'];
+                        result.isCoverageMarker = true;
+                    }
+
+                    if (isDiagTarget) {
+                        console.log('[VAC_SHADOW_FIX_DEBUG] Ocupación operativa definida', {
+                            fecha: date,
+                            empleado: empId,
+                            tipoEvento: tipo,
+                            titular: finalTitularId,
+                            turnoInherited: result.turno
+                        });
+                    }
+                    // NO hacemos break. Continuamos por si hay un cambio aprobado que aplique sobre este turno.
+                    continue;
                 }
-            } else if (tipo === 'INTERCAMBIO_TURNO' || tipo === 'CAMBIO_TURNO') {
-                result.cambio = true;
-                result.intercambio = true;
-                
-                const otroId = window.getOtroEmpleadoDelCambio(ev, empId);
-                if (otroId) {
-                    const otroTurnoBase = window.getTurnoOperativoBase(otroId, date, { baseIndex });
-                    result.turno = otroTurnoBase || '—';
-                } else {
-                    result.turno = ev.turno_nuevo || result.turno;
-                }
+
+                    // CASO: CAMBIO / INTERCAMBIO APROBADO
+                    if (tipo === 'INTERCAMBIO_TURNO' || tipo === 'CAMBIO_TURNO') {
+                        const origenId = window.normalizeId(ev.empleado_id || ev.titular_id || ev.origen_id || ev.participante_a);
+                        const destinoId = window.normalizeId(ev.empleado_destino_id || ev.destino_id || ev.sustituto_id || ev.participante_b);
+                        const isOrigin = window.normalizeId(empId) === origenId;
+                        const isDestination = window.normalizeId(empId) === destinoId;
+                        const isReciproco = Boolean(origenId && destinoId);
+
+                        if (!isOrigin && !isDestination) continue;
+
+                        let tOrigRaw = ev.turno_original || ev.turno_origen;
+                        let tDestRaw = ev.turno_nuevo || ev.turno_destino;
+                        
+                        const isLegacyCT = window.isInvalidLegacyChangeValue(tOrigRaw) || window.isInvalidLegacyChangeValue(tDestRaw);
+
+                        if (isLegacyCT) {
+                            console.warn('[LEGACY_CT_BLOCKED]', {
+                                cambioId: ev.id,
+                                fecha: date,
+                                hotel: hotel,
+                                origen: origenId,
+                                destino: destinoId,
+                                campo: window.isInvalidLegacyChangeValue(tOrigRaw) ? "turno_original" : "turno_nuevo",
+                                valor: "CT",
+                                accion: "no usado como turno"
+                            });
+                        }
+
+                        // Obtener turnos base/operativos antes del cambio para reconstrucción
+                        // Usamos result.turno (que ya incluye sustituciones previas si las hay) como base operativa para el actual
+                        const turnoOperativoOrigenAntes = (isOrigin ? result.turno : window.getTurnoOperativoBase(origenId, date, { baseIndex, eventos })) || '—';
+                        const turnoOperativoDestinoAntes = (isDestination ? result.turno : window.getTurnoOperativoBase(destinoId, date, { baseIndex, eventos })) || '—';
+
+                        if (isReciproco) {
+                            // RECONSTRUCCIÓN DE INTERCAMBIO (REGLA GENERAL V12.5.21)
+                            let finalTurnoOrigen = tDestRaw; 
+                            let finalTurnoDestino = tOrigRaw;
+
+                            // Comprobar coherencia: si el evento dice que A da T pero A trae M, es incoherente.
+                            const isIncoherente = (window.isValidShiftValue(tOrigRaw) && tOrigRaw !== turnoOperativoOrigenAntes) || 
+                                                 (window.isValidShiftValue(tDestRaw) && tDestRaw !== turnoOperativoDestinoAntes);
+
+                            // Reconstruimos si: es legacy CT, campos vacíos, o campos incoherentes con el estado operativo actual
+                            if (!window.isValidShiftValue(tOrigRaw) || !window.isValidShiftValue(tDestRaw) || isLegacyCT || isIncoherente) {
+                                finalTurnoOrigen = turnoOperativoDestinoAntes;
+                                finalTurnoDestino = turnoOperativoOrigenAntes;
+                                
+                                if (window.DEBUG_MODE || isIncoherente) {
+                                    console.log(`[RECONSTRUCT_SWAP_${isIncoherente ? 'INCOHERENT' : 'LEGACY'}]`, {
+                                        fecha: date,
+                                        origen: origenId,
+                                        destino: destinoId,
+                                        baseOrig: turnoOperativoOrigenAntes,
+                                        baseDest: turnoOperativoDestinoAntes,
+                                        eventOrig: tOrigRaw,
+                                        eventDest: tDestRaw,
+                                        finalOrig: finalTurnoOrigen,
+                                        finalDest: finalTurnoDestino
+                                    });
+                                }
+                            }
+
+                            result.turno = isOrigin ? finalTurnoOrigen : finalTurnoDestino;
+                        } else {
+                            // UNILATERAL
+                            result.turno = window.isValidShiftValue(tDestRaw) ? tDestRaw : (window.isValidShiftValue(tOrigRaw) ? tOrigRaw : result.turno);
+                        }
+
+                        // Bloqueo final de "CT" si se coló en el resultado
+                        if (window.isInvalidLegacyChangeValue(result.turno)) {
+                            result.turno = result.turnoBase || '—';
+                            console.warn('[RENDER_GUARD_DEBUG] Bloqueado CT en resultado final de resolución', { fecha: date, empleado: empId });
+                        }
+
+                        result.cambio = true;
+                        result.intercambio = isReciproco;
+                        result.icon = '\u{1F504}';
+                        result.icons = ['\u{1F504}'];
+                        result.origen = tipo;
+
+                        if (isDiagTarget) {
+                            console.log('[DIAG_FINAL_SWAP_RESULT]', {
+                                fecha: date,
+                                empleado: empId,
+                                turnoFinal: result.turno,
+                                esOrigen: isOrigin,
+                                esDestino: isDestination,
+                                turnoReconstruido: isLegacyCT
+                            });
+                        }
+                    }
             }
         }
 
@@ -554,26 +831,17 @@ console.log("[ShiftResolver] Iniciando carga v5.0...");
             }
         }
 
-        if (window.DEBUG_MODE === true) {
-            const isTraceTarget = (
-                (empId.includes('miriam') || empId.includes('cristina')) &&
-                (date >= '2026-04-15' && date <= '2026-04-17')
-            );
-            if (isTraceTarget) {
-                console.log("[RESOLVE TRACE]", {
-                    empleadoMostrado: result.empleadoNombre,
-                    empleadoReal: empId,
-                    titularCubierto: result.sustituyeA,
-                    fecha: date,
-                    hotel: hotel,
-                    turnoBaseTitular: result.sustituyeA ? window.getTurnoBaseDeEmpleado(result.sustituyeA, date, baseIndex) : null,
-                    turnoBaseEmpleado: result.turnoBase,
-                    eventoAusencia: result.incidencia,
-                    eventoCT: (result.intercambio || result.origen === 'CAMBIO_TURNO') ? result.origen : null,
-                    origenFinal: result.origen,
-                    turnoFinal: result.turno
-                });
-            }
+        // --- 5. POST-PROCESAMIENTO Y LIMPIEZA FINAL (V12.5.21) ---
+        
+        // BLOQUEO ABSOLUTO DE 'CT' COMO TURNO
+        if (result.turno === 'CT' || window.isInvalidLegacyChangeValue(result.turno)) {
+            result.turno = result.turnoBase || '—';
+            result.isModified = false;
+        }
+
+        // Limpieza de incidencias si es turno operativo real
+        if (result.turno && result.turno !== '—' && result.turno !== 'D') {
+            result.isAbsence = false;
         }
 
         return result;
@@ -655,51 +923,9 @@ console.log("[ShiftResolver] Iniciando carga v5.0...");
 
     // --- 6. TESTS DE REGRESIÓN ---
 
-    window.runTurnosRegressionTests = async () => {
-        console.group("%c[TEST] Ejecutando Regression Tests Turnos v5.0", "color: #3b82f6; font-weight: bold;");
-        const results = [];
-        
-        const baseIndex = {
-            porEmpleadoFecha: new Map([
-                ['cristina_2026-04-20', 'M'],
-                ['cristina_2026-04-21', 'M'],
-                ['dani_2026-04-25', 'T'],
-                ['macarena_2026-04-25', 'M'],
-                ['miriam_2026-04-20', 'D']
-            ]),
-            aliasesEmpleado: new Map([
-                ['cristina', 'id_cristina'],
-                ['dani', 'id_dani'],
-                ['macarena', 'id_macarena'],
-                ['miriam', 'id_miriam']
-            ])
-        };
-
-        // A) Cristina VAC
-        const evVac = { tipo: 'VAC', fecha_inicio: '2026-04-20', fecha_fin: '2026-04-26', empleado_id: 'cristina' };
-        const resA = window.resolveEmployeeDay({ empleadoId: 'cristina', fecha: '2026-04-20', turnoBase: 'M', eventos: [evVac], baseIndex });
-        const testA = resA.incidencia === 'VAC' && resA.turno === null;
-        results.push({ name: 'Cristina VAC', ok: testA, got: resA });
-
-        // B) Miriam sustituyendo a Cristina
-        const evSust = { tipo: 'SUSTITUCION', fecha_inicio: '2026-04-20', fecha_fin: '2026-04-20', empleado_id: 'cristina', empleado_destino_id: 'miriam' };
-        const resB = window.resolveEmployeeDay({ empleadoId: 'miriam', fecha: '2026-04-20', turnoBase: 'D', eventos: [evVac, evSust], baseIndex });
-        const testB = resB.sustituyeA === 'cristina' && resB.turno === 'M';
-        results.push({ name: 'Miriam Sustituye', ok: testB, got: resB });
-
-        // C) Dani <-> Macarena
-        const evInter = { tipo: 'INTERCAMBIO_TURNO', fecha_inicio: '2026-04-25', fecha_fin: '2026-04-25', empleado_id: 'dani', empleado_destino_id: 'macarena' };
-        const resC1 = window.resolveEmployeeDay({ empleadoId: 'dani', fecha: '2026-04-25', turnoBase: 'T', eventos: [evInter], baseIndex });
-        const resC2 = window.resolveEmployeeDay({ empleadoId: 'macarena', fecha: '2026-04-25', turnoBase: 'M', eventos: [evInter], baseIndex });
-        const testC = resC1.turno === 'M' && resC2.turno === 'T' && resC1.intercambio && resC2.intercambio;
-        results.push({ name: 'Dani <-> Macarena', ok: testC, got: { resC1, resC2 } });
-
-        results.forEach(r => {
-            console.log(`${r.ok ? '✅' : '❌'} ${r.name}`, r.ok ? '' : r.got);
-        });
-        
-        console.groupEnd();
-        return results;
+    window.runTurnosRegressionTests = () => {
+        console.warn("[ShiftResolver] Tests movidos a shift-resolver-tests.js");
+        return [];
     };
 
     window.ShiftResolver = {

@@ -13,17 +13,21 @@
 
     const shiftKey = (turno, type = 'NORMAL') => {
         const upperType = String(type || 'NORMAL').toUpperCase();
+        const text = normalizeText(turno);
+
+        // Si hay un turno estándar (M, T, N, D), priorizamos su definición visual
+        if (text.startsWith('m') || text.includes('manana')) return 'm';
+        if (text.startsWith('t') || text.includes('tarde')) return 't';
+        if (text.startsWith('n') || text.includes('noche')) return 'n';
+        if (text.startsWith('d') || text.includes('descanso')) return 'd';
+
+        // Si no es un turno estándar pero es de tipo Cambio, devolvemos 'ct'
         if (isCtType(upperType)) return 'ct';
         if (upperType.startsWith('VAC')) return 'v';
         if (upperType.startsWith('BAJA')) return 'b';
         if (upperType.startsWith('PERM')) return 'p';
 
-        const text = normalizeText(turno);
         if (!text) return '';
-        if (text.startsWith('m') || text.includes('manana')) return 'm';
-        if (text.startsWith('t') || text.includes('tarde')) return 't';
-        if (text.startsWith('n') || text.includes('noche')) return 'n';
-        if (text.startsWith('d') || text.includes('descanso')) return 'd';
         if (text.startsWith('v') || text.includes('vac')) return 'v';
         if (text.startsWith('b') || text.includes('baja')) return 'b';
         if (text.startsWith('p') || text.includes('perm')) return 'p';
@@ -33,21 +37,21 @@
     const definitions = {
         m: {
             label: 'Mañana',
-            icon: '☀️',
+            icon: '\u{2600}\u{FE0F}',
             publicClass: 'v-mañana',
             mobileClass: 'm',
             adminStyle: 'background:#ebfbee; color:#2f9e44; border:1px solid #d3f9d8;'
         },
         t: {
             label: 'Tarde',
-            icon: '🌅',
+            icon: '\u{1F305}',
             publicClass: 'v-tarde',
             mobileClass: 't',
             adminStyle: 'background:#fff9db; color:#f08c00; border:1px solid #ffec99;'
         },
         n: {
             label: 'Noche',
-            icon: '🌙',
+            icon: '\u{1F319}',
             publicClass: 'v-noche',
             mobileClass: 'n',
             adminStyle: 'background:#edf2ff; color:#364fc7; border:1px solid #dbe4ff;'
@@ -61,28 +65,28 @@
         },
         v: {
             label: 'Vacaciones',
-            icon: '🏖️',
+            icon: '\u{1F3D6}\u{FE0F}',
             publicClass: 'v-vac',
             mobileClass: 'v',
             adminStyle: 'background:#e3f2fd; color:#0277bd; border:1px solid #b3e5fc;'
         },
         b: {
             label: 'Baja',
-            icon: '🏥',
+            icon: '\u{1F3E5}',
             publicClass: 'v-baja',
             mobileClass: 'b',
             adminStyle: 'background:#fff5f5; color:#c92a2a; border:1px dashed #ffa8a8;'
         },
         p: {
             label: 'Permiso',
-            icon: '📋',
+            icon: '\u{1F4CB}',
             publicClass: 'v-perm',
             mobileClass: 'p',
             adminStyle: 'background:#f3f0ff; color:#7048e8; border:1px solid #d0bfff;'
         },
         ct: {
             label: 'Cambio',
-            icon: '🔄',
+            icon: '\u{1F504}',
             publicClass: 'v-cambio',
             mobileClass: 'ct',
             adminStyle: 'background:#fff9db; color:#f08c00; border:1px solid #ffec99;'
@@ -123,12 +127,17 @@
             if (fs.isAbsence) {
                 label = def.label; // "Vacaciones", "Baja", etc.
             } else {
-                label = fs.turnoFinal || label;
+                // Mantenemos el label de la definición (Mañana, Tarde, etc.) si es un turno estándar
+                label = def.label || fs.turnoFinal || label;
             }
 
-            // 2. Icono: si hay modificación (intercambio, sustitución, refuerzo), ponemos 🔄
-            if (fs.isModified) {
-                icon = '🔄';
+            // 2. Icono: Prioridad absoluta al marcador de cobertura 📌, luego cambios 🔄
+            if (fs.icon === '\u{1F4CC}' || (fs.icons && fs.icons.includes('\u{1F4CC}')) || fs.isCoverageMarker) {
+                icon = '\u{1F4CC}';
+            } else if (fs.isModified) {
+                icon = '\u{1F504}';
+            } else if (fs.icon) {
+                icon = fs.icon;
             }
 
             // 3. Tooltip (Title) enriquecido
@@ -183,11 +192,14 @@
             key,
             label,
             icon,
+            icons: (fs?.icons && fs.icons.includes('📌')) ? fs.icons : [icon].filter(Boolean),
             publicClass,
             mobileClass,
             adminStyle,
             title,
-            _finalState: fs // pasamos el original por si la UI lo necesita
+            isAbsence: fs ? fs.isAbsence : isAbsenceType(cell.tipo),
+            cls: key === 'empty' ? 'normal' : key,
+            _finalState: fs 
         };
     };
 
@@ -226,7 +238,7 @@
         const icons = new Set();
         const explicitIcons = Array.isArray(cell?.icons) ? cell.icons : [];
         explicitIcons.forEach(i => {
-            if (['🌙','🏖️','🗓️','🤒','🎓','🔄'].includes(i)) icons.add(i);
+            if (['🌙','🏖️','🗓️','🤒','🎓','🔄','📌'].includes(i)) icons.add(i);
         });
 
         // Iconos por regla estructural (Snapshot V12)
@@ -237,12 +249,16 @@
         const isForm  = /formaci/i.test(label) || code === 'FORM' || type === 'FORM' || type === 'FORMACION';
         const isChanged = !!cell?.changed || !!cell?.intercambio || (cell?.origen && (cell.origen.includes('CAMBIO') || cell.origen.includes('INTERCAMBIO')));
 
-        if (isNoche) icons.add('🌙');
-        if (isVac)   icons.add('🏖️');
-        if (isBaja)  icons.add('🤒');
-        if (isPerm)  icons.add('🗓️');
-        if (isForm)  icons.add('🎓');
-        if (isChanged && !isVac && !isBaja && !isPerm && !isForm) icons.add('🔄');
+        if (isNoche) icons.add('\u{1F319}');
+        if (isVac)   icons.add('\u{1F3D6}\u{FE0F}');
+        if (isBaja)  icons.add('\u{1F3E5}');
+        if (isPerm)  icons.add('\u{1F4CB}');
+        if (isForm)  icons.add('\u{1F313}');
+        if (isChanged && !isVac && !isBaja && !isPerm && !isForm) icons.add('\u{1F504}');
+        if (cell?.isCoverageMarker || cell?.icon === '\u{1F4CC}') {
+            icons.delete('\u{1F504}'); 
+            icons.add('\u{1F4CC}');
+        }
 
         // Compactación para móvil
         if (compact) {

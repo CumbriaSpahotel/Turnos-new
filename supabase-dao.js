@@ -299,8 +299,17 @@ window.TurnosDB = {
     async actualizarEstadoPeticion(id, estado) {
         const client = window.supabase;
         try {
-            // Si pasamos a rechazada desde aprobada, intentamos anular eventos vinculados
-            if (estado === 'rechazada' || estado === 'pendiente') {
+            if (!id) throw new Error("ID de peticion requerido");
+
+            if (estado === 'aprobada') {
+                const { data: peticion, error: fetchError } = await client
+                    .from('peticiones_cambio')
+                    .select('*')
+                    .eq('id', id)
+                    .single();
+                if (fetchError) throw fetchError;
+                await this.procesarAprobacionPeticion(peticion, { skipStateUpdate: true });
+            } else if (['rechazada', 'rechazado', 'pendiente', 'anulada', 'anulado'].includes(estado)) {
                 await this.anularEventosPeticion(id);
             }
 
@@ -309,6 +318,7 @@ window.TurnosDB = {
                 .update({ estado })
                 .eq('id', id);
             if (error) throw error;
+            if (window.localforage) await window.localforage.clear();
             this.updateUISyncStatus('ok');
         } catch (err) {
             console.error("DAO Error (actualizarEstadoPeticion):", err);
@@ -336,13 +346,6 @@ window.TurnosDB = {
         const client = window.supabase;
         try {
             // Buscar eventos en eventos_cuadrante que tengan esta solicitud vinculada.
-            const byColumn = await client
-                .from('eventos_cuadrante')
-                .update({ estado: 'anulado', updated_at: new Date().toISOString() })
-                .eq('solicitud_id', peticionId);
-
-            if (byColumn.error) console.warn("DAO Aviso (anularEventosPeticion solicitud_id):", byColumn.error.message);
-
             const { error } = await client
                 .from('eventos_cuadrante')
                 .update({ estado: 'anulado', updated_at: new Date().toISOString() })
@@ -355,28 +358,49 @@ window.TurnosDB = {
         }
     },
 
-    async procesarAprobacionPeticion(peticion) {
+    async procesarAprobacionPeticion(peticion, options = {}) {
+        const client = window.supabase;
         try {
-            // Asegurar que no hay eventos antiguos activos de esta petición
+            if (!peticion?.id) throw new Error("Peticion invalida");
             await this.anularEventosPeticion(peticion.id);
 
             const fechas = Array.isArray(peticion.fechas) ? peticion.fechas : [];
             for (const f of fechas) {
+                const fecha = this.normalizeDate(f.fecha);
+                if (!fecha) continue;
                 await this.upsertEvento({
                     tipo: peticion.companero ? 'INTERCAMBIO_TURNO' : 'CAMBIO_TURNO',
                     empleado_id: peticion.solicitante,
                     empleado_destino_id: peticion.companero || null,
-                    fecha_inicio: f.fecha,
-                    fecha_fin: f.fecha,
-                    turno_nuevo: f.destino,
-                    solicitud_id: peticion.id,
-                    observaciones: `Aprobado desde Solicitudes: ${peticion.observaciones || ''}`,
-                    payload: { peticion_id: peticion.id, original_data: f }
+                    hotel_origen: peticion.hotel || null,
+                    hotel_destino: peticion.hotel_destino || peticion.hotel || null,
+                    fecha_inicio: fecha,
+                    fecha_fin: fecha,
+                    turno_original: f.origen || null,
+                    turno_nuevo: f.destino || null,
+                    observaciones: `Aprobado desde Solicitudes: ${peticion.observaciones || ''}`.trim(),
+                    payload: {
+                        peticion_id: peticion.id,
+                        original_data: f,
+                        origen: f.origen || null,
+                        destino: f.destino || null,
+                        fuente: 'peticion_cambio'
+                    }
                 });
             }
-            await this.actualizarEstadoPeticion(peticion.id, 'aprobada');
+
+            if (!options.skipStateUpdate) {
+                const { error } = await client
+                    .from('peticiones_cambio')
+                    .update({ estado: 'aprobada' })
+                    .eq('id', peticion.id);
+                if (error) throw error;
+                if (window.localforage) await window.localforage.clear();
+                this.updateUISyncStatus('ok');
+            }
         } catch (err) {
             console.error("DAO Error (procesarAprobacionPeticion):", err);
+            this.updateUISyncStatus('error');
             throw err;
         }
     },
@@ -855,6 +879,8 @@ window.TurnosDB = {
                 'vacaciones_anuales',
                 'categoria',
                 'contrato',
+                'rol',
+                'rol_operativo',
                 'motivo_baja',
                 'hoteles_asignados',
                 'antiguedad',

@@ -495,10 +495,10 @@
 
     <script src="supabase.js"></script>
     <script src="supabase-config.js"></script>
-    <script src="supabase-dao.js?v=11.1"></script>
-    <script src="shift-resolver.js?v=11.1"></script>
-    <script src="excel-loader.js?v=11.1"></script>
+    <script src="supabase-dao.js?v=13.23"></script>
+    <script src="shift-resolver.js?v=13.23"></script>
     <script src="xlsx.full.min.js"></script>
+    <script src="excel-loader.js?v=13.23"></script>
     <script src="flatpickr.js"></script>
     <script src="flatpickr_es.js"></script>
 
@@ -522,6 +522,45 @@
             addShiftRow(); // Añadir la primera fila por defecto
         });
 
+        function normalizeEmployeeText(value) {
+            return String(value || '')
+                .normalize('NFD')
+                .replace(/[\u0300-\u036f]/g, '')
+                .toLowerCase()
+                .trim();
+        }
+
+        function employeeHotels(emp) {
+            const assigned = Array.isArray(emp.hoteles_asignados)
+                ? emp.hoteles_asignados
+                : (typeof emp.hoteles_asignados === 'string' ? emp.hoteles_asignados.split(/[,;|]/) : []);
+            return [...assigned, emp.hotel_id, emp.hotel].filter(Boolean).map(h => String(h).trim());
+        }
+
+        function employeeBelongsToHotel(emp, hotel) {
+            const selected = normalizeEmployeeText(hotel);
+            if (!selected) return false;
+            return employeeHotels(emp).some(h => {
+                const current = normalizeEmployeeText(h);
+                return current === selected || current.includes(selected) || selected.includes(current);
+            });
+        }
+
+        function isActiveEmployee(emp) {
+            const status = normalizeEmployeeText(`${emp.estado_empresa || ''} ${emp.estado || ''} ${emp.situacion || ''}`);
+            const name = normalizeEmployeeText(emp.nombre || emp.id || '');
+            if (emp.activo === false) return false;
+            if (!name || name.includes('pendiente') || name.includes('vacante')) return false;
+            return !/(baja|inactivo|excedencia|anulado)/.test(status);
+        }
+
+        function isTitularEmployee(emp) {
+            const explicitRole = normalizeEmployeeText(emp.rol_operativo || emp.rol || emp.role || emp.tipo_rol || '');
+            if (explicitRole) return explicitRole.includes('titular') || explicitRole.includes('activo');
+            const structural = normalizeEmployeeText(`${emp.tipo_personal || ''} ${emp.contrato || ''} ${emp.tipo || ''}`);
+            return !/(refuerzo|placeholder|pendiente|vacante)/.test(structural);
+        }
+
         async function loadEmployees() {
             const hotel = $("#sel_hotel").value;
             const solSelect = $("#solicitante");
@@ -532,11 +571,11 @@
                     _emps = await window.TurnosDB.getEmpleados();
                 }
 
-                const hotelEmps = _emps.filter(e => {
-                    const hDb = window.TurnosDB.normalizeString(e.hotel_id || '');
-                    const hSel = window.TurnosDB.normalizeString(hotel || '');
-                    return !hSel || hDb.includes(hSel) || hSel.includes(hDb);
-                });
+                const hotelEmps = _emps.filter(e =>
+                    employeeBelongsToHotel(e, hotel) &&
+                    isActiveEmployee(e) &&
+                    isTitularEmployee(e)
+                );
 
                 const selects = [solSelect, compSelect];
                 selects.forEach(sel => {
@@ -686,12 +725,105 @@
             return matchingBaseRow?.turno || null;
         }
 
-        function getResolvedShiftLabel(result, fallbackShift = null) {
+        function getResolvedShiftLabel(result, fallbackShift = null, preferFallback = false) {
             const primaryShift = result?.turnoFinal || result?.turno || null;
+            const usableFallback = fallbackShift && fallbackShift !== '—' && fallbackShift !== '-' ? fallbackShift : null;
             const usablePrimary = primaryShift && primaryShift !== '—' ? primaryShift : null;
-            const rawShift = usablePrimary || fallbackShift || "—";
+            const rawShift = (preferFallback && usableFallback) ? usableFallback : (usablePrimary || usableFallback || "—");
             const cleanShift = window.cleanTurnoLabel ? window.cleanTurnoLabel(rawShift) : rawShift;
             return { rawShift, cleanShift };
+        }
+
+        function getWeekStartISO(dateStr) {
+            const d = new Date(`${dateStr}T12:00:00`);
+            const day = d.getDay() || 7;
+            d.setDate(d.getDate() - day + 1);
+            return d.toISOString().slice(0, 10);
+        }
+
+        function addDaysISO(dateStr, days) {
+            const d = new Date(`${dateStr}T12:00:00`);
+            d.setDate(d.getDate() + days);
+            return d.toISOString().slice(0, 10);
+        }
+
+        function employeeMatches(rowEmployeeId, targetId) {
+            const norm = (value) => window.normalizeId ? window.normalizeId(value) : String(value || '').toLowerCase().trim();
+            const target = norm(targetId);
+            const rowNorm = norm(rowEmployeeId);
+            if (!target || !rowNorm) return false;
+            const profile = _emps.find(e => norm(e.id) === target || norm(e.nombre) === target || norm(e.id_interno) === target || norm(e.uuid) === target);
+            const aliases = [
+                target,
+                profile?.id,
+                profile?.nombre,
+                profile?.id_interno,
+                profile?.uuid
+            ].filter(Boolean).map(norm);
+            return aliases.includes(rowNorm);
+        }
+
+        async function getPublishedBaseRowsForSelection(hotelName, dates, employeeIds) {
+            if (!window.TurnosDB?.loadPublishedSchedule || !dates.length) return [];
+            const weekStarts = [...new Set(dates.map(getWeekStartISO))].sort();
+            const semanaInicio = weekStarts[0];
+            const semanaFin = addDaysISO(weekStarts[weekStarts.length - 1], 6);
+            const result = await window.TurnosDB.loadPublishedSchedule({ semanaInicio, semanaFin, hotel: hotelName });
+            if (!result?.ok || !Array.isArray(result.snapshots)) return [];
+
+            const fallbackRows = [];
+            employeeIds.filter(Boolean).forEach(empId => {
+                dates.forEach(date => {
+                    const snap = result.snapshots.find(s => s.semanaInicio <= date && date <= s.semanaFin);
+                    const employees = snap?.data?.empleados || snap?.data?.rows || [];
+                    const row = employees.find(e => employeeMatches(e.employee_id || e.empleado_id || e.id || e.nombre || e.nombreVisible || e.displayName, empId));
+                    const cell = row?.dias?.[date] || row?.days?.[date] || row?.cells?.[date];
+                    const turno = cell?.code || cell?.turno || cell?.label || '';
+                    if (turno) fallbackRows.push({ empleadoId: empId, fecha: date, turno, source: 'published_snapshot' });
+                });
+            });
+
+            return fallbackRows;
+        }
+
+        async function getExcelBaseRowsForSelection(hotelName, dates, employeeIds) {
+            if (!window.ExcelLoader?.loadExcelSourceRows || !dates.length) return [];
+            const source = await window.ExcelLoader.loadExcelSourceRows();
+            const hotelKey = Object.keys(source || {}).find(h => {
+                const a = window.normalizeId ? window.normalizeId(h) : String(h || '').toLowerCase();
+                const b = window.normalizeId ? window.normalizeId(hotelName) : String(hotelName || '').toLowerCase();
+                return a === b || a.includes(b) || b.includes(a);
+            });
+            const rows = hotelKey ? (source[hotelKey] || []) : [];
+            const fallbackRows = [];
+
+            employeeIds.filter(Boolean).forEach(empId => {
+                dates.forEach(date => {
+                    const weekStart = getWeekStartISO(date);
+                    const dateIndex = Math.max(0, Math.min(6, Math.round((new Date(`${date}T12:00:00`) - new Date(`${weekStart}T12:00:00`)) / 86400000)));
+                    const match = rows.find(r => r.weekStart === weekStart && employeeMatches(r.empleadoId || r.displayName, empId));
+                    const turno = match?.values?.[dateIndex];
+                    if (turno) fallbackRows.push({ empleadoId: empId, fecha: date, turno, source: 'excel' });
+                });
+            });
+
+            return fallbackRows;
+        }
+
+        function mergeBaseRowsWithFallback(baseRows, fallbackRows) {
+            const keyOf = (row) => `${window.normalizeId ? window.normalizeId(row.empleadoId || row.empleado_id) : String(row.empleadoId || row.empleado_id || '').toLowerCase()}_${row.fecha}`;
+            const existing = new Map();
+            (baseRows || []).forEach(row => {
+                const key = keyOf(row);
+                const val = String(row.turno || '').trim();
+                if (key && val && val !== '—' && val !== '-') existing.set(key, row);
+            });
+            const merged = [...(baseRows || [])];
+            (fallbackRows || []).forEach(row => {
+                const key = keyOf(row);
+                if (!existing.has(key)) merged.push(row);
+            });
+            return merged;
         }
 
         async function autoFillShifts() {
@@ -712,14 +844,25 @@
                 // CORRECCIÓN: Obtener tanto rows (base) como eventos
                 const { rows: baseRows, eventos } = await window.TurnosDB.fetchRangoCalculado(start, end);
                 
-                // Mapear baseRows para que ShiftResolver los entienda
-                const simplifiedBase = baseRows.map(r => ({
+                // Mapear baseRows para que ShiftResolver los entienda. Si la tabla `turnos`
+                // no tiene una fila base, se completa desde el cuadrante publicado y luego Excel.
+                const simplifiedBaseRaw = baseRows.map(r => ({
                     empleadoId: r.empleado_id,
                     fecha: r.fecha,
                     turno: r.turno
                 }));
+                const publishedFallbackRows = await getPublishedBaseRowsForSelection(hotelName, dates, [solId, compId]);
+                const excelFallbackRows = await getExcelBaseRowsForSelection(hotelName, dates, [solId, compId]);
+                const simplifiedBase = mergeBaseRowsWithFallback(simplifiedBaseRaw, [...publishedFallbackRows, ...excelFallbackRows]);
 
                 const { baseIndex } = window.ShiftResolver.buildIndices(_emps, eventos, simplifiedBase);
+                const getPublishedShift = (empId, date) => {
+                    const target = window.normalizeId ? window.normalizeId(empId) : String(empId || "").toLowerCase();
+                    return publishedFallbackRows.find(row => {
+                        const rowId = window.normalizeId ? window.normalizeId(row.empleadoId) : String(row.empleadoId || "").toLowerCase();
+                        return rowId === target && row.fecha === date;
+                    })?.turno || null;
+                };
 
                 rows.forEach(row => {
                     const id = row.id.split('-')[1];
@@ -736,7 +879,8 @@
                     });
 
                     const solLabelEl = row.querySelector(`#cur-sol-${id} .shift-val`);
-                    const solResolved = getResolvedShiftLabel(resSol);
+                    const solPublishedShift = getPublishedShift(solId, date);
+                    const solResolved = getResolvedShiftLabel(resSol, solPublishedShift, !!solPublishedShift);
                     solLabelEl.textContent = solResolved.cleanShift;
                     solLabelEl.dataset.val = solResolved.rawShift;
 
@@ -760,7 +904,8 @@
                             baseIndex,
                             baseRows
                         });
-                        const compResolved = getResolvedShiftLabel(resComp, fallbackCompShift);
+                        const compPublishedShift = getPublishedShift(compId, date);
+                        const compResolved = getResolvedShiftLabel(resComp, compPublishedShift || fallbackCompShift, !!compPublishedShift);
                         compLabelEl.textContent = compResolved.cleanShift;
                         compLabelEl.dataset.val = compResolved.rawShift;
 

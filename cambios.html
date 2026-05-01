@@ -418,13 +418,17 @@
                     ? `${escapeHtml(event.empleado_id)} <strong style="color:var(--accent);">&#128260;</strong> ${escapeHtml(event.empleado_destino_id)}`
                     : escapeHtml(event.empleado_id || '');
 
+                const tVal = event.turno_nuevo || '';
+                const isLegacy = window.isInvalidLegacyChangeValue && window.isInvalidLegacyChangeValue(tVal);
+                const turnoDisplay = isLegacy ? `<span style="color:#ef4444; font-weight:800;">⚠️ LEGACY CT</span>` : escapeHtml(tVal || 'Sin especificar');
+
                 return `
                     <tr style="border-bottom:1px solid var(--border); ${isAnulado ? 'opacity:0.45;' : ''}">
                         <td style="padding:15px;"><b style="color:var(--accent);">${escapeHtml(window.TurnosDB.fmtDateLegacy(date))}</b></td>
                         <td style="padding:15px;">${escapeHtml(eventHotel(event))}</td>
                         <td style="padding:15px;">${participants}</td>
                         <td style="padding:15px;"><span class="change-type-pill">&#128260; ${escapeHtml(typeLabel[event.tipo] || event.tipo)}</span></td>
-                        <td style="padding:15px;">${escapeHtml(event.observaciones || event.turno_nuevo || '')}</td>
+                        <td style="padding:15px;">${turnoDisplay}</td>
                         <td style="padding:15px;">
                             <div class="change-actions">
                                 ${isAnulado ? '<span style="font-weight:800; color:#c62828;">Anulado</span>' : `<button class="mini-btn" onclick="openEditCambio('${escapeHtml(event.id)}')">Gestionar</button><button class="mini-btn danger" onclick="anularCambio('${escapeHtml(event.id)}')">Anular</button>`}
@@ -518,6 +522,13 @@
         async function saveNewCambio(ev) {
             ev.preventDefault();
             const fecha = $('#newFecha').value;
+            const tNuevo = $('#newTurnoNuevo').value || null;
+
+            if (window.isInvalidLegacyChangeValue && window.isInvalidLegacyChangeValue(tNuevo)) {
+                alert('El valor "CT" no es un turno válido. Por favor seleccione M, T, N o D.');
+                return;
+            }
+
             await window.TurnosDB.upsertEvento({
                 tipo:                $('#newTipo').value,
                 fecha_inicio:        fecha,
@@ -525,7 +536,7 @@
                 empleado_id:         $('#newEmpleado').value,
                 empleado_destino_id: $('#newDestino').value || null,
                 hotel_origen:        $('#newHotel').value,
-                turno_nuevo:         $('#newTurnoNuevo').value || null,
+                turno_nuevo:         tNuevo,
                 observaciones:       $('#newObservaciones').value.trim() || null,
                 estado:              'activo'
             });
@@ -609,6 +620,13 @@
             const original = allEvents.find(e => String(e.id) === String(id));
             if (!original) return;
 
+            const tNuevo = $('#editTurnoNuevo').value || null;
+
+            if (window.isInvalidLegacyChangeValue && window.isInvalidLegacyChangeValue(tNuevo)) {
+                alert('El valor "CT" no es un turno válido. Por favor seleccione M, T, N o D.');
+                return;
+            }
+
             const payload = {
                 tipo:                  $('#editTipo').value,
                 fecha_inicio:          $('#editFechaInicio').value,
@@ -617,7 +635,7 @@
                 empleado_destino_id:   $('#editDestino').value || null,
                 hotel_origen:          $('#editHotelOrigen').value || null,
                 hotel_destino:         null,
-                turno_nuevo:           $('#editTurnoNuevo').value || null,
+                turno_nuevo:           tNuevo,
                 observaciones:         $('#editObservaciones').value.trim() || null,
                 estado:                'activo'
             };

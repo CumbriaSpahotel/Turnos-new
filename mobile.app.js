@@ -276,6 +276,7 @@
         });
 
         for (const snap of snapshots) {
+            if ((snap.hotel || "").toUpperCase().startsWith('TEST')) continue; // Safety filter V12.5
             if (hotelInfo) {
                 // Normalización para evitar fallos por mayúsculas o espacios
                 const normSnap = (snap.hotel || "").trim().toUpperCase();
@@ -312,20 +313,25 @@
     return escapeHtml(text).replace(emojiRegex, '<span class="emoji-indicator">$1</span>');
   }
 
-  function getMobileShiftLabel(displayText, visualClass) {
+  function getMobileShiftLabel(displayText, visualClass, icons = []) {
     const raw = String(displayText || "").trim();
     const normalized = raw.toUpperCase();
     if (visualClass === "v" || normalized.includes("VAC")) return "🏖️";
 
     const base = raw.split(/\s+/)[0] || "";
-    const hasChange = raw.includes("🔄");
+    const hasChange = raw.includes("🔄") || icons.includes("🔄");
+    const hasPin = icons.includes("📌");
     const isNight = visualClass === "n" || base === "N";
 
     if (visualClass === "m" || visualClass === "t" || visualClass === "n" || visualClass === "d" || visualClass === "b" || visualClass === "p") {
       const mainLabel = isNight
         ? `${escapeHtml(base)}<span class="emoji-indicator night-indicator" aria-hidden="true">🌙</span>`
         : escapeHtml(base);
-      return `${mainLabel}${hasChange ? '<span class="change-indicator-bottom" aria-label="Cambio de turno">↺</span>' : ''}`;
+      
+      const pinHtml = hasPin ? '<span class="pin-indicator">📌</span>' : '';
+      const changeHtml = hasChange ? '<span class="change-indicator-bottom" aria-label="Cambio de turno">↺</span>' : '';
+      
+      return `${mainLabel}${pinHtml}${changeHtml}`;
     }
 
     return formatShiftText(raw);
@@ -412,7 +418,7 @@
                         return valA - valB;
                     });
                 })().map(emp => {
-                    const empName = emp.nombre;
+                    const empName = emp.nombreVisible || emp.nombre;
                     const daysMap = emp.dias || emp.cells || {};
                     return `
                         <div class="grid-row" style="${emp.rowType === 'ausencia_informativa' ? 'opacity:0.6;' : ''}">
@@ -427,7 +433,7 @@
                                 return `
                                     <div class="grid-cell" title="${escapeHtml(day.titular_cubierto ? 'Cubriendo a ' + day.titular_cubierto : '')}">
                                         <div class="badge-container">
-                                            <span class="badge-shift ${shiftToken}" data-shift="${escapeHtml(shiftToken)}">${getMobileShiftLabel(display.text, shiftToken)}</span>
+                                            <span class="badge-shift ${shiftToken}" data-shift="${escapeHtml(shiftToken)}">${getMobileShiftLabel(display.text, shiftToken, day.icons || [])}</span>
                                         </div>
                                     </div>
                                 `;

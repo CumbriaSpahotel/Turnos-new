@@ -31,6 +31,12 @@ function empLabel(id,emps){
   return id;
 }
 function tipoNorm(t){return String(t||'').toUpperCase().replace(/[^A-Z_]/g,'');}
+function todayISO(){return window.isoDate ? window.isoDate(new Date()) : new Date().toISOString().slice(0,10);}
+function ensureDefaultPendingFromToday(){
+  if(!_bajasState.dateStart && !_bajasState.dateEnd && _bajasState.estado === 'pendiente_activo'){
+    _bajasState.dateStart = todayISO();
+  }
+}
 
 // ── LOAD DATA ──
 async function loadBajasData(){
@@ -115,6 +121,7 @@ window.renderBajas=async()=>{
     const _de=$('#bjDateEnd');if(_de)_bajasState.dateEnd=_de.value;
   }
   _skipDomCache = false;
+  ensureDefaultPendingFromToday();
 
   area.innerHTML='<div style="padding:3rem;text-align:center;opacity:0.5;">Cargando Bajas y Permisos...</div>';
   try{
@@ -139,14 +146,14 @@ window.renderBajas=async()=>{
     </div>
     <div class="glass-panel" style="padding:14px;border:1px solid var(--border);border-radius:14px;margin-bottom:16px;">
       <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;">
-        <input type="date" id="bjDateStart" class="btn-premium" style="width:140px;" value="${$('#bjDateStart')?.value||''}" onchange="window.renderBajas()">
+        <input type="date" id="bjDateStart" class="btn-premium" style="width:140px;" value="${_bajasState.dateStart||''}" onchange="window.renderBajas()">
         <span style="color:var(--text-dim);font-size:0.8rem;">a</span>
-        <input type="date" id="bjDateEnd" class="btn-premium" style="width:140px;" value="${$('#bjDateEnd')?.value||''}" onchange="window.renderBajas()">
+        <input type="date" id="bjDateEnd" class="btn-premium" style="width:140px;" value="${_bajasState.dateEnd||''}" onchange="window.renderBajas()">
         <select id="bjHotel" class="btn-premium" onchange="window.renderBajas()">
           <option value="all">Todos los hoteles</option>
           ${hotels.map(h=>`<option value="${h}"${fH===h?' selected':''}>${h}</option>`).join('')}
         </select>
-        <input type="text" id="bjEmpSearch" class="btn-premium" placeholder="🔍 Empleado / ID..." style="width:170px;" value="${$('#bjEmpSearch')?.value||''}" oninput="window.renderBajas()">
+        <input type="text" id="bjEmpSearch" class="btn-premium" placeholder="🔍 Empleado / ID..." style="width:170px;" value="${_bajasState.empSearch||''}" oninput="window.renderBajas()">
         <select id="bjTipo" class="btn-premium" onchange="window.renderBajas()">
           <option value="all">Todos los tipos</option>
           <option value="BAJA"${fT==='BAJA'?' selected':''}>Baja médica / IT</option>
@@ -164,9 +171,9 @@ window.renderBajas=async()=>{
           <option value="anulado"${fE==='anulado'?' selected':''}>Anulado</option>
           <option value="finalizado"${fE==='finalizado'?' selected':''}>Finalizado</option>
         </select>
-        <input type="text" id="bjSustSearch" class="btn-premium" placeholder="🔍 Sustituto..." style="width:150px;" value="${$('#bjSustSearch')?.value||''}" oninput="window.renderBajas()">
+        <input type="text" id="bjSustSearch" class="btn-premium" placeholder="🔍 Sustituto..." style="width:150px;" value="${_bajasState.sustSearch||''}" oninput="window.renderBajas()">
         <label style="display:flex;align-items:center;gap:5px;font-size:0.75rem;font-weight:700;color:var(--text-dim);cursor:pointer;">
-          <input type="checkbox" id="bjNoSust" ${$('#bjNoSust')?.checked?'checked':''} onchange="window.renderBajas()"> Sin sustituto
+          <input type="checkbox" id="bjNoSust" ${_bajasState.noSust?'checked':''} onchange="window.renderBajas()"> Sin sustituto
         </label>
         <button class="btn-premium" onclick="window.clearBajasFilters()" style="padding:8px 14px;font-size:0.7rem;">✕ Limpiar</button>
         <button class="btn-premium" onclick="window.refreshBajas()" style="padding:8px 14px;font-size:0.7rem;">↻ Refrescar</button>
@@ -331,7 +338,7 @@ window.clearBajasFilters=()=>{
   // Reset persistent state to defaults (estado defaults to pendiente)
   _bajasState.hotel='all';_bajasState.empSearch='';_bajasState.tipo='all';
   _bajasState.estado='pendiente_activo';_bajasState.sustSearch='';_bajasState.noSust=false;
-  _bajasState.dateStart='';_bajasState.dateEnd='';
+  _bajasState.dateStart=todayISO();_bajasState.dateEnd='';
   _skipDomCache = true;
   window.renderBajas();
 };
@@ -342,5 +349,5 @@ window.refreshBajas=async()=>{_bajasInitialized=false;await window.renderBajas()
 // ── COMPAT: old manageBajaGroup calls ──
 window.manageBajaGroup=window.manageBajaPermisoGroup;
 
-console.log('[BAJAS MODULE] Loaded v1.0');
+console.log('[BAJAS MODULE] Loaded v1.1');
 })();

@@ -227,8 +227,9 @@
 
       .hotel-card > .viewport { padding: 0 22px 22px; }
       .hotel-card > .viewport > .viewport {
-          height: 70vh !important;
-          min-height: 520px !important;
+          height: var(--public-table-height, 70vh) !important;
+          min-height: 0 !important;
+          max-height: 70vh !important;
           background: linear-gradient(180deg, var(--surface-soft) 0%, var(--surface) 100%) !important;
           border: 1px solid var(--grid) !important;
           border-radius: 12px !important;
@@ -322,11 +323,16 @@
       .v-t, .v-tarde { background: var(--amber-bg); color: var(--amber-text); border-color: #f3df9b; }
       .v-n, .v-noche { background: var(--slate-bg); color: var(--slate-text); border-color: #d8dee5; }
       .v-d, .v-descanso { background: var(--rose-bg); color: var(--rose-text); border-color: #efc3c7; }
-      .v-vac { background: var(--cyan-bg); color: var(--cyan-text); border-color: #aeddeb; }
+      .v-v, .v-vac {
+          background: #e8f9ff;
+          color: #0072a7;
+          border-color: #aee6ff;
+          box-shadow: none;
+      }
       .v-baja { background: #fde7d5; color: #a24b14; border-color: #f5cfaf; }
       .v-p, .v-permiso { background: #ece6ff; color: #5c3bc4; border-color: #dcd0ff; }
 
-      .icon-sync { font-size: 0.7rem; color: #339af0; }
+      .icon-sync { font-size: 0.7rem; color: inherit; opacity: 0.85; }
       .icon-moon { font-size: 0.78rem; color: #d48a00; }
       .icon-vac { font-size: 0.82rem; }
       .empty-dash {
@@ -350,7 +356,7 @@
       .preview-table-v2 th.weekend { background: color-mix(in srgb, var(--accent-soft) 62%, var(--surface) 38%) !important; }
 
       .night-summary {
-          max-width: 96%;
+          width: min(1120px, calc(100% - 44px));
           margin: 0 auto;
           padding: 4px 0 12px;
       }
@@ -370,17 +376,30 @@
           color: var(--text);
           text-transform: lowercase;
       }
+      .night-month-days {
+          font-size: 0.78rem;
+          font-weight: 700;
+          color: var(--text-dim);
+          margin-left: 8px;
+          white-space: nowrap;
+      }
+      .night-hotel-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+          gap: 16px;
+          align-items: start;
+      }
       .night-hotel {
           background: var(--surface);
           border: 1px solid var(--border);
           border-radius: 16px;
           overflow: hidden;
           box-shadow: 0 14px 30px rgba(12, 33, 56, 0.06);
-          margin-bottom: 16px;
       }
       .night-table {
           width: 100%;
           border-collapse: collapse;
+          table-layout: fixed;
       }
       .night-table th,
       .night-table td {
@@ -396,7 +415,7 @@
       }
       .night-table td:last-child,
       .night-table th:last-child {
-          width: 150px;
+          width: 118px;
           text-align: center;
       }
       .night-empty {
@@ -465,7 +484,11 @@
   <script src="supabase.js"></script>
   <script src="supabase-config.js"></script>
   <script src="supabase-dao.js"></script>
-  <script src="turnos-rules.js"></script>
+  <script>
+// TurnosRules centralizado en turnos-rules.js
+
+
+</script>
   <script src="virtualizer.js"></script>
   <script>
     let _picker;
@@ -492,7 +515,18 @@
         employees.set(employeeName, (employees.get(employeeName) || 0) + 1);
     }
 
-    function renderNightSummary(container, summaryByMonth, hasRows) {
+    function getSelectedDaysInMonth(year, month, rangeStart, rangeEnd) {
+        const monthStart = new Date(year, month - 1, 1, 12);
+        const monthEnd = new Date(year, month, 0, 12);
+        const selectedStart = new Date(`${rangeStart}T12:00:00`);
+        const selectedEnd = new Date(`${rangeEnd}T12:00:00`);
+        const start = selectedStart > monthStart ? selectedStart : monthStart;
+        const end = selectedEnd < monthEnd ? selectedEnd : monthEnd;
+        if (end < start) return 0;
+        return Math.round((end - start) / 86400000) + 1;
+    }
+
+    function renderNightSummary(container, summaryByMonth, hasRows, rangeStart, rangeEnd) {
         const section = document.createElement('section');
         section.className = 'night-summary';
 
@@ -508,7 +542,9 @@
         let html = '<h2 class="night-summary-title">Resumen de noches</h2>';
         [...summaryByMonth.entries()].sort((a, b) => a[0].localeCompare(b[0])).forEach(([monthKey, hotels]) => {
             const [year, month] = monthKey.split('-').map(Number);
-            html += `<div class="night-month"><h3>${monthNamesFull[month - 1]} de ${year}</h3>`;
+            const daysInMonth = new Date(year, month, 0).getDate();
+            const selectedDays = getSelectedDaysInMonth(year, month, rangeStart, rangeEnd);
+            html += `<div class="night-month"><h3>${monthNamesFull[month - 1]} de ${year}<span class="night-month-days">(${selectedDays} de ${daysInMonth} días)</span></h3><div class="night-hotel-grid">`;
 
             [...hotels.entries()].sort((a, b) => a[0].localeCompare(b[0], 'es')).forEach(([hotelName, employees]) => {
                 const rows = [...employees.entries()]
@@ -535,7 +571,7 @@
                 `;
             });
 
-            html += '</div>';
+            html += '</div></div>';
         });
 
         section.innerHTML = html;
@@ -587,11 +623,12 @@
             const key = `${s.hotel}_${s.semana_inicio}`;
             if (seen.has(key)) return;
             if (hotel && s.hotel !== hotel) return;
+            if (s.hotel.toUpperCase().startsWith('TEST')) return; // Safety filter V12.5
             seen.add(key);
             hasRows = true;
             renderHotelSection(container, s, start, end, summaryByMonth);
         });
-        renderNightSummary(container, summaryByMonth, hasRows);
+        renderNightSummary(container, summaryByMonth, hasRows, start, end);
         applyTheme(localStorage.getItem('public-theme') || 'day');
     };
 
@@ -656,16 +693,19 @@
             const pill = document.createElement('div');
             pill.className = `turno-pill v-${cls}`;
             pill.textContent = display.label;
-            if (cls === 'vac') {
-                pill.innerHTML += ' <span class="icon-vac">🏖️</span>';
+            if (cls === 'v' || cls === 'vac') {
+                pill.innerHTML += ' <span class="icon-vac">\u{1F3D6}\u{FE0F}</span>';
             }
             
             if (cls === 'n' || cls === 'noche') {
-                pill.innerHTML += ' <span class="icon-moon">🌙</span>';
+                pill.innerHTML += ' <span class="icon-moon">\u{1F319}</span>';
             }
             
-            if (display.icons && display.icons.includes('🔄')) {
-                pill.innerHTML += ' <span class="icon-sync">🔄</span>';
+            if (display.icons && display.icons.includes('\u{1F504}')) {
+                pill.innerHTML += ' <span class="icon-sync">\u{1F504}</span>';
+            }
+            if (display.icons && display.icons.includes('\u{1F4CC}')) {
+                pill.innerHTML += ' <span class="icon-pin">\u{1F4CC}</span>';
             }
             cell.appendChild(pill);
         };
@@ -721,7 +761,23 @@
             });
         });
 
+        const headerHeight = 64;
+        const scrollbarHeight = 18;
+        const contentHeight = headerHeight + (sorted.length * 62) + scrollbarHeight + 2;
+        const maxHeight = Math.floor(window.innerHeight * 0.7);
+        const tableHeight = Math.min(contentHeight, maxHeight);
+        table.viewport.style.setProperty('height', `${tableHeight}px`, 'important');
+        table.viewport.style.setProperty('min-height', '0', 'important');
+        table.viewport.style.setProperty('max-height', '70vh', 'important');
         table.setData(sorted);
+        requestAnimationFrame(() => {
+            if (sorted.length > table.rowPool.length) return;
+            const renderedHeight = Math.ceil(table.tableWrap.getBoundingClientRect().height);
+            const needsHorizontalScroll = table.viewport.scrollWidth > table.viewport.clientWidth;
+            const fittedHeight = renderedHeight + (needsHorizontalScroll ? scrollbarHeight : 0) + 2;
+            table.viewport.style.setProperty('height', `${Math.min(fittedHeight, maxHeight)}px`, 'important');
+            table.onScroll();
+        });
     }
 
     window.changeWeek = (delta) => {
