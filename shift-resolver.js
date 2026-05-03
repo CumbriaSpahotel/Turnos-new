@@ -733,9 +733,16 @@ console.log("[ShiftResolver] Iniciando carga v5.0...");
                             let finalTurnoOrigen = tDestRaw; 
                             let finalTurnoDestino = tOrigRaw;
 
-                            // Comprobar coherencia: si el evento dice que A da T pero A trae M, es incoherente.
-                            const isIncoherente = (window.isValidShiftValue(tOrigRaw) && tOrigRaw !== turnoOperativoOrigenAntes) || 
-                                                 (window.isValidShiftValue(tDestRaw) && tDestRaw !== turnoOperativoDestinoAntes);
+                            // Comparar códigos normalizados: "Mañana" y "M" son el mismo turno.
+                            const eventOrigCode = window.normalizeShiftValue(tOrigRaw);
+                            const eventDestCode = window.normalizeShiftValue(tDestRaw);
+                            const baseOrigCode = window.normalizeShiftValue(turnoOperativoOrigenAntes);
+                            const baseDestCode = window.normalizeShiftValue(turnoOperativoDestinoAntes);
+                            const hasComparableEvent = Boolean(eventOrigCode && eventDestCode);
+                            const isIncoherente = hasComparableEvent && (
+                                (baseOrigCode && eventOrigCode !== baseOrigCode) ||
+                                (baseDestCode && eventDestCode !== baseDestCode)
+                            );
 
                             // Reconstruimos si: es legacy CT, campos vacíos, o campos incoherentes con el estado operativo actual
                             if (!window.isValidShiftValue(tOrigRaw) || !window.isValidShiftValue(tDestRaw) || isLegacyCT || isIncoherente) {
@@ -753,6 +760,20 @@ console.log("[ShiftResolver] Iniciando carga v5.0...");
                                         eventDest: tDestRaw,
                                         finalOrig: finalTurnoOrigen,
                                         finalDest: finalTurnoDestino
+                                    });
+                                }
+                                if (isIncoherente && typeof window.reportOperationalDiagnostic === 'function') {
+                                    window.reportOperationalDiagnostic({
+                                        source: 'shift-resolver',
+                                        severity: 'warning',
+                                        type: 'RECONSTRUCT_SWAP_INCOHERENT',
+                                        title: 'Intercambio reconstruido por incoherencia',
+                                        desc: `${origenId} ↔ ${destinoId} el ${date}: el evento no coincide con la base (${eventOrigCode || tOrigRaw || 'sin origen'} / ${eventDestCode || tDestRaw || 'sin destino'} frente a ${baseOrigCode || turnoOperativoOrigenAntes} / ${baseDestCode || turnoOperativoDestinoAntes}).`,
+                                        empId: origenId,
+                                        fecha: date,
+                                        section: 'preview',
+                                        actionLabel: 'Ver en Vista Previa',
+                                        key: `shift-resolver|${date}|${origenId}|${destinoId}`
                                     });
                                 }
                             }

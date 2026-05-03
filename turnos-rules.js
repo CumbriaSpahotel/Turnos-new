@@ -293,18 +293,25 @@
 
         // Normalización a nombres completos para visualización (si no es compacto)
         if (!compact && label !== '—') {
-            const fullMap = {
-                'M': 'Mañana', 'MANANA': 'Mañana',
-                'T': 'Tarde', 'TARDE': 'Tarde',
-                'N': 'Noche', 'NOCHE': 'Noche',
-                'D': 'Descanso', 'DESCANSO': 'Descanso',
-                'VAC': 'Vacaciones', 'VACACIONES': 'Vacaciones',
-                'BAJA': 'Baja', 'IT': 'Baja', 'BM': 'Baja',
-                'PERM': 'Permiso', 'PERMISO': 'Permiso',
-                'FORM': 'Formación', 'FORMACION': 'Formación'
-            };
-            const up = label.toUpperCase();
-            if (fullMap[up]) label = fullMap[up];
+            // Usa el clasificador canónico para evitar variantes de formato
+            // como "MAÑANA", "Manana", etc.
+            const normKey = shiftKey(label, type || 'NORMAL');
+            if (definitions[normKey]?.label) {
+                label = definitions[normKey].label;
+            } else {
+                const fullMap = {
+                    'M': 'Mañana', 'MANANA': 'Mañana', 'MAÑANA': 'Mañana',
+                    'T': 'Tarde', 'TARDE': 'Tarde',
+                    'N': 'Noche', 'NOCHE': 'Noche',
+                    'D': 'Descanso', 'DESCANSO': 'Descanso',
+                    'VAC': 'Vacaciones', 'VACACIONES': 'Vacaciones',
+                    'BAJA': 'Baja', 'IT': 'Baja', 'BM': 'Baja',
+                    'PERM': 'Permiso', 'PERMISO': 'Permiso',
+                    'FORM': 'Formación', 'FORMACION': 'Formación'
+                };
+                const up = label.toUpperCase();
+                if (fullMap[up]) label = fullMap[up];
+            }
         }
 
         const icons = new Set();

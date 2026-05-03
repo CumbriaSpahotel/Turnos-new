@@ -1116,7 +1116,19 @@ window.TurnosDB = {
                 .eq('estado', 'activo')
                 .neq('id', newSnap.id);
             
-            if (upErr) console.warn('[DAO] Error al marcar versiones anteriores como reemplazadas:', upErr);
+            if (upErr) {
+                console.warn('[DAO] Error al marcar versiones anteriores como reemplazadas:', upErr);
+                window.reportOperationalDiagnostic?.({
+                    source: 'supabase-dao',
+                    severity: 'warning',
+                    type: 'SUPABASE_REPLACE_PREVIOUS',
+                    title: 'Supabase no reemplazó versiones anteriores',
+                    desc: `${hotel} ${semanaInicio}: ${upErr.message || 'permiso denegado al marcar snapshots anteriores como reemplazados'}`,
+                    section: 'changes',
+                    actionLabel: 'Ver Cambios',
+                    key: `supabase-dao|replace-previous|${hotel}|${semanaInicio}`
+                });
+            }
 
             // 4. Log de auditoría
             try {

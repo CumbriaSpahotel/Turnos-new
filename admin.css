@@ -5148,6 +5148,35 @@ select.edit-input { cursor: pointer; height: 30px; }
   box-shadow: 0 14px 32px rgba(15, 23, 42, 0.07) !important;
 }
 
+.emp-behavior-note {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: start;
+  gap: 8px;
+  padding: 7px 10px;
+  border-radius: 10px;
+  border: 1px solid rgba(99, 102, 241, 0.14);
+  background: rgba(99, 102, 241, 0.045);
+  margin-bottom: 8px;
+  font-size: 0.76rem;
+  line-height: 1.32;
+}
+
+.emp-behavior-title {
+  color: #6366f1;
+  font-size: 0.62rem;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  line-height: 1.2;
+  text-transform: uppercase;
+  white-space: nowrap;
+  padding-top: 1px;
+}
+
+.emp-behavior-note strong {
+  font-weight: 900;
+}
+
 .emp-role-field {
   border-color: #bfdbfe !important;
   background: linear-gradient(180deg, #eff6ff, #ffffff) !important;

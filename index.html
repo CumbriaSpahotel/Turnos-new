@@ -478,15 +478,22 @@
   <div id="publicContainer" class="public-main"></div>
 
   <script src="flatpickr.js"></script>
+  <script src="flatpickr_es.js"></script>
   <script src="supabase.js"></script>
   <script src="supabase-config.js"></script>
   <script src="supabase-dao.js"></script>
-  <script src="turnos-rules.js?v=13.21"></script>
+  <script src="turnos-rules.js?v=13.22"></script>
   <script src="virtualizer.js"></script>
   <script>
     let _picker;
+    let _publicRealtimeChannel = null;
+    let _publicRefreshTimer = null;
     const $ = s => document.querySelector(s);
     const escapeHtml = s => String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    const formatDisplayName = (name) => {
+        if (!name) return '';
+        return name.replace(/_DUP_.*$/, '').replace(/_CT$/, '').replace(/_/g, ' ').trim();
+    };
     const monthNamesFull = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
 
     const formatDateLocal = (date) => {
@@ -726,7 +733,7 @@
             }
 
             const isAbsent = rowData.rowType === 'ausencia_informativa';
-            const displayName = rowData.nombreVisible || rowData.nombre || 'Pendiente';
+            const displayName = formatDisplayName(rowData.nombreVisible || rowData.nombre || 'Pendiente');
 
             tds[0].innerHTML = `
                 <div class="emp-cell ${isAbsent ? 'ausencia-row' : ''}">
@@ -761,7 +768,7 @@
                 const dayData = daysMap[f] || {};
                 const code = String(dayData.code || dayData.turno || '').toUpperCase();
                 if (f >= rangeStart && f <= rangeEnd && isNightCode(code)) {
-                    accumulateNightSummary(summaryByMonth, snap.hotel, rowData.nombreVisible || rowData.nombre || 'Pendiente', f);
+                    accumulateNightSummary(summaryByMonth, snap.hotel, formatDisplayName(rowData.nombreVisible || rowData.nombre || 'Pendiente'), f);
                 }
             });
         });
@@ -808,6 +815,33 @@
         window.renderPublicView();
     };
 
+    function schedulePublicRefresh() {
+        if (_publicRefreshTimer) clearTimeout(_publicRefreshTimer);
+        _publicRefreshTimer = setTimeout(() => {
+            window.renderPublicView();
+        }, 250);
+    }
+
+    function initPublicRealtime() {
+        if (_publicRealtimeChannel || !window.supabase) return;
+        _publicRealtimeChannel = window.supabase
+            .channel('publicaciones_cuadrante_live')
+            .on(
+                'postgres_changes',
+                { event: '*', schema: 'public', table: 'publicaciones_cuadrante' },
+                () => schedulePublicRefresh()
+            )
+            .subscribe();
+    }
+
+    window.addEventListener('storage', (ev) => {
+        if (ev.key === 'turnosweb_public_snapshot_updated_at') {
+            schedulePublicRefresh();
+        }
+    });
+
+    window.addEventListener('focus', schedulePublicRefresh);
+
     document.addEventListener('DOMContentLoaded', async () => {
         const hotelSelect = document.getElementById('hotelSelect');
         if (hotelSelect && window.TurnosRules && window.TurnosRules.getCanonicalHotels) {
@@ -820,7 +854,11 @@
             locale: { ...flatpickr.l10ns.es, firstDayOfWeek: 1 },
             onChange: () => window.renderPublicView()
         });
+        initPublicRealtime();
         window.goToday();
+        setInterval(() => {
+            if (!document.hidden) schedulePublicRefresh();
+        }, 15000);
     });
   </script>
 </body>

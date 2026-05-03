@@ -1,4 +1,4 @@
-const CACHE_NAME = "turnosweb-app-v20260501_1345";
+const CACHE_NAME = "turnosweb-app-v20260504_1200";
 const PRECACHE = [
   "styles.css",
   "styles.mobile.css",
@@ -39,7 +39,7 @@ self.addEventListener("fetch", e => {
   }
 
   // live.mobile.html y data.js → network-first (para refrescar turnos)
-  if (url.pathname.endsWith("/live.mobile.html") || url.pathname.endsWith("/data.js")) {
+  if (url.pathname.endsWith(".html") || url.pathname.endsWith(".js") || url.pathname.endsWith("/data.js")) {
     e.respondWith(
       fetch(e.request)
         .then(r => {
