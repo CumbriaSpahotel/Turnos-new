@@ -1,3 +1,16 @@
+/**
+ * DEPRECATED — NO EJECUTAR. 
+ * Este script escribe datos legacy en tabla turnos y puede corromper el motor V12. 
+ * Usar eventos_cuadrante + Panel Operativo de Cambios.
+ */
+const args = process.argv.slice(2);
+if (!args.includes('--i-understand-this-is-legacy-and-dangerous')) {
+    console.error("\n🛑 BLOQUEADO: Este script es LEGACY y PELIGROSO.");
+    console.error("No debe ejecutarse en el motor V12.5.x.");
+    console.error("Si realmente necesita ejecutarlo, use el flag: --i-understand-this-is-legacy-and-dangerous");
+    process.exit(1);
+}
+
 const { createClient } = require('./temp_node/node_modules/@supabase/supabase-js');
 
 const SUPABASE_URL = "https://drvmxranbpumianmlzqr.supabase.co";

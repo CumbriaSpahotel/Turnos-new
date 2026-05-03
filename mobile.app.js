@@ -81,8 +81,8 @@
 
   // Mapa de hoteles para vincular selector y datos internos
   const HOTEL_MAP = {
-    "cumbria":  { dataName: "Cumbria Spa&Hotel", label: "Cumbria Spa&Hotel" },
-    "guadiana": { dataName: "Sercotel Guadiana",  label: "Sercotel Guadiana" }
+    "Cumbria Spa&Hotel":  { dataName: "Cumbria Spa&Hotel", label: "Cumbria Spa&Hotel" },
+    "Sercotel Guadiana": { dataName: "Sercotel Guadiana",  label: "Sercotel Guadiana" }
   };
 
   function getViewportMetrics() {
@@ -313,14 +313,15 @@
     return escapeHtml(text).replace(emojiRegex, '<span class="emoji-indicator">$1</span>');
   }
 
-  function getMobileShiftLabel(displayText, visualClass, icons = []) {
+  function getMobileShiftLabel(cell, displayText, visualClass) {
     const raw = String(displayText || "").trim();
     const normalized = raw.toUpperCase();
     if (visualClass === "v" || normalized.includes("VAC")) return "🏖️";
 
     const base = raw.split(/\s+/)[0] || "";
-    const hasChange = raw.includes("🔄") || icons.includes("🔄");
-    const hasPin = icons.includes("📌");
+    const icons = cell?.icons || [];
+    const hasChange = raw.includes("🔄") || icons.includes("🔄") || icons.includes("\u{1F504}");
+    const hasPin = window.TurnosRules.shouldShowPin(cell);
     const isNight = visualClass === "n" || base === "N";
 
     if (visualClass === "m" || visualClass === "t" || visualClass === "n" || visualClass === "d" || visualClass === "b" || visualClass === "p") {
@@ -409,14 +410,7 @@
                         }
                     });
 
-                    return Array.from(uniqueEmpsMap.values()).sort((a,b) => {
-                        const isAbsentA = a.rowType === 'ausencia_informativa';
-                        const isAbsentB = b.rowType === 'ausencia_informativa';
-                        if (isAbsentA !== isAbsentB) return isAbsentA ? 1 : -1;
-                        const valA = Number(a.puestoOrden) || Number(a.orden) || 9999;
-                        const valB = Number(b.puestoOrden) || Number(b.orden) || 9999;
-                        return valA - valB;
-                    });
+                    return window.TurnosRules.sortEmployees(Array.from(uniqueEmpsMap.values()));
                 })().map(emp => {
                     const empName = emp.nombreVisible || emp.nombre;
                     const daysMap = emp.dias || emp.cells || {};
@@ -433,7 +427,7 @@
                                 return `
                                     <div class="grid-cell" title="${escapeHtml(day.titular_cubierto ? 'Cubriendo a ' + day.titular_cubierto : '')}">
                                         <div class="badge-container">
-                                            <span class="badge-shift ${shiftToken}" data-shift="${escapeHtml(shiftToken)}">${getMobileShiftLabel(display.text, shiftToken, day.icons || [])}</span>
+                                            <span class="badge-shift ${shiftToken}" data-shift="${escapeHtml(shiftToken)}">${getMobileShiftLabel(day, display.text, shiftToken)}</span>
                                         </div>
                                     </div>
                                 `;

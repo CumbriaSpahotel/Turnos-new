@@ -11,7 +11,8 @@ function fmtD(d){if(!d)return'—';const p=d.split('-');return p.length===3?`${p
 function diffDays(a,b){return Math.round((new Date(b+'T12:00:00')-new Date(a+'T12:00:00'))/864e5)+1;}
 function empLabel(id,emps){
   if(!id)return'—';
-  const e=(emps||window.empleadosGlobales||[]).find(x=>x.id===id||x.nombre===id);
+  const norm = window.normalizeId ? window.normalizeId(id) : String(id).trim().toLowerCase();
+  const e=(emps||window.empleadosGlobales||[]).find(x=>(window.normalizeId?window.normalizeId(x.id):x.id)===norm || (window.normalizeId?window.normalizeId(x.nombre):x.nombre)===norm);
   if(e){
     const name=e.nombre||e.id;
     const idInt=e.id_interno||e.id;
@@ -248,6 +249,9 @@ window.renderVacations = async () => {
             <option value="all"${status==='all'?' selected':''}>Todas</option>
           </select>
           <button class="btn-premium" onclick="window.renderVacations()" style="padding:8px 14px;font-size:0.7rem;">↻ Refrescar</button>
+          <button id="btnSyncGapsVacaciones" class="btn-publish-premium" onclick="window.syncGapsFromExcel('btnSyncGapsVacaciones')" style="padding:8px 14px;font-size:0.7rem;margin-left:auto;background:linear-gradient(135deg,#34d399,#10b981);border:none;">
+            <i class="fas fa-magic"></i> Completar Supabase
+          </button>
         </div>
       </section>
 

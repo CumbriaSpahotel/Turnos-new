@@ -24,8 +24,8 @@
           --mint-text: #0b6044;
           --amber-bg: #ffefbd;
           --amber-text: #9d6a00;
-          --rose-bg: #f9d8db;
-          --rose-text: #a11c24;
+          --rose-bg: #ffb3b3;
+          --rose-text: #ffffff;
           --slate-bg: #e7ebef;
           --slate-text: #223247;
           --cyan-bg: #ccecf7;
@@ -48,8 +48,8 @@
           --mint-text: #bdebd0;
           --amber-bg: #473811;
           --amber-text: #ffe19a;
-          --rose-bg: #45232a;
-          --rose-text: #ffc2c8;
+          --rose-bg: #ffb3b3;
+          --rose-text: #ffffff;
           --slate-bg: #243345;
           --slate-text: #d8e3ef;
           --cyan-bg: #173a45;
@@ -322,7 +322,7 @@
       .v-m, .v-manana { background: var(--mint-bg); color: var(--mint-text); border-color: #c7e5ca; }
       .v-t, .v-tarde { background: var(--amber-bg); color: var(--amber-text); border-color: #f3df9b; }
       .v-n, .v-noche { background: var(--slate-bg); color: var(--slate-text); border-color: #d8dee5; }
-      .v-d, .v-descanso { background: var(--rose-bg); color: var(--rose-text); border-color: #efc3c7; }
+      .v-d, .v-descanso { background: #ffb3b3 !important; color: #ffffff !important; border: 1px solid #ff9999 !important; }
       .v-v, .v-vac {
           background: #e8f9ff;
           color: #0072a7;
@@ -467,9 +467,6 @@
         <button class="btn-nav" style="border:none; background:transparent;" onclick="changeWeek(1)">semana →</button>
       </div>
       <select id="hotelSelect" class="toolbar-select" onchange="renderPublicView()">
-        <option value="">Ambos hoteles</option>
-        <option value="Sercotel Guadiana">Sercotel Guadiana</option>
-        <option value="Cumbria Spa&Hotel">Cumbria Spa&Hotel</option>
       </select>
       <input type="text" id="dateRange" class="toolbar-date" readonly>
       <a href="solicitud.html" class="btn-request">
@@ -484,11 +481,7 @@
   <script src="supabase.js"></script>
   <script src="supabase-config.js"></script>
   <script src="supabase-dao.js"></script>
-  <script>
-// TurnosRules centralizado en turnos-rules.js
-
-
-</script>
+  <script src="turnos-rules.js?v=13.21"></script>
   <script src="virtualizer.js"></script>
   <script>
     let _picker;
@@ -701,25 +694,36 @@
                 pill.innerHTML += ' <span class="icon-moon">\u{1F319}</span>';
             }
             
-            if (display.icons && display.icons.includes('\u{1F504}')) {
-                pill.innerHTML += ' <span class="icon-sync">\u{1F504}</span>';
-            }
-            if (display.icons && display.icons.includes('\u{1F4CC}')) {
-                pill.innerHTML += ' <span class="icon-pin">\u{1F4CC}</span>';
+            if (display.icons) {
+                display.icons.forEach(icon => {
+                    if (icon === '\u{1F504}' || icon === '🔄') {
+                        pill.innerHTML += ' <span class="icon-sync">\u{1F504}</span>';
+                    } else if (icon === '\u{1F4CC}' || icon === '📌') {
+                        pill.innerHTML += ' <span class="icon-pin">\u{1F4CC}</span>';
+                    }
+                });
             }
             cell.appendChild(pill);
         };
 
         table.renderRow = function(tr, rowData) {
             const tds = tr.children;
-            let nights = 0, rests = 0;
             const daysMap = rowData.dias || rowData.cells || {};
-            dates.forEach(f => {
-                const d = daysMap[f] || {};
-                const c = (d.code || '').toUpperCase();
-                if (c.startsWith('N')) nights++;
-                if (c.startsWith('D')) rests++;
-            });
+            // Bug-fix: apoyo/ocasional employees must not show structural counters
+            const skipCounters = !!(
+                rowData.excludeCounters === true ||
+                String(rowData.tipoPersonal || rowData.tipo_personal || rowData.tipo || '').toLowerCase().includes('apoyo') ||
+                String(rowData.tipoPersonal || rowData.tipo_personal || rowData.tipo || '').toLowerCase().includes('ocasional')
+            );
+            let nights = 0, rests = 0;
+            if (!skipCounters) {
+                dates.forEach(f => {
+                    const d = daysMap[f] || {};
+                    const c = (d.code || '').toUpperCase();
+                    if (c.startsWith('N')) nights++;
+                    if (c === 'D' || c === 'DESCANSO') rests++;
+                });
+            }
 
             const isAbsent = rowData.rowType === 'ausencia_informativa';
             const displayName = rowData.nombreVisible || rowData.nombre || 'Pendiente';
@@ -728,7 +732,7 @@
                 <div class="emp-cell ${isAbsent ? 'ausencia-row' : ''}">
                     <div class="employee-head">
                         <div class="employee-name">${escapeHtml(displayName)}</div>
-                    ${isAbsent ? '' : `
+                    ${isAbsent || skipCounters ? '' : `
                     <div class="emp-badges">
                         <span class="badge"><span class="badge-icon">🌙</span> ${nights}</span>
                         <span class="badge">D ${rests}</span>
@@ -743,14 +747,15 @@
             });
         };
 
-        const sorted = [...rows].sort((a,b) => {
-            const isAbsA = a.rowType === 'ausencia_informativa';
-            const isAbsB = b.rowType === 'ausencia_informativa';
-            if (isAbsA !== isAbsB) return isAbsA ? 1 : -1;
-            return (a.puestoOrden || 999) - (b.puestoOrden || 999);
-        });
+        const sorted = window.TurnosRules.sortEmployees(rows);
 
         sorted.forEach(rowData => {
+            const skipCounters = !!(
+                rowData.excludeCounters === true ||
+                String(rowData.tipoPersonal || rowData.tipo_personal || rowData.tipo || '').toLowerCase().includes('apoyo') ||
+                String(rowData.tipoPersonal || rowData.tipo_personal || rowData.tipo || '').toLowerCase().includes('ocasional')
+            );
+            if (skipCounters) return;
             const daysMap = rowData.dias || rowData.cells || {};
             dates.forEach(f => {
                 const dayData = daysMap[f] || {};
@@ -804,6 +809,10 @@
     };
 
     document.addEventListener('DOMContentLoaded', async () => {
+        const hotelSelect = document.getElementById('hotelSelect');
+        if (hotelSelect && window.TurnosRules && window.TurnosRules.getCanonicalHotels) {
+            hotelSelect.innerHTML = window.TurnosRules.getCanonicalHotels().map(h => `<option value="${h.value === 'ALL' ? '' : escapeHtml(h.value)}">${escapeHtml(h.label)}</option>`).join('');
+        }
         applyTheme(localStorage.getItem('public-theme') || 'day');
         _picker = flatpickr("#dateRange", {
             mode: "range",

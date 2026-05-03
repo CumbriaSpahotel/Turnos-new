@@ -235,10 +235,10 @@ th:first-child, td:first-child {
 .turno-pill:hover { transform: scale(1.05); }
 
 /* Colores de turnos Premium (Alineados con Imagen 2) */
-.turno-mañana { background: #ebfbee; color: #2f9e44; border: 1px solid #d3f9d8; }
+.turno-maÃ±ana { background: #ebfbee; color: #2f9e44; border: 1px solid #d3f9d8; }
 .turno-tarde { background: #fff9db; color: #f08c00; border: 1px solid #fff3bf; }
 .turno-noche { background: #edf2ff; color: #364fc7; border: 1px solid #dbe4ff; }
-.turno-descanso { background: #fff5f5; color: #fa5252; border: 1px solid #ffe3e3; }
+.turno-descanso { background: #ffb3b3 !important; color: #ffffff !important; border: 1px solid #ff9999 !important; }
 .turno-vacaciones { background: #e3fafc; color: #0b7285; border: 1px solid #c5f6fa; }
 .turno-baja { background: #fff5f5; color: #fa5252; border: 1px dashed #ffa8a8; }
 .turno-permiso { background: #f3f0ff; color: #7048e8; border: 1px solid #e5dbff; }

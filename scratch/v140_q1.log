@@ -1,0 +1,922 @@
+﻿[ShiftResolver] Iniciando carga v5.0...
+[ShiftResolver] Carga finalizada v5.0.
+[Admin] Validando carga v13.3...
+
+--- V8 PUBLICATION ENGINE (Version 140) ---
+Mode: DRY RUN
+Weeks: 2026-01-05, 2026-01-12, 2026-01-19, 2026-01-26, 2026-02-02, 2026-02-09, 2026-02-16, 2026-02-23, 2026-03-02, 2026-03-09, 2026-03-16, 2026-03-23, 2026-03-30
+Hotels: Cumbria Spa&Hotel, Sercotel Guadiana
+
+Fetching global data...
+
+Existing publications detected in target scope:
+- 2026-02-16 | Cumbria Spa&Hotel: V1 (activo)
+- 2026-02-16 | Sercotel Guadiana: V1 (activo)
+- 2026-03-02 | Cumbria Spa&Hotel: V1 (activo)
+- 2026-03-02 | Sercotel Guadiana: V1 (activo)
+- 2026-03-09 | Cumbria Spa&Hotel: V1 (activo)
+- 2026-03-09 | Sercotel Guadiana: V1 (activo)
+- 2026-03-30 | Cumbria Spa&Hotel: V131 (activo), V130 (activo), V123 (activo), V122 (activo)
+[V9] Loaded 6240 Excel V9 order entries.
+
+[SNAPSHOT] Processing Cumbria Spa&Hotel | 2026-01-05...
+node : [SNAPSHOT] Regenerando datos para Cumbria Spa&Hotel (no cache found)
+En línea: 6 Carácter: 1
++ node publish_v8.js --dry-run --version=140 --weeks="$q1Str" --hotels= ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: ([SNAPSHOT] Rege...no cache found):String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+[LEGACY_CT_BLOCKED] {
+  cambioId: 'd59d7bda-119e-494b-940b-65c4bfffe315',
+  fecha: '2026-01-07',
+  hotel: 'Cumbria Spa&Hotel',
+  origen: 'cristina',
+  destino: 'isabel hidalgo',
+  campo: 'turno_original',
+  valor: 'CT',
+  accion: 'no usado como turno'
+}
+[LEGACY_CT_BLOCKED] {
+  cambioId: 'a0871f04-d81a-4802-9898-07ffe601fddd',
+  fecha: '2026-01-06',
+  hotel: 'Cumbria Spa&Hotel',
+  origen: 'isabel hidalgo',
+  destino: 'natalio',
+  campo: 'turno_original',
+  valor: 'CT',
+  accion: 'no usado como turno'
+}
+[LEGACY_CT_BLOCKED] {
+  cambioId: 'd59d7bda-119e-494b-940b-65c4bfffe315',
+  fecha: '2026-01-07',
+  hotel: 'Cumbria Spa&Hotel',
+  origen: 'cristina',
+  destino: 'isabel hidalgo',
+  campo: 'turno_original',
+  valor: 'CT',
+  accion: 'no usado como turno'
+}
+- Status: Generated 6 rows | 5 pins found.
+- Dry Run: Would insert version 140.
+
+[SNAPSHOT] Processing Sercotel Guadiana | 2026-01-05...
+[SNAPSHOT] Regenerando datos para Sercotel Guadiana (no cache found)
+[LEGACY_CT_BLOCKED] {
+  cambioId: '6cebfa36-5f8a-4e76-8e11-b1fd8e8ce4d2',
+  fecha: '2026-01-07',
+  hotel: 'Sercotel Guadiana',
+  origen: 'diana',
+  destino: 'macarena',
+  campo: 'turno_original',
+  valor: 'CT',
+  accion: 'no usado como turno'
+}
+[LEGACY_CT_BLOCKED] {
+  cambioId: '6cebfa36-5f8a-4e76-8e11-b1fd8e8ce4d2',
+  fecha: '2026-01-07',
+  hotel: 'Sercotel Guadiana',
+  origen: 'diana',
+  destino: 'macarena',
+  campo: 'turno_original',
+  valor: 'CT',
+  accion: 'no usado como turno'
+}
+[LEGACY_CT_BLOCKED] {
+  cambioId: '62165d0b-469a-4e12-94b1-11c6385831c4',
+  fecha: '2026-01-10',
+  hotel: 'Sercotel Guadiana',
+  origen: 'dani',
+  destino: 'diana',
+  campo: 'turno_nuevo',
+  valor: 'CT',
+  accion: 'no usado como turno'
+}
+[LEGACY_CT_BLOCKED] {
+  cambioId: 'dee3fd48-5506-4f67-ae4a-844130b42f45',
+  fecha: '2026-01-06',
+  hotel: 'Sercotel Guadiana',
+  origen: 'dani',
+  destino: 'sergio sanchez',
+  campo: 'turno_nuevo',
+  valor: 'CT',
+  accion: 'no usado como turno'
+}
+[LEGACY_CT_BLOCKED] {
+  cambioId: '62165d0b-469a-4e12-94b1-11c6385831c4',
+  fecha: '2026-01-10',
+  hotel: 'Sercotel Guadiana',
+  origen: 'dani',
+  destino: 'diana',
+  campo: 'turno_nuevo',
+  valor: 'CT',
+  accion: 'no usado como turno'
+}
+[LEGACY_CT_BLOCKED] {
+  cambioId: 'dee3fd48-5506-4f67-ae4a-844130b42f45',
+  fecha: '2026-01-06',
+  hotel: 'Sercotel Guadiana',
+  origen: 'dani',
+  destino: 'sergio sanchez',
+  campo: 'turno_nuevo',
+  valor: 'CT',
+  accion: 'no usado como turno'
+}
+- Status: Generated 5 rows | 0 pins found.
+- Dry Run: Would insert version 140.
+
+[SNAPSHOT] Processing Cumbria Spa&Hotel | 2026-01-12...
+[SNAPSHOT] Regenerando datos para Cumbria Spa&Hotel (no cache found)
+[LEGACY_CT_BLOCKED] {
+  cambioId: '2ba1217a-ed9c-4535-969d-580c844fc0f3',
+  fecha: '2026-01-14',
+  hotel: 'Cumbria Spa&Hotel',
+  origen: 'cristina',
+  destino: 'isabel hidalgo',
+  campo: 'turno_original',
+  valor: 'CT',
+  accion: 'no usado como turno'
+}
+[LEGACY_CT_BLOCKED] {
+  cambioId: 'bd3178dc-45c8-4e7f-8450-81e78ba7f88d',
+  fecha: '2026-01-15',
+  hotel: 'Cumbria Spa&Hotel',
+  origen: 'cristina',
+  destino: 'isabel hidalgo',
+  campo: 'turno_nuevo',
+  valor: 'CT',
+  accion: 'no usado como turno'
+}
+[LEGACY_CT_BLOCKED] {
+  cambioId: '2ba1217a-ed9c-4535-969d-580c844fc0f3',
+  fecha: '2026-01-14',
+  hotel: 'Cumbria Spa&Hotel',
+  origen: 'cristina',
+  destino: 'isabel hidalgo',
+  campo: 'turno_original',
+  valor: 'CT',
+  accion: 'no usado como turno'
+}
+[LEGACY_CT_BLOCKED] {
+  cambioId: 'bd3178dc-45c8-4e7f-8450-81e78ba7f88d',
+  fecha: '2026-01-15',
+  hotel: 'Cumbria Spa&Hotel',
+  origen: 'cristina',
+  destino: 'isabel hidalgo',
+  campo: 'turno_nuevo',
+  valor: 'CT',
+  accion: 'no usado como turno'
+}
+- Status: Generated 6 rows | 5 pins found.
+- Dry Run: Would insert version 140.
+
+[SNAPSHOT] Processing Sercotel Guadiana | 2026-01-12...
+[SNAPSHOT] Regenerando datos para Sercotel Guadiana (no cache found)
+[LEGACY_CT_BLOCKED] {
+  cambioId: '62588897-813b-46de-83fe-adeec785fdb7',
+  fecha: '2026-01-15',
+  hotel: 'Sercotel Guadiana',
+  origen: 'natalio',
+  destino: 'sergio sanchez',
+  campo: 'turno_nuevo',
+  valor: 'CT',
+  accion: 'no usado como turno'
+}
+- Status: Generated 5 rows | 0 pins found.
+- Dry Run: Would insert version 140.
+
+[SNAPSHOT] Processing Cumbria Spa&Hotel | 2026-01-19...
+[SNAPSHOT] Regenerando datos para Cumbria Spa&Hotel (no cache found)
+- Status: Generated 6 rows | 5 pins found.
+- Dry Run: Would insert version 140.
+
+[SNAPSHOT] Processing Sercotel Guadiana | 2026-01-19...
+[SNAPSHOT] Regenerando datos para Sercotel Guadiana (no cache found)
+- Status: Generated 5 rows | 0 pins found.
+- Dry Run: Would insert version 140.
+
+[SNAPSHOT] Processing Cumbria Spa&Hotel | 2026-01-26...
+[SNAPSHOT] Regenerando datos para Cumbria Spa&Hotel (no cache found)
+- Status: Generated 6 rows | 5 pins found.
+- Dry Run: Would insert version 140.
+
+[SNAPSHOT] Processing Sercotel Guadiana | 2026-01-26...
+[SNAPSHOT] Regenerando datos para Sercotel Guadiana (no cache found)
+[LEGACY_CT_BLOCKED] {
+  cambioId: '1795b767-40f1-4f90-bfdc-b7e8dda837a8',
+  fecha: '2026-01-29',
+  hotel: 'Sercotel Guadiana',
+  origen: 'diana',
+  destino: 'federico',
+  campo: 'turno_nuevo',
+  valor: 'CT',
+  accion: 'no usado como turno'
+}
+[LEGACY_CT_BLOCKED] {
+  cambioId: '1795b767-40f1-4f90-bfdc-b7e8dda837a8',
+  fecha: '2026-01-29',
+  hotel: 'Sercotel Guadiana',
+  origen: 'diana',
+  destino: 'federico',
+  campo: 'turno_nuevo',
+  valor: 'CT',
+  accion: 'no usado como turno'
+}
+- Status: Generated 5 rows | 0 pins found.
+- Dry Run: Would insert version 140.
+
+[SNAPSHOT] Processing Cumbria Spa&Hotel | 2026-02-02...
+[SNAPSHOT] Regenerando datos para Cumbria Spa&Hotel (no cache found)
+[LEGACY_CT_BLOCKED] {
+  cambioId: '4e825287-fb56-4f54-9a62-e3fd73ee1f1c',
+  fecha: '2026-02-04',
+  hotel: 'Cumbria Spa&Hotel',
+  origen: 'cristina',
+  destino: 'miriam',
+  campo: 'turno_nuevo',
+  valor: 'CT',
+  accion: 'no usado como turno'
+}
+[LEGACY_CT_BLOCKED] {
+  cambioId: '4e825287-fb56-4f54-9a62-e3fd73ee1f1c',
+  fecha: '2026-02-04',
+  hotel: 'Cumbria Spa&Hotel',
+  origen: 'cristina',
+  destino: 'miriam',
+  campo: 'turno_nuevo',
+  valor: 'CT',
+  accion: 'no usado como turno'
+}
+- Status: Generated 7 rows | 5 pins found.
+- Dry Run: Would insert version 140.
+
+[SNAPSHOT] Processing Sercotel Guadiana | 2026-02-02...
+[SNAPSHOT] Regenerando datos para Sercotel Guadiana (no cache found)
+[LEGACY_CT_BLOCKED] {
+  cambioId: '12e8998a-6a81-4a7e-b4f5-c680f9b2024b',
+  fecha: '2026-02-07',
+  hotel: 'Sercotel Guadiana',
+  origen: 'dani',
+  destino: 'diana',
+  campo: 'turno_nuevo',
+  valor: 'CT',
+  accion: 'no usado como turno'
+}
+[LEGACY_CT_BLOCKED] {
+  cambioId: 'fb437f1f-c039-4b56-a85e-e7992142b96d',
+  fecha: '2026-02-08',
+  hotel: 'Sercotel Guadiana',
+  origen: 'dani',
+  destino: 'diana',
+  campo: 'turno_nuevo',
+  valor: 'CT',
+  accion: 'no usado como turno'
+}
+[LEGACY_CT_BLOCKED] {
+  cambioId: '12e8998a-6a81-4a7e-b4f5-c680f9b2024b',
+  fecha: '2026-02-07',
+  hotel: 'Sercotel Guadiana',
+  origen: 'dani',
+  destino: 'diana',
+  campo: 'turno_nuevo',
+  valor: 'CT',
+  accion: 'no usado como turno'
+}
+[LEGACY_CT_BLOCKED] {
+  cambioId: 'fb437f1f-c039-4b56-a85e-e7992142b96d',
+  fecha: '2026-02-08',
+  hotel: 'Sercotel Guadiana',
+  origen: 'dani',
+  destino: 'diana',
+  campo: 'turno_nuevo',
+  valor: 'CT',
+  accion: 'no usado como turno'
+}
+- Status: Generated 5 rows | 0 pins found.
+- Dry Run: Would insert version 140.
+
+[SNAPSHOT] Processing Cumbria Spa&Hotel | 2026-02-09...
+[SNAPSHOT] Regenerando datos para Cumbria Spa&Hotel (no cache found)
+[LEGACY_CT_BLOCKED] {
+  cambioId: '696440cf-21b9-4635-9836-cc373ecd59a1',
+  fecha: '2026-02-14',
+  hotel: 'Cumbria Spa&Hotel',
+  origen: 'cristina',
+  destino: 'miriam',
+  campo: 'turno_nuevo',
+  valor: 'CT',
+  accion: 'no usado como turno'
+}
+[LEGACY_CT_BLOCKED] {
+  cambioId: '696440cf-21b9-4635-9836-cc373ecd59a1',
+  fecha: '2026-02-14',
+  hotel: 'Cumbria Spa&Hotel',
+  origen: 'cristina',
+  destino: 'miriam',
+  campo: 'turno_nuevo',
+  valor: 'CT',
+  accion: 'no usado como turno'
+}
+- Status: Generated 7 rows | 4 pins found.
+- Dry Run: Would insert version 140.
+
+[SNAPSHOT] Processing Sercotel Guadiana | 2026-02-09...
+[SNAPSHOT] Regenerando datos para Sercotel Guadiana (no cache found)
+[LEGACY_CT_BLOCKED] {
+  cambioId: 'c2a4bd85-7127-4484-b23a-cd5c05b1cc0e',
+  fecha: '2026-02-09',
+  hotel: 'Sercotel Guadiana',
+  origen: 'dani',
+  destino: 'diana',
+  campo: 'turno_nuevo',
+  valor: 'CT',
+  accion: 'no usado como turno'
+}
+[LEGACY_CT_BLOCKED] {
+  cambioId: 'a5322ed1-3c40-4154-8d68-aa495164a5d4',
+  fecha: '2026-02-10',
+  hotel: 'Sercotel Guadiana',
+  origen: 'dani',
+  destino: 'diana',
+  campo: 'turno_nuevo',
+  valor: 'CT',
+  accion: 'no usado como turno'
+}
+[LEGACY_CT_BLOCKED] {
+  cambioId: '1e4e5864-7154-4608-a1f3-5e80d995ed50',
+  fecha: '2026-02-11',
+  hotel: 'Sercotel Guadiana',
+  origen: 'dani',
+  destino: 'diana',
+  campo: 'turno_nuevo',
+  valor: 'CT',
+  accion: 'no usado como turno'
+}
+[LEGACY_CT_BLOCKED] {
+  cambioId: '378fbe2c-d5e1-4814-8a32-6ba8df2f0d56',
+  fecha: '2026-02-13',
+  hotel: 'Sercotel Guadiana',
+  origen: 'dani',
+  destino: 'diana',
+  campo: 'turno_nuevo',
+  valor: 'CT',
+  accion: 'no usado como turno'
+}
+[LEGACY_CT_BLOCKED] {
+  cambioId: '361b3858-25ab-4d17-a70d-b4856e8fdcf3',
+  fecha: '2026-02-15',
+  hotel: 'Sercotel Guadiana',
+  origen: 'diana',
+  destino: 'macarena',
+  campo: 'turno_original',
+  valor: 'CT',
+  accion: 'no usado como turno'
+}
+[LEGACY_CT_BLOCKED] {
+  cambioId: 'c2a4bd85-7127-4484-b23a-cd5c05b1cc0e',
+  fecha: '2026-02-09',
+  hotel: 'Sercotel Guadiana',
+  origen: 'dani',
+  destino: 'diana',
+  campo: 'turno_nuevo',
+  valor: 'CT',
+  accion: 'no usado como turno'
+}
+[LEGACY_CT_BLOCKED] {
+  cambioId: 'a5322ed1-3c40-4154-8d68-aa495164a5d4',
+  fecha: '2026-02-10',
+  hotel: 'Sercotel Guadiana',
+  origen: 'dani',
+  destino: 'diana',
+  campo: 'turno_nuevo',
+  valor: 'CT',
+  accion: 'no usado como turno'
+}
+[LEGACY_CT_BLOCKED] {
+  cambioId: '1e4e5864-7154-4608-a1f3-5e80d995ed50',
+  fecha: '2026-02-11',
+  hotel: 'Sercotel Guadiana',
+  origen: 'dani',
+  destino: 'diana',
+  campo: 'turno_nuevo',
+  valor: 'CT',
+  accion: 'no usado como turno'
+}
+[LEGACY_CT_BLOCKED] {
+  cambioId: '378fbe2c-d5e1-4814-8a32-6ba8df2f0d56',
+  fecha: '2026-02-13',
+  hotel: 'Sercotel Guadiana',
+  origen: 'dani',
+  destino: 'diana',
+  campo: 'turno_nuevo',
+  valor: 'CT',
+  accion: 'no usado como turno'
+}
+[LEGACY_CT_BLOCKED] {
+  cambioId: '361b3858-25ab-4d17-a70d-b4856e8fdcf3',
+  fecha: '2026-02-15',
+  hotel: 'Sercotel Guadiana',
+  origen: 'diana',
+  destino: 'macarena',
+  campo: 'turno_original',
+  valor: 'CT',
+  accion: 'no usado como turno'
+}
+- Status: Generated 5 rows | 0 pins found.
+- Dry Run: Would insert version 140.
+
+[SNAPSHOT] Processing Cumbria Spa&Hotel | 2026-02-16...
+[SNAPSHOT] Regenerando datos para Cumbria Spa&Hotel (no cache found)
+[LEGACY_CT_BLOCKED] {
+  cambioId: '00084fbe-2153-4b1f-a6f2-653eed18cb40',
+  fecha: '2026-02-18',
+  hotel: 'Cumbria Spa&Hotel',
+  origen: 'cristina',
+  destino: 'isabel hidalgo',
+  campo: 'turno_original',
+  valor: 'CT',
+  accion: 'no usado como turno'
+}
+[LEGACY_CT_BLOCKED] {
+  cambioId: '9c38bb12-3563-4244-bffb-c6ede44d5ae8',
+  fecha: '2026-02-21',
+  hotel: 'Cumbria Spa&Hotel',
+  origen: 'cristina',
+  destino: 'miriam',
+  campo: 'turno_original',
+  valor: 'CT',
+  accion: 'no usado como turno'
+}
+[LEGACY_CT_BLOCKED] {
+  cambioId: '9c38bb12-3563-4244-bffb-c6ede44d5ae8',
+  fecha: '2026-02-21',
+  hotel: 'Cumbria Spa&Hotel',
+  origen: 'cristina',
+  destino: 'miriam',
+  campo: 'turno_original',
+  valor: 'CT',
+  accion: 'no usado como turno'
+}
+[LEGACY_CT_BLOCKED] {
+  cambioId: '00084fbe-2153-4b1f-a6f2-653eed18cb40',
+  fecha: '2026-02-18',
+  hotel: 'Cumbria Spa&Hotel',
+  origen: 'cristina',
+  destino: 'isabel hidalgo',
+  campo: 'turno_original',
+  valor: 'CT',
+  accion: 'no usado como turno'
+}
+- Status: Generated 6 rows | 6 pins found.
+- Dry Run: Would insert version 140.
+
+[SNAPSHOT] Processing Sercotel Guadiana | 2026-02-16...
+[SNAPSHOT] Regenerando datos para Sercotel Guadiana (no cache found)
+[LEGACY_CT_BLOCKED] {
+  cambioId: '6c9306d9-f414-40aa-a60f-100cb741458a',
+  fecha: '2026-02-16',
+  hotel: 'Sercotel Guadiana',
+  origen: 'diana',
+  destino: 'macarena',
+  campo: 'turno_original',
+  valor: 'CT',
+  accion: 'no usado como turno'
+}
+[LEGACY_CT_BLOCKED] {
+  cambioId: 'b6eda8f5-641e-40dc-b810-91d889d64a55',
+  fecha: '2026-02-21',
+  hotel: 'Sercotel Guadiana',
+  origen: 'diana',
+  destino: 'macarena',
+  campo: 'turno_original',
+  valor: 'CT',
+  accion: 'no usado como turno'
+}
+[LEGACY_CT_BLOCKED] {
+  cambioId: '6d3e3e56-81b0-4eb8-badb-e54becd19929',
+  fecha: '2026-02-22',
+  hotel: 'Sercotel Guadiana',
+  origen: 'diana',
+  destino: 'macarena',
+  campo: 'turno_original',
+  valor: 'CT',
+  accion: 'no usado como turno'
+}
+[LEGACY_CT_BLOCKED] {
+  cambioId: '6c9306d9-f414-40aa-a60f-100cb741458a',
+  fecha: '2026-02-16',
+  hotel: 'Sercotel Guadiana',
+  origen: 'diana',
+  destino: 'macarena',
+  campo: 'turno_original',
+  valor: 'CT',
+  accion: 'no usado como turno'
+}
+[LEGACY_CT_BLOCKED] {
+  cambioId: '5d68cd5a-b8ac-456f-88e2-7e511f878e7b',
+  fecha: '2026-02-17',
+  hotel: 'Sercotel Guadiana',
+  origen: 'diana',
+  destino: 'federico',
+  campo: 'turno_original',
+  valor: 'CT',
+  accion: 'no usado como turno'
+}
+[LEGACY_CT_BLOCKED] {
+  cambioId: 'b6eda8f5-641e-40dc-b810-91d889d64a55',
+  fecha: '2026-02-21',
+  hotel: 'Sercotel Guadiana',
+  origen: 'diana',
+  destino: 'macarena',
+  campo: 'turno_original',
+  valor: 'CT',
+  accion: 'no usado como turno'
+}
+[LEGACY_CT_BLOCKED] {
+  cambioId: '6d3e3e56-81b0-4eb8-badb-e54becd19929',
+  fecha: '2026-02-22',
+  hotel: 'Sercotel Guadiana',
+  origen: 'diana',
+  destino: 'macarena',
+  campo: 'turno_original',
+  valor: 'CT',
+  accion: 'no usado como turno'
+}
+[LEGACY_CT_BLOCKED] {
+  cambioId: '5d68cd5a-b8ac-456f-88e2-7e511f878e7b',
+  fecha: '2026-02-17',
+  hotel: 'Sercotel Guadiana',
+  origen: 'diana',
+  destino: 'federico',
+  campo: 'turno_original',
+  valor: 'CT',
+  accion: 'no usado como turno'
+}
+- Status: Generated 6 rows | 1 pins found.
+- Dry Run: Would insert version 140.
+
+[SNAPSHOT] Processing Cumbria Spa&Hotel | 2026-02-23...
+[SNAPSHOT] Regenerando datos para Cumbria Spa&Hotel (no cache found)
+[LEGACY_CT_BLOCKED] {
+  cambioId: 'f1c596d3-958b-4d62-9089-fe03f71af4ce',
+  fecha: '2026-02-28',
+  hotel: 'Cumbria Spa&Hotel',
+  origen: 'cristina',
+  destino: 'miriam',
+  campo: 'turno_nuevo',
+  valor: 'CT',
+  accion: 'no usado como turno'
+}
+[LEGACY_CT_BLOCKED] {
+  cambioId: 'f1c596d3-958b-4d62-9089-fe03f71af4ce',
+  fecha: '2026-02-28',
+  hotel: 'Cumbria Spa&Hotel',
+  origen: 'cristina',
+  destino: 'miriam',
+  campo: 'turno_nuevo',
+  valor: 'CT',
+  accion: 'no usado como turno'
+}
+- Status: Generated 7 rows | 5 pins found.
+- Dry Run: Would insert version 140.
+
+[SNAPSHOT] Processing Sercotel Guadiana | 2026-02-23...
+[SNAPSHOT] Regenerando datos para Sercotel Guadiana (no cache found)
+[LEGACY_CT_BLOCKED] {
+  cambioId: 'e13d33e3-7696-428a-8643-a0eb5f6d53d8',
+  fecha: '2026-02-28',
+  hotel: 'Sercotel Guadiana',
+  origen: 'dani',
+  destino: 'diana',
+  campo: 'turno_nuevo',
+  valor: 'CT',
+  accion: 'no usado como turno'
+}
+[LEGACY_CT_BLOCKED] {
+  cambioId: '8d943b4e-17d5-4576-8519-5d270af20512',
+  fecha: '2026-02-25',
+  hotel: 'Sercotel Guadiana',
+  origen: 'federico',
+  destino: 'macarena',
+  campo: 'turno_nuevo',
+  valor: 'CT',
+  accion: 'no usado como turno'
+}
+[RECONSTRUCT_SWAP_INCOHERENT] {
+  fecha: '2026-02-28',
+  origen: 'macarena',
+  destino: 'diana',
+  baseOrig: 'T',
+  baseDest: 'D',
+  eventOrig: 'T',
+  eventDest: 'Ma├▒ana',
+  finalOrig: 'D',
+  finalDest: 'T'
+}
+[LEGACY_CT_BLOCKED] {
+  cambioId: '05a98eab-48c9-478c-b473-eae3a3111efb',
+  fecha: '2026-03-01',
+  hotel: 'Sercotel Guadiana',
+  origen: 'diana',
+  destino: 'macarena',
+  campo: 'turno_original',
+  valor: 'CT',
+  accion: 'no usado como turno'
+}
+[LEGACY_CT_BLOCKED] {
+  cambioId: 'e13d33e3-7696-428a-8643-a0eb5f6d53d8',
+  fecha: '2026-02-28',
+  hotel: 'Sercotel Guadiana',
+  origen: 'dani',
+  destino: 'diana',
+  campo: 'turno_nuevo',
+  valor: 'CT',
+  accion: 'no usado como turno'
+}
+[RECONSTRUCT_SWAP_INCOHERENT] {
+  fecha: '2026-02-28',
+  origen: 'macarena',
+  destino: 'diana',
+  baseOrig: 'T',
+  baseDest: 'M',
+  eventOrig: 'T',
+  eventDest: 'Ma├▒ana',
+  finalOrig: 'M',
+  finalDest: 'T'
+}
+[LEGACY_CT_BLOCKED] {
+  cambioId: '05a98eab-48c9-478c-b473-eae3a3111efb',
+  fecha: '2026-03-01',
+  hotel: 'Sercotel Guadiana',
+  origen: 'diana',
+  destino: 'macarena',
+  campo: 'turno_original',
+  valor: 'CT',
+  accion: 'no usado como turno'
+}
+[LEGACY_CT_BLOCKED] {
+  cambioId: '8d943b4e-17d5-4576-8519-5d270af20512',
+  fecha: '2026-02-25',
+  hotel: 'Sercotel Guadiana',
+  origen: 'federico',
+  destino: 'macarena',
+  campo: 'turno_nuevo',
+  valor: 'CT',
+  accion: 'no usado como turno'
+}
+- Status: Generated 5 rows | 0 pins found.
+- Dry Run: Would insert version 140.
+
+[SNAPSHOT] Processing Cumbria Spa&Hotel | 2026-03-02...
+[SNAPSHOT] Regenerando datos para Cumbria Spa&Hotel (no cache found)
+[LEGACY_CT_BLOCKED] {
+  cambioId: 'ab5f4899-6d0d-4726-add8-58f7531f23d4',
+  fecha: '2026-03-07',
+  hotel: 'Cumbria Spa&Hotel',
+  origen: 'cristina',
+  destino: 'miriam',
+  campo: 'turno_original',
+  valor: 'CT',
+  accion: 'no usado como turno'
+}
+[LEGACY_CT_BLOCKED] {
+  cambioId: 'f2002c0f-b5e1-4e4e-9b9a-0e6b2d89df48',
+  fecha: '2026-03-03',
+  hotel: 'Cumbria Spa&Hotel',
+  origen: 'cristina',
+  destino: 'isabel hidalgo',
+  campo: 'turno_original',
+  valor: 'CT',
+  accion: 'no usado como turno'
+}
+[LEGACY_CT_BLOCKED] {
+  cambioId: 'ab5f4899-6d0d-4726-add8-58f7531f23d4',
+  fecha: '2026-03-07',
+  hotel: 'Cumbria Spa&Hotel',
+  origen: 'cristina',
+  destino: 'miriam',
+  campo: 'turno_original',
+  valor: 'CT',
+  accion: 'no usado como turno'
+}
+[LEGACY_CT_BLOCKED] {
+  cambioId: 'f2002c0f-b5e1-4e4e-9b9a-0e6b2d89df48',
+  fecha: '2026-03-03',
+  hotel: 'Cumbria Spa&Hotel',
+  origen: 'cristina',
+  destino: 'isabel hidalgo',
+  campo: 'turno_original',
+  valor: 'CT',
+  accion: 'no usado como turno'
+}
+- Status: Generated 6 rows | 5 pins found.
+- Dry Run: Would insert version 140.
+
+[SNAPSHOT] Processing Sercotel Guadiana | 2026-03-02...
+[SNAPSHOT] Regenerando datos para Sercotel Guadiana (no cache found)
+- Status: Generated 6 rows | 5 pins found.
+- Dry Run: Would insert version 140.
+
+[SNAPSHOT] Processing Cumbria Spa&Hotel | 2026-03-09...
+[SNAPSHOT] Regenerando datos para Cumbria Spa&Hotel (no cache found)
+[LEGACY_CT_BLOCKED] {
+  cambioId: '78eef236-c483-4cc5-8e84-e76445a07ce2',
+  fecha: '2026-03-14',
+  hotel: 'Cumbria Spa&Hotel',
+  origen: 'cristina',
+  destino: 'esther',
+  campo: 'turno_original',
+  valor: 'CT',
+  accion: 'no usado como turno'
+}
+[LEGACY_CT_BLOCKED] {
+  cambioId: '78eef236-c483-4cc5-8e84-e76445a07ce2',
+  fecha: '2026-03-14',
+  hotel: 'Cumbria Spa&Hotel',
+  origen: 'cristina',
+  destino: 'esther',
+  campo: 'turno_original',
+  valor: 'CT',
+  accion: 'no usado como turno'
+}
+- Status: Generated 5 rows | 0 pins found.
+- Dry Run: Would insert version 140.
+
+[SNAPSHOT] Processing Sercotel Guadiana | 2026-03-09...
+[SNAPSHOT] Regenerando datos para Sercotel Guadiana (no cache found)
+[LEGACY_CT_BLOCKED] {
+  cambioId: '081e65bc-d056-455e-9384-4547cacd9341',
+  fecha: '2026-03-09',
+  hotel: 'Sercotel Guadiana',
+  origen: 'dani',
+  destino: 'macarena',
+  campo: 'turno_nuevo',
+  valor: 'CT',
+  accion: 'no usado como turno'
+}
+[LEGACY_CT_BLOCKED] {
+  cambioId: 'e2735afc-60c9-46db-9f09-3eacc63e010a',
+  fecha: '2026-03-10',
+  hotel: 'Sercotel Guadiana',
+  origen: 'dani',
+  destino: 'macarena',
+  campo: 'turno_nuevo',
+  valor: 'CT',
+  accion: 'no usado como turno'
+}
+[LEGACY_CT_BLOCKED] {
+  cambioId: '081e65bc-d056-455e-9384-4547cacd9341',
+  fecha: '2026-03-09',
+  hotel: 'Sercotel Guadiana',
+  origen: 'dani',
+  destino: 'macarena',
+  campo: 'turno_nuevo',
+  valor: 'CT',
+  accion: 'no usado como turno'
+}
+[LEGACY_CT_BLOCKED] {
+  cambioId: 'e2735afc-60c9-46db-9f09-3eacc63e010a',
+  fecha: '2026-03-10',
+  hotel: 'Sercotel Guadiana',
+  origen: 'dani',
+  destino: 'macarena',
+  campo: 'turno_nuevo',
+  valor: 'CT',
+  accion: 'no usado como turno'
+}
+- Status: Generated 5 rows | 0 pins found.
+- Dry Run: Would insert version 140.
+
+[SNAPSHOT] Processing Cumbria Spa&Hotel | 2026-03-16...
+[SNAPSHOT] Regenerando datos para Cumbria Spa&Hotel (no cache found)
+[LEGACY_CT_BLOCKED] {
+  cambioId: '00e30e21-cfd5-471b-a10b-f37a8bbda4db',
+  fecha: '2026-03-18',
+  hotel: 'Cumbria Spa&Hotel',
+  origen: 'esther',
+  destino: 'sergio',
+  campo: 'turno_nuevo',
+  valor: 'CT',
+  accion: 'no usado como turno'
+}
+[LEGACY_CT_BLOCKED] {
+  cambioId: 'babf0649-01a0-4087-88ee-d18c8fe4a12c',
+  fecha: '2026-03-19',
+  hotel: 'Cumbria Spa&Hotel',
+  origen: 'esther',
+  destino: 'sergio',
+  campo: 'turno_nuevo',
+  valor: 'CT',
+  accion: 'no usado como turno'
+}
+[LEGACY_CT_BLOCKED] {
+  cambioId: '31236409-8e61-4223-a130-287dd34c40d2',
+  fecha: '2026-03-20',
+  hotel: 'Cumbria Spa&Hotel',
+  origen: 'esther',
+  destino: 'sergio',
+  campo: 'turno_nuevo',
+  valor: 'CT',
+  accion: 'no usado como turno'
+}
+[LEGACY_CT_BLOCKED] {
+  cambioId: '00e30e21-cfd5-471b-a10b-f37a8bbda4db',
+  fecha: '2026-03-18',
+  hotel: 'Cumbria Spa&Hotel',
+  origen: 'esther',
+  destino: 'sergio',
+  campo: 'turno_nuevo',
+  valor: 'CT',
+  accion: 'no usado como turno'
+}
+[LEGACY_CT_BLOCKED] {
+  cambioId: 'babf0649-01a0-4087-88ee-d18c8fe4a12c',
+  fecha: '2026-03-19',
+  hotel: 'Cumbria Spa&Hotel',
+  origen: 'esther',
+  destino: 'sergio',
+  campo: 'turno_nuevo',
+  valor: 'CT',
+  accion: 'no usado como turno'
+}
+[LEGACY_CT_BLOCKED] {
+  cambioId: '31236409-8e61-4223-a130-287dd34c40d2',
+  fecha: '2026-03-20',
+  hotel: 'Cumbria Spa&Hotel',
+  origen: 'esther',
+  destino: 'sergio',
+  campo: 'turno_nuevo',
+  valor: 'CT',
+  accion: 'no usado como turno'
+}
+- Status: Generated 5 rows | 0 pins found.
+- Dry Run: Would insert version 140.
+
+[SNAPSHOT] Processing Sercotel Guadiana | 2026-03-16...
+[SNAPSHOT] Regenerando datos para Sercotel Guadiana (no cache found)
+- Status: Generated 5 rows | 0 pins found.
+- Dry Run: Would insert version 140.
+
+[SNAPSHOT] Processing Cumbria Spa&Hotel | 2026-03-23...
+[SNAPSHOT] Regenerando datos para Cumbria Spa&Hotel (no cache found)
+- Status: Generated 6 rows | 0 pins found.
+- Dry Run: Would insert version 140.
+
+[SNAPSHOT] Processing Sercotel Guadiana | 2026-03-23...
+[SNAPSHOT] Regenerando datos para Sercotel Guadiana (no cache found)
+[LEGACY_CT_BLOCKED] {
+  cambioId: '40758c2a-e613-4604-806a-c3f5d04e2958',
+  fecha: '2026-03-26',
+  hotel: 'Sercotel Guadiana',
+  origen: 'diana',
+  destino: 'macarena',
+  campo: 'turno_original',
+  valor: 'CT',
+  accion: 'no usado como turno'
+}
+[LEGACY_CT_BLOCKED] {
+  cambioId: '40758c2a-e613-4604-806a-c3f5d04e2958',
+  fecha: '2026-03-26',
+  hotel: 'Sercotel Guadiana',
+  origen: 'diana',
+  destino: 'macarena',
+  campo: 'turno_original',
+  valor: 'CT',
+  accion: 'no usado como turno'
+}
+- Status: Generated 5 rows | 0 pins found.
+- Dry Run: Would insert version 140.
+
+[SNAPSHOT] Processing Cumbria Spa&Hotel | 2026-03-30...
+[SNAPSHOT] Regenerando datos para Cumbria Spa&Hotel (no cache found)
+[LEGACY_CT_BLOCKED] {
+  cambioId: '936c5ea9-c662-40f9-928d-54a8d8d2a808',
+  fecha: '2026-04-01',
+  hotel: 'Cumbria Spa&Hotel',
+  origen: 'cristina',
+  destino: 'miriam',
+  campo: 'turno_original',
+  valor: 'CT',
+  accion: 'no usado como turno'
+}
+[LEGACY_CT_BLOCKED] {
+  cambioId: '936c5ea9-c662-40f9-928d-54a8d8d2a808',
+  fecha: '2026-04-01',
+  hotel: 'Cumbria Spa&Hotel',
+  origen: 'cristina',
+  destino: 'miriam',
+  campo: 'turno_original',
+  valor: 'CT',
+  accion: 'no usado como turno'
+}
+- Status: Generated 6 rows | 0 pins found.
+- Dry Run: Would insert version 140.
+
+[SNAPSHOT] Processing Sercotel Guadiana | 2026-03-30...
+[SNAPSHOT] Regenerando datos para Sercotel Guadiana (no cache found)
+- Status: Generated 5 rows | 0 pins found.
+- Dry Run: Would insert version 140.
+
+--- FINAL SUMMARY ---
+Total snapshots processed: 26
+Escrituras realizadas: 0

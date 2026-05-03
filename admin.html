@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TurnosWeb - Panel de Control Administrativo</title>
     <link rel="icon" type="image/png" href="admin_icon_premium.png">
-    <link rel="stylesheet" href="admin.css?v=13.19">
+    <link rel="stylesheet" href="admin.css?v=13.31">
     <link rel="stylesheet" href="flatpickr.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/plugins/monthSelect/style.css">
     <script src="xlsx.full.min.js"></script>
@@ -200,11 +200,11 @@
 
             <div class="dashboard-grid" style="display:grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap:20px; padding:0 30px 30px;">
                 <div class="kpi-card glass" style="padding:20px; border-radius:20px; border:1px solid var(--border); background:var(--surface);">
-                    <label style="display:block; font-size:0.7rem; font-weight:800; color:var(--text-dim); text-transform:uppercase; margin-bottom:10px;">Cambios Pendientes</label>
+                    <label title="Cambios de turno pendientes, aprobados o activos desde hoy hasta el 31/12." style="display:block; font-size:0.7rem; font-weight:800; color:var(--text-dim); text-transform:uppercase; margin-bottom:10px;">Cambios hasta fin de año</label>
                     <strong id="stat-pending-requests" style="font-size:1.5rem; font-weight:900; color:var(--text);">0</strong>
                 </div>
                 <div class="kpi-card glass" style="padding:20px; border-radius:20px; border:1px solid var(--border); background:var(--surface);">
-                    <label style="display:block; font-size:0.7rem; font-weight:800; color:var(--text-dim); text-transform:uppercase; margin-bottom:10px;">Bajas Activas</label>
+                    <label title="Bajas y permisos pendientes o activos desde hoy hasta el 31/12." style="display:block; font-size:0.7rem; font-weight:800; color:var(--text-dim); text-transform:uppercase; margin-bottom:10px;">Bajas / Permisos</label>
                     <strong id="stat-today-activity" style="font-size:1.5rem; font-weight:900; color:var(--text);">0</strong>
                 </div>
                 <div class="kpi-card glass" style="padding:20px; border-radius:20px; border:1px solid var(--border); background:var(--surface);">
@@ -216,7 +216,7 @@
                     <strong id="stat-last-sync" style="font-size:1.2rem; font-weight:800; color:var(--text);">00:00:00</strong>
                 </div>
                 <div class="kpi-card glass" style="padding:20px; border-radius:20px; border:1px solid var(--border); background:var(--surface);">
-                    <label style="display:block; font-size:0.7rem; font-weight:800; color:var(--text-dim); text-transform:uppercase; margin-bottom:10px;">Pendientes Pub.</label>
+                    <label title="Cambios manuales del Excel que aun no se han publicado en Supabase." style="display:block; font-size:0.7rem; font-weight:800; color:var(--text-dim); text-transform:uppercase; margin-bottom:10px;">Sin publicar</label>
                     <strong id="stat-pending-diff" style="font-size:1.5rem; font-weight:900; color:var(--text);">0</strong>
                 </div>
                 <div class="kpi-card glass" style="padding:20px; border-radius:20px; border:1px solid var(--border); background:var(--surface);">
@@ -318,6 +318,9 @@
                         <option value="all">Ver Todos</option>
                         <option value="anulado">Anulados</option>
                     </select>
+                    <button id="btnSyncChanges" class="btn-publish-premium" onclick="window.syncGapsFromExcel('btnSyncChanges')" style="margin:0; background:linear-gradient(135deg,#34d399,#10b981); border:none;">
+                        <i class="fas fa-magic"></i> Completar Supabase
+                    </button>
                 </div>
             </header>
             <div style="display:grid; grid-template-columns: 1fr 300px; gap:25px; padding:0 30px 30px;">
@@ -381,6 +384,9 @@
                     <p class="page-subtitle">Gestión de ausencias temporales, permisos e IT</p>
                 </div>
                 <div class="header-controls" style="display:flex; gap:10px; margin-left:auto; align-items:center;">
+                    <button id="btnSyncBajas" class="btn-publish-premium" onclick="window.syncGapsFromExcel('btnSyncBajas')" style="margin:0; background:linear-gradient(135deg,#34d399,#10b981); border:none;">
+                        <i class="fas fa-magic"></i> Completar Supabase
+                    </button>
                     <button class="btn-publish-premium" onclick="window.openBajaPermisoModal()" style="margin:0;">+ Nueva Baja/Permiso</button>
                 </div>
             </header>
@@ -486,6 +492,7 @@
                 <button class="btn-close-drawer" onclick="window.closeEmpDrawer()">&times;</button>
             </div>
             <div id="drawerBody" class="drawer-body"></div>
+            <div id="drawerFooter" class="drawer-footer"></div>
         </div>
     </div>
 
@@ -495,11 +502,16 @@
     <script src="data/v9_excel_order_map.js"></script>
     <script src="localforage.js"></script>
     <script src="supabase-dao.js?v=13.22"></script>
-    <script src="turnos-rules.js?v=13.19"></script>
+    <script src="turnos-rules.js?v=13.21"></script>
     <script src="shift-resolver.js?v=13.19"></script>
-    <script src="admin.js?v=13.28"></script>
+    <script src="turnos-engine.js?v=13.45"></script>
+    <script src="excel-loader.js?v=13.45"></script>
+    <script src="cambios-module.js"></script>
+    <script src="js/reassignment-module.js"></script>
+    <script src="admin.js?v=13.45"></script>
     <script src="bajas-module.js?v=1.1"></script>
-    <script src="vacaciones-module.js?v=1.0"></script>
+    <script src="vacaciones-module.js?v=1.1"></script>
+    <script src="sync-gaps.js?v=1.0"></script>
     <script src="sync-status.js?v=13.19"></script>
 </body>
 </html>

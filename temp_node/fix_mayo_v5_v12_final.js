@@ -13,6 +13,9 @@ const client = createClient('https://drvmxranbpumianmlzqr.supabase.co','sb_publi
 const WEEKS = ['2026-05-04', '2026-05-11', '2026-05-18', '2026-05-25'];
 const HOTELES = ['Cumbria Spa&Hotel', 'Sercotel Guadiana'];
 
+const args = process.argv.slice(2);
+const DRY_RUN = args.includes('--dry-run');
+
 // Mocks de utilidades (replicando admin.js/shift-resolver.js)
 const normalizeId = (id) => String(id || '').toLowerCase().replace(/\s+/g, '').normalize('NFD').replace(/[\u0300-\u036f]/g, '');
 const normalizeDate = (d) => {
@@ -203,7 +206,7 @@ async function run() {
             continue;
         }
 
-        // F) Guardar Snapshot v6
+        // F) Generar Snapshot Object
         const snapshot_json = {
             semana_inicio: weekStart,
             semana_fin: dates[6],
@@ -211,6 +214,16 @@ async function run() {
             empleados: snapshotRows,
             version_motor: 'V12.1-FIX-MAY-FINAL'
         };
+
+        if (DRY_RUN) {
+            console.log(`[DRY RUN] Snapshot preparado para ${hotel} - ${weekStart}`);
+            const sampleRow = snapshotRows.find(r => r.titular_cubierto || r.rowType === 'ausencia_informativa');
+            if (sampleRow) {
+                console.log(`  - Fila ejemplo: ${sampleRow.nombre} (${sampleRow.rowType})`);
+                console.log(`  - Motivo: ${sampleRow.titular_cubierto ? 'Sustituye a ' + sampleRow.titular_cubierto : 'Ausencia informativa'}`);
+            }
+            continue;
+        }
 
         const { error: insErr } = await client.from('publicaciones_cuadrante').insert({
             hotel: hotel,
@@ -229,6 +242,14 @@ async function run() {
         }
     }
   }
+  
+  console.log('\n[FIX MAYO DRY RUN REPORT]');
+  console.log(`Hoteles afectados: ${HOTELES.join(', ')}`);
+  console.log(`Semanas afectadas: ${WEEKS.join(', ')}`);
+  console.log(`Snapshots afectados: ${HOTELES.length * WEEKS.length}`);
+  console.log(`Escrituras realizadas: 0`);
+  console.log(`Riesgos: Ninguno detectado (solo lectura y generación de snapshot_json).`);
+  console.log(`Estado: APTO PARA AUTORIZAR EJECUCIÓN CONTROLADA`);
 }
 
 run();

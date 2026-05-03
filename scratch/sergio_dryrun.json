@@ -1,0 +1,189 @@
+{
+  "rowType": "ausencia_informativa",
+  "puestoOrden": 1500,
+  "nombreVisible": "Sergio Sánchez",
+  "nombre": "Sergio Sánchez",
+  "empleado_id": "Sergio Sánchez",
+  "titularOriginalId": "Sergio Sánchez",
+  "cells": {
+    "2026-04-27": {
+      "label": "—",
+      "code": "—",
+      "icons": [],
+      "type": "NORMAL",
+      "changed": false,
+      "isAbsence": false,
+      "isRefuerzo": false,
+      "titular_cubierto": null,
+      "sustituto": null,
+      "origen": "BASE"
+    },
+    "2026-04-28": {
+      "label": "Permiso",
+      "code": "PERM",
+      "icons": [
+        "📋"
+      ],
+      "type": "PERMISO",
+      "changed": false,
+      "isAbsence": true,
+      "isRefuerzo": false,
+      "titular_cubierto": null,
+      "sustituto": "natalio",
+      "origen": "PERM"
+    },
+    "2026-04-29": {
+      "label": "—",
+      "code": "—",
+      "icons": [],
+      "type": "NORMAL",
+      "changed": false,
+      "isAbsence": false,
+      "isRefuerzo": false,
+      "titular_cubierto": null,
+      "sustituto": null,
+      "origen": "BASE"
+    },
+    "2026-04-30": {
+      "label": "—",
+      "code": "—",
+      "icons": [],
+      "type": "NORMAL",
+      "changed": false,
+      "isAbsence": false,
+      "isRefuerzo": false,
+      "titular_cubierto": null,
+      "sustituto": null,
+      "origen": "BASE"
+    },
+    "2026-05-01": {
+      "label": "—",
+      "code": "—",
+      "icons": [],
+      "type": "NORMAL",
+      "changed": false,
+      "isAbsence": false,
+      "isRefuerzo": false,
+      "titular_cubierto": null,
+      "sustituto": null,
+      "origen": "BASE"
+    },
+    "2026-05-02": {
+      "label": "—",
+      "code": "—",
+      "icons": [],
+      "type": "NORMAL",
+      "changed": false,
+      "isAbsence": false,
+      "isRefuerzo": false,
+      "titular_cubierto": null,
+      "sustituto": null,
+      "origen": "BASE"
+    },
+    "2026-05-03": {
+      "label": "—",
+      "code": "—",
+      "icons": [],
+      "type": "NORMAL",
+      "changed": false,
+      "isAbsence": false,
+      "isRefuerzo": false,
+      "titular_cubierto": null,
+      "sustituto": null,
+      "origen": "BASE"
+    }
+  },
+  "dias": {
+    "2026-04-27": {
+      "label": "—",
+      "code": "—",
+      "icons": [],
+      "type": "NORMAL",
+      "changed": false,
+      "isAbsence": false,
+      "isRefuerzo": false,
+      "titular_cubierto": null,
+      "sustituto": null,
+      "origen": "BASE"
+    },
+    "2026-04-28": {
+      "label": "Permiso",
+      "code": "PERM",
+      "icons": [
+        "📋"
+      ],
+      "type": "PERMISO",
+      "changed": false,
+      "isAbsence": true,
+      "isRefuerzo": false,
+      "titular_cubierto": null,
+      "sustituto": "natalio",
+      "origen": "PERM"
+    },
+    "2026-04-29": {
+      "label": "—",
+      "code": "—",
+      "icons": [],
+      "type": "NORMAL",
+      "changed": false,
+      "isAbsence": false,
+      "isRefuerzo": false,
+      "titular_cubierto": null,
+      "sustituto": null,
+      "origen": "BASE"
+    },
+    "2026-04-30": {
+      "label": "—",
+      "code": "—",
+      "icons": [],
+      "type": "NORMAL",
+      "changed": false,
+      "isAbsence": false,
+      "isRefuerzo": false,
+      "titular_cubierto": null,
+      "sustituto": null,
+      "origen": "BASE"
+    },
+    "2026-05-01": {
+      "label": "—",
+      "code": "—",
+      "icons": [],
+      "type": "NORMAL",
+      "changed": false,
+      "isAbsence": false,
+      "isRefuerzo": false,
+      "titular_cubierto": null,
+      "sustituto": null,
+      "origen": "BASE"
+    },
+    "2026-05-02": {
+      "label": "—",
+      "code": "—",
+      "icons": [],
+      "type": "NORMAL",
+      "changed": false,
+      "isAbsence": false,
+      "isRefuerzo": false,
+      "titular_cubierto": null,
+      "sustituto": null,
+      "origen": "BASE"
+    },
+    "2026-05-03": {
+      "label": "—",
+      "code": "—",
+      "icons": [],
+      "type": "NORMAL",
+      "changed": false,
+      "isAbsence": false,
+      "isRefuerzo": false,
+      "titular_cubierto": null,
+      "sustituto": null,
+      "origen": "BASE"
+    }
+  },
+  "tipo_personal": "apoyo",
+  "puesto": "Dirección",
+  "excludeCounters": true,
+  "origenOrden": null,
+  "evento_id": "e2e67f27-fa94-46a0-80b2-34a8c44d949f"
+}

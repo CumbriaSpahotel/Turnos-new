@@ -1477,9 +1477,6 @@
       <div class="select-wrap">
       <span class="toolbar-label">Elegir hotel</span>
       <select id="hotelSelect" onchange="refreshMobileView()">
-        <option value="">🏨 SELECCIONAR HOTEL</option>
-        <option value="cumbria">Cumbria Spa&amp;Hotel</option>
-        <option value="guadiana">Sercotel Guadiana</option>
       </select>
       </div>
     </header>
@@ -1534,6 +1531,13 @@
     }
 
     window.addEventListener('load', () => {
+        const hotelSelect = document.getElementById('hotelSelect');
+        if (hotelSelect && window.TurnosRules && window.TurnosRules.getCanonicalHotels) {
+            hotelSelect.innerHTML = window.TurnosRules.getCanonicalHotels().map((h, i) => {
+                if (i === 0) return `<option value="">🏨 SELECCIONAR HOTEL</option>`;
+                return `<option value="${h.value}">${h.label}</option>`;
+            }).join('');
+        }
         if (typeof window.refreshMobileView === 'function') {
             window.refreshMobileView();
         }

@@ -1,0 +1,153 @@
+﻿[ShiftResolver] Iniciando carga v5.0...
+[ShiftResolver] Carga finalizada v5.0.
+[Admin] Validando carga v13.3...
+
+--- V8 PUBLICATION ENGINE (Version 141) ---
+Mode: DRY RUN
+Weeks: 2025-03-31, 2025-04-07, 2025-04-14, 2025-04-21, 2025-04-28, 2025-05-05, 2025-05-12, 2025-05-19, 2025-05-26, 2025-06-02, 2025-06-09, 2025-06-16, 2025-06-23
+Hotels: Cumbria Spa&Hotel, Sercotel Guadiana
+
+Fetching global data...
+
+Existing publications detected in target scope: none
+[V9] Loaded 6240 Excel V9 order entries.
+
+[SNAPSHOT] Processing Cumbria Spa&Hotel | 2025-03-31...
+node : [SNAPSHOT] Regenerando datos para Cumbria Spa&Hotel (no cache found)
+En línea: 11 Carácter: 1
++ node publish_v8.js --dry-run --version=141 --weeks="$q2Str" --hotels= ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: ([SNAPSHOT] Rege...no cache found):String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+- Status: Generated 5 rows | 0 pins found.
+- Dry Run: Would insert version 141.
+
+[SNAPSHOT] Processing Sercotel Guadiana | 2025-03-31...
+[SNAPSHOT] Regenerando datos para Sercotel Guadiana (no cache found)
+- Status: Generated 5 rows | 0 pins found.
+- Dry Run: Would insert version 141.
+
+[SNAPSHOT] Processing Cumbria Spa&Hotel | 2025-04-07...
+[SNAPSHOT] Regenerando datos para Cumbria Spa&Hotel (no cache found)
+- Status: Generated 5 rows | 0 pins found.
+- Dry Run: Would insert version 141.
+
+[SNAPSHOT] Processing Sercotel Guadiana | 2025-04-07...
+[SNAPSHOT] Regenerando datos para Sercotel Guadiana (no cache found)
+- Status: Generated 5 rows | 0 pins found.
+- Dry Run: Would insert version 141.
+
+[SNAPSHOT] Processing Cumbria Spa&Hotel | 2025-04-14...
+[SNAPSHOT] Regenerando datos para Cumbria Spa&Hotel (no cache found)
+- Status: Generated 5 rows | 0 pins found.
+- Dry Run: Would insert version 141.
+
+[SNAPSHOT] Processing Sercotel Guadiana | 2025-04-14...
+[SNAPSHOT] Regenerando datos para Sercotel Guadiana (no cache found)
+- Status: Generated 5 rows | 0 pins found.
+- Dry Run: Would insert version 141.
+
+[SNAPSHOT] Processing Cumbria Spa&Hotel | 2025-04-21...
+[SNAPSHOT] Regenerando datos para Cumbria Spa&Hotel (no cache found)
+- Status: Generated 5 rows | 0 pins found.
+- Dry Run: Would insert version 141.
+
+[SNAPSHOT] Processing Sercotel Guadiana | 2025-04-21...
+[SNAPSHOT] Regenerando datos para Sercotel Guadiana (no cache found)
+- Status: Generated 5 rows | 0 pins found.
+- Dry Run: Would insert version 141.
+
+[SNAPSHOT] Processing Cumbria Spa&Hotel | 2025-04-28...
+[SNAPSHOT] Regenerando datos para Cumbria Spa&Hotel (no cache found)
+- Status: Generated 5 rows | 0 pins found.
+- Dry Run: Would insert version 141.
+
+[SNAPSHOT] Processing Sercotel Guadiana | 2025-04-28...
+[SNAPSHOT] Regenerando datos para Sercotel Guadiana (no cache found)
+- Status: Generated 5 rows | 0 pins found.
+- Dry Run: Would insert version 141.
+
+[SNAPSHOT] Processing Cumbria Spa&Hotel | 2025-05-05...
+[SNAPSHOT] Regenerando datos para Cumbria Spa&Hotel (no cache found)
+- Status: Generated 5 rows | 0 pins found.
+- Dry Run: Would insert version 141.
+
+[SNAPSHOT] Processing Sercotel Guadiana | 2025-05-05...
+[SNAPSHOT] Regenerando datos para Sercotel Guadiana (no cache found)
+- Status: Generated 5 rows | 0 pins found.
+- Dry Run: Would insert version 141.
+
+[SNAPSHOT] Processing Cumbria Spa&Hotel | 2025-05-12...
+[SNAPSHOT] Regenerando datos para Cumbria Spa&Hotel (no cache found)
+- Status: Generated 5 rows | 0 pins found.
+- Dry Run: Would insert version 141.
+
+[SNAPSHOT] Processing Sercotel Guadiana | 2025-05-12...
+[SNAPSHOT] Regenerando datos para Sercotel Guadiana (no cache found)
+- Status: Generated 5 rows | 0 pins found.
+- Dry Run: Would insert version 141.
+
+[SNAPSHOT] Processing Cumbria Spa&Hotel | 2025-05-19...
+[SNAPSHOT] Regenerando datos para Cumbria Spa&Hotel (no cache found)
+- Status: Generated 5 rows | 0 pins found.
+- Dry Run: Would insert version 141.
+
+[SNAPSHOT] Processing Sercotel Guadiana | 2025-05-19...
+[SNAPSHOT] Regenerando datos para Sercotel Guadiana (no cache found)
+- Status: Generated 5 rows | 0 pins found.
+- Dry Run: Would insert version 141.
+
+[SNAPSHOT] Processing Cumbria Spa&Hotel | 2025-05-26...
+[SNAPSHOT] Regenerando datos para Cumbria Spa&Hotel (no cache found)
+- Status: Generated 5 rows | 0 pins found.
+- Dry Run: Would insert version 141.
+
+[SNAPSHOT] Processing Sercotel Guadiana | 2025-05-26...
+[SNAPSHOT] Regenerando datos para Sercotel Guadiana (no cache found)
+- Status: Generated 5 rows | 0 pins found.
+- Dry Run: Would insert version 141.
+
+[SNAPSHOT] Processing Cumbria Spa&Hotel | 2025-06-02...
+[SNAPSHOT] Regenerando datos para Cumbria Spa&Hotel (no cache found)
+- Status: Generated 5 rows | 0 pins found.
+- Dry Run: Would insert version 141.
+
+[SNAPSHOT] Processing Sercotel Guadiana | 2025-06-02...
+[SNAPSHOT] Regenerando datos para Sercotel Guadiana (no cache found)
+- Status: Generated 5 rows | 0 pins found.
+- Dry Run: Would insert version 141.
+
+[SNAPSHOT] Processing Cumbria Spa&Hotel | 2025-06-09...
+[SNAPSHOT] Regenerando datos para Cumbria Spa&Hotel (no cache found)
+- Status: Generated 6 rows | 0 pins found.
+- Dry Run: Would insert version 141.
+
+[SNAPSHOT] Processing Sercotel Guadiana | 2025-06-09...
+[SNAPSHOT] Regenerando datos para Sercotel Guadiana (no cache found)
+- Status: Generated 5 rows | 0 pins found.
+- Dry Run: Would insert version 141.
+
+[SNAPSHOT] Processing Cumbria Spa&Hotel | 2025-06-16...
+[SNAPSHOT] Regenerando datos para Cumbria Spa&Hotel (no cache found)
+- Status: Generated 6 rows | 0 pins found.
+- Dry Run: Would insert version 141.
+
+[SNAPSHOT] Processing Sercotel Guadiana | 2025-06-16...
+[SNAPSHOT] Regenerando datos para Sercotel Guadiana (no cache found)
+- Status: Generated 6 rows | 0 pins found.
+- Dry Run: Would insert version 141.
+
+[SNAPSHOT] Processing Cumbria Spa&Hotel | 2025-06-23...
+[SNAPSHOT] Regenerando datos para Cumbria Spa&Hotel (no cache found)
+- Status: Generated 7 rows | 0 pins found.
+- Dry Run: Would insert version 141.
+
+[SNAPSHOT] Processing Sercotel Guadiana | 2025-06-23...
+[SNAPSHOT] Regenerando datos para Sercotel Guadiana (no cache found)
+- Status: Generated 6 rows | 0 pins found.
+- Dry Run: Would insert version 141.
+
+--- FINAL SUMMARY ---
+Total snapshots processed: 26
+Escrituras realizadas: 0

@@ -1,15 +1,16 @@
 /**
- * Sincroniza Cambios de turno.xlsx contra Supabase.
- * Ejecutar en la consola del navegador desde admin.html o cambios.html.
- * Fuente: Cambios de turno.xlsx normalizado el 2026-04-22.
+ * DEPRECATED — NO EJECUTAR. 
+ * Este script escribe datos legacy en tabla turnos y puede corromper el motor V12. 
+ * Usar eventos_cuadrante + Panel Operativo de Cambios.
  *
- * Reglas:
- * - El Excel es la fuente de verdad entre 2025-09-08 y 2026-05-15.
- * - Inserta/actualiza un registro CT por empleado-fecha.
- * - Borra CT sobrantes de ese rango que no est?n en el Excel.
- * - Anula eventos modernos REGULARIZACION_CT_EXCEL para evitar duplicados.
+ * Fuente: Cambios de turno.xlsx normalizado el 2026-04-22.
  */
 (async () => {
+    // PROTECCIÓN ANTI-REEJECUCIÓN (V12.5.24)
+    if (!window.confirm("⚠️ DEPRECATED — NO EJECUTAR.\nEste script escribe datos legacy en tabla turnos y puede corromper el motor V12.\n¿Está ABSOLUTAMENTE seguro de continuar? (Solo para auditoría legacy)")) {
+        console.error("🛑 Ejecución cancelada por el usuario.");
+        return;
+    }
     const records = [
         [
                 "Sercotel Guadiana",

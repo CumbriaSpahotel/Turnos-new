@@ -164,8 +164,11 @@ console.log("[ShiftResolver] Iniciando carga v5.0...");
     window.normalizeEstado = (value) => {
         const v = String(value || '').trim().toLowerCase();
         if (!v) return 'activo';
+        // Estados de anulación explícita
         if (['anulado', 'anulada', 'rechazado', 'rechazada', 'cancelado', 'cancelada'].includes(v)) return 'anulado';
-        // Todo lo demás (incluyendo pendiente, aprobado, etc) se considera activo para operativa
+        // Estados de validez operativa (incluimos FINALIZADO y OK según Regla Maestro v12.5)
+        if (['finalizado', 'finalizada', 'completado', 'completada', 'ok', 'aprobado', 'aprobada', 'activo'].includes(v)) return 'activo';
+        // Fallback: por seguridad, cualquier otro estado no nulo ni anulado se considera activo para no perder datos en la previsualización
         return 'activo';
     };
 
@@ -491,7 +494,9 @@ console.log("[ShiftResolver] Iniciando carga v5.0...");
     };
 
     window.normalizeShiftValue = (value) => {
+        if (window.TurnosRules && window.TurnosRules.isEmptyShift && window.TurnosRules.isEmptyShift(value)) return null;
         const t = String(value || "").trim().toUpperCase();
+        if (!t || t === '-' || t === '—') return null;
         if (t === "M" || t === "MAÑANA" || t === "MANANA") return "M";
         if (t === "T" || t === "TARDE") return "T";
         if (t === "N" || t === "NOCHE") return "N";
@@ -534,6 +539,7 @@ console.log("[ShiftResolver] Iniciando carga v5.0...");
             intercambio: false,
             sustituyeA: null,
             sustituidoPor: null,
+            incidenciaCubierta: null,
             evento: null,
             errores: []
         };
@@ -659,18 +665,21 @@ console.log("[ShiftResolver] Iniciando carga v5.0...");
                 if (isSubstitute || tipo === 'COBERTURA' || tipo === 'SUSTITUCION') {
                     const finalTitularId = isSubstitute ? titularId : window.normalizeId(ev.empleado_id || ev.titular_id || ev.titular || ev.participante_a || ev.nombre || ev.empleado);
                     result.sustituyeA = finalTitularId;
+                    result.incidenciaCubierta = tipo; // Guardamos el tipo original (VAC, PERMISO, etc)
                     const titularTurnoBase = window.getTurnoBaseDeEmpleado(finalTitularId, date, baseIndex);
-                    // Si no encontramos el turno del titular, mantenemos el nuestro (o D por defecto)
-                    // pero si estamos sustituyendo, lo normal es heredar el turno del titular.
                     result.turno = titularTurnoBase || result.turno || '—';
                     result.turnoBase = titularTurnoBase || result.turnoBase || '—';
-                    result.origen = 'SUSTITUCION';
+                    result.origen = `SUSTITUCION_${tipo}`; // Origen específico: SUSTITUCION_VAC, SUSTITUCION_PERMISO, etc.
 
-                    // Marcador 📌 solo para ausencias médicas/permisos (NO para vacaciones)
-                    if (['BAJA', 'PERMISO', 'PERM', 'FORMACION', 'FORM', 'IT'].includes(tipo)) {
-                        result.icon = '\u{1F4CC}';
-                        result.icons = ['\u{1F4CC}'];
-                        result.isCoverageMarker = true;
+                    // Marcador 📌 solo para ausencias médicas/permisos (NO para vacaciones ni formación)
+                    // REGLA V12.5.40: Solo si el turno resultante es de trabajo (M, T, N)
+                    if (['BAJA', 'PERMISO', 'PERM', 'IT'].includes(tipo)) {
+                        const shiftKey = window.TurnosRules?.shiftKey ? window.TurnosRules.shiftKey(result.turno) : String(result.turno || '').toLowerCase();
+                        if (['m', 't', 'n'].includes(shiftKey)) {
+                            result.icon = '\u{1F4CC}';
+                            result.icons = ['\u{1F4CC}'];
+                            result.isCoverageMarker = true;
+                        }
                     }
 
                     if (isDiagTarget) {
@@ -790,6 +799,7 @@ console.log("[ShiftResolver] Iniciando carga v5.0...");
         result.sourceReason = result.incidencia ? `EVENTO_${result.origen}` : (result.turnoBase ? 'BASE_PLANNING' : 'SIN_TURNO');
         result.coversEmployeeId = result.sustituyeA;
         result.coveredByEmployeeId = result.sustituidoPor;
+        result.coveredType = result.incidenciaCubierta;
         
         // Propiedades de compatibilidad legacy para validación
         result.rol = result.sustituyeA ? 'sustituto' : 'titular';

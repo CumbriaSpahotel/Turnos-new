@@ -1,0 +1,502 @@
+﻿[ShiftResolver] Iniciando carga v5.0...
+[ShiftResolver] Carga finalizada v5.0.
+[Admin] Validando carga v13.3...
+
+--- V8 PUBLICATION ENGINE (Version 140) ---
+Mode: DRY RUN
+Weeks: 2026-04-06, 2026-04-13, 2026-04-20, 2026-04-27, 2026-05-04, 2026-05-11, 2026-05-18, 2026-05-25, 2026-06-01, 2026-06-08, 2026-06-15, 2026-06-22, 2026-06-29
+Hotels: Cumbria Spa&Hotel, Sercotel Guadiana
+
+Fetching global data...
+
+Existing publications detected in target scope:
+- 2026-04-13 | Cumbria Spa&Hotel: V122 (activo), V121 (activo), V121 (activo), V1 (activo)
+- 2026-04-13 | Sercotel Guadiana: V131 (activo), V130 (activo), V122 (activo), V121 (activo), V1 (activo)
+- 2026-04-20 | Cumbria Spa&Hotel: V122 (activo), V121 (activo), V121 (activo), V17 (activo), V16 (activo), V15 (activo), V14 (activo), V13 (activo), V12 (activo), V11 (activo), V10 (activo), V9 (activo), V8 (activo), V7 (activo), V6 (activo), V5 (activo), V4 (activo), V3 (activo), V2 (activo), V1 (activo)
+- 2026-04-20 | Sercotel Guadiana: V131 (activo), V130 (activo), V123 (activo), V122 (activo), V13 (activo), V12 (activo), V11 (activo), V10 (activo), V9 (activo), V8 (activo), V7 (activo), V6 (activo), V5 (activo), V4 (activo), V3 (activo), V2 (activo), V1 (activo)
+- 2026-04-27 | Cumbria Spa&Hotel: V139 (activo), V138 (activo), V137 (activo), V136 (activo), V135 (activo), V134 (activo), V133 (activo), V122 (activo), V121 (activo), V121 (activo), V5 (activo), V4 (activo), V3 (activo), V2 (activo), V1 (activo)
+- 2026-04-27 | Sercotel Guadiana: V139 (activo), V138 (activo), V137 (activo), V136 (activo), V135 (activo), V134 (activo), V133 (activo), V131 (activo), V130 (activo), V124 (activo), V123 (activo), V122 (activo), V121 (activo), V121 (activo), V5 (activo), V4 (activo), V3 (activo), V2 (activo), V1 (activo)
+- 2026-05-04 | Cumbria Spa&Hotel: V139 (activo), V138 (activo), V137 (activo), V136 (activo), V135 (activo), V134 (activo), V133 (activo), V132 (activo), V131 (activo), V122 (activo), V121 (activo), V121 (activo), V10 (activo), V9 (activo), V8 (activo), V7 (activo), V7 (activo), V6 (activo), V5 (activo), V4 (activo), V3 (activo), V2 (activo), V1 (activo)
+- 2026-05-04 | Sercotel Guadiana: V139 (activo), V138 (activo), V137 (activo), V136 (activo), V135 (activo), V134 (activo), V133 (activo), V132 (activo), V131 (activo), V122 (activo), V121 (activo), V121 (activo), V7 (activo), V7 (activo), V6 (activo), V2 (activo), V1 (activo)
+- 2026-05-11 | Cumbria Spa&Hotel: V139 (activo), V138 (activo), V137 (activo), V136 (activo), V135 (activo), V134 (activo), V133 (activo), V132 (activo), V131 (activo), V122 (activo), V121 (activo), V121 (activo), V9 (activo), V8 (activo), V7 (activo), V7 (activo), V6 (activo), V2 (activo), V1 (activo)
+- 2026-05-11 | Sercotel Guadiana: V139 (activo), V138 (activo), V137 (activo), V136 (activo), V135 (activo), V134 (activo), V133 (activo), V122 (activo), V121 (activo), V121 (activo), V7 (activo), V7 (activo), V6 (activo), V2 (activo), V1 (activo)
+- 2026-05-18 | Cumbria Spa&Hotel: V139 (activo), V138 (activo), V137 (activo), V136 (activo), V135 (activo), V134 (activo), V133 (activo), V132 (activo), V131 (activo), V122 (activo), V121 (activo), V121 (activo), V9 (activo), V8 (activo), V7 (activo), V7 (activo), V6 (activo), V2 (activo), V1 (activo)
+- 2026-05-18 | Sercotel Guadiana: V139 (activo), V138 (activo), V137 (activo), V136 (activo), V135 (activo), V134 (activo), V133 (activo), V132 (activo), V131 (activo), V122 (activo), V121 (activo), V121 (activo), V7 (activo), V7 (activo), V6 (activo), V2 (activo), V1 (activo)
+- 2026-05-25 | Cumbria Spa&Hotel: V139 (activo), V138 (activo), V137 (activo), V136 (activo), V135 (activo), V134 (activo), V133 (activo), V132 (activo), V131 (activo), V122 (activo), V121 (activo), V121 (activo), V9 (activo), V8 (activo), V7 (activo), V7 (activo), V6 (activo), V2 (activo), V1 (activo)
+- 2026-05-25 | Sercotel Guadiana: V139 (activo), V138 (activo), V137 (activo), V136 (activo), V135 (activo), V134 (activo), V133 (activo), V132 (activo), V131 (activo), V122 (activo), V121 (activo), V121 (activo), V7 (activo), V7 (activo), V6 (activo), V2 (activo), V1 (activo)
+- 2026-06-01 | Sercotel Guadiana: V132 (activo), V131 (activo)
+- 2026-06-08 | Sercotel Guadiana: V132 (activo), V131 (activo)
+- 2026-06-15 | Cumbria Spa&Hotel: V132 (activo), V131 (activo), V122 (activo), V121 (activo), V121 (activo), V1 (activo)
+- 2026-06-15 | Sercotel Guadiana: V123 (activo), V122 (activo), V121 (activo), V121 (activo), V1 (activo)
+[V9] Loaded 6240 Excel V9 order entries.
+
+[SNAPSHOT] Processing Cumbria Spa&Hotel | 2026-04-06...
+node : [SNAPSHOT] Regenerando datos para Cumbria Spa&Hotel (no cache found)
+En línea: 9 Carácter: 1
++ node publish_v8.js --dry-run --version=140 --weeks="$q2Str" --hotels= ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: ([SNAPSHOT] Rege...no cache found):String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+- Status: Generated 7 rows | 0 pins found.
+- Dry Run: Would insert version 140.
+
+[SNAPSHOT] Processing Sercotel Guadiana | 2026-04-06...
+[SNAPSHOT] Regenerando datos para Sercotel Guadiana (no cache found)
+[RECONSTRUCT_SWAP_INCOHERENT] {
+  fecha: '2026-04-10',
+  origen: 'dani',
+  destino: 'diana',
+  baseOrig: 'M',
+  baseDest: 'T',
+  eventOrig: 'Ma├▒ana',
+  eventDest: 'Ma├▒ana',
+  finalOrig: 'T',
+  finalDest: 'M'
+}
+[RECONSTRUCT_SWAP_INCOHERENT] {
+  fecha: '2026-04-10',
+  origen: 'dani',
+  destino: 'diana',
+  baseOrig: 'M',
+  baseDest: 'T',
+  eventOrig: 'Ma├▒ana',
+  eventDest: 'Ma├▒ana',
+  finalOrig: 'T',
+  finalDest: 'M'
+}
+- Status: Generated 6 rows | 1 pins found.
+- Dry Run: Would insert version 140.
+
+[SNAPSHOT] Processing Cumbria Spa&Hotel | 2026-04-13...
+[SNAPSHOT] Regenerando datos para Cumbria Spa&Hotel (no cache found)
+[LEGACY_CT_BLOCKED] {
+  cambioId: '9f0e86c7-cfd6-493a-94a3-03cd442f9e5a',
+  fecha: '2026-04-15',
+  hotel: 'Cumbria Spa&Hotel',
+  origen: 'cristina',
+  destino: 'miriam',
+  campo: 'turno_nuevo',
+  valor: 'CT',
+  accion: 'no usado como turno'
+}
+[LEGACY_CT_BLOCKED] {
+  cambioId: 'be04d159-35ca-4bd1-953a-17d255a678f6',
+  fecha: '2026-04-16',
+  hotel: 'Cumbria Spa&Hotel',
+  origen: 'cristina',
+  destino: 'miriam',
+  campo: 'turno_nuevo',
+  valor: 'CT',
+  accion: 'no usado como turno'
+}
+[LEGACY_CT_BLOCKED] {
+  cambioId: 'ada08997-0699-4fd0-a4ed-bd7dc18e0d67',
+  fecha: '2026-04-17',
+  hotel: 'Cumbria Spa&Hotel',
+  origen: 'cristina',
+  destino: 'miriam',
+  campo: 'turno_nuevo',
+  valor: 'CT',
+  accion: 'no usado como turno'
+}
+[LEGACY_CT_BLOCKED] {
+  cambioId: '9f0e86c7-cfd6-493a-94a3-03cd442f9e5a',
+  fecha: '2026-04-15',
+  hotel: 'Cumbria Spa&Hotel',
+  origen: 'cristina',
+  destino: 'miriam',
+  campo: 'turno_nuevo',
+  valor: 'CT',
+  accion: 'no usado como turno'
+}
+[LEGACY_CT_BLOCKED] {
+  cambioId: 'be04d159-35ca-4bd1-953a-17d255a678f6',
+  fecha: '2026-04-16',
+  hotel: 'Cumbria Spa&Hotel',
+  origen: 'cristina',
+  destino: 'miriam',
+  campo: 'turno_nuevo',
+  valor: 'CT',
+  accion: 'no usado como turno'
+}
+[LEGACY_CT_BLOCKED] {
+  cambioId: 'ada08997-0699-4fd0-a4ed-bd7dc18e0d67',
+  fecha: '2026-04-17',
+  hotel: 'Cumbria Spa&Hotel',
+  origen: 'cristina',
+  destino: 'miriam',
+  campo: 'turno_nuevo',
+  valor: 'CT',
+  accion: 'no usado como turno'
+}
+- Status: Generated 7 rows | 0 pins found.
+- Dry Run: Would insert version 140.
+
+[SNAPSHOT] Processing Sercotel Guadiana | 2026-04-13...
+[SNAPSHOT] Regenerando datos para Sercotel Guadiana (no cache found)
+[RECONSTRUCT_SWAP_INCOHERENT] {
+  fecha: '2026-04-18',
+  origen: 'dani',
+  destino: 'macarena',
+  baseOrig: 'T',
+  baseDest: 'D',
+  eventOrig: 'M',
+  eventDest: 'D',
+  finalOrig: 'D',
+  finalDest: 'T'
+}
+[RECONSTRUCT_SWAP_INCOHERENT] {
+  fecha: '2026-04-19',
+  origen: 'dani',
+  destino: 'macarena',
+  baseOrig: 'T',
+  baseDest: 'D',
+  eventOrig: 'M',
+  eventDest: 'D',
+  finalOrig: 'D',
+  finalDest: 'T'
+}
+[RECONSTRUCT_SWAP_INCOHERENT] {
+  fecha: '2026-04-18',
+  origen: 'dani',
+  destino: 'macarena',
+  baseOrig: 'T',
+  baseDest: 'D',
+  eventOrig: 'M',
+  eventDest: 'D',
+  finalOrig: 'D',
+  finalDest: 'T'
+}
+[RECONSTRUCT_SWAP_INCOHERENT] {
+  fecha: '2026-04-19',
+  origen: 'dani',
+  destino: 'macarena',
+  baseOrig: 'T',
+  baseDest: 'D',
+  eventOrig: 'M',
+  eventDest: 'D',
+  finalOrig: 'D',
+  finalDest: 'T'
+}
+- Status: Generated 5 rows | 0 pins found.
+- Dry Run: Would insert version 140.
+
+[SNAPSHOT] Processing Cumbria Spa&Hotel | 2026-04-20...
+[SNAPSHOT] Regenerando datos para Cumbria Spa&Hotel (no cache found)
+- Status: Generated 6 rows | 0 pins found.
+- Dry Run: Would insert version 140.
+
+[SNAPSHOT] Processing Sercotel Guadiana | 2026-04-20...
+[SNAPSHOT] Regenerando datos para Sercotel Guadiana (no cache found)
+- Status: Generated 5 rows | 0 pins found.
+- Dry Run: Would insert version 140.
+
+[SNAPSHOT] Processing Cumbria Spa&Hotel | 2026-04-27...
+[SNAPSHOT] Regenerando datos para Cumbria Spa&Hotel (no cache found)
+[RECONSTRUCT_SWAP_INCOHERENT] {
+  fecha: '2026-05-02',
+  origen: 'miriam',
+  destino: 'sergio',
+  baseOrig: 'T',
+  baseDest: 'M',
+  eventOrig: 'Tarde',
+  eventDest: 'Ma├▒ana',
+  finalOrig: 'M',
+  finalDest: 'T'
+}
+[RECONSTRUCT_SWAP_INCOHERENT] {
+  fecha: '2026-05-02',
+  origen: 'miriam',
+  destino: 'sergio',
+  baseOrig: 'T',
+  baseDest: 'M',
+  eventOrig: 'Tarde',
+  eventDest: 'Ma├▒ana',
+  finalOrig: 'M',
+  finalDest: 'T'
+}
+- Status: Generated 6 rows | 0 pins found.
+- Dry Run: Would insert version 140.
+
+[SNAPSHOT] Processing Sercotel Guadiana | 2026-04-27...
+[SNAPSHOT] Regenerando datos para Sercotel Guadiana (no cache found)
+[RECONSTRUCT_SWAP_INCOHERENT] {
+  fecha: '2026-05-02',
+  origen: 'dani',
+  destino: 'diana',
+  baseOrig: 'M',
+  baseDest: 'N',
+  eventOrig: 'Ma├▒ana',
+  eventDest: 'Noche',
+  finalOrig: 'N',
+  finalDest: 'M'
+}
+[RECONSTRUCT_SWAP_INCOHERENT] {
+  fecha: '2026-05-03',
+  origen: 'dani',
+  destino: 'diana',
+  baseOrig: 'M',
+  baseDest: 'N',
+  eventOrig: 'Ma├▒ana',
+  eventDest: 'Noche',
+  finalOrig: 'N',
+  finalDest: 'M'
+}
+[RECONSTRUCT_SWAP_INCOHERENT] {
+  fecha: '2026-05-02',
+  origen: 'dani',
+  destino: 'diana',
+  baseOrig: 'M',
+  baseDest: 'N',
+  eventOrig: 'Ma├▒ana',
+  eventDest: 'Noche',
+  finalOrig: 'N',
+  finalDest: 'M'
+}
+[RECONSTRUCT_SWAP_INCOHERENT] {
+  fecha: '2026-05-03',
+  origen: 'dani',
+  destino: 'diana',
+  baseOrig: 'M',
+  baseDest: 'N',
+  eventOrig: 'Ma├▒ana',
+  eventDest: 'Noche',
+  finalOrig: 'N',
+  finalDest: 'M'
+}
+[PIN_DEBUG snapshot] Natalio 2026-04-28 {
+  turno: 'M',
+  icon: '­ƒôî',
+  icons: [ '­ƒôî' ],
+  cambio: false,
+  isCoverageMarker: true
+}
+- Status: Generated 6 rows | 1 pins found.
+- Dry Run: Would insert version 140.
+
+[SNAPSHOT] Processing Cumbria Spa&Hotel | 2026-05-04...
+[SNAPSHOT] Regenerando datos para Cumbria Spa&Hotel (no cache found)
+- Status: Generated 6 rows | 0 pins found.
+- Dry Run: Would insert version 140.
+
+[SNAPSHOT] Processing Sercotel Guadiana | 2026-05-04...
+[SNAPSHOT] Regenerando datos para Sercotel Guadiana (no cache found)
+[RECONSTRUCT_SWAP_INCOHERENT] {
+  fecha: '2026-05-04',
+  origen: 'dani',
+  destino: 'diana',
+  baseOrig: 'M',
+  baseDest: 'N',
+  eventOrig: 'Ma├▒ana',
+  eventDest: 'Noche',
+  finalOrig: 'N',
+  finalDest: 'M'
+}
+[RECONSTRUCT_SWAP_INCOHERENT] {
+  fecha: '2026-05-05',
+  origen: 'dani',
+  destino: 'diana',
+  baseOrig: 'M',
+  baseDest: 'N',
+  eventOrig: 'Ma├▒ana',
+  eventDest: 'Noche',
+  finalOrig: 'N',
+  finalDest: 'M'
+}
+[RECONSTRUCT_SWAP_INCOHERENT] {
+  fecha: '2026-05-06',
+  origen: 'dani',
+  destino: 'diana',
+  baseOrig: 'M',
+  baseDest: 'D',
+  eventOrig: 'Ma├▒ana',
+  eventDest: 'Descanso',
+  finalOrig: 'D',
+  finalDest: 'M'
+}
+[RECONSTRUCT_SWAP_INCOHERENT] {
+  fecha: '2026-05-08',
+  origen: 'dani',
+  destino: 'diana',
+  baseOrig: 'D',
+  baseDest: 'M',
+  eventOrig: 'Descanso',
+  eventDest: 'Ma├▒ana',
+  finalOrig: 'M',
+  finalDest: 'D'
+}
+[RECONSTRUCT_SWAP_INCOHERENT] {
+  fecha: '2026-05-04',
+  origen: 'dani',
+  destino: 'diana',
+  baseOrig: 'M',
+  baseDest: 'N',
+  eventOrig: 'Ma├▒ana',
+  eventDest: 'Noche',
+  finalOrig: 'N',
+  finalDest: 'M'
+}
+[RECONSTRUCT_SWAP_INCOHERENT] {
+  fecha: '2026-05-05',
+  origen: 'dani',
+  destino: 'diana',
+  baseOrig: 'M',
+  baseDest: 'N',
+  eventOrig: 'Ma├▒ana',
+  eventDest: 'Noche',
+  finalOrig: 'N',
+  finalDest: 'M'
+}
+[RECONSTRUCT_SWAP_INCOHERENT] {
+  fecha: '2026-05-06',
+  origen: 'dani',
+  destino: 'diana',
+  baseOrig: 'M',
+  baseDest: 'D',
+  eventOrig: 'Ma├▒ana',
+  eventDest: 'Descanso',
+  finalOrig: 'D',
+  finalDest: 'M'
+}
+[RECONSTRUCT_SWAP_INCOHERENT] {
+  fecha: '2026-05-08',
+  origen: 'dani',
+  destino: 'diana',
+  baseOrig: 'D',
+  baseDest: 'M',
+  eventOrig: 'Descanso',
+  eventDest: 'Ma├▒ana',
+  finalOrig: 'M',
+  finalDest: 'D'
+}
+- Status: Generated 5 rows | 0 pins found.
+- Dry Run: Would insert version 140.
+
+[SNAPSHOT] Processing Cumbria Spa&Hotel | 2026-05-11...
+[SNAPSHOT] Regenerando datos para Cumbria Spa&Hotel (no cache found)
+- Status: Generated 6 rows | 0 pins found.
+- Dry Run: Would insert version 140.
+
+[SNAPSHOT] Processing Sercotel Guadiana | 2026-05-11...
+[SNAPSHOT] Regenerando datos para Sercotel Guadiana (no cache found)
+[RECONSTRUCT_SWAP_INCOHERENT] {
+  fecha: '2026-05-15',
+  origen: 'dani',
+  destino: 'diana',
+  baseOrig: 'T',
+  baseDest: 'D',
+  eventOrig: 'Tarde',
+  eventDest: 'Descanso',
+  finalOrig: 'D',
+  finalDest: 'T'
+}
+[RECONSTRUCT_SWAP_INCOHERENT] {
+  fecha: '2026-05-15',
+  origen: 'dani',
+  destino: 'diana',
+  baseOrig: 'T',
+  baseDest: 'D',
+  eventOrig: 'Tarde',
+  eventDest: 'Descanso',
+  finalOrig: 'D',
+  finalDest: 'T'
+}
+- Status: Generated 5 rows | 0 pins found.
+- Dry Run: Would insert version 140.
+
+[SNAPSHOT] Processing Cumbria Spa&Hotel | 2026-05-18...
+[SNAPSHOT] Regenerando datos para Cumbria Spa&Hotel (no cache found)
+- Status: Generated 6 rows | 0 pins found.
+- Dry Run: Would insert version 140.
+
+[SNAPSHOT] Processing Sercotel Guadiana | 2026-05-18...
+[SNAPSHOT] Regenerando datos para Sercotel Guadiana (no cache found)
+- Status: Generated 5 rows | 0 pins found.
+- Dry Run: Would insert version 140.
+
+[SNAPSHOT] Processing Cumbria Spa&Hotel | 2026-05-25...
+[SNAPSHOT] Regenerando datos para Cumbria Spa&Hotel (no cache found)
+- Status: Generated 6 rows | 0 pins found.
+- Dry Run: Would insert version 140.
+
+[SNAPSHOT] Processing Sercotel Guadiana | 2026-05-25...
+[SNAPSHOT] Regenerando datos para Sercotel Guadiana (no cache found)
+- Status: Generated 5 rows | 0 pins found.
+- Dry Run: Would insert version 140.
+
+[SNAPSHOT] Processing Cumbria Spa&Hotel | 2026-06-01...
+[SNAPSHOT] Regenerando datos para Cumbria Spa&Hotel (no cache found)
+- Status: Generated 6 rows | 0 pins found.
+- Dry Run: Would insert version 140.
+
+[SNAPSHOT] Processing Sercotel Guadiana | 2026-06-01...
+[SNAPSHOT] Regenerando datos para Sercotel Guadiana (no cache found)
+- Status: Generated 6 rows | 0 pins found.
+- Dry Run: Would insert version 140.
+
+[SNAPSHOT] Processing Cumbria Spa&Hotel | 2026-06-08...
+[SNAPSHOT] Regenerando datos para Cumbria Spa&Hotel (no cache found)
+- Status: Generated 7 rows | 0 pins found.
+- Dry Run: Would insert version 140.
+
+[SNAPSHOT] Processing Sercotel Guadiana | 2026-06-08...
+[SNAPSHOT] Regenerando datos para Sercotel Guadiana (no cache found)
+- Status: Generated 6 rows | 0 pins found.
+- Dry Run: Would insert version 140.
+
+[SNAPSHOT] Processing Cumbria Spa&Hotel | 2026-06-15...
+[SNAPSHOT] Regenerando datos para Cumbria Spa&Hotel (no cache found)
+- Status: Generated 6 rows | 0 pins found.
+- Dry Run: Would insert version 140.
+
+[SNAPSHOT] Processing Sercotel Guadiana | 2026-06-15...
+[SNAPSHOT] Regenerando datos para Sercotel Guadiana (no cache found)
+- Status: Generated 6 rows | 0 pins found.
+- Dry Run: Would insert version 140.
+
+[SNAPSHOT] Processing Cumbria Spa&Hotel | 2026-06-22...
+[SNAPSHOT] Regenerando datos para Cumbria Spa&Hotel (no cache found)
+- Status: Generated 6 rows | 0 pins found.
+- Dry Run: Would insert version 140.
+
+[SNAPSHOT] Processing Sercotel Guadiana | 2026-06-22...
+[SNAPSHOT] Regenerando datos para Sercotel Guadiana (no cache found)
+[RECONSTRUCT_SWAP_INCOHERENT] {
+  fecha: '2026-06-23',
+  origen: 'diana',
+  destino: 'dani',
+  baseOrig: 'T',
+  baseDest: 'D',
+  eventOrig: 'Tarde',
+  eventDest: 'Descanso',
+  finalOrig: 'D',
+  finalDest: 'T'
+}
+[RECONSTRUCT_SWAP_INCOHERENT] {
+  fecha: '2026-06-23',
+  origen: 'diana',
+  destino: 'dani',
+  baseOrig: 'T',
+  baseDest: 'D',
+  eventOrig: 'Tarde',
+  eventDest: 'Descanso',
+  finalOrig: 'D',
+  finalDest: 'T'
+}
+- Status: Generated 6 rows | 0 pins found.
+- Dry Run: Would insert version 140.
+
+[SNAPSHOT] Processing Cumbria Spa&Hotel | 2026-06-29...
+[SNAPSHOT] Regenerando datos para Cumbria Spa&Hotel (no cache found)
+- Status: Generated 7 rows | 0 pins found.
+- Dry Run: Would insert version 140.
+
+[SNAPSHOT] Processing Sercotel Guadiana | 2026-06-29...
+[SNAPSHOT] Regenerando datos para Sercotel Guadiana (no cache found)
+- Status: Generated 6 rows | 0 pins found.
+- Dry Run: Would insert version 140.
+
+--- FINAL SUMMARY ---
+Total snapshots processed: 26
+Escrituras realizadas: 0

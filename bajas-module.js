@@ -22,7 +22,8 @@ function fmtD(d){if(!d)return'—';const p=d.split('-');return p.length===3?`${p
 function diffDays(a,b){return Math.round((new Date(b+'T12:00:00')-new Date(a+'T12:00:00'))/864e5)+1;}
 function empLabel(id,emps){
   if(!id)return'—';
-  const e=(emps||window.empleadosGlobales||[]).find(x=>x.id===id||x.nombre===id);
+  const norm = window.normalizeId ? window.normalizeId(id) : String(id).trim().toLowerCase();
+  const e=(emps||window.empleadosGlobales||[]).find(x=>(window.normalizeId?window.normalizeId(x.id):x.id)===norm || (window.normalizeId?window.normalizeId(x.nombre):x.nombre)===norm);
   if(e){
     const name=e.nombre||e.id;
     const idInt=e.id_interno||e.id;
@@ -177,6 +178,9 @@ window.renderBajas=async()=>{
         </label>
         <button class="btn-premium" onclick="window.clearBajasFilters()" style="padding:8px 14px;font-size:0.7rem;">✕ Limpiar</button>
         <button class="btn-premium" onclick="window.refreshBajas()" style="padding:8px 14px;font-size:0.7rem;">↻ Refrescar</button>
+        <button id="btnSyncGapsBajas" class="btn-publish-premium" onclick="window.syncGapsFromExcel('btnSyncGapsBajas')" style="padding:8px 14px;font-size:0.7rem;margin-left:auto;background:linear-gradient(135deg,#34d399,#10b981);border:none;">
+          <i class="fas fa-magic"></i> Completar Supabase
+        </button>
       </div>
     </div>
     ${_bajasGrouped.length===0?`<div style="padding:3rem;text-align:center;color:var(--text-dim);font-size:0.9rem;">No hay ${fE==='all'?'registros de bajas o permisos':fE==='pendiente_activo'?'bajas o permisos pendientes o activos':fE==='pendiente'?'bajas o permisos pendientes':'registros con estado "'+fE+'"'} para los filtros actuales.</div>`:`
