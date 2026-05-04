@@ -68,7 +68,7 @@
             icon: '',
             publicClass: 'v-descanso',
             mobileClass: 'd',
-            adminStyle: 'background:#ffb3b3; color:#ffffff; border:1px solid #ff9999;'
+            adminStyle: 'background:#fee2e2; color:#991b1b; border:1px solid #fecaca;'
         },
         v: {
             label: 'Vacaciones',

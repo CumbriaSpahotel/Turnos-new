@@ -9,7 +9,7 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 const DEFAULT_VERSION = 141;
 const DEFAULT_WEEKS = ['2026-04-27', '2026-05-04', '2026-05-11', '2026-05-18', '2026-05-25'];
 const DEFAULT_HOTELS = ['Cumbria Spa&Hotel', 'Sercotel Guadiana'];
-const EXECUTE_CONFIRM_TOKEN = 'publish-2025-v141';
+const EXECUTE_CONFIRM_TOKEN = 'publish-2026-v141';
 
 // Mock Environment for admin.js
 global.window = {
@@ -108,6 +108,8 @@ async function run() {
             process.exit(1);
         }
     }
+    console.log(`[V140] Operational Participant Resolution: ACTIVE`);
+    console.log(`[V140] Shared Engine: ${path.basename(__filename)} using shift-resolver.js + admin.js`);
 
     console.log("\nFetching global data...");
     const [ {data: profiles}, {data: allEvents} ] = await Promise.all([

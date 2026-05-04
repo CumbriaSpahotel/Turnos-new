@@ -463,6 +463,45 @@ console.log("[ShiftResolver] Iniciando carga v5.0...");
         return turno === null || turno === undefined || String(turno).trim() === '' ? null : turno;
     };
 
+    /**
+     * getOperationalOccupant(empId, date, events, hotel, context)
+     * Resuelve quién es el ocupante real de un puesto en una fecha dada.
+     * Sigue la cadena de sustituciones si existe.
+     */
+    window.getOperationalOccupant = (empId, date, events, hotel, context = {}) => {
+        const normId = window.normalizeId(empId);
+        if (!normId) return null;
+
+        // 1. Prioridad: Mapas pre-construidos (Regla Maestra V140)
+        const maps = context.baseIndex || context;
+        if (maps.operationalOccupantByOriginalEmployeeId) {
+            const dayMap = maps.operationalOccupantByOriginalEmployeeId.get(date);
+            if (dayMap && dayMap.has(normId)) {
+                const sustId = dayMap.get(normId);
+                // Recursión para cadenas de sustitución
+                return window.getOperationalOccupant(sustId, date, events, hotel, context);
+            }
+            return normId;
+        }
+
+        // 2. Fallback: Búsqueda dinámica en eventos
+        const ev = events.find(e => 
+            window.normalizeEstado(e.estado) !== 'anulado' &&
+            window.eventoAplicaEnFecha(e, date) &&
+            window.isTitularOfAbsence(e, normId) &&
+            ['VAC', 'BAJA', 'PERMISO', 'PERM', 'FORMACION', 'IT', 'SUSTITUCION', 'COBERTURA'].includes(window.normalizeTipo(e.tipo)) &&
+            (e.empleado_destino_id || e.sustituto_id || e.sustituto || e.payload?.sustituto_id || e.payload?.sustituto)
+        );
+        
+        if (ev) {
+            const sustId = window.normalizeId(ev.empleado_destino_id || ev.sustituto_id || ev.sustituto || ev.payload?.sustituto_id || ev.payload?.sustituto);
+            if (sustId && sustId !== normId) {
+                return window.getOperationalOccupant(sustId, date, events, hotel, context);
+            }
+        }
+        return normId;
+    };
+
 
     // --- 2. MOTOR DE PRIORIDAD ---
 
@@ -583,14 +622,39 @@ console.log("[ShiftResolver] Iniciando carga v5.0...");
             }
         }
 
-        // 1. Buscar eventos aplicables
+        // 1. Identificar si el empleado es sustituto operativo de alguien hoy (V140)
+        const titularsSubstitutedByMe = [];
+        eventos.forEach(ev => {
+            const t = window.normalizeTipo(ev.tipo);
+            if (!['VAC', 'BAJA', 'PERMISO', 'PERM', 'FORMACION', 'IT', 'SUSTITUCION', 'COBERTURA'].includes(t)) return;
+            if (window.normalizeEstado(ev.estado) === 'anulado') return;
+            if (!window.eventoAplicaEnFecha(ev, date)) return;
+            
+            const destId = window.normalizeId(ev.empleado_destino_id || ev.sustituto_id || ev.sustituto || ev.payload?.sustituto_id || ev.payload?.sustituto || ev.participante_b);
+            if (destId === empId) {
+                const titularId = window.normalizeId(ev.empleado_id || ev.titular_id || ev.titular || ev.participante_a || ev.nombre || ev.empleado);
+                if (titularId && titularId !== empId) titularsSubstitutedByMe.push(titularId);
+            }
+        });
+
+        // 2. Buscar eventos aplicables (V140: expandido a titulares que sustituyo)
         let eventosActivos = eventos.filter(ev => {
             const estado = (ev.estado || 'activo').toLowerCase();
             if (estado === 'anulado' || estado === 'rechazado' || estado === 'borrador') return false;
             
-            return window.eventoAplicaEnFecha(ev, date) &&
-                window.eventoPerteneceAHotel(ev, hotel) &&
-                window.eventoPerteneceAEmpleado(ev, empId, { hotel });
+            if (!window.eventoAplicaEnFecha(ev, date)) return false;
+            if (normHotel && !window.eventoPerteneceAHotel(ev, hotel)) return false;
+
+            // Match directo conmigo
+            if (window.eventoPerteneceAEmpleado(ev, empId, { hotel })) return true;
+            
+            // Match con alguien a quien sustituyo (solo para cambios/intercambios)
+            const tipo = window.normalizeTipo(ev.tipo);
+            if (tipo === 'INTERCAMBIO_TURNO' || tipo === 'CAMBIO_TURNO') {
+                return titularsSubstitutedByMe.some(tId => window.eventoPerteneceAEmpleado(ev, tId, { hotel }));
+            }
+            
+            return false;
         });
 
         // 1.1 DEDUPLICACIÓN LÓGICA (V12.5.19)
@@ -697,11 +761,31 @@ console.log("[ShiftResolver] Iniciando carga v5.0...");
 
                     // CASO: CAMBIO / INTERCAMBIO APROBADO
                     if (tipo === 'INTERCAMBIO_TURNO' || tipo === 'CAMBIO_TURNO') {
-                        const origenId = window.normalizeId(ev.empleado_id || ev.titular_id || ev.origen_id || ev.participante_a);
-                        const destinoId = window.normalizeId(ev.empleado_destino_id || ev.destino_id || ev.sustituto_id || ev.participante_b);
-                        const isOrigin = window.normalizeId(empId) === origenId;
-                        const isDestination = window.normalizeId(empId) === destinoId;
-                        const isReciproco = Boolean(origenId && destinoId);
+                        const requestedA = window.normalizeId(ev.empleado_id || ev.titular_id || ev.origen_id || ev.participante_a);
+                        const requestedB = window.normalizeId(ev.empleado_destino_id || ev.destino_id || ev.sustituto_id || ev.participante_b);
+                        
+                        // RESOLUCIÓN OPERATIVA (Regla Maestra V140)
+                        // Los cambios se aplican sobre el ocupante real del día.
+                        const scanList = (allEvents && allEvents.length > 0) ? allEvents : eventos;
+                        const resolvedA = window.getOperationalOccupant ? window.getOperationalOccupant(requestedA, date, scanList, hotel, { baseIndex, eventos }) : requestedA;
+                        const resolvedB = window.getOperationalOccupant ? window.getOperationalOccupant(requestedB, date, scanList, hotel, { baseIndex, eventos }) : requestedB;
+
+                        const isOrigin = empId === resolvedA;
+                        const isDestination = empId === resolvedB;
+
+                        if (resolvedA !== requestedA || resolvedB !== requestedB) {
+                            if (isOrigin || isDestination) {
+                                console.log('CHANGE_TARGET_RESOLVED_TO_OPERATIONAL_OCCUPANT:', {
+                                    originalTarget: isOrigin ? (requestedA !== resolvedA ? requestedA : '?') : (requestedB !== resolvedB ? requestedB : '?'),
+                                    resolvedTarget: empId,
+                                    reason: "original target absent with operational substitute",
+                                    absenceType: result.incidenciaCubierta || "ABSENCE",
+                                    weekStart: window.getWeekStartISO ? window.getWeekStartISO(date) : date,
+                                    hotel: hotel,
+                                    appliedBetween: `${requestedA} <-> ${requestedB} resolved to ${resolvedA} <-> ${resolvedB}`
+                                });
+                            }
+                        }
 
                         if (!isOrigin && !isDestination) continue;
 
@@ -715,8 +799,8 @@ console.log("[ShiftResolver] Iniciando carga v5.0...");
                                 cambioId: ev.id,
                                 fecha: date,
                                 hotel: hotel,
-                                origen: origenId,
-                                destino: destinoId,
+                                origen: requestedA,
+                                destino: requestedB,
                                 campo: window.isInvalidLegacyChangeValue(tOrigRaw) ? "turno_original" : "turno_nuevo",
                                 valor: "CT",
                                 accion: "no usado como turno"
@@ -725,9 +809,10 @@ console.log("[ShiftResolver] Iniciando carga v5.0...");
 
                         // Obtener turnos base/operativos antes del cambio para reconstrucción
                         // Usamos result.turno (que ya incluye sustituciones previas si las hay) como base operativa para el actual
-                        const turnoOperativoOrigenAntes = (isOrigin ? result.turno : window.getTurnoOperativoBase(origenId, date, { baseIndex, eventos })) || '—';
-                        const turnoOperativoDestinoAntes = (isDestination ? result.turno : window.getTurnoOperativoBase(destinoId, date, { baseIndex, eventos })) || '—';
+                        const turnoOperativoOrigenAntes = (isOrigin ? result.turno : window.getTurnoOperativoBase(requestedA, date, { baseIndex, eventos })) || '—';
+                        const turnoOperativoDestinoAntes = (isDestination ? result.turno : window.getTurnoOperativoBase(requestedB, date, { baseIndex, eventos })) || '—';
 
+                        const isReciproco = Boolean(requestedA && requestedB);
                         if (isReciproco) {
                             // RECONSTRUCCIÓN DE INTERCAMBIO (REGLA GENERAL V12.5.21)
                             let finalTurnoOrigen = tDestRaw; 
@@ -752,8 +837,8 @@ console.log("[ShiftResolver] Iniciando carga v5.0...");
                                 if (window.DEBUG_MODE || isIncoherente) {
                                     console.log(`[RECONSTRUCT_SWAP_${isIncoherente ? 'INCOHERENT' : 'LEGACY'}]`, {
                                         fecha: date,
-                                        origen: origenId,
-                                        destino: destinoId,
+                                        origen: requestedA,
+                                        destino: requestedB,
                                         baseOrig: turnoOperativoOrigenAntes,
                                         baseDest: turnoOperativoDestinoAntes,
                                         eventOrig: tOrigRaw,
@@ -768,12 +853,12 @@ console.log("[ShiftResolver] Iniciando carga v5.0...");
                                         severity: 'warning',
                                         type: 'RECONSTRUCT_SWAP_INCOHERENT',
                                         title: 'Intercambio reconstruido por incoherencia',
-                                        desc: `${origenId} ↔ ${destinoId} el ${date}: el evento no coincide con la base (${eventOrigCode || tOrigRaw || 'sin origen'} / ${eventDestCode || tDestRaw || 'sin destino'} frente a ${baseOrigCode || turnoOperativoOrigenAntes} / ${baseDestCode || turnoOperativoDestinoAntes}).`,
-                                        empId: origenId,
+                                        desc: `${requestedA} ↔ ${requestedB} el ${date}: el evento no coincide con la base (${eventOrigCode || tOrigRaw || 'sin origen'} / ${eventDestCode || tDestRaw || 'sin destino'} frente a ${baseOrigCode || turnoOperativoOrigenAntes} / ${baseDestCode || turnoOperativoDestinoAntes}).`,
+                                        empId: requestedA,
                                         fecha: date,
                                         section: 'preview',
                                         actionLabel: 'Ver en Vista Previa',
-                                        key: `shift-resolver|${date}|${origenId}|${destinoId}`
+                                        key: `shift-resolver|${date}|${requestedA}|${requestedB}`
                                     });
                                 }
                             }
@@ -807,8 +892,8 @@ console.log("[ShiftResolver] Iniciando carga v5.0...");
                             });
                         }
                     }
+                }
             }
-        }
 
         // El motor ahora mantiene 'D' como valor explícito para evitar confusiones con vacíos
         

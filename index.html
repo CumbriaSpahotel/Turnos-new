@@ -322,12 +322,11 @@
       .v-m, .v-manana { background: var(--mint-bg); color: var(--mint-text); border-color: #c7e5ca; }
       .v-t, .v-tarde { background: var(--amber-bg); color: var(--amber-text); border-color: #f3df9b; }
       .v-n, .v-noche { background: var(--slate-bg); color: var(--slate-text); border-color: #d8dee5; }
-      .v-d, .v-descanso { background: #ffb3b3 !important; color: #ffffff !important; border: 1px solid #ff9999 !important; }
+      .v-d, .v-descanso { background: #fee2e2 !important; color: #991b1b !important; border: 1px solid #fecaca !important; }
       .v-v, .v-vac {
           background: #e8f9ff;
           color: #0072a7;
           border-color: #aee6ff;
-          box-shadow: none;
       }
       .v-baja { background: #fde7d5; color: #a24b14; border-color: #f5cfaf; }
       .v-p, .v-permiso { background: #ece6ff; color: #5c3bc4; border-color: #dcd0ff; }
@@ -748,8 +747,7 @@
                 });
             }
 
-            const isAbsent = rowData.rowType === 'ausencia_informativa';
-            // Reconciliación de nombres: usar el nombre actual del empleado si está disponible
+            const isAbsent = rowData.rowType === 'ausencia_informativa' || rowData.rowType === 'ausente_info';
             const profilesIdx = window._publicProfilesIndex || {};
             const empId = String(rowData.empleado_id || rowData.nombre || '').trim();
             const resolvedName = profilesIdx[empId] || rowData.nombreVisible || rowData.nombre || 'Empleado';

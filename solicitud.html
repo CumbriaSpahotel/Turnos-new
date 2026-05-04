@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
@@ -413,6 +413,10 @@
                             <option value="Cumbria Spa&Hotel">Cumbria Spa&Hotel</option>
                         </select>
                     </div>
+                    <div class="field-group">
+                        <label class="field-label">Fecha del cambio</label>
+                        <input id="general-date" type="text" class="input-control" placeholder="Selecciona fecha..." onchange="window.syncGeneralDateToFirstRow?.()">
+                    </div>
 
                     <div class="grid-2">
                         <div class="field-group">
@@ -508,15 +512,28 @@
 
         let _emps = [];
         let _baseRows = [];
+        let _blockedCompanionRows = [];
+        let _autoFillBusy = false;
+        let _autoFillPending = false;
+        let _excelFallbackDisabled = false;
 
-        // Inicialización
+        // InicializaciÃ³n
         document.addEventListener('DOMContentLoaded', async () => {
-            // Esperar a que Supabase esté listo (supabase-config.js lo inicializa)
+            // Esperar a que Supabase estÃ© listo (supabase-config.js lo inicializa)
             let retry = 0;
             while(!window.supabase && retry < 20) {
                 await new Promise(r => setTimeout(r, 100));
                 retry++;
             }
+
+            flatpickr("#general-date", {
+                locale: "es",
+                dateFormat: "Y-m-d",
+                altInput: true,
+                altFormat: "D j M",
+                disableMobile: true,
+                onChange: () => window.syncGeneralDateToFirstRow?.()
+            });
 
             await loadEmployees();
             addShiftRow(); // Añadir la primera fila por defecto
@@ -561,6 +578,11 @@
             return !/(refuerzo|placeholder|pendiente|vacante)/.test(structural);
         }
 
+        function isFixedOrSupportEmployee(emp) {
+            const type = normalizeEmployeeText(`${emp.tipo_personal || ''} ${emp.contrato || ''} ${emp.tipo || ''}`);
+            return type.includes('fijo') || type.includes('apoyo');
+        }
+
         async function loadEmployees() {
             const hotel = $("#sel_hotel").value;
             const solSelect = $("#solicitante");
@@ -576,21 +598,36 @@
                     isActiveEmployee(e) &&
                     isTitularEmployee(e)
                 );
+                const solicitanteEmps = hotelEmps.filter(isFixedOrSupportEmployee);
+                const companeroEmps = hotelEmps.filter(isFixedOrSupportEmployee);
 
-                const selects = [solSelect, compSelect];
-                selects.forEach(sel => {
-                    const currentVal = sel.value;
+                const buildOptions = (list, currentVal) => {
                     let html = '<option value="">Selecciona nombre...</option>';
-                    hotelEmps.sort((a,b) => a.nombre.localeCompare(b.nombre)).forEach(e => {
+                    [...list].sort((a,b) => (a.nombre || '').localeCompare(b.nombre || '')).forEach(e => {
                         html += `<option value="${e.id}" ${e.id === currentVal ? 'selected' : ''}>${e.nombre}</option>`;
                     });
-                    sel.innerHTML = html;
-                });
+                    return html;
+                };
+                solSelect.innerHTML = buildOptions(solicitanteEmps, solSelect.value);
+                compSelect.innerHTML = buildOptions(companeroEmps, compSelect.value);
 
             } catch (err) {
                 console.error("Error cargando empleados:", err);
             }
         }
+
+        window.syncGeneralDateToFirstRow = () => {
+            const general = document.getElementById('general-date');
+            const firstRow = document.querySelector('.shift-row .row-date-picker');
+            if (!general || !firstRow || !general.value) return;
+            if ((firstRow.value || '') === general.value) return;
+            if (firstRow._flatpickr) {
+                firstRow._flatpickr.setDate(general.value, true, "Y-m-d");
+            } else {
+                firstRow.value = general.value;
+                firstRow.dispatchEvent(new Event('change', { bubbles: true }));
+            }
+        };
 
         function addShiftRow() {
             const container = $("#shifts-container");
@@ -630,21 +667,38 @@
             `;
             
             container.appendChild(row);
+            const rowDate = row.querySelector(".row-date-picker");
+            const generalDate = document.getElementById('general-date')?.value;
+            const firstExistingRow = container.querySelector(".shift-row .row-date-picker");
+            const defaultDate = generalDate || (firstExistingRow && firstExistingRow !== rowDate ? firstExistingRow.value : '');
             
-            flatpickr(row.querySelector(".row-date-picker"), {
+            const fp = flatpickr(rowDate, {
                 locale: "es",
                 dateFormat: "Y-m-d",
                 altInput: true,
                 altFormat: "D j M",
                 disableMobile: true,
-                onChange: () => autoFillShifts()
+                onChange: () => {
+                    const firstRow = document.querySelector('.shift-row .row-date-picker');
+                    const current = row.querySelector(".row-date-picker");
+                    if (firstRow === current) {
+                        const general = document.getElementById('general-date');
+                        if (general) general.value = current.value || '';
+                    }
+                    autoFillShifts();
+                }
             });
+            if (defaultDate) {
+                fp.setDate(defaultDate, true, "Y-m-d");
+            }
+            if (defaultDate) autoFillShifts();
         }
 
         function removeRow(id) {
             const rows = $$(".shift-row");
             if (rows.length > 1) {
                 $(`#row-${id}`).remove();
+                autoFillShifts();
             } else {
                 alert("Debes incluir al menos una fecha.");
             }
@@ -734,6 +788,55 @@
             return { rawShift, cleanShift };
         }
 
+        function isOperationalShiftLabel(shiftLabel) {
+            const raw = String(shiftLabel || '').trim();
+            if (!raw || raw === '—' || raw === '-') return false;
+            const code = window.normalizeShiftValue ? window.normalizeShiftValue(raw) : '';
+            if (['M', 'T', 'N', 'D'].includes(code)) return true;
+            const norm = normalizeEmployeeText(raw);
+            return ['manana', 'tarde', 'noche', 'descanso'].some(k => norm.includes(k));
+        }
+
+        function isBlockedCompanionShift(shiftLabel) {
+            const norm = normalizeEmployeeText(shiftLabel);
+            return norm.includes('vac') || norm.includes('baja') || norm.includes('perm');
+        }
+
+        function updateCompanionRestrictionUI() {
+            const btn = $("#btn_enviar");
+            const txt = $("#submit-text");
+            const prev = document.getElementById('companion-block-alert');
+            if (prev) prev.remove();
+
+            if (!_blockedCompanionRows.length) {
+                if (btn) btn.disabled = false;
+                if (txt && txt.textContent.includes('No permitido')) txt.textContent = 'Enviar Solicitud';
+                return;
+            }
+
+            if (btn) btn.disabled = true;
+            if (txt) txt.textContent = 'No permitido';
+
+            const host = document.querySelector('.agreement-card');
+            if (!host) return;
+            const warn = document.createElement('div');
+            warn.id = 'companion-block-alert';
+            warn.style.cssText = 'margin-top:10px; padding:10px 12px; border:1px solid #fecaca; background:#fef2f2; color:#991b1b; border-radius:10px; font-size:0.85rem; font-weight:700;';
+            warn.textContent = 'Cambio no permitido: el solicitado está de vacaciones, baja o permiso. Debe solicitarse al responsable de departamento.';
+            host.parentNode.insertBefore(warn, host.nextSibling);
+        }
+
+        function collectBlockedCompanionRowsFromUI() {
+            const blocked = [];
+            $$(".shift-row").forEach(row => {
+                const id = row.id.split('-')[1];
+                const date = row.querySelector('.row-date-picker')?.value;
+                const compShift = row.querySelector(`#cur-comp-${id} .shift-val`)?.textContent || '';
+                if (date && isBlockedCompanionShift(compShift)) blocked.push({ date, shift: compShift });
+            });
+            return blocked;
+        }
+
         function getWeekStartISO(dateStr) {
             const d = new Date(`${dateStr}T12:00:00`);
             const day = d.getDay() || 7;
@@ -788,7 +891,16 @@
 
         async function getExcelBaseRowsForSelection(hotelName, dates, employeeIds) {
             if (!window.ExcelLoader?.loadExcelSourceRows || !dates.length) return [];
-            const source = await window.ExcelLoader.loadExcelSourceRows();
+            if (_excelFallbackDisabled) return [];
+            if (window.location?.protocol === 'file:') return [];
+            let source = {};
+            try {
+                source = await window.ExcelLoader.loadExcelSourceRows();
+            } catch (err) {
+                _excelFallbackDisabled = true;
+                console.warn("[Solicitud] Excel no disponible (probable file:// CORS). Continuando sin fallback Excel.", err?.message || err);
+                return [];
+            }
             const hotelKey = Object.keys(source || {}).find(h => {
                 const a = window.normalizeId ? window.normalizeId(h) : String(h || '').toLowerCase();
                 const b = window.normalizeId ? window.normalizeId(hotelName) : String(hotelName || '').toLowerCase();
@@ -810,6 +922,35 @@
             return fallbackRows;
         }
 
+        async function refreshCompanionOptionsForDate(date) {
+            const hotel = $("#sel_hotel").value;
+            const solId = $("#solicitante").value;
+            const compSelect = $("#companero");
+            if (!hotel || !solId || !date || !compSelect) return;
+            const candidates = _emps.filter(e =>
+                e.id !== solId &&
+                employeeBelongsToHotel(e, hotel) &&
+                isActiveEmployee(e) &&
+                isTitularEmployee(e) &&
+                isFixedOrSupportEmployee(e)
+            );
+            if (!candidates.length) {
+                compSelect.innerHTML = '<option value="">No hay compañeros disponibles</option>';
+                return;
+            }
+            try {
+                const current = compSelect.value;
+                let html = '<option value="">Selecciona nombre...</option>';
+                const available = [...candidates].sort((a, b) => (a.nombre || '').localeCompare(b.nombre || ''));
+                available.forEach(emp => { html += `<option value="${emp.id}">${emp.nombre}</option>`; });
+                compSelect.innerHTML = html;
+                if (available.some(a => a.id === current)) compSelect.value = current;
+                else compSelect.value = '';
+            } catch (err) {
+                console.error("Error filtrando compañeros por día:", err);
+            }
+        }
+
         function mergeBaseRowsWithFallback(baseRows, fallbackRows) {
             const keyOf = (row) => `${window.normalizeId ? window.normalizeId(row.empleadoId || row.empleado_id) : String(row.empleadoId || row.empleado_id || '').toLowerCase()}_${row.fecha}`;
             const existing = new Map();
@@ -827,21 +968,34 @@
         }
 
         async function autoFillShifts() {
+            if (_autoFillBusy) {
+                _autoFillPending = true;
+                return;
+            }
+            _autoFillBusy = true;
             const solId = $("#solicitante").value;
             const compId = $("#companero").value;
             const hotelName = $("#sel_hotel").value;
-            if (!solId) return;
-
-            const rows = $$(".shift-row");
-            const dates = Array.from(rows).map(r => r.querySelector(".row-date-picker").value).filter(Boolean);
-            if (dates.length === 0) return;
-
-            const sorted = [...dates].sort();
-            const start = sorted[0];
-            const end = sorted[sorted.length - 1];
-
             try {
-                // CORRECCIÓN: Obtener tanto rows (base) como eventos
+                if (!solId) {
+                    _blockedCompanionRows = [];
+                    updateCompanionRestrictionUI();
+                    return;
+                }
+
+                const rows = $$(".shift-row");
+                const dates = Array.from(rows).map(r => r.querySelector(".row-date-picker").value).filter(Boolean);
+                if (dates.length === 0) {
+                    _blockedCompanionRows = [];
+                    updateCompanionRestrictionUI();
+                    return;
+                }
+                await refreshCompanionOptionsForDate(dates[0]);
+
+                const sorted = [...dates].sort();
+                const start = sorted[0];
+                const end = sorted[sorted.length - 1];
+                // CORRECCIÃ“N: Obtener tanto rows (base) como eventos
                 const { rows: baseRows, eventos } = await window.TurnosDB.fetchRangoCalculado(start, end);
                 
                 // Mapear baseRows para que ShiftResolver los entienda. Si la tabla `turnos`
@@ -864,6 +1018,7 @@
                     })?.turno || null;
                 };
 
+                _blockedCompanionRows = [];
                 rows.forEach(row => {
                     const id = row.id.split('-')[1];
                     const date = row.querySelector(".row-date-picker").value;
@@ -884,7 +1039,7 @@
                     solLabelEl.textContent = solResolved.cleanShift;
                     solLabelEl.dataset.val = solResolved.rawShift;
 
-                    // 2. Resolve Compañero
+                    // 2. Resolve CompaÃ±ero
                     const compBox = row.querySelector(`#cur-comp-${id}`);
                     if (compId) {
                         compBox.style.display = "block";
@@ -909,10 +1064,31 @@
                         compLabelEl.textContent = compResolved.cleanShift;
                         compLabelEl.dataset.val = compResolved.rawShift;
 
-                        // AUTO-FILL DESTINO: Si no se ha tocado manualmente, ponemos el del compañero
+                        const blockedCompanion = isBlockedCompanionShift(compResolved.cleanShift);
+                        compLabelEl.style.color = blockedCompanion ? '#b91c1c' : '';
+                        compLabelEl.style.fontWeight = blockedCompanion ? '800' : '';
+                        row.dataset.compBlocked = blockedCompanion ? '1' : '0';
+                        if (blockedCompanion) {
+                            _blockedCompanionRows.push({
+                                date,
+                                shift: compResolved.cleanShift
+                            });
+                        }
+
+                        // AUTO-FILL DESTINO: Si no se ha tocado manualmente, ponemos el del compaÃ±ero
                         const destinoSelect = row.querySelector(".row-destino");
+                        if (destinoSelect) {
+                            destinoSelect.disabled = blockedCompanion;
+                            if (blockedCompanion) {
+                                destinoSelect.value = "—";
+                                destinoSelect.dataset.manual = '';
+                                destinoSelect.title = 'Bloqueado: compañero en vacaciones/baja/permiso.';
+                            } else {
+                                destinoSelect.title = '';
+                            }
+                        }
                         if (destinoSelect && !destinoSelect.dataset.manual && compResolved.cleanShift !== '—') {
-                            // Buscar la opción que coincida con cleanComp
+                            // Buscar la opciÃ³n que coincida con cleanComp
                             for (let opt of destinoSelect.options) {
                                 if (opt.value === compResolved.cleanShift) {
                                     destinoSelect.value = opt.value;
@@ -922,11 +1098,24 @@
                         }
                     } else {
                         compBox.style.display = "none";
+                        row.dataset.compBlocked = '0';
+                        const destinoSelect = row.querySelector(".row-destino");
+                        if (destinoSelect) {
+                            destinoSelect.disabled = false;
+                            destinoSelect.title = '';
+                        }
                     }
                 });
+                updateCompanionRestrictionUI();
 
             } catch (e) {
                 console.error("Error autofill:", e);
+            } finally {
+                _autoFillBusy = false;
+                if (_autoFillPending) {
+                    _autoFillPending = false;
+                    setTimeout(() => autoFillShifts(), 0);
+                }
             }
         }
 
@@ -967,6 +1156,16 @@
                 }
             });
 
+            if (compId) {
+                const blockedRowsRaw = collectBlockedCompanionRowsFromUI();
+                const blockedRows = blockedRowsRaw.map(r => `${r.date} (${r.shift})`);
+                if (blockedRows.length > 0) {
+                    _blockedCompanionRows = blockedRowsRaw;
+                    updateCompanionRestrictionUI();
+                    return alert('No es posible este cambio: el solicitado está de vacaciones, baja o permiso. Debe solicitarlo al responsable de departamento. Fechas: ' + blockedRows.join(', '));
+                }
+            }
+
             if (!valid || fechasArr.length === 0) {
                 return alert("Por favor, completa todas las fechas y turnos de destino.");
             }
@@ -988,7 +1187,7 @@
                 const savedRequest = await window.TurnosDB.savePeticionCambio(payload);
                 const requestId = savedRequest?.id || 'ID_N/A';
 
-                // --- NOTIFICACIÓN AUTOMÁTICA EN BANDEJA ---
+                // --- NOTIFICACIÃ“N AUTOMÃTICA EN BANDEJA ---
                 try {
                     await window.TurnosDB.saveMensaje({
                         emisor: solName,
@@ -998,10 +1197,10 @@
                         hotel_id: hotel
                     });
                 } catch (msgErr) {
-                    console.warn("No se pudo enviar la notificación de mensaje interna.", msgErr);
+                    console.warn("No se pudo enviar la notificaciÃ³n de mensaje interna.", msgErr);
                 }
 
-                // --- ENVÍO A FORMSPREE (EMAIL) ---
+                // --- ENVÃO A FORMSPREE (EMAIL) ---
                 let emailSent = true;
                 try {
                     const FORMSPREE_ENDPOINT = "https://formspree.io/f/xvgawqya";
@@ -1010,7 +1209,7 @@
                     let detalleEmail = `NUEVA SOLICITUD DE CAMBIO (TurnosWeb)\n`;
                     detalleEmail += `--------------------------------------\n`;
                     detalleEmail += `SOLICITANTE: ${solName}\n`;
-                    detalleEmail += `COMPAÑERO: ${compName || 'N/A'}\n`;
+                    detalleEmail += `COMPAÃ‘ERO: ${compName || 'N/A'}\n`;
                     detalleEmail += `CENTRO: ${hotel}\n`;
                     detalleEmail += `ID SOLICITUD: ${requestId}\n\n`;
                     detalleEmail += `FECHAS SOLICITADAS:\n`;
@@ -1076,3 +1275,4 @@
     </script>
 </body>
 </html>
+
