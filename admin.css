@@ -3915,3 +3915,164 @@ input, select, textarea { color: var(--text); }
     padding: 12px 20px;
   }
 }
+
+/* EMP DRAWER COMPACT HOTFIX */
+#empDrawer.drawer-overlay .drawer-content {
+  width: min(96vw, 1180px) !important;
+  height: 94vh !important;
+}
+#empDrawer .emp-drawer-topbar {
+  padding: 10px 14px 8px !important;
+}
+#empDrawer .emp-drawer-topbar h3 {
+  font-size: 0.9rem !important;
+}
+#empDrawer .drawer-header > .emp-tabs-nav {
+  padding: 6px 12px 8px !important;
+  gap: 6px !important;
+}
+#empDrawer .emp-tab-btn {
+  padding: 6px 10px !important;
+  font-size: 0.74rem !important;
+  border-radius: 10px !important;
+}
+#empDrawer .employee-profile-container {
+  padding: 6px !important;
+}
+#empDrawer .emp-edit-card {
+  padding: 10px 10px !important;
+  border-radius: 12px !important;
+}
+#empDrawer .emp-edit-form {
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 4px 6px !important;
+}
+#empDrawer .emp-edit-form label {
+  padding: 3px 5px !important;
+  border-radius: 9px !important;
+  min-width: 0 !important;
+}
+#empDrawer .emp-edit-form label > span {
+  font-size: 0.55rem !important;
+  margin-bottom: 1px !important;
+}
+#empDrawer .emp-edit-form input,
+#empDrawer .emp-edit-form select,
+#empDrawer .emp-edit-form textarea {
+  padding: 4px 7px !important;
+  font-size: 0.72rem !important;
+  border-radius: 8px !important;
+  min-height: 26px !important;
+  line-height: 1.2 !important;
+}
+#empDrawer .smart-choice {
+  padding: 2px 2px !important;
+  border-radius: 8px !important;
+}
+#empDrawer .smart-choice strong {
+  font-size: 0.62rem !important;
+  line-height: 1.05 !important;
+}
+#empDrawer .smart-choice span:first-of-type {
+  font-size: 0.68rem !important;
+}
+#empDrawer .emp-edit-form .span-2 {
+  grid-column: 1 / -1 !important;
+}
+#empDrawer .emp-edit-form .span-2 > div[style*='repeat(3'] {
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  gap: 6px !important;
+}
+#empDrawer .emp-content-area {
+  min-height: 280px !important;
+  padding: 6px 8px 8px !important;
+  overflow-x: hidden !important;
+}
+
+#empDrawer .emp-edit-form small {
+  font-size: 0.58rem !important;
+  line-height: 1.1 !important;
+}
+
+#empDrawer .employee-profile-container,
+#empDrawer .emp-edit-card,
+#empDrawer .emp-content-area,
+#empDrawer .emp-edit-form,
+#empDrawer .emp-edit-form label {
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+#empDrawer .drawer-body {
+  overflow-x: hidden !important;
+}
+
+@media (max-width: 1100px) {
+  #empDrawer .emp-edit-form {
+    grid-template-columns: 1fr !important;
+  }
+  #empDrawer .emp-edit-form .span-2 > div[style*='repeat(3'] {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  }
+}
+
+@media (max-width: 760px) {
+  #empDrawer.drawer-overlay .drawer-content {
+    width: 100vw !important;
+    height: 100vh !important;
+  }
+  #empDrawer .emp-edit-form .span-2 > div[style*='repeat(3'] {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* EMPLOYEE CALENDAR SHIFT COLORS */
+#empDrawer .emp-cal-cell.st-m {
+  background: #dcfce7 !important;
+  border-color: #86efac !important;
+}
+#empDrawer .emp-cal-cell.st-m .shift-tag {
+  color: #166534 !important;
+}
+
+#empDrawer .emp-cal-cell.st-t {
+  background: #fef3c7 !important;
+  border-color: #fcd34d !important;
+}
+#empDrawer .emp-cal-cell.st-t .shift-tag {
+  color: #92400e !important;
+}
+
+#empDrawer .emp-cal-cell.st-n {
+  background: #dbeafe !important;
+  border-color: #93c5fd !important;
+}
+#empDrawer .emp-cal-cell.st-n .shift-tag {
+  color: #1e40af !important;
+}
+
+#empDrawer .emp-cal-cell.st-descanso {
+  background: #ffe4e6 !important;
+  border-color: #fb7185 !important;
+}
+#empDrawer .emp-cal-cell.st-descanso .shift-tag {
+  color: #be123c !important;
+}
+
+#empDrawer .emp-cal-cell.st-vac {
+  background: #e0f2fe !important;
+  border-color: #7dd3fc !important;
+}
+#empDrawer .emp-cal-cell.st-vac .shift-tag {
+  color: #0369a1 !important;
+}
+
+#empDrawer .emp-cal-cell.st-baja,
+#empDrawer .emp-cal-cell.st-event {
+  background: #ffe4e6 !important;
+  border-color: #fda4af !important;
+}
+#empDrawer .emp-cal-cell.st-baja .shift-tag,
+#empDrawer .emp-cal-cell.st-event .shift-tag {
+  color: #be123c !important;
+}

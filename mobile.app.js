@@ -259,7 +259,7 @@
         }
 
         shiftGrid.innerHTML = "";
-        // FunciÃ³n de orden estable de hoteles
+        // Función de orden estable de hoteles
         const getHotelOrder = (h) => {
             const n = (h || "").toLowerCase();
             if (n.includes("cumbria")) return 1;
@@ -278,7 +278,7 @@
         for (const snap of snapshots) {
             if ((snap.hotel || "").toUpperCase().startsWith('TEST')) continue; // Safety filter V12.5
             if (hotelInfo) {
-                // NormalizaciÃ³n para evitar fallos por mayÃºsculas o espacios
+                // Normalización para evitar fallos por mayúsculas o espacios
                 const normSnap = (snap.hotel || "").trim().toUpperCase();
                 const normTarget = hotelInfo.dataName.trim().toUpperCase();
                 if (normSnap !== normTarget) continue;
@@ -345,9 +345,9 @@
   }
 
   function getMobileShiftToken(displayText, visualClass) {
-    // Normalizar: eliminar tildes y diacrÃ­ticos para comparar con seguridad
+    // Normalizar: eliminar tildes y diacríticos para comparar con seguridad
     const normalized = String(displayText || "")
-      .normalize('NFD').replace(/[\u0300-\u036f]/g, '') // elimina tildes (Ã± -> n)
+      .normalize('NFD').replace(/[\u0300-\u036f]/g, '') // elimina tildes (ñ -> n)
       .replace(/[\u{1F300}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/gu, "")
       .trim()
       .toUpperCase();
@@ -397,7 +397,7 @@
             </div>
             <div class="grid-body">
                 ${(() => {
-                    // De-duplicaciÃ³n y Orden Estricto (Operativos -> Ausentes)
+                    // De-duplicación y Orden Estricto (Operativos -> Ausentes)
                     const uniqueEmpsMap = new Map();
                     const norm = (str) => {
                         if (window.normalizeId) return window.normalizeId(str);

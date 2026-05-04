@@ -1069,7 +1069,7 @@ window.TurnosDB = {
         const semanaFin = this.normalizeDate(rawEnd);
         const client = window.supabase;
         try {
-            // 1. Obtener versiÃ³n histÃ³rica mÃ¡s alta y ID activo actual para rollback
+            // 1. Obtener versión histórica más alta y ID activo actual para rollback
             const [verResult, activeResult] = await Promise.all([
                 client.from('publicaciones_cuadrante')
                     .select('version')
@@ -1115,7 +1115,8 @@ window.TurnosDB = {
                     resumen: resumen,
                     publicado_por: usuario || 'ADMIN',
                     version: nextVersion,
-                    estado: 'activo'
+                    estado: 'activo',
+                    fecha_publicacion: new Date().toISOString()
                 }])
                 .select()
                 .single();

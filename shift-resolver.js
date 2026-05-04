@@ -1,4 +1,4 @@
-/* shift-resolver.js
+﻿/* shift-resolver.js
  * MOTOR ÚNICO DE RESOLUCIÓN DE TURNOS
  * v5.0 - Estabilización Estructural
  */
@@ -145,9 +145,9 @@ console.log("[ShiftResolver] Iniciando carga v5.0...");
             .replace(/\s+/g, '_')
             .replace(/_+$/, ''); // quitar _ finales
         
-        if (v.startsWith('VAC')) return 'VAC'; // VAC, VACACIONES, VAC_🏖️ quitado el emoji
+        if (v.startsWith('VAC')) return 'VAC'; // VAC, VACACIONES, VAC_ðŸ–ï¸ quitado el emoji
         if (['BAJA', 'BAJA_MEDICA', 'BM', 'IT', 'INCAPACIDAD'].includes(v)) return 'BAJA';
-        if (v.startsWith('PERM')) return 'PERM'; // unify PERMISO → PERM
+        if (v.startsWith('PERM')) return 'PERM'; // unify PERMISO â†’ PERM
         
         if (v === 'CT' || v === 'CAMBIO_TURNO' || v === 'CAMBIO_DE_TURNO' || v === 'CAMBIO_DE_TURNOS') return 'CAMBIO_TURNO';
         if (v === 'INTERCAMBIO' || v === 'INTERCAMBIO_TURNO' || v === 'INTERCAMBIO_DE_TURNO' || v === 'INTERCAMBIO_DE_TURNOS') return 'INTERCAMBIO_TURNO';
@@ -393,7 +393,7 @@ console.log("[ShiftResolver] Iniciando carga v5.0...");
             }
         }
 
-        // 4. Fallback por nombre aproximado (seguro: una parte contiene la otra, sin ambigüedad)
+        // 4. Fallback por nombre aproximado (seguro: una parte contiene la otra, sin ambigÃ¼edad)
         // Solo se activa cuando no hay match exacto ni por alias.
         if (normId && normId.length >= 3) {
             // Extraer todas las claves del índice que correspondan a esta fecha
@@ -410,15 +410,9 @@ console.log("[ShiftResolver] Iniciando carga v5.0...");
             }
 
             if (candidatos.length === 1) {
-                // Solo un candidato: resolución inequívoca
-                if (window.DEBUG_MODE === true) {
-                    console.warn('[BASE ALIAS AMBIGUO]', {
-                        empleadoId: normId,
-                        fecha: date,
-                        candidatos,
-                        razon: 'Sin match exacto; no se aplica fallback por substring entre empleados.'
-                    });
-                }
+                // Solo un candidato: aplicar fallback inequivoco.
+                const fallback = tryGet(candidatos[0]);
+                if (fallback !== null) return fallback;
             } else if (candidatos.length > 1 && window.DEBUG_MODE === true) {
                 console.warn('[BASE ALIAS AMBIGUO]', { empleadoId: normId, fecha: date, candidatos });
             }
@@ -724,7 +718,17 @@ console.log("[ShiftResolver] Iniciando carga v5.0...");
                 // CASO: SOY EL SUSTITUTO DE UNA AUSENCIA (VAC, BAJA, PERMISO, etc.)
                 const isAbsence = ['BAJA', 'PERMISO', 'PERM', 'FORMACION', 'FORM', 'IT', 'VAC'].includes(tipo);
                 const titularId = window.normalizeId(ev.empleado_id || ev.titular_id || ev.titular || ev.participante_a || ev.nombre || ev.empleado);
-                const isSubstitute = isAbsence && (window.normalizeId(empId) !== titularId);
+                const destinationId = window.normalizeId(
+                    ev.empleado_destino_id ||
+                    ev.sustituto_id ||
+                    ev.destino_id ||
+                    ev.participante_b ||
+                    ev.payload?.empleado_destino_id ||
+                    ev.payload?.sustituto_id ||
+                    ev.payload?.sustituto ||
+                    ev.sustituto
+                );
+                const isSubstitute = isAbsence && destinationId && (window.normalizeId(empId) === destinationId);
 
                 if (isSubstitute || tipo === 'COBERTURA' || tipo === 'SUSTITUCION') {
                     const finalTitularId = isSubstitute ? titularId : window.normalizeId(ev.empleado_id || ev.titular_id || ev.titular || ev.participante_a || ev.nombre || ev.empleado);
@@ -735,7 +739,7 @@ console.log("[ShiftResolver] Iniciando carga v5.0...");
                     result.turnoBase = titularTurnoBase || result.turnoBase || '—';
                     result.origen = `SUSTITUCION_${tipo}`; // Origen específico: SUSTITUCION_VAC, SUSTITUCION_PERMISO, etc.
 
-                    // Marcador 📌 solo para ausencias médicas/permisos (NO para vacaciones ni formación)
+                    // Marcador ðŸ“Œ solo para ausencias médicas/permisos (NO para vacaciones ni formación)
                     // REGLA V12.5.40: Solo si el turno resultante es de trabajo (M, T, N)
                     if (['BAJA', 'PERMISO', 'PERM', 'IT'].includes(tipo)) {
                         const shiftKey = window.TurnosRules?.shiftKey ? window.TurnosRules.shiftKey(result.turno) : String(result.turno || '').toLowerCase();
@@ -853,7 +857,7 @@ console.log("[ShiftResolver] Iniciando carga v5.0...");
                                         severity: 'warning',
                                         type: 'RECONSTRUCT_SWAP_INCOHERENT',
                                         title: 'Intercambio reconstruido por incoherencia',
-                                        desc: `${requestedA} ↔ ${requestedB} el ${date}: el evento no coincide con la base (${eventOrigCode || tOrigRaw || 'sin origen'} / ${eventDestCode || tDestRaw || 'sin destino'} frente a ${baseOrigCode || turnoOperativoOrigenAntes} / ${baseDestCode || turnoOperativoDestinoAntes}).`,
+                                        desc: `${requestedA} â†” ${requestedB} el ${date}: el evento no coincide con la base (${eventOrigCode || tOrigRaw || 'sin origen'} / ${eventDestCode || tDestRaw || 'sin destino'} frente a ${baseOrigCode || turnoOperativoOrigenAntes} / ${baseDestCode || turnoOperativoDestinoAntes}).`,
                                         empId: requestedA,
                                         fecha: date,
                                         section: 'preview',
@@ -963,7 +967,7 @@ console.log("[ShiftResolver] Iniciando carga v5.0...");
         return result;
     };
 
-    // --- 4. ÍNDICES CENTRALES ---
+    // --- 4. ÃNDICES CENTRALES ---
 
     window.buildIndices = (employees = [], events = [], baseRows = []) => {
         const baseIndex = {
@@ -1055,7 +1059,7 @@ console.log("[ShiftResolver] Iniciando carga v5.0...");
 
     console.log("[ShiftResolver] Carga finalizada v5.0.");
 
-    // ── HELPERS DE PRESENTACION: texto limpio e iconos decorativos ──────────────
+    // â”€â”€ HELPERS DE PRESENTACION: texto limpio e iconos decorativos â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     /**
      * cleanTurnoLabel(value)
@@ -1063,39 +1067,41 @@ console.log("[ShiftResolver] Iniciando carga v5.0...");
      * Elimina emojis, bytes corruptos y normaliza codigos a nombres completos.
      * El valor devuelto es SOLO texto — nunca incluye iconos.
      *
-     * @param {string} value - Codigo o nombre crudo (ej. 'M', 'VAC', 'Vacaciones', 'Baja 🤒')
+     * @param {string} value - Codigo o nombre crudo (ej. 'M', 'VAC', 'Vacaciones', 'Baja ðŸ¤’')
      * @returns {string} Texto limpio ('Manana', 'Vacaciones', 'Baja', etc.)
      */
     window.cleanTurnoLabel = (value) => {
         if (value === null || value === undefined || value === '') return '—';
-        // 1. Limpiar bytes corruptos y emojis
-        let s = String(value)
-            .replace(/[^\x00-\x7F\u00C0-\u024F\u00e0-\u00ff\u00f1\u00d1]/g, '') // latin + spanish chars
-            .trim();
-        // 2. Normalizar a mayusculas sin acentos para comparar
+        let s = String(value).trim();
+        s = s
+            .replaceAll('—', '—')
+            .replaceAll('–', '—')
+            .replaceAll('â€"', '—')
+            .replaceAll('Ã—', '—')
+            .replaceAll('Mañana', 'Mañana')
+            .replaceAll('Formación', 'Formación')
+            .replaceAll('Permiso', 'Permiso');
         const up = s.toUpperCase()
             .normalize('NFD')
             .replace(/[\u0300-\u036f]/g, '')
             .replace(/\s+/g, '');
-        // 3. Mapa de codigos → etiqueta canonica
         const MAP = {
-            'M': 'Mañana', 'MANANA': 'Mañana', 'MANANA': 'Mañana',
-            'T': 'Tarde',  'TARDE': 'Tarde',
-            'N': 'Noche',  'NOCHE': 'Noche',
+            'M': 'Mañana', 'MANANA': 'Mañana',
+            'T': 'Tarde', 'TARDE': 'Tarde',
+            'N': 'Noche', 'NOCHE': 'Noche',
             'D': 'Descanso', 'DESCANSO': 'Descanso',
             'VAC': 'Vacaciones', 'VACACION': 'Vacaciones', 'VACACIONES': 'Vacaciones',
             'BAJA': 'Baja', 'BAJAMEDICA': 'Baja', 'BM': 'Baja',
             'PERM': 'Permiso', 'PERMISO': 'Permiso', 'PERMISOS': 'Permiso',
-            'FORM': 'Formación', 'FORMACION': 'Formación', 'FORMACION': 'Formación',
-            '-': '—', '': '—'
+            'FORM': 'Formación', 'FORMACION': 'Formación',
+            '-': '—', '': '—', '—': '—'
         };
         if (MAP[up] !== undefined) return MAP[up];
-        // 4. Coincidencia parcial para etiquetas compuestas ('VACACIONES_EXTRA', etc.)
         if (up.startsWith('VAC')) return 'Vacaciones';
         if (up.startsWith('BAJ')) return 'Baja';
         if (up.startsWith('PER')) return 'Permiso';
         if (up.startsWith('FOR')) return 'Formación';
-        // 5. Devolver texto limpio si no hay mapeo
+        if (up === 'SIN_TURNO' || up === 'SINTURNO') return '—';
         return s || '—';
     };
 
@@ -1114,13 +1120,13 @@ console.log("[ShiftResolver] Iniciando carga v5.0...");
             .replace(/[^\x00-\x7F]/g, '')
             .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
             .replace(/\s+/g, '');
-        if (up.startsWith('VAC'))                return '\uD83C\uDFD6\uFE0F'; // 🏖️
-        if (up === 'BAJA' || up.startsWith('BAJ')) return '\uD83E\uDD12';       // 🤒
-        if (up.startsWith('PER'))                return '\uD83D\uDDD3\uFE0F'; // 🗓️
-        if (up.startsWith('FOR'))                return '\uD83C\uDF93';         // 🎓
+        if (up.startsWith('VAC'))                return '\uD83C\uDFD6\uFE0F'; // ðŸ–ï¸
+        if (up === 'BAJA' || up.startsWith('BAJ')) return '\uD83E\uDD12';       // ðŸ¤’
+        if (up.startsWith('PER'))                return '\uD83D\uDDD3\uFE0F'; // ðŸ—“ï¸
+        if (up.startsWith('FOR'))                return '\uD83C\uDF93';         // ðŸŽ“
         if (up === 'N' || up === 'NOCHE')        return '\uD83C\uDF19';
         // El icono de intercambio SOLO para CT real, no para sustitución por ausencia
-        if (flags.intercambio) return '\uD83D\uDD03'; // 🔃
+        if (flags.intercambio) return '\uD83D\uDD03'; // ðŸ”ƒ
         return '';
     };
 

@@ -6,10 +6,10 @@ const SUPABASE_URL = "https://drvmxranbpumianmlzqr.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_MEpdfeO_ZGkMkg0_eKZKnQ_QCJxDrfZ";
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-const DEFAULT_VERSION = 141;
+const DEFAULT_VERSION = 143;
 const DEFAULT_WEEKS = ['2026-04-27', '2026-05-04', '2026-05-11', '2026-05-18', '2026-05-25'];
 const DEFAULT_HOTELS = ['Cumbria Spa&Hotel', 'Sercotel Guadiana'];
-const EXECUTE_CONFIRM_TOKEN = 'publish-2026-v141';
+const EXECUTE_CONFIRM_TOKEN = 'publish-2027-v143';
 
 // Mock Environment for admin.js
 global.window = {
@@ -42,7 +42,7 @@ global.window.TurnosDB = {
 };
 
 const adminCode = fs.readFileSync(path.join(__dirname, 'admin.js'), 'utf8')
-    .replace(/diasEnAño/g, 'diasEnAnyo').replace(/diasEnAÃ±o/g, 'diasEnAnyo')
+    .replace(/diasEnAño/g, 'diasEnAnyo').replace(/diasEnAño/g, 'diasEnAnyo')
     .replace(/año/g, 'anyo').replace(/compañero/g, 'companero')
     .replace(/\?\?/g, '||');
 eval(adminCode);

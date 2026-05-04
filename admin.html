@@ -216,8 +216,8 @@
                     <strong id="stat-last-sync" style="font-size:1.2rem; font-weight:800; color:var(--text);">00:00:00</strong>
                 </div>
                 <div class="kpi-card glass" style="padding:20px; border-radius:20px; border:1px solid var(--border); background:var(--surface);">
-                    <label title="Cambios manuales del Excel que aun no se han publicado en Supabase." style="display:block; font-size:0.7rem; font-weight:800; color:var(--text-dim); text-transform:uppercase; margin-bottom:10px;">Sin publicar</label>
-                    <strong id="stat-pending-diff" style="font-size:1.5rem; font-weight:900; color:var(--text);">0</strong>
+                    <label title="Fecha de cobertura global minima de publicacion activa." style="display:block; font-size:0.7rem; font-weight:800; color:var(--text-dim); text-transform:uppercase; margin-bottom:10px;">Publicado hasta</label>
+                    <strong id="stat-published-until" style="font-size:1.5rem; font-weight:900; color:var(--text);">0</strong>
                 </div>
                 <div class="kpi-card glass" style="padding:20px; border-radius:20px; border:1px solid var(--border); background:var(--surface);">
                     <label style="display:block; font-size:0.7rem; font-weight:800; color:var(--text-dim); text-transform:uppercase; margin-bottom:10px;">Integridad Datos</label>
@@ -226,6 +226,7 @@
             </div>
 
             <div class="full-width-panel" style="padding:0 30px 20px;">
+                <div id="dashboard-coverage-container"></div>
                 <div id="operational-risk" class="operational-risk-panel" style="background:var(--surface); border:1px solid var(--border); border-radius:20px; padding:20px;">
                     <div class="panel-header" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
                         <h3 style="margin:0; font-size:1rem; font-weight:800;"><i class="fas fa-shield-alt" style="margin-right:10px; color:#ef4444;"></i> RIESGO OPERATIVO PRIORITARIO</h3>

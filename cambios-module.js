@@ -137,7 +137,7 @@
                 const selType = document.getElementById('chType')?.value || 'all';
                 const selStatus = document.getElementById('chStatus')?.value || 'activo';
                 
-                let filtered = changeSource.filter(ev => ['CAMBIO_TURNO', 'INTERCAMBIO_TURNO', 'INTERCAMBIO_HOTEL'].includes(ev.tipo));
+                let filtered = changeSource.filter(ev => ['CAMBIO_TURNO', 'INTERCAMBIO_TURNO', 'INTERCAMBIO_HOTEL', 'EVENTO_INTERCAMBIO', 'EVENTO_CAMBIO_HOTEL', 'INTERCAMBIO_MANUAL'].includes(ev.tipo));
                 
                 const now = new Date();
                 const isoNow = window.isoDate(now);
@@ -200,9 +200,37 @@
                     return 'x';
                 };
                 const shiftChip = (value) => `<span class="turno-pill-mini ${shiftClass(value)}" style="width:auto; min-width:58px; height:auto; padding:4px 8px; font-size:0.65rem;">${shiftLabel(value)}</span>`;
+                const firstNonLegacyShift = (...values) => {
+                    for (const v of values) {
+                        if (v === undefined || v === null) continue;
+                        const raw = String(v).trim();
+                        if (!raw) continue;
+                        if (window.isInvalidLegacyChangeValue?.(raw)) continue;
+                        return raw;
+                    }
+                    return '';
+                };
                 const changeDetail = (ev) => {
-                    const original = ev.turno_original || ev.payload?.origen || ev.payload?.original_data?.origen;
-                    const requested = ev.turno_nuevo || ev.payload?.destino || ev.payload?.original_data?.destino;
+                    const original = firstNonLegacyShift(
+                        ev.turno_original,
+                        ev.turno_origen,
+                        ev.payload?.turno_original,
+                        ev.payload?.turno_origen,
+                        ev.payload?.origen,
+                        ev.payload?.original_data?.turno_original,
+                        ev.payload?.original_data?.turno_origen,
+                        ev.payload?.original_data?.origen
+                    );
+                    const requested = firstNonLegacyShift(
+                        ev.turno_nuevo,
+                        ev.turno_destino,
+                        ev.payload?.turno_nuevo,
+                        ev.payload?.turno_destino,
+                        ev.payload?.destino,
+                        ev.payload?.original_data?.turno_nuevo,
+                        ev.payload?.original_data?.turno_destino,
+                        ev.payload?.original_data?.destino
+                    );
                     if (!original && !requested) return '<span style="color:#94a3b8; font-size:0.75rem; font-weight:700;">Sin detalle</span>';
                     return `<div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">${shiftChip(original)}<span style="color:#94a3b8; font-weight:900;">→</span>${shiftChip(requested)}</div>`;
                 };
