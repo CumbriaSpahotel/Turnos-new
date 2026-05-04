@@ -1,12 +1,16 @@
-<!doctype html>
-<html lang="es" class="h-full">
+﻿<!doctype html>
+<html lang="es">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
   <title>Turnos · Vista Cuadrante</title>
   
   <!-- PWA & Mobile Meta Tags -->
-  <link rel="manifest" href="manifest.json">
+  <script>
+    if (window.location.protocol !== 'file:') {
+      document.write('<link rel="manifest" href="manifest.json">');
+    }
+  </script>
   <meta name="theme-color" content="#1a1d21">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -16,21 +20,6 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Outfit:wght@600;700;800&display=swap" rel="stylesheet">
-
-  <!-- Tailwind CSS -->
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script>
-    tailwind.config = {
-      darkMode: 'class',
-      theme: {
-        extend: {
-          colors: {
-            primary: '#1677ff',
-          }
-        }
-      }
-    }
-  </script>
 
   <style>
     :root {
@@ -56,6 +45,10 @@
       -webkit-font-smoothing: antialiased;
       margin: 0;
       padding: 0;
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+      overflow-x: hidden;
     }
 
     .app-viewport {
@@ -65,6 +58,10 @@
       min-height: 100vh;
       display: flex;
       flex-direction: column;
+    }
+
+    .app-main {
+      flex: 1 1 auto;
     }
 
     /* HEADER */
@@ -240,7 +237,7 @@
       white-space: nowrap;
     }
 
-    /* INDICADOR SECUNDARIO (EMOJI PEQUEÑO) */
+    /* INDICADOR SECUNDARIO (EMOJI PEQUEÃ‘O) */
     .emoji-indicator {
       font-size: 0.55em !important;
       vertical-align: super !important;
@@ -322,7 +319,7 @@
     }
 
     /* PALETA PULIDA */
-    .m { background: #3b82f6 !important; color: #ffffff !important; } /* Mañana */
+    .m { background: #3b82f6 !important; color: #ffffff !important; } /* MaÃ±ana */
     .t { background: #f97316 !important; color: #ffffff !important; } /* Tarde */
     .n { background: #1e1b4b !important; color: #ffffff !important; } /* Noche */
     .d { background: #f1f5f9 !important; color: #94a3b8 !important; box-shadow: none !important; } /* Descanso */
@@ -330,7 +327,7 @@
     .v { background: #10b981 !important; color: #ffffff !important; } /* Vacaciones */
     .b { background: #ef4444 !important; color: #ffffff !important; border: 1px dashed rgba(255,255,255,0.4) !important; } /* Baja */
 
-    /* NAVEGACIÓN INFERIOR */
+    /* NAVEGACIÃ“N INFERIOR */
     .bottom-nav {
       position: fixed;
       bottom: 0;
@@ -672,18 +669,24 @@
       padding: 22px 20px 18px;
       border-radius: 28px;
       background:
-        radial-gradient(circle at top, rgba(217, 119, 6, 0.12), transparent 34%),
-        linear-gradient(180deg, rgba(255,255,255,0.92), rgba(255,255,255,0.78));
-      border: 1px solid rgba(255,255,255,0.72);
-      box-shadow: 0 24px 48px rgba(15, 23, 42, 0.1);
+        radial-gradient(circle at 50% -24%, rgba(14, 116, 144, 0.16), transparent 40%),
+        radial-gradient(circle at 10% 12%, rgba(217, 119, 6, 0.12), transparent 30%),
+        linear-gradient(180deg, rgba(255,255,255,0.96), rgba(250,250,252,0.86));
+      border: 1px solid rgba(203, 213, 225, 0.44);
+      box-shadow: 0 26px 56px rgba(15, 23, 42, 0.14);
       text-align: center;
       backdrop-filter: blur(18px);
     }
 
     .welcome-icon {
-      font-size: 2.4rem;
+      font-family: 'Outfit', sans-serif;
+      font-size: 2.65rem;
+      font-weight: 800;
+      letter-spacing: 0.04em;
       line-height: 1;
-      margin-bottom: 8px;
+      margin-bottom: 6px;
+      color: #0f172a;
+      text-shadow: 0 1px 0 rgba(255,255,255,0.9);
     }
 
     .welcome-eyebrow {
@@ -733,12 +736,13 @@
       width: 32px;
       height: 32px;
       border-radius: 999px;
-      background: var(--navy);
+      background: linear-gradient(180deg, #1e3a8a, #1e293b);
       color: #fff;
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      font-size: 0.9rem;
+      font-size: 1rem;
+      font-weight: 900;
       flex-shrink: 0;
     }
 
@@ -804,21 +808,21 @@
     }
 
     .day-letter {
-      font-size: 0.6rem;
+      font-size: 0.66rem;
       font-weight: 800;
-      color: var(--muted);
+      color: #475569;
     }
 
     .day-date {
-      font-size: 0.67rem;
+      font-size: 0.76rem;
       font-weight: 900;
-      color: var(--text);
+      color: #1f2937;
       letter-spacing: -0.01em;
       text-transform: lowercase;
     }
 
     .grid-row {
-      min-height: 50px;
+      min-height: 54px;
       background: rgba(255,255,255,0.38);
     }
 
@@ -832,10 +836,11 @@
     }
 
     .emp-name {
-      font-size: 12px !important;
+      font-size: 13px !important;
       line-height: 1.22;
       font-weight: 800 !important;
       padding-right: 6px;
+      color: #1f2937 !important;
     }
 
     .grid-cell {
@@ -843,15 +848,16 @@
     }
 
     .badge-shift {
-      width: 26px !important;
-      height: 26px !important;
+      width: 30px !important;
+      height: 30px !important;
       border-radius: 9px !important;
-      font-size: 0.74rem !important;
-      font-weight: 700 !important;
+      font-size: 0.86rem !important;
+      font-weight: 800 !important;
       box-shadow: 0 8px 18px rgba(15, 23, 42, 0.1);
       border: 1px solid rgba(255,255,255,0.46);
       position: relative;
       overflow: visible;
+      text-shadow: 0 1px 1px rgba(0,0,0,0.22);
     }
 
     .m { background: linear-gradient(180deg, #4f8dfd, #2563eb) !important; color: #ffffff !important; }
@@ -1097,7 +1103,7 @@
       }
 
       .emp-name {
-        font-size: 11px !important;
+        font-size: 12px !important;
       }
 
       .welcome-card {
@@ -1114,14 +1120,14 @@
       }
 
       .day-date {
-        font-size: 0.61rem;
+        font-size: 0.7rem;
         letter-spacing: 0;
       }
 
       .badge-shift {
-        width: 28px !important;
-        height: 28px !important;
-        font-size: 0.78rem !important;
+        width: 29px !important;
+        height: 29px !important;
+        font-size: 0.82rem !important;
       }
     }
 
@@ -1140,11 +1146,11 @@
       }
 
       .day-letter {
-        font-size: 0.54rem;
+        font-size: 0.6rem;
       }
 
       .day-date {
-        font-size: 0.68rem;
+        font-size: 0.72rem;
         font-weight: 800;
       }
     }
@@ -1456,7 +1462,7 @@
     }
   </style>
 </head>
-<body class="flex flex-col h-full overflow-x-hidden">
+<body>
 
   <div class="app-viewport">
     <header>
@@ -1473,7 +1479,7 @@
             <strong class="header-title">Vista m&oacute;vil del cuadrante</strong>
           </div>
         </div>
-        <button onclick="toggleTheme()" id="themeBtn" class="p-1 opacity-50">🌙</button>
+        <button onclick="toggleTheme()" id="themeBtn">🌙</button>
       </div>
       <div class="select-wrap">
       <span class="toolbar-label">Elegir hotel</span>
@@ -1492,9 +1498,9 @@
       </div>
       <button onclick="changeWeek(1)" class="nav-btn" aria-label="Semana siguiente">&rarr;</button>
     </div>
-    <main class="flex-grow">
+    <main class="app-main">
       <div id="shiftGrid">
-        <!-- Inyección JS -->
+        <!-- Inyeccion JS -->
       </div>
     </main>
 
@@ -1535,7 +1541,7 @@
         const hotelSelect = document.getElementById('hotelSelect');
         if (hotelSelect && window.TurnosRules && window.TurnosRules.getCanonicalHotels) {
             hotelSelect.innerHTML = window.TurnosRules.getCanonicalHotels().map((h, i) => {
-                if (i === 0) return `<option value="">🏨 SELECCIONAR HOTEL</option>`;
+                if (i === 0) return `<option value="">SELECCIONAR HOTEL</option>`;
                 return `<option value="${h.value}">${h.label}</option>`;
             }).join('');
         }
@@ -1550,4 +1556,6 @@
   </script>
 </body>
 </html>
+
+
 

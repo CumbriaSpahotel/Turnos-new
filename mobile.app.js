@@ -1,4 +1,4 @@
-/* mobile.app.js (V3.2 Premium - Admin Standard) */
+﻿/* mobile.app.js (V3.2 Premium - Admin Standard) */
 (function () {
   const $  = (s, root = document) => root.querySelector(s);
   const $$ = (s, root = document) => Array.from(root.querySelectorAll(s));
@@ -44,12 +44,12 @@
   }
 
   /**
-   * Helper visual compartido para vista pública/móvil
+   * Helper visual compartido para vista publica/movil
    */
 
 
   function getDisplayInfo(item) {
-    if (!item) return { label: '·', cls: 'empty', icon: '', title: '' };
+    if (!item) return { label: '-', cls: 'empty', icon: '', title: '' };
     const display = window.TurnosRules.getPublicCellDisplay(item, { compact: true });
     const visual = window.TurnosRules.describeCell(item);
     return {
@@ -170,7 +170,7 @@
   function renderEmptyState(message, detail = "") {
     shiftGrid.innerHTML = `
       <div class="empty-state" style="padding:40px 24px; text-align:center; color:var(--muted);">
-        <div class="empty-icon" style="font-size:2.5rem; margin-bottom:10px;">📅</div>
+        <div class="empty-icon" style="font-size:2.5rem; margin-bottom:10px;">-</div>
         <div class="empty-title" style="font-weight:700; font-size:1rem; line-height:1.35; margin-bottom:${detail ? "8px" : "0"};">${escapeHtml(message)}</div>
         ${detail ? `<div class="empty-detail" style="font-weight:600; font-size:0.88rem; line-height:1.45; opacity:0.9;">${escapeHtml(detail)}</div>` : ""}
       </div>
@@ -181,22 +181,22 @@
     shiftGrid.innerHTML = `
       <div class="welcome-state">
         <div class="welcome-card">
-          <div class="welcome-icon">🏨</div>
+          <div class="welcome-icon">TURNOS</div>
           <div class="welcome-eyebrow">Vista publicada</div>
           <div class="welcome-title">Consulta turnos, descansos y cambios de la semana en un solo vistazo</div>
-          <div class="welcome-detail">Esta vista móvil te permite revisar el cuadrante publicado con una lectura rápida, clara y adaptada al teléfono.</div>
+          <div class="welcome-detail">Esta vista movil te permite revisar el cuadrante publicado con una lectura rapida, clara y adaptada al telefono.</div>
           <div class="welcome-features">
             <div class="welcome-feature">
-              <span class="welcome-feature-icon">📅</span>
+              <span class="welcome-feature-icon">•</span>
               <span class="welcome-feature-text">Semana actual siempre visible</span>
             </div>
             <div class="welcome-feature">
-              <span class="welcome-feature-icon">🏷️</span>
+              <span class="welcome-feature-icon">•</span>
               <span class="welcome-feature-text">Turnos y descansos identificados por color</span>
             </div>
             <div class="welcome-feature">
-              <span class="welcome-feature-icon">📲</span>
-              <span class="welcome-feature-text">Diseño optimizado para móvil vertical y horizontal</span>
+              <span class="welcome-feature-icon">•</span>
+              <span class="welcome-feature-text">Diseno optimizado para movil vertical y horizontal</span>
             </div>
           </div>
         </div>
@@ -236,7 +236,7 @@
         headerHotel.textContent = hotelInfo ? hotelInfo.label : "";
     }
     if (hotelSelect.options[0]) {
-        hotelSelect.options[0].text = hotelInfo ? `🏨 ${hotelInfo.label}` : "🏨 SELECCIONAR HOTEL";
+        hotelSelect.options[0].text = hotelInfo ? `${hotelInfo.label}` : "SELECCIONAR HOTEL";
     }
 
     if (!hotelInfo) {
@@ -244,7 +244,7 @@
         return;
     }
 
-    shiftGrid.innerHTML = `<div style="padding:40px; text-align:center; opacity:0.5; font-weight:700;">Cargando publicación...</div>`;
+    shiftGrid.innerHTML = `<div style="padding:40px; text-align:center; opacity:0.5; font-weight:700;">Cargando publicacion...</div>`;
     
     try {
         const result = await window.TurnosDB.loadPublishedSchedule({
@@ -254,12 +254,12 @@
         });
 
         if (!result.ok) {
-            shiftGrid.innerHTML = `<div style="padding:40px; text-align:center; opacity:0.6; color:var(--muted); font-weight:600;"><div style="font-size:2.5rem; margin-bottom:10px;">📅</div>${result.message}</div>`;
+            shiftGrid.innerHTML = `<div style="padding:40px; text-align:center; opacity:0.6; color:var(--muted); font-weight:600;"><div style="font-size:2.5rem; margin-bottom:10px;">-</div>${result.message}</div>`;
             return;
         }
 
         shiftGrid.innerHTML = "";
-        // Función de orden estable de hoteles
+        // FunciÃ³n de orden estable de hoteles
         const getHotelOrder = (h) => {
             const n = (h || "").toLowerCase();
             if (n.includes("cumbria")) return 1;
@@ -278,7 +278,7 @@
         for (const snap of snapshots) {
             if ((snap.hotel || "").toUpperCase().startsWith('TEST')) continue; // Safety filter V12.5
             if (hotelInfo) {
-                // Normalización para evitar fallos por mayúsculas o espacios
+                // NormalizaciÃ³n para evitar fallos por mayÃºsculas o espacios
                 const normSnap = (snap.hotel || "").trim().toUpperCase();
                 const normTarget = hotelInfo.dataName.trim().toUpperCase();
                 if (normSnap !== normTarget) continue;
@@ -297,13 +297,13 @@
                 ? `Has elegido ${hotelInfo.label}, pero no hay cuadrante publicado para esa semana.`
                 : "No hay cuadrantes publicados para esta semana.";
             const detail = hotelInfo && availableHotels.length
-                ? `<div style="margin-top:8px; font-size:0.9rem; font-weight:700;">Publicación disponible en: ${escapeHtml(availableHotels.join(", "))}.</div>`
+                ? `<div style="margin-top:8px; font-size:0.9rem; font-weight:700;">Publicacion disponible en: ${escapeHtml(availableHotels.join(", "))}.</div>`
                 : "";
-            shiftGrid.innerHTML = `<div style="padding:40px 24px; text-align:center; opacity:0.78; color:var(--muted); font-weight:600;"><div style="font-size:2.5rem; margin-bottom:10px;">📅</div><div style="font-size:1rem; line-height:1.4;">${escapeHtml(msg)}</div>${detail}</div>`;
+            shiftGrid.innerHTML = `<div style="padding:40px 24px; text-align:center; opacity:0.78; color:var(--muted); font-weight:600;"><div style="font-size:2.5rem; margin-bottom:10px;">-</div><div style="font-size:1rem; line-height:1.4;">${escapeHtml(msg)}</div>${detail}</div>`;
         }
     } catch(e) { 
-        console.error("Error en vista móvil:", e);
-        shiftGrid.innerHTML = `<div style="padding:40px; text-align:center; color:#ef4444; font-weight:700;">Error de conexión. Por favor, reintente.</div>`;
+        console.error("Error en vista movil:", e);
+        shiftGrid.innerHTML = `<div style="padding:40px; text-align:center; color:#ef4444; font-weight:700;">Error de conexion. Por favor, reintente.</div>`;
     }
   };
 
@@ -317,32 +317,37 @@
   function getMobileShiftLabel(cell, displayText, visualClass) {
     const raw = String(displayText || "").trim();
     const normalized = raw.toUpperCase();
-    if (visualClass === "v" || normalized.includes("VAC")) return "🏖️";
+    if (visualClass === "v" || normalized.includes("VAC")) return "V";
 
-    const base = raw.split(/\s+/)[0] || "";
-    const icons = cell?.icons || [];
-    const hasChange = raw.includes("🔄") || icons.includes("🔄") || icons.includes("\u{1F504}");
-    const hasPin = window.TurnosRules.shouldShowPin(cell);
-    const isNight = visualClass === "n" || base === "N";
+    const icons = Array.isArray(cell?.icons) ? cell.icons : [];
+    const sourceReason = String(cell?._finalState?.sourceReason || cell?.sourceReason || cell?.origen || "").toUpperCase();
+    const hasChange = !!(
+      cell?.changed ||
+      cell?.isModified ||
+      raw.includes("🔄") ||
+      raw.includes("↺") ||
+      icons.includes("🔄") ||
+      icons.includes("↺") ||
+      icons.includes("\u{1F504}") ||
+      sourceReason.includes("CAMBIO") ||
+      sourceReason.includes("INTERCAMBIO") ||
+      sourceReason.includes("OVERRIDE")
+    );
 
-    if (visualClass === "m" || visualClass === "t" || visualClass === "n" || visualClass === "d" || visualClass === "b" || visualClass === "p") {
-      const mainLabel = isNight
-        ? `${escapeHtml(base)}<span class="emoji-indicator night-indicator" aria-hidden="true">🌙</span>`
-        : escapeHtml(base);
-      
-      const pinHtml = hasPin ? '<span class="pin-indicator">📌</span>' : '';
+    const shortByClass = { m: "M", t: "T", n: "N", d: "D", b: "B", p: "P" };
+
+    if (shortByClass[visualClass]) {
       const changeHtml = hasChange ? '<span class="change-indicator-bottom" aria-label="Cambio de turno">↺</span>' : '';
-      
-      return `${mainLabel}${pinHtml}${changeHtml}`;
+      return `${shortByClass[visualClass]}${changeHtml}`;
     }
 
-    return formatShiftText(raw);
+    return normalized ? escapeHtml(normalized.charAt(0)) : "–";
   }
 
   function getMobileShiftToken(displayText, visualClass) {
-    // Normalizar: eliminar tildes y diacríticos para comparar con seguridad
+    // Normalizar: eliminar tildes y diacrÃ­ticos para comparar con seguridad
     const normalized = String(displayText || "")
-      .normalize('NFD').replace(/[\u0300-\u036f]/g, '') // elimina tildes (ñ -> n)
+      .normalize('NFD').replace(/[\u0300-\u036f]/g, '') // elimina tildes (Ã± -> n)
       .replace(/[\u{1F300}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/gu, "")
       .trim()
       .toUpperCase();
@@ -392,12 +397,29 @@
             </div>
             <div class="grid-body">
                 ${(() => {
-                    // De-duplicación y Orden Estricto (Operativos -> Ausentes)
+                    // De-duplicaciÃ³n y Orden Estricto (Operativos -> Ausentes)
                     const uniqueEmpsMap = new Map();
                     const norm = (str) => {
                         if (window.normalizeId) return window.normalizeId(str);
                         if (window.TurnosDB && window.TurnosDB.normalizeString) return window.TurnosDB.normalizeString(str);
                         return String(str || '').toLowerCase().trim();
+                    };
+                    const getPreferredName = (e) => String(
+                        e?.nombreVisible ||
+                        e?.ocupanteVisible ||
+                        e?.displayAs ||
+                        e?.displayName ||
+                        e?.empleado_id ||
+                        e?.nombre ||
+                        e?.id ||
+                        ""
+                    ).trim();
+                    const nameScore = (value) => {
+                        const v = String(value || "").trim().toLowerCase();
+                        if (!v) return 0;
+                        if (v === "sin asignar") return 3;
+                        if (v === "pendiente") return 1;
+                        return 2;
                     };
 
                     empleados.forEach(e => {
@@ -410,13 +432,29 @@
                             const existing = uniqueEmpsMap.get(id);
                             if (existing.rowType === 'ausencia_informativa' && !isAbsent) {
                                 uniqueEmpsMap.set(id, e);
+                            } else {
+                                const currScore = nameScore(getPreferredName(e));
+                                const prevScore = nameScore(getPreferredName(existing));
+                                if (currScore > prevScore) uniqueEmpsMap.set(id, e);
                             }
                         }
                     });
 
                     return window.TurnosRules.sortEmployees(Array.from(uniqueEmpsMap.values()));
                 })().map(emp => {
-                    const empName = emp.nombreVisible || emp.nombre;
+                    let empName = (
+                      emp.nombreVisible ||
+                      emp.ocupanteVisible ||
+                      emp.displayAs ||
+                      emp.displayName ||
+                      emp.empleado_id ||
+                      emp.nombre ||
+                      emp.id ||
+                      ""
+                    );
+                    if (String(empName).trim().toLowerCase() === "pendiente") {
+                      empName = "sin asignar";
+                    }
                     const daysMap = emp.turnosOperativos || emp.cells || emp.dias || {};
                     return `
                         <div class="grid-row" style="${emp.rowType === 'ausencia_informativa' ? 'opacity:0.6;' : ''}">
@@ -487,3 +525,4 @@
     await window.refreshMobileView();
   };
 })();
+

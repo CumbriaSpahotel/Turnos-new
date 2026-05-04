@@ -5317,24 +5317,30 @@ window.showPublishPreview = async (targetHotel = null, targetWeekStart = null) =
     if (!modal) {
         modal = document.createElement('div');
         modal.id = modalId;
-        modal.className = 'drawer';
+        modal.className = 'drawer-overlay';
+        modal.style.display = 'none';
+        modal.style.alignItems = 'center';
+        modal.style.justifyContent = 'center';
+        modal.style.zIndex = '10000';
+        modal.onclick = () => modal.classList.remove('open');
         document.body.appendChild(modal);
     }
-
+    
+    window._publishTargetHotel = hotelSel;
+    window._publishTargetWeek = weekStart;
+    
     const hotelSummary = snapshots.map(s => `
-        <div style="background: white; padding: 16px; border-radius: 12px; border: 1px solid #e2e8f0; margin-bottom: 12px;">
-            <div style="display: flex; justify-content: space-between; align-items: center;">
-                <span style="font-weight: 800; color: #0f172a;">${s.hotel_nombre}</span>
-                <span style="background: #f1f5f9; padding: 4px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 700;">${s.rows.length} filas</span>
-            </div>
+        <div style="background: white; padding: 12px; border-radius: 8px; border: 1px solid #e2e8f0; margin-bottom: 8px; display: flex; justify-content: space-between;">
+            <span style="font-weight: 700; color: #0f172a;">${s.hotel_nombre}</span>
+            <span style="background: #f1f5f9; padding: 2px 8px; border-radius: 12px; font-size: 0.7rem; font-weight: 700;">${s.rows.length} empleados</span>
         </div>
     `).join('');
 
     const validationHtml = validation.ok
         ? `<div style="background: #f0fdf4; border: 1px solid #bbf7d0; color: #15803d; padding: 16px; border-radius: 12px; margin-bottom: 24px; display: flex; align-items: center; gap: 12px;">
-             <i class="fas fa-check-circle" style="font-size: 1.2rem;"></i>
+             <i class="fas fa-check-circle"></i>
              <div>
-                <strong style="display: block;">Integridad Validada</strong>
+                <strong>Integridad Validada</strong>
                 <span style="font-size: 0.85rem;">El snapshot cumple con todas las reglas de protección.</span>
              </div>
            </div>`
@@ -5403,7 +5409,15 @@ window.showPublishPreview = async (targetHotel = null, targetWeekStart = null) =
             </footer>
         </div>
     `;
+    modal.style.display = 'flex';
+    modal.style.justifyContent = 'center'; 
     modal.classList.add('open');
+    
+    const inner = modal.querySelector('.drawer-content');
+    if (inner) {
+        inner.style.transform = 'none';
+        inner.style.margin = 'auto';
+    }
 };
 
 window.publishToSupabase = async () => {
@@ -5457,7 +5471,9 @@ window.publishToSupabase = async () => {
         }
 
         // 3. Guardar Snapshots en publicaciones_cuadrante
+        console.log("[PUBLISH_EXECUTE] saving snapshots", snapshots.length);
         for (const snap of snapshots) {
+            console.log("[PUBLISH_EXECUTE] publishing hotel", snap.hotel_id);
             await window.TurnosDB.publishCuadranteSnapshot({
                 semanaInicio: snap.week_start,
                 semanaFin: snap.week_end,
@@ -5467,6 +5483,8 @@ window.publishToSupabase = async () => {
                 usuario: 'ADMIN'
             });
         }
+        
+        console.log("[PUBLISH_EXECUTE] authorizing warnings");
         window.authorizePublicationWarnings?.(window._pendingPublicationWarnings || [], window._pendingPublicationWarningSnapshots || snapshots);
         window.clearOperationalDiagnostics?.('publish-validation');
 
@@ -5474,14 +5492,15 @@ window.publishToSupabase = async () => {
         window._adminExcelBaseOriginalRows = window.cloneExcelRows(window._adminExcelEditableRows);
 
         document.getElementById('publishPreviewModal')?.classList.remove('open');
-        alert('PublicaciÃ³n completada con Ã©xito.');
+        console.log("[PUBLISH_EXECUTE] success!");
+        alert('Publicación completada con éxito.');
 
-        window.renderExcelView();
-        window.renderPreview();
-        window.renderDashboard();
+        if (window.renderExcelView) window.renderExcelView();
+        if (window.renderPreview) window.renderPreview();
+        if (window.renderDashboard) await window.renderDashboard();
 
     } catch (error) {
-        console.error('Error en publicaciÃ³n:', error);
+        console.error('Error en publicación:', error);
         window.reportOperationalDiagnostic?.({
             source: 'publish-runtime',
             severity: 'critical',
@@ -6031,291 +6050,10 @@ window.validatePublishChanges = (changes) => {
         };
     };
 
-window.publishToSupabase = async () => {
-    const btn = document.getElementById('btnConfirmPublish');
-    if (btn) {
-        btn.disabled = true;
-        btn.textContent = 'Validando...';
-        btn.style.opacity = '0.7';
-    }
+// Duplicate legacy publishToSupabase removed (forced)
 
-    try {
-        const changes = window.getExcelDiff();
-        let weeksAffected = Array.from(new Set(changes.map(c => c.weekStart)));
-        let hotelsAffected = Array.from(new Set(changes.map(c => c.hotel)));
+// Cleanup complete.
 
-        if (weeksAffected.length === 0) {
-            const rawDate = document.getElementById('datePicker')?.value || window._previewDate;
-            if (rawDate) {
-                const base = new Date(rawDate + 'T12:00:00');
-                weeksAffected = [window.isoDate(window.getMonday(base))];
-            }
-        }
-
-        if (hotelsAffected.length === 0) {
-            hotelsAffected = await window.TurnosDB.getHotels();
-        }
-        hotelsAffected = hotelsAffected.filter(h => h && !h.toUpperCase().startsWith('TEST'));
-        // Permitimos continuar si es una publicaciÃ³n manual (sin cambios de Excel)
-        // if (changes.length === 0) throw new Error('No hay cambios para publicar.');
-
-        // --- 1. VALIDACIÃ“N PRE-PUBLICACIÃ“N Y CONFLICTOS ---
-        const validationErrors = window.validatePublishChanges ? window.validatePublishChanges(changes) : [];
-
-        // DetecciÃ³n de conflictos operativos
-        const conflicts = (await window.detectarConflictosOperativos(window.isoDate(new Date()), 'TODOS')) || [];
-        const criticalConflicts = Array.isArray(conflicts) ? conflicts.filter(c => c.severity === 'CRITICAL') : [];
-
-        if (validationErrors.length > 0 || criticalConflicts.length > 0) {
-            let msg = 'Ã¯Â¿Â½aÃ¯Â¿Â½Ã¯Â¸Â AVISO DE INTEGRIDAD / CONFLICTOS:\n\n';
-            if (validationErrors.length > 0) msg += `- ERRORES TÃ¯Â¿Â½0CNICOS: ${validationErrors.length} detectados.\n`;
-            if (criticalConflicts.length > 0) msg += `- CONFLICTOS OPERATIVOS: ${criticalConflicts.length} detectados.\n`;
-
-            msg += '\nSe recomienda resolver estos puntos, pero puede continuar si es consciente de los riesgos.';
-
-            if (!confirm(msg + '\n\nÂ¿DESEA PUBLICAR IGUALMENTE?')) {
-                throw new Error('PublicaciÃ³n cancelada por el usuario');
-            }
-        } else {
-            const confirmMsg = changes.length > 0
-                ? `Â¿Confirmas la publicaciÃ³n de ${changes.length} cambios?`
-                : `Â¿Confirmas la publicaciÃ³n del snapshot para la semana actual?`;
-            if (!confirm(confirmMsg)) return;
-        }
-
-        if (btn) btn.textContent = 'Preparando trazabilidad...';
-
-        const flatData = [];
-        const traceabilityDetails = [];
-        const affectedEmps = new Set();
-
-        changes.forEach(c => {
-            affectedEmps.add(c.displayName);
-            const weekDates = window.getFechasSemana(c.weekStart);
-
-            weekDates.forEach((fecha, idx) => {
-                const turnoNuevo = c.row.values[idx] || '';
-                const turnoAnterior = c.orig.values[idx] || '';
-
-                if (turnoNuevo !== turnoAnterior) {
-                    flatData.push({
-                        empleado_id: c.displayName,
-                        fecha: fecha,
-                        turno: turnoNuevo,
-                        tipo: 'NORMAL',
-                        hotel_id: c.hotel
-                    });
-
-                    traceabilityDetails.push({
-                        empleado_id: c.displayName,
-                        fecha: fecha,
-                        anterior: turnoAnterior,
-                        nuevo: turnoNuevo,
-                        hotel: c.hotel
-                    });
-                }
-            });
-        });
-
-        if (btn) btn.textContent = 'Publicando en Supabase...';
-
-        // --- 2. PUBLICAR CAMBIOS ---
-        await window.TurnosDB.bulkUpsert(flatData);
-
-        // --- 3. GENERAR LOG DE AUDITORÃA ---
-        await window.TurnosDB.insertLog({
-            cambios_totales: flatData.length,
-            resumen: {
-                accion: 'publicar_snapshot_cuadrante',
-                hoteles: Array.from(new Set(changes.map(c => c.hotel))),
-                rango: {
-                    inicio: changes.length > 0 ? changes[0].weekStart : (weeksAffected[0] || ''),
-                    fin: changes.length > 0 ? changes[changes.length - 1].weekStart : (weeksAffected[0] || '')
-                }
-            },
-            cambios_detalle_json: traceabilityDetails
-        });
-
-        // --- 4. GENERAR Y GUARDAR SNAPSHOTS FINALES (ARQUITECTURA FIJA v12.0) ---
-        // Admin resuelve la operativa completa y guarda el resultado horneado.
-        if (btn) btn.textContent = 'Horneando snapshots finales...';
-
-        const profiles = await window.TurnosDB.getEmpleados();
-
-        // Intentar obtener los datos base del Excel (cachÃ© compartida o carga fresca)
-        let excelSource = window._sharedExcelSourceRows;
-        if (!excelSource) {
-            excelSource = await window.ExcelLoader.loadExcelSourceRows().catch(() => ({}));
-        }
-
-        for (const weekStart of weeksAffected) {
-            const weekEnd = window.addIsoDays(weekStart, 6);
-            const [eventos, turnosSemana] = await Promise.all([
-                window.TurnosDB.fetchEventos(weekStart, weekEnd),
-                window.TurnosDB.fetchRango(weekStart, weekEnd)
-            ]);
-
-            for (const hName of hotelsAffected) {
-                const dates = [0,1,2,3,4,5,6].map(i => window.addIsoDays(weekStart, i));
-
-                // 1. TAREA CODEX: Priorizar el Cache de lo que el Admin estÃ¡ VIENDO en pantalla
-                let snapshotObj = null;
-                const cache = window._lastRenderedPreviewSnapshotSource;
-
-                if (cache && cache.semana_inicio === weekStart) {
-                    const hotelCache = cache.hoteles.find(h => h.hotel === hName);
-                    if (hotelCache) {
-                        console.log(`[SNAPSHOT] Usando cache de Vista Previa para ${hName}`);
-                        snapshotObj = {
-                            semana_inicio: weekStart,
-                            semana_fin: weekEnd,
-                            hotel: hName,
-                            empleados: hotelCache.empleados
-                        };
-                    }
-                }
-
-                // 2. Si no hay cache, resolver (pero usando el modelo fiel)
-                if (!snapshotObj) {
-                    console.warn(`[SNAPSHOT] No hay cache para ${hName}. Re-resolviendo modelo...`);
-                    let weekExcelRows = (excelSource[hName] || []).filter(r => r.weekStart === weekStart);
-
-                    const previewModel = window.createPuestosPreviewModel({
-                        hotel: hName,
-                        dates: dates,
-                        sourceRows: weekExcelRows,
-                        rows: turnosSemana.filter(t => t.hotel_id === hName),
-                        eventos,
-                        employees: profiles
-                    });
-
-                    if (previewModel.puestos.length === 0) {
-                        console.warn(`[SNAPSHOT] Saltando ${hName} - No hay datos operativos.`);
-                        continue;
-                    }
-
-                    const emps = previewModel.getEmployees();
-                    const seen = new Set();
-                    const orderedEmps = emps.filter(e => {
-                        if (seen.has(e.employee_id)) return false;
-                        seen.add(e.employee_id);
-                        return true;
-                    });
-
-                    snapshotObj = {
-                        semana_inicio: weekStart,
-                        semana_fin: weekEnd,
-                        hotel: hName,
-                        empleados: orderedEmps.map((emp, idx) => {
-                            const daysMap = {};
-                            dates.forEach(fecha => {
-                                const resolved = previewModel.getTurnoEmpleado(emp.employee_id, fecha);
-                                const visual = window.TurnosRules ? window.TurnosRules.describeCell(resolved) : { label: resolved.turno, icons: resolved.icons || [] };
-                                // B4 FIX (publicar path): mismo que en buildPublicationSnapshotPreview
-                                const absCode = resolved.incidencia
-                                    ? (resolved.incidencia === 'PERMISO' ? 'PERM'
-                                       : resolved.incidencia === 'FORMACION' ? 'FORM'
-                                       : resolved.incidencia)
-                                    : null;
-                                let icons = [...new Set([
-                                    ...((visual.icons && visual.icons.length > 0) ? visual.icons : (visual.icon ? [visual.icon] : [])),
-                                    ...(resolved.icon ? [resolved.icon] : (resolved.icons || [])),
-                                    ...((resolved.cambio || resolved.intercambio) ? ['\u{1F504}'] : [])
-                                ])].filter(icon => {
-                                    if (icon === '\u{1F4CC}' || icon === 'ðŸ“Œ') {
-                                        return window.TurnosRules ? window.TurnosRules.shouldShowPin(resolved) : false;
-                                    }
-                                    return true;
-                                });
-                                daysMap[fecha] = {
-                                    label: visual.label || absCode || resolved.turno || '',
-                                    code: absCode || resolved.turno || '',
-                                    icons,
-                                    type: resolved.incidencia || 'NORMAL',
-                                    estado: (resolved.isAbsent || resolved.incidencia) ? 'ausente' : 'operativo',
-                                    origen: resolved.incidencia || resolved.origen || 'base',
-                                    changed: !!(resolved.cambio || resolved.intercambio),
-                                    intercambio: !!resolved.intercambio,
-                                    icon: resolved.icon || null,
-                                    titular_cubierto: resolved.titular || null,
-                                    sustituto: resolved.sustituidoPor || null
-                                };
-                            });
-                            const profile = profiles.find(p => window.normalizeId(p.id) === window.normalizeId(emp.employee_id) || window.normalizeId(p.nombre) === window.normalizeId(emp.employee_id));
-                            return {
-                                nombre: emp.nombre || emp.employee_id,
-                                nombreVisible: emp.nombreVisible || emp.displayName || emp.nombre || emp.employee_id,
-                                empleado_id: emp.employee_id,
-                                orden: idx + 1,
-                                dias: daysMap,
-                                // Enriquecimiento para detecciÃ³n visual en index
-                                tipo: profile?.tipo || null,
-                                puesto: profile?.puesto || null,
-                                categoria: profile?.categoria || null,
-                                notas: profile?.notas || null,
-                                tags: profile?.tags || null,
-                                tipo_personal: profile?.tipo_personal || null,
-                                excludeCounters: window.isEmpleadoOcasionalOApoyo && window.isEmpleadoOcasionalOApoyo(profile)
-                            };
-                        })
-                    };
-                }
-
-                // 3. Validar contenido final antes de enviar
-                // No podemos validar contra previewModel si usamos cache directo,
-                // pero el cache ya se validÃ³ (o se generÃ³) durante el render.
-
-                // 4. Guardar snapshot
-                await window.TurnosDB.publishCuadranteSnapshot({
-                    semanaInicio: weekStart,
-                    semanaFin: weekEnd,
-                    hotel: hName,
-                    snapshot: snapshotObj,
-                    resumen: { emps: snapshotObj.empleados.length },
-                    usuario: 'ADMIN'
-                });
-            }
-        }
-        window.authorizePublicationWarnings?.(window._pendingPublicationWarnings || [], window._pendingPublicationWarningSnapshots || snapshots);
-        window.clearOperationalDiagnostics?.('publish-validation');
-
-        // Actualizar base original local
-        window._adminExcelBaseOriginalRows = window.cloneExcelRows(window._adminExcelEditableRows);
-        window.addLog(`PublicaciÃ³n exitosa: ${flatData.length} turnos actualizados. Log guardado.`, 'ok');
-        try {
-            localStorage.setItem('turnosweb_public_snapshot_updated_at', new Date().toISOString());
-        } catch (_) {}
-
-        document.getElementById('publishPreviewModal')?.classList.remove('open');
-        alert(`PublicaciÃ³n completada con Ã©xito.\nSe han actualizado ${flatData.length} turnos.`);
-
-        window.renderExcelView();
-        window.renderPreview();
-        window.renderDashboard(); // Refrescar actividad
-        if (window.populateEmployees) window.populateEmployees();
-
-    } catch (error) {
-        if (error.message !== 'ValidaciÃ³n fallida') {
-            console.error('Error en publicaciÃ³n:', error);
-            window.reportOperationalDiagnostic?.({
-                source: 'publish-runtime',
-                severity: 'critical',
-                type: 'PUBLICACION_ERROR',
-                title: 'Error al publicar',
-                desc: error.message || String(error),
-                section: 'changes',
-                actionLabel: 'Ver Cambios'
-            });
-            window.renderDashboard?.();
-            alert('Error al publicar: ' + error.message);
-        }
-        if (btn) {
-            btn.disabled = false;
-            btn.textContent = 'Reintentar PublicaciÃ³n';
-            btn.style.opacity = '1';
-        }
-    }
-};
 
 window.revertirPublicacion = async (logId) => {
     if (!confirm('Â¿EstÃ¡s seguro de revertir esta publicaciÃ³n? Se restaurarÃ¡n los turnos anteriores registrados en el log.')) return;
@@ -6340,8 +6078,8 @@ window.revertirPublicacion = async (logId) => {
         await window.TurnosDB.bulkUpsert(revertData);
         await window.TurnosDB.updateLog(logId, { revertida: true, estado: 'revertido' });
 
-        window.addLog(`ReversiÃ³n completada: ${revertData.length} turnos restaurados.`, 'ok');
-        alert('PublicaciÃ³n revertida con Ã©xito.');
+        window.addLog(`Reversión completada: ${revertData.length} turnos restaurados.`, 'ok');
+        alert('Publicación revertida con éxito.');
 
         window.renderDashboard();
         window.renderPreview();
@@ -6406,7 +6144,10 @@ window.detectPendingPublicationChanges = async () => {
             const snap = snapsMap[key];
 
             // Regla: Pendiente si no hay snapshot o si el evento es posterior al snapshot
-            const isPending = !snap || new Date(ev.updated_at || ev.created_at) > new Date(snap.created_at);
+            // Añadimos un buffer de 2 segundos para evitar falsos positivos por latencia de red/servidor
+            const evUpdate = new Date(ev.updated_at || ev.created_at).getTime();
+            const snapCreate = snap ? new Date(snap.created_at).getTime() : 0;
+            const isPending = !snap || (evUpdate > (snapCreate + 2000));
 
             if (isPending) {
                 let p = pending.find(item => item.key === key);
@@ -6605,9 +6346,6 @@ window.renderDashboard = async () => {
         window.publishPendingChangesForCard = async (payload) => {
             console.log("[PUBLISH_CLICK] handler invoked");
             console.log("[PUBLISH_CLICK] payload", payload);
-            console.log("[PUBLISH_CLICK] hotel", payload?.hotel);
-            console.log("[PUBLISH_CLICK] weekStart", payload?.weekStart);
-            console.log("[PUBLISH_CLICK] pendingCount", payload?.pendingCount);
             
             const hotel = payload.hotel;
             const weekStart = payload.weekStart;
@@ -6617,8 +6355,11 @@ window.renderDashboard = async () => {
                 return;
             }
 
-            // Abrir el modal de publicación pasando los parámetros explícitos
-            console.log("[PUBLISH_CLICK] proceeding to showPublishPreview");
+            console.log("[PUBLISH_CLICK] proceeding to showPublishPreview", { hotel, weekStart });
+            // Forzamos la limpieza de cualquier estado previo
+            window._publishTargetHotel = hotel;
+            window._publishTargetWeek = weekStart;
+            
             await window.showPublishPreview(hotel, weekStart);
         };
 
