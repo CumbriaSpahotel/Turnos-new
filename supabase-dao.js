@@ -1069,18 +1069,25 @@ window.TurnosDB = {
         const semanaFin = this.normalizeDate(rawEnd);
         const client = window.supabase;
         try {
-            // 1. Obtener versión actual y ID activo para rollback
-            const { data: currentActive } = await client
-                .from('publicaciones_cuadrante')
-                .select('id, version')
-                .eq('semana_inicio', semanaInicio)
-                .eq('hotel', hotel)
-                .eq('estado', 'activo')
-                .order('version', { ascending: false })
-                .limit(1);
+            // 1. Obtener versiÃ³n histÃ³rica mÃ¡s alta y ID activo actual para rollback
+            const [verResult, activeResult] = await Promise.all([
+                client.from('publicaciones_cuadrante')
+                    .select('version')
+                    .eq('semana_inicio', semanaInicio)
+                    .eq('hotel', hotel)
+                    .order('version', { ascending: false })
+                    .limit(1),
+                client.from('publicaciones_cuadrante')
+                    .select('id')
+                    .eq('semana_inicio', semanaInicio)
+                    .eq('hotel', hotel)
+                    .eq('estado', 'activo')
+                    .order('version', { ascending: false })
+                    .limit(1)
+            ]);
             
-            const lastId = (currentActive && currentActive[0]) ? currentActive[0].id : null;
-            const nextVersion = (currentActive && currentActive[0]) ? currentActive[0].version + 1 : 1;
+            const lastId = (activeResult.data && activeResult.data[0]) ? activeResult.data[0].id : null;
+            const nextVersion = (verResult.data && verResult.data[0]) ? verResult.data[0].version + 1 : 1;
 
             // 2. Insertar nuevo snapshot activo
             const { data: newSnap, error: snapErr } = await client

@@ -87,6 +87,8 @@ window.getAvailableHotels = async () => {
 window.v9ExcelOrderMap = null;
 
 window.resolveId = window.resolveId || ((raw) => window.normalizeId ? window.normalizeId(raw) : String(raw || '').trim());
+window.normalizeId = (id) => String(id || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
+window.normalizeEstado = (est) => String(est || '').toLowerCase().trim();
 
 window.normalizeV9Key = (value) => {
     if (value === null || value === undefined) return '';
@@ -5249,10 +5251,13 @@ window.authorizePublicationWarnings = (warnings = [], snapshots = []) => {
     } catch (_) {}
 };
 
-window.showPublishPreview = async () => {
+window.showPublishPreview = async (targetHotel = null, targetWeekStart = null) => {
     // 1. Identificar rango y hotel
-    const hotelSel = $('#prevHotel')?.value || 'all';
-    const rawDate = window._previewDate;
+    const hotelSel = targetHotel || $('#prevHotel')?.value || 'all';
+    const rawDate = targetWeekStart || window._previewDate;
+    
+    console.log("[PUBLISH_PREVIEW] target", { hotelSel, rawDate });
+
     if (!rawDate) {
         alert('Por favor, selecciona una semana en Vista Previa primero.');
         return;
@@ -5266,12 +5271,14 @@ window.showPublishPreview = async () => {
     try {
         snapshots = await window.buildPublicationSnapshotPreview(weekStart, hotelSel);
     } catch (e) {
-        alert('Error al generar la previsualizaciÃ³n del snapshot: ' + e.message);
+        console.error("[PUBLISH_PREVIEW] Error building snapshot:", e);
+        alert('Error al generar la previsualización del snapshot: ' + e.message);
         return;
     }
 
     if (snapshots.length === 0) {
-        alert('No hay datos operativos para publicar en esta selecciÃ³n.');
+        console.warn("[PUBLISH_PREVIEW] No snapshots returned for", { weekStart, hotelSel });
+        alert('No hay datos operativos para publicar en esta selección.');
         return;
     }
 
@@ -5286,14 +5293,13 @@ window.showPublishPreview = async () => {
             .replaceAll(c(0x00e2, 0x20ac, 0x201d), '-');
     };
 
-    // 4. Crear Modal de PublicaciÃ³n
+    // 4. Mostrar Modal con Resultado
     const modalId = 'publishPreviewModal';
     let modal = document.getElementById(modalId);
     if (!modal) {
         modal = document.createElement('div');
         modal.id = modalId;
-        modal.className = 'drawer-overlay';
-        modal.style.zIndex = '9999';
+        modal.className = 'drawer';
         document.body.appendChild(modal);
     }
 
@@ -5311,13 +5317,13 @@ window.showPublishPreview = async () => {
              <i class="fas fa-check-circle" style="font-size: 1.2rem;"></i>
              <div>
                 <strong style="display: block;">Integridad Validada</strong>
-                <span style="font-size: 0.85rem;">El snapshot cumple con todas las reglas de protecciÃ³n.</span>
+                <span style="font-size: 0.85rem;">El snapshot cumple con todas las reglas de protección.</span>
              </div>
            </div>`
         : `<div style="background: #fef2f2; border: 1px solid #fecaca; color: #b91c1c; padding: 16px; border-radius: 12px; margin-bottom: 24px;">
              <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
                 <i class="fas fa-times-circle" style="font-size: 1.2rem;"></i>
-                <strong>Errores CrÃ­ticos Detectados</strong>
+                <strong>Errores Críticos Detectados</strong>
              </div>
              <ul style="margin: 0; padding-left: 20px; font-size: 0.85rem; line-height: 1.5;">
                 ${validation.errors.map(e => `<li>${cleanValidationMessage(e)}</li>`).join('')}
@@ -5336,13 +5342,13 @@ window.showPublishPreview = async () => {
              </div>
              <ul style="margin: 0; padding-left: 20px; font-size: 0.8rem; opacity: 0.9;">
                 ${visibleWarnings.slice(0, 5).map(w => `<li>${cleanValidationMessage(w)}</li>`).join('')}
-                ${visibleWarnings.length > 5 ? `<li>... y ${visibleWarnings.length - 5} avisos mÃ¡s.</li>` : ''}
+                ${visibleWarnings.length > 5 ? `<li>... y ${visibleWarnings.length - 5} avisos más.</li>` : ''}
              </ul>
            </div>`
         : '';
     const authorizedWarningsHtml = authorizedWarningsCount > 0
         ? `<div style="background:#eff6ff;border:1px solid #dbeafe;color:#1e40af;padding:10px 12px;border-radius:10px;margin-bottom:16px;font-size:0.78rem;font-weight:700;">
-             ${authorizedWarningsCount} advertencia${authorizedWarningsCount === 1 ? '' : 's'} ya autorizada${authorizedWarningsCount === 1 ? '' : 's'} para esta semana. No se volverÃ¡n a tratar como pendiente.
+             ${authorizedWarningsCount} advertencia${authorizedWarningsCount === 1 ? '' : 's'} ya autorizada${authorizedWarningsCount === 1 ? '' : 's'} para esta semana. No se volverán a tratar como pendiente.
            </div>`
         : '';
 
@@ -5364,7 +5370,7 @@ window.showPublishPreview = async () => {
                 </section>
 
                 <div style="background: #eff6ff; border: 1px solid #dbeafe; padding: 16px; border-radius: 12px; font-size: 0.85rem; color: #1e40af;">
-                    <strong>Nota:</strong> Al publicar, se crearÃ¡ una versiÃ³n inmutable (Snapshot) que serÃ¡ la Ãºnica fuente de verdad para el Cuadrante PÃºblico. Los cambios locales en el Excel tambiÃ©n se sincronizarÃ¡n con la base de datos.
+                    <strong>Nota:</strong> Al publicar, se creará una versión inmutable (Snapshot) que será la única fuente de verdad para el Cuadrante Público. Los cambios locales en el Excel también se sincronizarán con la base de datos.
                 </div>
             </div>
 
@@ -5379,9 +5385,6 @@ window.showPublishPreview = async () => {
             </footer>
         </div>
     `;
-    const snapshotPublishTitle = modal.querySelector('h2');
-    if (snapshotPublishTitle) snapshotPublishTitle.textContent = 'Publicar Snapshot de Turnos';
-
     modal.classList.add('open');
 };
 
@@ -5523,17 +5526,35 @@ window.validatePublishChanges = (changes) => {
         const dates = [0,1,2,3,4,5,6].map(i => window.addIsoDays(weekStart, i));
 
         for (const hName of hotelsToProcess) {
-            // Intentar recuperar del cache del render actual
+            // Intentar recuperar del cache del render actual con validaciÃ³n estricta (V12.6 Fix)
             let hotelData = null;
             if (cache && cache.hoteles && cache.semana_inicio === weekStart) {
                 const found = cache.hoteles.find(h => h.hotel === hName);
-                if (found && found.empleados && found.empleados[0]) {
-                    const firstEmp = found.empleados[0];
-                    const cells = firstEmp.cells || firstEmp.dias || {};
-                    if (Object.keys(cells).includes(weekStart)) {
+                if (found && found.empleados && found.empleados.length > 0) {
+                    const expectedDates = [0,1,2,3,4,5,6].map(i => window.addIsoDays(weekStart, i));
+                    let rowsValid = 0;
+                    let rowsTotal = 0;
+
+                    found.empleados.forEach(emp => {
+                        const cells = emp.cells || emp.dias || {};
+                        const rowKeys = Object.keys(cells);
+                        if (rowKeys.length > 0) {
+                            rowsTotal++;
+                            // Verificamos si la mayorÃ­a de las celdas de esta fila pertenecen a la semana esperada
+                            const validKeys = rowKeys.filter(k => expectedDates.includes(k));
+                            if (validKeys.length >= rowKeys.length / 2) {
+                                rowsValid++;
+                            } else {
+                                console.warn(`[SNAPSHOT] Fila corrupta detectada para ${emp.nombreVisible}: claves fuera de rango.`);
+                            }
+                        }
+                    });
+
+                    // Criterio de aceptaciÃ³n del cache: >90% de filas con datos coherentes
+                    if (rowsTotal > 0 && rowsValid / rowsTotal > 0.9) {
                         hotelData = found.empleados;
                     } else {
-                        console.warn('[SNAPSHOT] Cache invalidado por mismatch de fechas internas.');
+                        console.error(`[SNAPSHOT] Cache ABORTADO para ${hName}: inconsistencia masiva de fechas (${rowsValid}/${rowsTotal} filas vÃ¡lidas).`);
                     }
                 }
             }
@@ -5556,7 +5577,49 @@ window.validatePublishChanges = (changes) => {
                     employees: profiles
                 });
 
-                if (previewModel.puestos.length === 0) continue;
+                if (previewModel.puestos.length === 0) {
+                    console.info(`[SNAPSHOT] No hay puestos en el modelo inicial para ${hName}. Reintentando con carga de base DB...`);
+                    // Fallback: si no hay Excel, cargar turnos base de la DB para poblar puestosMap
+                    const dbBase = await window.TurnosDB.fetchTurnosBase(weekStart, weekEnd, hName);
+                    if (dbBase && dbBase.length > 0) {
+                        const byEmp = {};
+                        dbBase.forEach(t => {
+                            if (!byEmp[t.empleado_id]) byEmp[t.empleado_id] = { 
+                                empleadoId: t.empleado_id, 
+                                rowIndex: 0, 
+                                displayName: t.empleado_id, 
+                                values: Array(7).fill(null), 
+                                weekStart 
+                            };
+                            const offset = window.getDayOffsetFromWeek(weekStart, t.fecha);
+                            if (offset >= 0 && offset < 7) {
+                                byEmp[t.empleado_id].values[offset] = t.turno;
+                            }
+                        });
+                        weekExcelRows.push(...Object.values(byEmp));
+                        
+                        // Re-crear modelo con los datos recuperados de la DB
+                        const retryModel = window.createPuestosPreviewModel({
+                            hotel: hName,
+                            dates: dates,
+                            sourceRows: weekExcelRows,
+                            rows: data.filter(r => r.hotel_id === hName),
+                            eventos,
+                            employees: profiles
+                        });
+                        if (retryModel.puestos.length > 0) {
+                             // Continuar con el modelo recuperado
+                             // En vez de return, asignamos al objeto exterior si es posible, 
+                             // pero lo más limpio es inyectar el código de modelado aquí.
+                             Object.assign(previewModel, retryModel);
+                        }
+                    }
+                }
+
+                if (previewModel.puestos.length === 0) {
+                    console.error(`[SNAPSHOT] Abortando ${hName}: Sin puestos tras reintento base.`);
+                    continue;
+                }
 
                 const emps = previewModel.getEmployees();
                 const seen = new Set();
@@ -5653,6 +5716,16 @@ window.validatePublishChanges = (changes) => {
                     cells: emp.cells || emp.dias,
                     dias: emp.cells || emp.dias
                 }));
+            }
+
+            // VerificaciÃ³n de integridad final (V12.6 Guard)
+            const finalExpectedDates = [0,1,2,3,4,5,6].map(i => window.addIsoDays(weekStart, i));
+            const sampleRow = hotelData[0];
+            const sampleKeys = Object.keys(sampleRow.cells || sampleRow.dias || {});
+            const hasCorrectDates = sampleKeys.some(k => finalExpectedDates.includes(k));
+
+            if (!hasCorrectDates && hotelData.length > 0) {
+                throw new Error(`[ABORT] El snapshot generado para ${hName} es incoherente con la semana ${weekStart}. PublicaciÃ³n cancelada.`);
             }
 
             snapshots.push({
@@ -6259,6 +6332,92 @@ window.revertirPublicacion = async (logId) => {
 // 13. REAL-TIME OPERATIONAL DASHBOARD (V2 - ACTIVE CONTROL)
 // ==========================================
 
+/**
+ * MOTOR DE DETECCIÃ“N DE CAMBIOS PENDIENTES DE PUBLICAR (V12.6)
+ * Compara eventos aprobados/actualizados contra el snapshot activo.
+ */
+window.detectPendingPublicationChanges = async () => {
+    try {
+        const today = window.isoDate(new Date());
+        const startScan = window.addIsoDays(today, -14); 
+        const endScan = window.addIsoDays(today, 60);
+
+        const [eventos, snapshots] = await Promise.all([
+            window.TurnosDB.client
+                .from('eventos_cuadrante')
+                .select('*')
+                .eq('estado', 'activo')
+                .gte('fecha_inicio', startScan)
+                .lte('fecha_inicio', endScan),
+            window.TurnosDB.client
+                .from('publicaciones_cuadrante')
+                .select('id, hotel, semana_inicio, semana_fin, version, created_at')
+                .eq('estado', 'activo')
+                .gte('semana_inicio', startScan)
+                .lte('semana_inicio', endScan)
+        ]);
+
+        if (eventos.error) throw eventos.error;
+        if (snapshots.error) throw snapshots.error;
+
+        const evs = eventos.data || [];
+        const snaps = snapshots.data || [];
+
+        // Agrupar snaps por hotel y semana (Ãºltima versiÃ³n activa)
+        const snapsMap = {};
+        snaps.forEach(s => {
+            const key = `${window.normalizeId(s.hotel)}|${s.semana_inicio}`;
+            if (!snapsMap[key] || snapsMap[key].version < s.version) {
+                snapsMap[key] = s;
+            }
+        });
+
+        const pending = [];
+        evs.forEach(ev => {
+            const evDate = ev.fecha_inicio;
+            const monday = window.isoDate(window.getMonday(new Date(evDate + 'T12:00:00')));
+            const hotel = ev.hotel_origen || ev.payload?.hotel_id || '';
+            if (!hotel) return;
+
+            const key = `${window.normalizeId(hotel)}|${monday}`;
+            const snap = snapsMap[key];
+
+            // Regla: Pendiente si no hay snapshot o si el evento es posterior al snapshot
+            const isPending = !snap || new Date(ev.updated_at || ev.created_at) > new Date(snap.created_at);
+
+            if (isPending) {
+                let p = pending.find(item => item.key === key);
+                if (!p) {
+                    p = {
+                        key,
+                        hotel,
+                        weekStart: monday,
+                        currentVersion: snap ? snap.version : 0,
+                        pendingCount: 0,
+                        lastAcceptedAt: ev.updated_at || ev.created_at,
+                        events: []
+                    };
+                    pending.push(p);
+                }
+                p.pendingCount++;
+                p.events.push(ev);
+                if (new Date(ev.updated_at || ev.created_at) > new Date(p.lastAcceptedAt)) {
+                    p.lastAcceptedAt = ev.updated_at || ev.created_at;
+                }
+            }
+        });
+
+        return {
+            hasPendingChanges: pending.length > 0,
+            totalPendingChanges: pending.reduce((acc, p) => acc + p.pendingCount, 0),
+            weeks: pending
+        };
+    } catch (err) {
+        console.error('[ADMIN] Error detectPendingPublicationChanges:', err);
+        return { hasPendingChanges: false, totalPendingChanges: 0, weeks: [] };
+    }
+};
+
 window.renderDashboard = async () => {
     if (!window.TurnosDB) {
         console.error('[ADMIN ERROR] DAO (TurnosDB) no inicializado. Revisa el orden de scripts y posibles errores de sintaxis.');
@@ -6272,11 +6431,12 @@ window.renderDashboard = async () => {
     const today = window.isoDate(new Date());
 
     try {
-        const [eventos, peticiones, empleados, turnosHoy] = await Promise.all([
+        const [eventos, peticiones, empleados, turnosHoy, pendingPub] = await Promise.all([
             window.TurnosDB.fetchEventos(window.addIsoDays(today, -30), window.addIsoDays(today, 60)),
             window.TurnosDB.fetchPeticiones(),
             window.TurnosDB.getEmpleados(),
-            window.TurnosDB.fetchRango(today, today)
+            window.TurnosDB.fetchRango(today, today),
+            window.detectPendingPublicationChanges()
         ]);
         console.log('EVENTOS CARGADOS', eventos.length);
         if (window.DEBUG_MODE) {
@@ -6321,7 +6481,17 @@ window.renderDashboard = async () => {
         const allRisks = [
             ...conflicts.CRITICAL.map(c => ({ ...c, severity: 'critical' })),
             ...conflicts.WARNING.map(c => ({ ...c, severity: 'warning' })),
-            ...conflicts.INFO.map(c => ({ ...c, severity: 'info' }))
+            ...conflicts.INFO.map(c => ({ ...c, severity: 'info' })),
+            ...pendingPub.weeks.map(p => ({
+                severity: 'warning',
+                type: 'PENDING_PUBLISH',
+                title: 'Cambios pendientes de publicar',
+                desc: `<b>${p.hotel}</b> (${p.weekStart}): ${p.pendingCount} cambios aceptados no visibles en index.html.`,
+                action: {
+                    label: 'Publicar Cambios',
+                    fn: `window.publishPendingChangesForCard({ hotel: '${p.hotel}', weekStart: '${p.weekStart}', pendingCount: ${p.pendingCount} })`
+                }
+            }))
         ];
 
         // AuditorÃ­a de ID Interno (Fase 1)
@@ -6384,10 +6554,10 @@ window.renderDashboard = async () => {
             } else {
                 riskContainer.innerHTML = allRisks.map(r => `
                     <div class="alert-card severity-${r.severity}">
-                        <div class="alert-icon"><i class="fas ${r.type === 'SIN_ID' ? 'fa-id-card' : (r.type === 'JORNADA' ? 'fa-tired' : 'fa-exclamation-triangle')}"></i></div>
+                        <div class="alert-icon"><i class="fas ${r.type === 'SIN_ID' ? 'fa-id-card' : (r.type === 'JORNADA' ? 'fa-tired' : (r.type === 'PENDING_PUBLISH' ? 'fa-cloud-upload-alt' : 'fa-exclamation-triangle'))}"></i></div>
                         <div class="alert-content">
-                            <div class="alert-title">${escapeHtml(r.title)}</div>
-                            <div class="alert-desc">${escapeHtml(r.desc)}</div>
+                            <div class="alert-title">${r.title}</div>
+                            <div class="alert-desc">${r.desc}</div>
                         </div>
                         <div class="alert-actions">
                             <button class="alert-btn primary" onclick="${r.action ? r.action.fn : (r.empId ? `window.goToOperationalIssue('${r.empId}', '${r.fecha || ''}', '${r.type || ''}')` : `window.switchSection('preview')`)}">
@@ -6398,6 +6568,32 @@ window.renderDashboard = async () => {
                 `).join('');
             }
         }
+
+        // --- BLOQUE C: KPI COUNTERS ---
+        if ($('#stat-pending-publish')) {
+            $('#stat-pending-publish').textContent = pendingPub.totalPendingChanges;
+            $('#stat-pending-publish').style.color = pendingPub.totalPendingChanges > 0 ? '#3b82f6' : 'inherit';
+        }
+
+        // --- BLOQUE D: ACCIONES ---
+        /**
+         * FunciÃ³n robusta para publicar cambios desde una tarjeta de pendiente (V12.6.2)
+         */
+        window.publishPendingChangesForCard = async (payload) => {
+            console.log("[PUBLISH_BUTTON] card payload", payload);
+            console.log("[PUBLISH_BUTTON] hotel", payload.hotel);
+            console.log("[PUBLISH_BUTTON] weekStart", payload.weekStart);
+            
+            const hotel = payload.hotel;
+            const weekStart = payload.weekStart;
+
+            if (!confirm(`Vas a publicar los cambios aceptados para ${hotel} durante la semana ${weekStart}. Esto actualizará la Vista Pública y la app móvil. ¿Confirmar publicación?`)) return;
+
+            // Abrir el modal de publicación pasando los parámetros explícitos
+            await window.showPublishPreview(hotel, weekStart);
+        };
+
+        window.publishPendingFromDashboard = window.publishPendingChangesForCard; // Alias legacy
 
         // Badges y KPIs nuevos
         if ($('#count-critical')) $('#count-critical').textContent = `${counts.critical} CrÃ­ticos`;

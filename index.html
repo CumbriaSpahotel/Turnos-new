@@ -629,16 +629,41 @@
         container.innerHTML = '';
         container.dataset.loaded = '1';
         
-        // Agrupar por hotel y semana para solo mostrar la última versión de cada combinación
+        console.log("[INDEX] weekStart", start);
+        console.log("[INDEX] publicaciones recibidas", snaps.length);
+
         const seen = new Set();
-        const summaryByMonth = new Map();
-        let hasRows = false;
+        const selectedByHotel = [];
         snaps.forEach(s => {
             const key = `${s.hotel}_${s.semana_inicio}`;
             if (seen.has(key)) return;
             if (hotel && s.hotel !== hotel) return;
-            if (s.hotel.toUpperCase().startsWith('TEST')) return; // Safety filter V12.5
+            if (s.hotel.toUpperCase().startsWith('TEST')) return; 
             seen.add(key);
+            selectedByHotel.push(s);
+        });
+
+        console.log("[INDEX] seleccionadas", selectedByHotel.map(p => ({
+            hotel: p.hotel,
+            version: p.version,
+            estado: p.estado,
+            semana_inicio: p.semana_inicio,
+            rows: (p.snapshot_json?.rows || p.snapshot_json?.empleados)?.length
+        })));
+
+        if (selectedByHotel.length > 0) {
+            const firstRow = (selectedByHotel[0].snapshot_json?.rows || selectedByHotel[0].snapshot_json?.empleados)?.[0];
+            const cells = firstRow?.turnosOperativos || firstRow?.cells || firstRow?.dias || {};
+            console.log("[INDEX] first row", firstRow);
+            console.log("[INDEX] first cell keys", Object.keys(cells));
+        }
+
+        container.innerHTML = '';
+        container.dataset.loaded = '1';
+        
+        const summaryByMonth = new Map();
+        let hasRows = false;
+        selectedByHotel.forEach(s => {
             hasRows = true;
             renderHotelSection(container, s, start, end, summaryByMonth);
         });
@@ -730,7 +755,7 @@
 
         table.renderRow = function(tr, rowData) {
             const tds = tr.children;
-            const daysMap = rowData.dias || rowData.cells || {};
+            const daysMap = rowData.turnosOperativos || rowData.cells || rowData.dias || {};
             // Bug-fix: apoyo/ocasional employees must not show structural counters
             const skipCounters = !!(
                 rowData.excludeCounters === true ||

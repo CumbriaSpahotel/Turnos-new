@@ -417,7 +417,7 @@
                     return window.TurnosRules.sortEmployees(Array.from(uniqueEmpsMap.values()));
                 })().map(emp => {
                     const empName = emp.nombreVisible || emp.nombre;
-                    const daysMap = emp.dias || emp.cells || {};
+                    const daysMap = emp.turnosOperativos || emp.cells || emp.dias || {};
                     return `
                         <div class="grid-row" style="${emp.rowType === 'ausencia_informativa' ? 'opacity:0.6;' : ''}">
                             <div class="name-cell">
