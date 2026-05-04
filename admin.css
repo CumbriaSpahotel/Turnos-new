@@ -59,9 +59,16 @@ body.light-mode {
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
-html { height: 100%; }
+html { 
+  height: 100%; 
+  width: 100%;
+  overflow-x: hidden;
+}
 
 body {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
   display: flex;
   min-height: 100vh;
   font-family: var(--font);
@@ -336,7 +343,9 @@ input, select, textarea { color: var(--text); }
 .section {
   display: none;
   padding: 2.5rem 2.75rem;
-  max-width: 1500px;
+  max-width: 100%;
+  width: 100%;
+  box-sizing: border-box;
   animation: fadeUp 0.3s cubic-bezier(0.4,0,0.2,1);
 }
 

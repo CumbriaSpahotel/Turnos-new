@@ -5256,7 +5256,12 @@ window.showPublishPreview = async (targetHotel = null, targetWeekStart = null) =
     const hotelSel = targetHotel || $('#prevHotel')?.value || 'all';
     const rawDate = targetWeekStart || window._previewDate;
     
+    // Almacenar para publishToSupabase (V12.6.3)
+    window._publishTargetHotel = hotelSel;
+    window._publishTargetWeek = rawDate;
+    
     console.log("[PUBLISH_PREVIEW] target", { hotelSel, rawDate });
+    console.log("[PUBLISH_CLICK] handler invoked via showPublishPreview");
 
     if (!rawDate) {
         alert('Por favor, selecciona una semana en Vista Previa primero.');
@@ -5266,10 +5271,23 @@ window.showPublishPreview = async (targetHotel = null, targetWeekStart = null) =
     const weekStart = window.isoDate(window.getMonday(base));
     const weekEnd = window.addIsoDays(weekStart, 6);
 
+    console.log("[PUBLISH_PREVIEW] dates", { weekStart, weekEnd });
+
     // 2. Generar Snapshot Preview (Sin guardar)
     let snapshots = [];
     try {
+        console.log("[PUBLISH_PREVIEW] building snapshot for", { weekStart, hotelSel });
         snapshots = await window.buildPublicationSnapshotPreview(weekStart, hotelSel);
+        
+        if (snapshots.length > 0) {
+            const snap = snapshots[0];
+            console.log("[PUBLISH_PREVIEW] preflight check", {
+                hotel: snap.hotel_id,
+                rows: snap.rows?.length,
+                firstRow: snap.rows?.[0]?.nombreVisible || snap.rows?.[0]?.nombre,
+                firstKeys: Object.keys(snap.rows?.[0]?.turnosOperativos || snap.rows?.[0]?.cells || snap.rows?.[0]?.dias || {})
+            });
+        }
     } catch (e) {
         console.error("[PUBLISH_PREVIEW] Error building snapshot:", e);
         alert('Error al generar la previsualización del snapshot: ' + e.message);
@@ -5397,8 +5415,13 @@ window.publishToSupabase = async () => {
     }
 
     try {
-        const hotelSel = $('#prevHotel')?.value || 'all';
-        const rawDate = window._previewDate;
+        const hotelSel = window._publishTargetHotel || $('#prevHotel')?.value || 'all';
+        const rawDate = window._publishTargetWeek || window._previewDate;
+        
+        console.log("[PUBLISH_EXECUTE] start", { hotelSel, rawDate });
+        
+        if (!rawDate) throw new Error("No hay una fecha de referencia seleccionada para la publicación.");
+        
         const base = new Date(rawDate + 'T12:00:00');
         const weekStart = window.isoDate(window.getMonday(base));
 
@@ -6580,16 +6603,22 @@ window.renderDashboard = async () => {
          * FunciÃ³n robusta para publicar cambios desde una tarjeta de pendiente (V12.6.2)
          */
         window.publishPendingChangesForCard = async (payload) => {
-            console.log("[PUBLISH_BUTTON] card payload", payload);
-            console.log("[PUBLISH_BUTTON] hotel", payload.hotel);
-            console.log("[PUBLISH_BUTTON] weekStart", payload.weekStart);
+            console.log("[PUBLISH_CLICK] handler invoked");
+            console.log("[PUBLISH_CLICK] payload", payload);
+            console.log("[PUBLISH_CLICK] hotel", payload?.hotel);
+            console.log("[PUBLISH_CLICK] weekStart", payload?.weekStart);
+            console.log("[PUBLISH_CLICK] pendingCount", payload?.pendingCount);
             
             const hotel = payload.hotel;
             const weekStart = payload.weekStart;
 
-            if (!confirm(`Vas a publicar los cambios aceptados para ${hotel} durante la semana ${weekStart}. Esto actualizará la Vista Pública y la app móvil. ¿Confirmar publicación?`)) return;
+            if (!confirm(`Vas a publicar los cambios aceptados para ${hotel} durante la semana ${weekStart}. Esto actualizará la Vista Pública y la app móvil. ¿Confirmar publicación?`)) {
+                console.log("[PUBLISH_CLICK] publication cancelled by user");
+                return;
+            }
 
             // Abrir el modal de publicación pasando los parámetros explícitos
+            console.log("[PUBLISH_CLICK] proceeding to showPublishPreview");
             await window.showPublishPreview(hotel, weekStart);
         };
 

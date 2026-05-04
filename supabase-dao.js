@@ -1089,6 +1089,14 @@ window.TurnosDB = {
             const lastId = (activeResult.data && activeResult.data[0]) ? activeResult.data[0].id : null;
             const nextVersion = (verResult.data && verResult.data[0]) ? verResult.data[0].version + 1 : 1;
 
+            console.log("[DAO_PUBLISH] payload", {
+                hotel,
+                semana_inicio: semanaInicio,
+                semana_fin: semanaFin,
+                version: nextVersion,
+                rows: snapshot?.rows?.length
+            });
+
             // 2. Insertar nuevo snapshot activo
             const { data: newSnap, error: snapErr } = await client
                 .from('publicaciones_cuadrante')
@@ -1112,7 +1120,11 @@ window.TurnosDB = {
                 .select()
                 .single();
             
-            if (snapErr) throw snapErr;
+            console.log("[DAO_PUBLISH] result", newSnap);
+            if (snapErr) {
+                console.error("[DAO_PUBLISH] error", snapErr);
+                throw snapErr;
+            }
 
             // 3. Marcar snapshots anteriores como 'reemplazado'
             const { error: upErr } = await client
