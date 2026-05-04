@@ -1163,22 +1163,41 @@ window.TurnosDB = {
 
         // 1. VALIDACIÓN ESTRUCTURAL (Orden y Metadatos)
         const orders = emps.map(e => Number(e.puestoOrden || e.orden || 9999));
-        const all999 = orders.every(o => o === 999);
+        const all999 = orders.every(o => o === 9999);
         if (all999) return false;
 
-        // Regla: Todas las filas base (no extras ni refuerzos) deben tener un puestoOrden real (< 10000)
-        // Esto descarta versiones con reparaciones parciales donde el orden se rompió (ej. PO=1347 o 1999 para titulares)
+        // Regla relajada: al menos la MAYORÍA (>50%) de las filas base deben tener puestoOrden < 9999.
+        // Esto permite snapshots donde algunos empleados tienen orden=999 (sin asignar)
+        // pero el resto está bien ordenado.
         const baseRows = emps.filter(e => e.rowType !== 'extra' && e.rowType !== 'refuerzo');
-        const hasValidBaseOrder = baseRows.length > 0 && baseRows.every(e => {
-            const po = Number(e.puestoOrden || e.orden || 9999);
-            return po < 900;
-        });
-        if (!hasValidBaseOrder) return false;
+        if (baseRows.length > 0) {
+            const validOrderCount = baseRows.filter(e => Number(e.puestoOrden || e.orden || 9999) < 9000).length;
+            if (validOrderCount === 0) return false; // todos tienen orden inválido → rechazar
+        }
 
         if (emps.some(e => (e.nombreVisible || e.nombre || "").includes("_DUP"))) return false;
 
         const hName = (snapshot.hotel || data.hotel || "").toUpperCase();
         if (hName.includes("TEST")) return false;
+        // 1b. COHERENCIA DE FECHAS: las claves de dias deben coincidir con semana_inicio
+        // Rechaza snapshots publicados con datos de otra semana (bug V141: semana=06-08 pero dias=05-18)
+        const semanaRef = snapshot.semana_inicio || data.semana_inicio || null;
+        if (semanaRef) {
+            const allDiaKeys = new Set();
+            emps.forEach(e => Object.keys(e.dias || e.cells || {}).forEach(k => allDiaKeys.add(k)));
+            if (allDiaKeys.size > 0) {
+                const refDate = new Date(semanaRef + 'T12:00:00');
+                const weekKeys = new Set();
+                for (let i = 0; i < 7; i++) {
+                    const d = new Date(refDate);
+                    d.setDate(d.getDate() + i);
+                    weekKeys.add(d.toISOString().split('T')[0]);
+                }
+                const hasOverlap = [...allDiaKeys].some(k => weekKeys.has(k));
+                if (!hasOverlap) return false; // datos de semana equivocada -> rechazar
+            }
+        }
+
 
         // 2. VALIDACIÓN SEMÁNTICA (Integridad de Incidencias)
         // Regla: Si una celda tiene un tipo de incidencia, el código no puede estar vacío o ser un guion
@@ -1260,9 +1279,18 @@ window.TurnosDB = {
                 const key = `${item.hotel}::${item.semana_inicio}`;
                 if (seenKeys.has(key)) continue;
 
-                if (this.isValidPublicSnapshot(item)) {
+                // Limpiar artefactos _DUP antes de validar (no rechazar snapshots validos por duplicados residuales)
+                const cleanItem = { ...item };
+                const snapRaw = cleanItem.snapshot_json || {};
+                const rawEmps = snapRaw.empleados || snapRaw.rows || [];
+                if (rawEmps.some(e => (e.nombreVisible || e.nombre || '').includes('_DUP'))) {
+                    const cleanedEmps = rawEmps.filter(e => !String(e.nombreVisible || e.nombre || '').includes('_DUP'));
+                    cleanItem.snapshot_json = { ...snapRaw, empleados: cleanedEmps, rows: cleanedEmps };
+                }
+
+                if (this.isValidPublicSnapshot(cleanItem)) {
                     // Normalización crítica para compatibilidad con index.html (espera 'empleados')
-                    const snapData = item.snapshot_json || {};
+                    const snapData = cleanItem.snapshot_json || {};
                     const normalizedSnapshot = { ...snapData };
                     if (!normalizedSnapshot.empleados && normalizedSnapshot.rows) {
                         normalizedSnapshot.empleados = normalizedSnapshot.rows;

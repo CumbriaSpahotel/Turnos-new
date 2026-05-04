@@ -3838,19 +3838,8 @@ window.resolveAdminPreviewWeek = async (hotel, weekStart) => {
     // 2. INCORPORAR EDICIONES LOCALES (Excel Loader)
     const excelSource = await window.loadAdminExcelSourceRows();
     const hotelSourceRows = (excelSource[hotel] || []).filter(r => r.weekStart === weekStart);
-    
-    // 3. RESOLUCIÓN CANÓNICA (Base -> Ausencias -> Sustituciones -> Cambios -> Saneamiento)
-    const previewModel = window.createPuestosPreviewModel({
-        hotel: hotel,
-        dates: dates,
-        sourceRows: hotelSourceRows,
-        rows: turnosBase.filter(t => t.hotel_id === hotel),
-        eventos: eventos,
-        employees: profiles
-    });
-    
-    // 4. RETORNAR MODELO LISTO PARA RENDER
-    return previewModel;
+    // Note: returns raw data only – full resolution handled by renderPreview
+    return { hotelSourceRows };
 };
 
 window.renderPreview = async () => {
@@ -3860,19 +3849,17 @@ window.renderPreview = async () => {
     const area = $('#previewContent');
     if (!area) return;
 
-    // Asegurar carga del mapa de orden V9
     await window.loadV9ExcelOrderMap();
 
     const hotelSel = $('#prevHotel')?.value || 'all';
     const isWeekly = window._previewMode === 'weekly';
-        const rawDate = window._previewDate || window.isoDate(new Date());
-        const rawMonth = window._previewDate.substring(0,7);
+    const rawDate = window._previewDate || window.isoDate(new Date());
+    const rawMonth = rawDate.substring(0,7);
 
     area.innerHTML = `<div style="padding:4rem; text-align:center; opacity:0.5;"><i class="fas fa-spinner fa-spin"></i> Cargando cuadrantes...</div>`;
 
     try {
         window._previewPuestosModels = Object.create(null);
-        // TAREA CODEX: Cachear el resultado final para publicación exacta
         window._lastRenderedPreviewSnapshotSource = {
             semana_inicio: '',
             semana_fin: '',
@@ -3897,62 +3884,29 @@ window.renderPreview = async () => {
             const [y, m] = rawMonth.split('-').map(Number);
             start = new Date(y, m - 1, 1);
             if (display) display.textContent = `${monthNames[start.getMonth()]} ${start.getFullYear()}`;
-
             end = new Date(y, m, 0);
         }
 
         const startISO = window.isoDate(start);
         const endISO = window.isoDate(end);
-
         window._lastRenderedPreviewSnapshotSource.semana_inicio = startISO;
         window._lastRenderedPreviewSnapshotSource.semana_fin = endISO;
 
-        // Cargar eventos con rango extendido ±90 días para capturar periodos largos
-        // (ej. VAC Cristina 20/04ï¿½03/05 debe estar visible al ver semana 20/04 O 27/04)
         const extStart = new Date(start); extStart.setDate(extStart.getDate() - 90);
         const extEnd   = new Date(end);   extEnd.setDate(extEnd.getDate() + 90);
         const extStartISO = window.isoDate(extStart);
         const extEndISO   = window.isoDate(extEnd);
 
         let { rows: data } = await window.TurnosDB.fetchRangoCalculado(startISO, endISO);
-        // Fetch de eventos con ventana ampliada para no perder periodos VAC/BAJA largos
         const eventosAmpliados = await window.TurnosDB.fetchEventos(extStartISO, extEndISO);
         const eventos = eventosAmpliados;
 
-        // Guardar como global para que ficha, dashboard y módulos secundarios lo usen
         window.eventosGlobales = eventosAmpliados;
-        window.eventosActivos  = eventosAmpliados; // compatibilidad con código anterior
-
-        if (window.DEBUG_MODE === true) {
-            console.log('[GLOBAL EVENTOS]', window.eventosGlobales?.length);
-            console.log('[ACTIVOS EVENTOS]', window.eventosActivos?.length);
-            console.log('[EVENTOS CRISTINA]', (window.eventosGlobales || []).filter(e =>
-                JSON.stringify(e).toLowerCase().includes('cristina')
-            ));
-            console.log('[EVENTOS VAC]', (window.eventosGlobales || []).filter(e =>
-                String(e.tipo || '').toUpperCase().includes('vac')
-            ));
-        }
+        window.eventosActivos  = eventosAmpliados;
 
         const hotels = await window.TurnosDB.getHotels();
         const profiles = await window.TurnosDB.getEmpleados();
         const excelSource = await window.loadAdminExcelSourceRows();
-
-        // [CAMBIOS_PANEL_DEBUG load]
-        const approvedChanges = (eventos || []).filter(ev => {
-            const t = window.normalizeTipo ? window.normalizeTipo(ev.tipo) : String(ev.tipo || '').toUpperCase();
-            const s = (ev.estado || 'activo').toLowerCase();
-            return (t === 'CAMBIO_TURNO' || t === 'INTERCAMBIO_TURNO') && (s === 'activo' || s === 'aprobado');
-        });
-
-        if (startISO === '2026-04-13') {
-            console.log('[CAMBIOS_PANEL_DEBUG load]', {
-                semana: "2026-04-13",
-                hotel: hotelSel,
-                totalCambiosAprobados: approvedChanges.length,
-                cambios: approvedChanges
-            });
-        }
 
         const hotelsToRender = hotelSel === 'all' ? hotels : [hotelSel];
         area.innerHTML = '';
@@ -3970,15 +3924,12 @@ window.renderPreview = async () => {
         }
 
         for (const hName of hotelsToRender) {
-            const hotelSourceRows = (excelSource[hName] || []).filter(row => {
+            let hotelSourceRows = (excelSource[hName] || []).filter(row => {
                 if (!row?.weekStart) return false;
                 const rowEnd = window.addIsoDays(row.weekStart, 6);
                 return row.weekStart <= endISO && rowEnd >= startISO;
             });
 
-            // --- TAREA CODEX: GENERAR SOURCE ROWS SINTÉTICOS SI NO HAY EXCEL ---
-            // Si no hay filas de Excel para esta semana/hotel, pero hay datos en Supabase,
-            // creamos filas virtuales para que el motor pueda renderizar.
             if (hotelSourceRows.length === 0 && data && data.length > 0) {
                 const hotelData = data.filter(r => r.hotel_id === hName);
                 if (hotelData.length > 0) {
@@ -4010,48 +3961,45 @@ window.renderPreview = async () => {
             });
 
             window.empleadosGlobales = profiles;
-
-            previewModel.puestos.forEach(puesto => {
-                window._previewPuestosModels[puesto.puesto_id] = previewModel;
-            });
+            previewModel.puestos.forEach(puesto => { window._previewPuestosModels[puesto.puesto_id] = previewModel; });
             window.detectarErrores(previewModel);
             window.validarPreviewModel(previewModel);
 
             if (previewModel.puestos.length === 0) continue;
             const viewType = isWeekly ? 'weekly' : 'monthly';
-            const rawEmployees = previewModel.getEmployees(viewType);
+            const rawEmployees = previewModel.getEmployees(viewType).filter(e => {
+                const id = String(e.employee_id || '').toUpperCase();
+                const name = String(e.nombre || '').toUpperCase();
+                const type = String(e.tipoPersonal || e.tipo || '').toUpperCase();
+                const isDup = id.includes('_DUP') || name.includes('_DUP');
+                const isVacant = id.includes('VACANTE') || name.includes('VACANTE') || type.includes('VACANTE') || id.includes('PLACEHOLDER');
+                return !isDup && !isVacant;
+            });
 
-            // DEDUPLICACIÓN DE SEGURIDAD
             const seenEmps = new Set();
             const deduplicatedList = [];
+            const profilesForSync = window.empleadosGlobales || [];
+
             rawEmployees.forEach(emp => {
                 const key = emp.employee_id;
                 if (!seenEmps.has(key)) {
                     seenEmps.add(key);
+                    const empId = String(emp.employee_id || emp.nombre || '').trim();
+                    const profile = profilesForSync.find(p => String(p.id || '').trim() === empId || String(p.nombre || '').trim() === empId);
+                    if (profile) {
+                        emp.tipoPersonal = profile.tipo_personal || 'fijo';
+                        if (profile.nombre && String(profile.nombre).trim() !== '') {
+                            emp.nombre = profile.nombre;
+                            emp.nombreVisible = profile.nombre;
+                        }
+                    }
                     deduplicatedList.push(emp);
                 }
             });
 
-            // PARIDAD ABSOLUTA V12.5.44: El orden ya viene de getEmployees() ordenado por puestoOrden (Excel V.9)
-            // con herencia de posición para sustitutos. NO re-ordenar con sortEmployees().
-            // Solo enriquecer tipoPersonal si falta (para excludeCounters en snapshot).
-            const profilesForSort = window.empleadosGlobales || [];
-            deduplicatedList.forEach(emp => {
-                if (!emp.tipoPersonal) {
-                    const empId = String(emp.employee_id || emp.nombre || '').trim();
-                    const profile = profilesForSort.find(p =>
-                        String(p.id || '').trim() === empId ||
-                        String(p.nombre || '').trim() === empId
-                    );
-                    if (profile) emp.tipoPersonal = profile.tipo_personal || 'fijo';
-                }
-            });
-            // El array ya viene ordenado por puestoOrden desde getEmployees().
             const sortedEmployees = deduplicatedList;
-
             if (!sortedEmployees.length) continue;
 
-            // TAREA CODEX: Cachear el resultado final para publicación exacta
             const hotelSnapshot = {
                 hotel: hName,
                 empleados: sortedEmployees.map((employee, idx) => {
@@ -4059,28 +4007,12 @@ window.renderPreview = async () => {
                     columns.forEach(c => {
                         const resolved = previewModel.getTurnoEmpleado(employee.employee_id, c.date);
                         const visual = window.TurnosRules ? window.TurnosRules.describeCell(resolved) : { label: resolved.turno, icons: resolved.icons || [] };
-
-                        // B4 FIX: Garantizar códigos canónicos para ausencias en el cache
-                        const absCode = resolved.incidencia
-                            ? (resolved.incidencia === 'PERMISO' ? 'PERM'
-                               : resolved.incidencia === 'FORMACION' ? 'FORM'
-                               : resolved.incidencia === 'BAJA' ? 'BAJA'
-                               : resolved.incidencia === 'VAC' ? 'VAC'
-                               : resolved.incidencia)
-                            : null;
-
-                        let rawIcons = [...new Set([
-                            ...(visual.icon ? [visual.icon] : []),
-                            ...(resolved.icon ? [resolved.icon] : (resolved.icons || [])),
-                            ...((resolved.cambio || resolved.intercambio) ? ['\u{1F504}'] : [])
-                        ])];
+                        const absCode = resolved.incidencia ? (resolved.incidencia === 'PERMISO' ? 'PERM' : resolved.incidencia === 'FORMACION' ? 'FORM' : resolved.incidencia === 'BAJA' ? 'BAJA' : resolved.incidencia === 'VAC' ? 'VAC' : resolved.incidencia) : null;
+                        let rawIcons = [...new Set([...(visual.icon ? [visual.icon] : []), ...(resolved.icon ? [resolved.icon] : (resolved.icons || [])), ...((resolved.cambio || resolved.intercambio) ? ['\u{1F504}'] : [])])];
                         let icons = rawIcons.filter(icon => {
-                            if (icon === '\u{1F4CC}' || icon === '📌') {
-                                return window.TurnosRules ? window.TurnosRules.shouldShowPin(resolved) : false;
-                            }
+                            if (icon === '\u{1F4CC}' || icon === '📌') return window.TurnosRules ? window.TurnosRules.shouldShowPin(resolved) : false;
                             return true;
                         });
-
                         daysMap[c.date] = {
                             label: visual.label || absCode || resolved.turno || '',
                             code: absCode || resolved.turno || '',
@@ -4097,7 +4029,6 @@ window.renderPreview = async () => {
                         nombre: employee.nombre || employee.employee_id,
                         nombreVisible: employee.nombreVisible || employee.displayName || employee.nombre || employee.employee_id,
                         empleado_id: employee.employee_id,
-                        // ORDEN V12.5.42: prioridad al orden del perfil real (enriquecido arriba)
                         orden: employee.orden !== undefined && employee.orden !== null ? Number(employee.orden) : (employee.puestoOrden || (idx + 1)),
                         tipo: employee.tipoPersonal || employee.tipo || 'fijo',
                         tipoPersonal: employee.tipoPersonal || employee.tipo || 'fijo',
@@ -4111,10 +4042,8 @@ window.renderPreview = async () => {
             };
             window._lastRenderedPreviewSnapshotSource.hoteles.push(hotelSnapshot);
 
-            const renderEmployeeTable = true;
-
+            const renderEmployeeTable = true; 
             if (renderEmployeeTable) {
-                const isWeekly = (new Date(endISO) - new Date(startISO)) < (8 * 24 * 60 * 60 * 1000);
                 const tableClass = isWeekly ? 'preview-table-premium' : 'preview-table-compact';
                 const thWidth = isWeekly ? '220px' : '180px';
                 const thPadding = isWeekly ? '15px 25px' : '10px 15px';
@@ -4159,21 +4088,11 @@ window.renderPreview = async () => {
                 </div>`;
                 area.appendChild(hotelSection);
             } else {
-                // Monthly Calendar logic (Engine V3 enabled)
                 const hotelSection = document.createElement('div');
                 hotelSection.className = 'hotel-calendar-view';
                 hotelSection.style.marginBottom = '2.5rem';
 
                 const rosterDates = columns.map(c => c.date);
-                const rosterGrid = window.TurnosEngine.buildRosterGrid({
-                    rows: data,
-                    events: eventos,
-                    employees: profiles,
-                    dates: rosterDates,
-                    hotel: hName,
-                    sourceRows: [] // El mensual no suele tener orden de Excel, pero se podría cargar
-                });
-
                 const firstDay = new Date(columns[0].date + 'T12:00:00');
                 const startDow = firstDay.getDay() === 0 ? 7 : firstDay.getDay();
                 const cells = [];
@@ -4207,7 +4126,7 @@ window.renderPreview = async () => {
 
                     const badge = (list, cls, defaultIcon) => {
                         if (!list.length) return '';
-                        const names = list.map(item => `<span title="${escapeHtml(item.title || '')}">${escapeHtml(item.name)}${item.icon === '📌' ? '📌' : ''}</span>`).join(' · ');
+                        const names = list.map(item => `<span title="${item.title || ''}">${item.name}</span>`).join(' · ');
                         return `<div class="cal2-group cal2-${cls}"><span class="cal2-names">${names}</span></div>`;
                     };
 
@@ -4218,7 +4137,7 @@ window.renderPreview = async () => {
                             ${badge(groups.T,'t','')}
                             ${badge(groups.N,'n','🌙')}
                             ${badge(groups.D,'d','')}
-                            ${groups.ABS.map(a => `<div class="cal2-group cal2-${a.cls}" title="${escapeHtml(a.title || '')}"><span class="cal2-icon">${a.icon === 'V' ? '🏖️' : (a.icon === 'B' ? '🤒' : (a.icon === 'P' ? '🗓️' : a.icon))}</span><span class="cal2-names">${a.name}</span></div>`).join('')}
+                            ${groups.ABS.map(a => `<div class="cal2-group cal2-${a.cls}" title="${a.title || ''}"><span class="cal2-icon">${a.icon === 'V' ? '🏖️' : (a.icon === 'B' ? '🤒' : (a.icon === 'P' ? '🗓️' : a.icon))}</span><span class="cal2-names">${a.name}</span></div>`).join('')}
                         </div>
                     </div>`);
                 });
@@ -4232,20 +4151,18 @@ window.renderPreview = async () => {
                         <span>${hName}</span>
                         <span style="font-size:0.75rem; color:#94a3b8; font-weight:400;">Resolución Motor V3</span>
                     </div>
-                    <div class="cal2-header"><div>LUN</div><div>MAR</div><div>MIï¿½0</div><div>JUE</div><div>VIE</div><div>SÁB</div><div>DOM</div></div>
+                    <div class="cal2-header"><div>LUN</div><div>MAR</div><div>MIE</div><div>JUE</div><div>VIE</div><div>SAB</div><div>DOM</div></div>
                     <div class="cal2-grid">${cells.join('')}</div>
                 </div>`;
                 area.appendChild(hotelSection);
             }
-        }
+        } // end for hName
     } catch (err) {
-        area.innerHTML = `<div style="padding:2rem; color:red;">Error: ${err.message}</div>`;
+        area.innerHTML = `<div style="padding:2rem; color:red;">Error al renderizar: ${err.message}</div>`;
+        console.error('[renderPreview]', err);
     }
 };
 
-// ==========================================
-// 4. EDITOR MODAL
-// ==========================================
 window.abrirEditorRapido = (empleadoId, fecha, cellEl) => {
     let modal = document.getElementById('quickEditModal');
     if(modal) modal.remove();
@@ -7787,4 +7704,3 @@ window.saveEmployeeProfileV2 = async (event) => {
         showErr('Error al guardar: ' + (e.message || String(e)));
     }
 };
-

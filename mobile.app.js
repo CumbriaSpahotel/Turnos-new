@@ -283,6 +283,7 @@
                 const normTarget = hotelInfo.dataName.trim().toUpperCase();
                 if (normSnap !== normTarget) continue;
             }
+            snap.data.semana_inicio = snap.semanaInicio || startIso;
             await renderSnapshotTable(snap.hotel, snap.data, shiftGrid);
         }
 
@@ -339,7 +340,9 @@
   }
 
   function getMobileShiftToken(displayText, visualClass) {
+    // Normalizar: eliminar tildes y diacríticos para comparar con seguridad
     const normalized = String(displayText || "")
+      .normalize('NFD').replace(/[\u0300-\u036f]/g, '') // elimina tildes (ñ -> n)
       .replace(/[\u{1F300}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/gu, "")
       .trim()
       .toUpperCase();
@@ -398,6 +401,7 @@
                     };
 
                     empleados.forEach(e => {
+                        if (String(e.empleado_id || e.nombre || '').includes('_DUP_')) return;
                         const id = norm(e.empleado_id || e.nombre);
                         const isAbsent = e.rowType === 'ausencia_informativa';
                         if (!uniqueEmpsMap.has(id)) {

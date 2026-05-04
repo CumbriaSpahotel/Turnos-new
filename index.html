@@ -596,17 +596,31 @@
         const end = formatDateLocal(range[1]);
         
         const container = $('#publicContainer');
-        container.innerHTML = '<div style="padding:100px; text-align:center; font-weight:700; color:#5f6f84;">Cargando cuadrante...</div>';
+        // Anti-parpadeo: solo mostrar spinner en el primer render (container vacío)
+        const isFirstRender = !container.hasChildNodes() || container.dataset.loaded !== '1';
+        if (isFirstRender) {
+            container.innerHTML = '<div style="padding:100px; text-align:center; font-weight:700; color:#5f6f84;">Cargando cuadrante...</div>';
+        }
 
-        const { data: snaps } = await window.TurnosDB.client
-            .from('publicaciones_cuadrante')
-            .select('*')
-            .eq('estado', 'activo')
-            .gte('semana_inicio', start)
-            .lte('semana_inicio', end)
-            .order('semana_inicio', { ascending: true })
-            .order('hotel', { ascending: true })
-            .order('version', { ascending: false });
+        const [snapsResult, empleadosResult] = await Promise.all([
+            window.TurnosDB.client
+                .from('publicaciones_cuadrante')
+                .select('*')
+                .eq('estado', 'activo')
+                .gte('semana_inicio', start)
+                .lte('semana_inicio', end)
+                .order('semana_inicio', { ascending: true })
+                .order('hotel', { ascending: true })
+                .order('version', { ascending: false }),
+            window.TurnosDB.getEmpleados()
+        ]);
+        const snaps = snapsResult.data;
+        // Índice de nombres reales por ID para reconciliación rápida
+        window._publicProfilesIndex = {};
+        (empleadosResult || []).forEach(e => {
+            if (e.id && e.nombre) window._publicProfilesIndex[String(e.id).trim()] = e.nombre;
+            if (e.nombre) window._publicProfilesIndex[String(e.nombre).trim()] = e.nombre;
+        });
 
         if (!snaps || snaps.length === 0) {
             container.innerHTML = '<div style="padding:100px; text-align:center; font-weight:700; color:#5f6f84;">No hay cuadrantes publicados desde esta fecha.</div>';
@@ -614,6 +628,7 @@
         }
 
         container.innerHTML = '';
+        container.dataset.loaded = '1';
         
         // Agrupar por hotel y semana para solo mostrar la última versión de cada combinación
         const seen = new Set();
@@ -630,6 +645,7 @@
         });
         renderNightSummary(container, summaryByMonth, hasRows, start, end);
         applyTheme(localStorage.getItem('public-theme') || 'day');
+        _lastPublicRenderTime = Date.now();
     };
 
     function renderHotelSection(container, snap, rangeStart, rangeEnd, summaryByMonth) {
@@ -733,7 +749,11 @@
             }
 
             const isAbsent = rowData.rowType === 'ausencia_informativa';
-            const displayName = formatDisplayName(rowData.nombreVisible || rowData.nombre || 'Pendiente');
+            // Reconciliación de nombres: usar el nombre actual del empleado si está disponible
+            const profilesIdx = window._publicProfilesIndex || {};
+            const empId = String(rowData.empleado_id || rowData.nombre || '').trim();
+            const resolvedName = profilesIdx[empId] || rowData.nombreVisible || rowData.nombre || 'Empleado';
+            const displayName = formatDisplayName(resolvedName);
 
             tds[0].innerHTML = `
                 <div class="emp-cell ${isAbsent ? 'ausencia-row' : ''}">
@@ -754,7 +774,8 @@
             });
         };
 
-        const sorted = window.TurnosRules.sortEmployees(rows);
+        const filteredRows = rows.filter(r => !String(r.nombreVisible || r.nombre || "").includes("_DUP_") && !String(r.empleado_id || "").includes("_DUP_"));
+        const sorted = window.TurnosRules.sortEmployees(filteredRows);
 
         sorted.forEach(rowData => {
             const skipCounters = !!(
@@ -840,7 +861,18 @@
         }
     });
 
-    window.addEventListener('focus', schedulePublicRefresh);
+    // Refresco al volver a la pestaña solo si han pasado al menos 60s desde el último render
+    let _lastPublicRenderTime = 0;
+    window.addEventListener('focus', () => {
+        const now = Date.now();
+        if (now - _lastPublicRenderTime > 60000) schedulePublicRefresh();
+    });
+    window.addEventListener('visibilitychange', () => {
+        if (!document.hidden) {
+            const now = Date.now();
+            if (now - _lastPublicRenderTime > 60000) schedulePublicRefresh();
+        }
+    });
 
     document.addEventListener('DOMContentLoaded', async () => {
         const hotelSelect = document.getElementById('hotelSelect');
