@@ -1128,32 +1128,35 @@ window.TurnosDB = {
 
             console.log("[DAO_PUBLISH] Insert success:", newSnap.id);
 
-            // --- FASE B: INACTIVAR VERSIONES ANTERIORES (BEST-EFFORT) ---
+            // --- FASE B: CLEANUP VÍA RPC SECURITY DEFINER ---
+            // La función RPC bypass el RLS del rol anon con SECURITY DEFINER.
+            // No se usa PATCH directo que generaba 403.
             let needsManualCleanup = false;
             let warning = null;
 
-            const { error: upErr } = await client
-                .from('publicaciones_cuadrante')
-                .update({ estado: 'reemplazado', updated_at: new Date().toISOString() })
-                .eq('semana_inicio', semanaInicio)
-                .eq('hotel', hotel)
-                .eq('estado', 'activo')
-                .neq('id', newSnap.id);
-            
-            if (upErr) {
+            const { data: cleanupRows, error: rpcErr } = await client
+                .rpc('cleanup_publicacion_activa', {
+                    p_hotel: hotel,
+                    p_semana_inicio: semanaInicio
+                });
+
+            if (rpcErr) {
                 needsManualCleanup = true;
-                warning = upErr.message || 'Permiso denegado (RLS) al inactivar versiones anteriores.';
-                console.warn('[DAO_PUBLISH] Publicación creada, pero no se pudieron inactivar versiones anteriores por RLS.', upErr);
-                
+                warning = rpcErr.message || 'RPC cleanup falló. Limpieza manual pendiente.';
+                console.warn('[DAO_PUBLISH] Cleanup RPC falló. Limpieza manual pendiente.', rpcErr);
+
                 window.reportOperationalDiagnostic?.({
                     source: 'supabase-dao',
                     severity: 'warning',
                     type: 'SUPABASE_REPLACE_PREVIOUS_RLS',
                     title: 'Snapshots duplicados (RLS)',
-                    desc: `Publicación OK, pero ${hotel} (${semanaInicio}) requiere limpieza manual de versiones anteriores debido a políticas RLS.`,
+                    desc: `Publicación OK, pero ${hotel} (${semanaInicio}) requiere limpieza manual de versiones anteriores.`,
                     section: 'changes',
                     key: `rls-cleanup|${hotel}|${semanaInicio}`
                 });
+            } else {
+                const replaced = (cleanupRows || []).length;
+                console.log('[DAO_PUBLISH] Cleanup RPC completado', { hotel, semanaInicio, replaced });
             }
 
             // 4. Log de auditoría (No bloqueante)

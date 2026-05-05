@@ -1,4 +1,4 @@
-﻿// describeCell centralizado en turnos-rules.js
+// describeCell centralizado en turnos-rules.js
 
 window.formatDisplayName = (name) => {
     if (!name) return '';
@@ -96,10 +96,10 @@ window.normalizeV9Key = (value) => {
 
     // 1. Convertir a string segura (ya hecho arriba)
 
-    // 2. Normalizar Unicode NFKD (separa diacríticos)
+    // 2. Normalizar Unicode NFKD (separa diacrÃ­ticos)
     s = s.normalize('NFKD');
 
-    // 3. Eliminar marcas diacríticas (acentos, virgulillas, etc.)
+    // 3. Eliminar marcas diacrÃ­ticas (acentos, virgulillas, etc.)
     s = s.replace(/[\u0300-\u036f]/g, '');
 
     // 4. Eliminar soft hyphen (\u00AD)
@@ -111,13 +111,13 @@ window.normalizeV9Key = (value) => {
     // 6. Eliminar caracteres de control
     s = s.replace(/[\u0000-\u001F\u007F-\u009F]/g, '');
 
-    // 7. Sustituir apóstrofes y guiones raros
-    s = s.replace(/['`ÃƒÆ’Ã†’ÃƒÂ¢Ã¢â€šÂ¬Ã…¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â´ÃƒÆ’Ã†’Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Â¹Ãƒ…Ã¢â‚¬Å“ÃƒÆ’Ã†’Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¾Ãƒâ€šÃ‚Â¢]/g, "'").replace(/[ÃƒÆ’Ã†’Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚ÂÃƒÆ’Ã†’Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¹Ã…“ÃƒÆ’Ã†’Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¢ÃƒÆ’Ã†’Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒ…Ã¢â‚¬Å“ÃƒÆ’Ã†’Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚ÂÃƒÆ’Ã†’Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â¢]/g, "-");
+    // 7. Sustituir apÃ³strofes y guiones raros
+    s = s.replace(/['`ÃƒÆ’Ã†â€™Ãƒâ€ â€™ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â´ÃƒÆ’Ã†â€™Ãƒâ€ â€™ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¹ÃƒÆ’â€¦ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œÃƒÆ’Ã†â€™Ãƒâ€ â€™ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¾ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢]/g, "'").replace(/[ÃƒÆ’Ã†â€™Ãƒâ€ â€™ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚ÂÃƒÆ’Ã†â€™Ãƒâ€ â€™ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Â¹Ãƒâ€¦â€œÃƒÆ’Ã†â€™Ãƒâ€ â€™ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¾Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€ â€™ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’â€¦ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œÃƒÆ’Ã†â€™Ãƒâ€ â€™ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚ÂÃƒÆ’Ã†â€™Ãƒâ€ â€™ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢]/g, "-");
 
     // 8. Sustituir espacios no separables por espacio normal
     s = s.replace(/[\u00A0\u202F]/g, " ");
 
-    // 9. Colapsar espacios múltiples
+    // 9. Colapsar espacios mÃºltiples
     s = s.replace(/\s+/g, ' ');
 
     // 10. Trim
@@ -154,12 +154,12 @@ window.loadV9ExcelOrderMap = async () => {
     }
 
     if (!rawData) {
-        console.warn("[V9_ORDER] No se pudo obtener el mapa de orden. Usando fallback vacío.");
+        console.warn("[V9_ORDER] No se pudo obtener el mapa de orden. Usando fallback vacÃ­o.");
         window.v9ExcelOrderMap = new Map();
         return window.v9ExcelOrderMap;
     }
 
-    // Indexar para búsqueda rá¡pida: [hotel][week][empleado] -> orderData
+    // Indexar para bÃºsqueda rÃ¡Â¡pida: [hotel][week][empleado] -> orderData
     const index = {};
     rawData.forEach(item => {
         const h = window.normalizeV9Key(item.hotel);
@@ -226,7 +226,7 @@ window.debugV9OrderLookup = (hotel, weekStart, empleado) => {
 // --- FIX DATA
 
 // ==========================================
-// MÓDULO: ESTADO DE CONEXIÓN SUPABASE
+// MÃ“DULO: ESTADO DE CONEXIÃ“N SUPABASE
 // ==========================================
 window.connectionState = {
     status: 'connecting',
@@ -249,7 +249,7 @@ window.updateConnectionUI = (status, msg = '') => {
     const config = {
         connecting: { color: '#f59e0b', text: 'Conectando...', kpi: '...' },
         connected: { color: '#10b981', text: 'Supabase conectado', kpi: 'Online' },
-        error: { color: '#ef4444', text: 'Error de conexión', kpi: 'Offline' },
+        error: { color: '#ef4444', text: 'Error de conexiÃ³n', kpi: 'Offline' },
         unconfigured: { color: '#64748b', text: 'Sin configurar', kpi: 'N/A' }
     };
 
@@ -303,7 +303,7 @@ window.checkSupabaseConnection = async () => {
         const isConfigError = err.message.includes('URL') || err.message.includes('Key');
         window.updateConnectionUI(isConfigError ? 'unconfigured' : 'error', err.message);
 
-        if (window.addLog) window.addLog(`Fallo de conexión: ${err.message}`, 'error');
+        if (window.addLog) window.addLog(`Fallo de conexiÃ³n: ${err.message}`, 'error');
     }
 };
 // Ejecutar una vez al cargar para limpiar el error reportado por el usuario
@@ -322,7 +322,7 @@ window.checkSupabaseConnection = async () => {
                 id_interno: natalia.id_interno || natalia.id
             });
 
-            // MIGRACIÓN DE EVENTOS: Renombrar en eventos donde aparezca como empleado o sustituto
+            // MIGRACIÃ“N DE EVENTOS: Renombrar en eventos donde aparezca como empleado o sustituto
             const events = await window.TurnosDB.fetchEventos("2024-01-01", "2026-12-31");
             const toUpdate = events.filter(ev => ev.empleado_id === 'Natalia' || ev.empleado_destino_id === 'Natalia');
             if (toUpdate.length > 0) {
@@ -421,7 +421,7 @@ window.renderVacations = async () => {
                     </label>
                     <div style="display:flex; gap:5px;">
                         <button id="btnCreateVac" class="btn-publish-premium" type="submit" style="flex:1; margin:0;">Guardar</button>
-                        <button id="btnCancelEditVac" class="btn-premium" type="button" style="display:none; padding:10px;" onclick="window.resetVacationForm()">áÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â</button>
+                        <button id="btnCancelEditVac" class="btn-premium" type="button" style="display:none; padding:10px;" onclick="window.resetVacationForm()">Ã¡ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â</button>
                     </div>
                 </form>
             </section>
@@ -430,7 +430,7 @@ window.renderVacations = async () => {
             <section class="glass-panel" style="padding:10px 18px; margin-bottom:12px; border:1px solid var(--border); border-radius:12px;">
                 <div style="display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap;">
                     <div>
-                        <h2 style="margin:0; font-size:1rem;">Gestión anual de vacaciones</h2>
+                        <h2 style="margin:0; font-size:1rem;">GestiÃ³n anual de vacaciones</h2>
                     </div>
                     <div class="header-controls" style="display:flex; gap:8px;">
                         <select id="vacHotel" class="btn-premium" onchange="window.renderVacations()">
@@ -464,8 +464,8 @@ window.renderVacations = async () => {
                     <div style="font-size:2rem; font-weight:900; margin-top:4px;">${new Set(visible.map(p => p.empId)).size}</div>
                 </div>
                 <div class="glass-panel" style="padding:16px; border:1px solid var(--border); border-radius:15px;">
-                    <div style="font-size:0.7rem; color:var(--text-dim); font-weight:800; text-transform:uppercase;">Próxima salida</div>
-                    <div style="font-size:1.15rem; font-weight:900; margin-top:8px;">${visible.length ? visible[0].empId : 'ÃƒÆ’Ã†’Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â'}</div>
+                    <div style="font-size:0.7rem; color:var(--text-dim); font-weight:800; text-transform:uppercase;">PrÃ³xima salida</div>
+                    <div style="font-size:1.15rem; font-weight:900; margin-top:8px;">${visible.length ? visible[0].empId : 'ÃƒÆ’Ã†â€™Ãƒâ€ â€™ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â'}</div>
                 </div>
             </div>
 
@@ -478,7 +478,7 @@ window.renderVacations = async () => {
                             <th style="padding:1rem; text-align:left; font-size:0.7rem; color:var(--text-dim); text-transform:uppercase;">Hotel</th>
                             <th style="padding:1rem; text-align:left; font-size:0.7rem; color:var(--text-dim); text-transform:uppercase;">Sustituto</th>
                             <th style="padding:1rem; text-align:center; font-size:0.7rem; color:var(--text-dim); text-transform:uppercase;">Estado</th>
-                            <th style="padding:1rem; text-align:center; font-size:0.7rem; color:var(--text-dim); text-transform:uppercase;">Periodo / Duración</th>
+                            <th style="padding:1rem; text-align:center; font-size:0.7rem; color:var(--text-dim); text-transform:uppercase;">Periodo / DuraciÃ³n</th>
                             <th style="padding:1rem; text-align:center; font-size:0.7rem; color:var(--text-dim); text-transform:uppercase;">Acciones</th>
                         </tr>
                     </thead>
@@ -487,15 +487,15 @@ window.renderVacations = async () => {
                             <tr style="border-top:1px solid var(--border);">
                                 <td style="padding:1rem; font-weight:700; color:var(--accent);">${p.empId}</td>
                                 <td style="padding:1rem; font-size:0.85rem;">${p.hotel}</td>
-                                <td style="padding:1rem; font-size:0.85rem; color:var(--text-dim);">${p.sustituto || 'ÃƒÆ’Ã†’Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â'}</td>
+                                <td style="padding:1rem; font-size:0.85rem; color:var(--text-dim);">${p.sustituto || 'ÃƒÆ’Ã†â€™Ãƒâ€ â€™ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â'}</td>
                                 <td style="padding:1rem; text-align:center;">
                                     <span style="background:${p.end >= todayKey ? 'rgba(16,185,129,0.1)' : 'rgba(255,255,255,0.05)'}; color:${p.end >= todayKey ? '#10b981' : 'var(--text-dim)'}; padding:4px 10px; border-radius:8px; font-weight:800; font-size:0.6rem;">
                                         ${p.end >= todayKey ? 'PENDIENTE' : 'PASADA'}
                                     </span>
                                 </td>
                                 <td style="padding:1rem; text-align:center;">
-                                    <div style="font-weight:700;">${window.fmtDateLegacy(p.start)} ÃƒÆ’Ã†’Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â ${window.fmtDateLegacy(p.end)}</div>
-                                    <div style="font-size:0.65rem; color:var(--text-dim); margin-top:4px; font-weight:700;">${Math.round((new Date(p.end + 'T12:00:00') - new Date(p.start + 'T12:00:00')) / 86400000) + 1} DÁAS</div>
+                                    <div style="font-weight:700;">${window.fmtDateLegacy(p.start)} ÃƒÆ’Ã†â€™Ãƒâ€ â€™ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â ${window.fmtDateLegacy(p.end)}</div>
+                                    <div style="font-size:0.65rem; color:var(--text-dim); margin-top:4px; font-weight:700;">${Math.round((new Date(p.end + 'T12:00:00') - new Date(p.start + 'T12:00:00')) / 86400000) + 1} DÃÂAS</div>
                                 </td>
                                 <td style="padding:1rem; text-align:center;">
                                     <button class="btn-premium" onclick="window.editVacationByIndex(${idx})" style="padding:5px 10px; font-size:0.7rem;">Gestionar</button>
@@ -583,7 +583,7 @@ window.saveVacation = async (e) => {
         };
 
         if (!payload.fecha_inicio || !payload.fecha_fin) {
-            alert("Por favor, selecciona un rango de fechas vá¡lido en el calendario.");
+            alert("Por favor, selecciona un rango de fechas vÃ¡Â¡lido en el calendario.");
             return;
         }
 
@@ -593,19 +593,19 @@ window.saveVacation = async (e) => {
 
         await window.TurnosDB.upsertEvento(payload);
 
-        statusBox.innerHTML = '<span style="color:#10b981;">ÃƒÆ’Ã†’Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã¢â‚¬Â¦ÃƒÂ¢Ã¢â€šÂ¬Ã…“ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒ…Ã¢â‚¬Å“ Vacaciones guardadas</span>';
+        statusBox.innerHTML = '<span style="color:#10b981;">ÃƒÆ’Ã†â€™Ãƒâ€ â€™ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦â€œÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’â€¦ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œ Vacaciones guardadas</span>';
         window.resetVacationForm();
         await window.renderVacations();
 
-        // --- BLOQUE E: ACCIONES RÁPIDAS ---
+        // --- BLOQUE E: ACCIONES RÃÂPIDAS ---
         const quickActions = $('#dashboard-quick-actions');
         if (quickActions) {
             quickActions.innerHTML = `
                 <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap:15px;">
-                    <button class="btn-premium" onclick="window.switchSection('excel')" style="height:100px; flex-direction:column; gap:8px;"><i class="fas fa-file-excel fa-2x"></i><span>Gestión Excel</span></button>
+                    <button class="btn-premium" onclick="window.switchSection('excel')" style="height:100px; flex-direction:column; gap:8px;"><i class="fas fa-file-excel fa-2x"></i><span>GestiÃ³n Excel</span></button>
                     <button class="btn-premium" onclick="window.switchSection('preview')" style="height:100px; flex-direction:column; gap:8px;"><i class="fas fa-calendar-alt fa-2x"></i><span>Vista Previa</span></button>
                     <button class="btn-premium" onclick="window.switchSection('employees')" style="height:100px; flex-direction:column; gap:8px;"><i class="fas fa-users fa-2x"></i><span>Empleados</span></button>
-                    <button class="btn-premium" onclick="window.open('https://cumbriaspahotel.github.io/Turnos-new/', '_blank', 'noopener,noreferrer')" style="height:100px; flex-direction:column; gap:8px; background:var(--accent); color:white;"><i class="fas fa-external-link-alt fa-2x"></i><span>Vista Pública</span></button>
+                    <button class="btn-premium" onclick="window.open('https://cumbriaspahotel.github.io/Turnos-new/', '_blank', 'noopener,noreferrer')" style="height:100px; flex-direction:column; gap:8px; background:var(--accent); color:white;"><i class="fas fa-external-link-alt fa-2x"></i><span>Vista PÃºblica</span></button>
                 </div>
             `;
         }
@@ -741,10 +741,10 @@ window.renderBajas = async () => {
                                 <td style="padding:1rem; font-weight:700;">${b.empleado_id}</td>
                                 <td style="padding:1rem; font-size:0.85rem; color:var(--text-dim);">${b.hotel_origen || 'General'}</td>
                                 <td style="padding:1rem; text-align:center;">
-                                    <div style="font-weight:600;">${window.fmtDateLegacy(b.fecha_inicio)} ÃƒÆ’Ã†’Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â ${window.fmtDateLegacy(b.fecha_fin || b.fecha_inicio)}</div>
-                                    <div style="font-size:0.65rem; color:var(--text-dim); margin-top:4px; font-weight:700;">${Math.round((new Date((b.fecha_fin || b.fecha_inicio) + 'T12:00:00') - new Date(b.fecha_inicio + 'T12:00:00')) / 86400000) + 1} DÁAS ${b.isGroup ? '(Agrupados)' : 'NATURALES'}</div>
+                                    <div style="font-weight:600;">${window.fmtDateLegacy(b.fecha_inicio)} ÃƒÆ’Ã†â€™Ãƒâ€ â€™ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â ${window.fmtDateLegacy(b.fecha_fin || b.fecha_inicio)}</div>
+                                    <div style="font-size:0.65rem; color:var(--text-dim); margin-top:4px; font-weight:700;">${Math.round((new Date((b.fecha_fin || b.fecha_inicio) + 'T12:00:00') - new Date(b.fecha_inicio + 'T12:00:00')) / 86400000) + 1} DÃÂAS ${b.isGroup ? '(Agrupados)' : 'NATURALES'}</div>
                                 </td>
-                                <td style="padding:1rem; font-size:0.85rem;">${b.empleado_destino_id || 'ÃƒÆ’Ã†’Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â'}</td>
+                                <td style="padding:1rem; font-size:0.85rem;">${b.empleado_destino_id || 'ÃƒÆ’Ã†â€™Ãƒâ€ â€™ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â'}</td>
                                 <td style="padding:1rem; text-align:center;">
                                     <span style="background:${b.estado === 'anulado' ? 'rgba(239,68,68,0.1)' : 'rgba(16,185,129,0.1)'}; color:${b.estado === 'anulado' ? '#ef4444' : '#10b981'}; padding:4px 10px; border-radius:8px; font-weight:800; font-size:0.6rem;">
                                         ${(b.estado || 'activo').toUpperCase()}
@@ -764,15 +764,15 @@ window.renderBajas = async () => {
 
 window.editBajaPeriod = async (id) => {
     try {
-        const data = await window.TurnosDB.fetchEventos(); // Usamos fetchEventos general para má¡xima compatibilidad
+        const data = await window.TurnosDB.fetchEventos(); // Usamos fetchEventos general para mÃ¡Â¡xima compatibilidad
         const match = data.find(b => String(b.id) === String(id));
-        if (!match) return alert('No se encontró el registro: ' + id);
+        if (!match) return alert('No se encontrÃ³ el registro: ' + id);
 
         _editingBajaData = match;
         $('#modalTitle').innerText = 'Gestionar Baja / Permiso';
         $('#btnDeleteBaja').style.display = 'block';
 
-        // Llenar empleados y hoteles si no están listos
+        // Llenar empleados y hoteles si no estÃ¡n listos
         const [hotels, emps] = await Promise.all([window.TurnosDB.getHotels(), window.TurnosDB.getEmpleados()]);
         $('#mbHotel').innerHTML = `<option value="" disabled>Seleccionar hotel...</option>` + hotels.map(h => `<option value="${h}" ${h === match.hotel_origen ? 'selected' : ''}>${h}</option>`).join('');
         $('#mbEmp').innerHTML = `<option value="" disabled>Seleccionar empleado...</option>` + emps.map(e => `<option value="${e.id}" ${e.id === match.empleado_id ? 'selected' : ''}>${e.nombre || e.id}</option>`).join('');
@@ -810,7 +810,7 @@ window.deleteCurrentPeriod = async () => {
     }
 };
 // ==========================================
-// 1. NÁ¯?ÃƒÆ’Ã†’ÃƒÂ¢Ã¢â€šÂ¬Ã…¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â½aCLEO Y CONFIGURACIÁ¯?ÃƒÆ’Ã†’ÃƒÂ¢Ã¢â€šÂ¬Ã…¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â½N GLOBAL
+// 1. NÃÂ¯?ÃƒÆ’Ã†â€™Ãƒâ€ â€™ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â½aCLEO Y CONFIGURACIÃÂ¯?ÃƒÆ’Ã†â€™Ãƒâ€ â€™ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â½N GLOBAL
 // ==========================================
 window.parsedData = null;
 // (Utilidades movidas al inicio del archivo)
@@ -829,9 +829,9 @@ window.cleanLogText = (value) => String(value ?? '')
 
 window.DEBUG_MODE = false;
 
-// --- NAVEGACIÓN ---
+// --- NAVEGACIÃ“N ---
 window.switchSection = (id) => {
-    // Alias de navegación
+    // Alias de navegaciÃ³n
     const aliases = {
         'control': 'home', 'panel-control': 'home', 'dashboard': 'home',
         'gestion-excel': 'excel',
@@ -845,7 +845,7 @@ window.switchSection = (id) => {
     };
     const targetId = aliases[id] || id;
 
-    console.log(`[NAV] Cambiando a sección: ${targetId} (original: ${id})`);
+    console.log(`[NAV] Cambiando a secciÃ³n: ${targetId} (original: ${id})`);
     const sections = document.querySelectorAll('.section');
     const menuItems = document.querySelectorAll('.menu-item');
 
@@ -856,10 +856,10 @@ window.switchSection = (id) => {
     if (targetSec) {
         targetSec.classList.add('active');
     } else {
-        console.warn(`[NAV] Sección section-${targetId} no encontrada en el DOM`);
+        console.warn(`[NAV] SecciÃ³n section-${targetId} no encontrada en el DOM`);
     }
 
-    // Activar el botón correspondiente en el sidebar
+    // Activar el botÃ³n correspondiente en el sidebar
     const targetBtn = Array.from(menuItems).find(m => {
         const onClick = m.getAttribute('onclick') || '';
         return onClick.includes(`'${id}'`) || onClick.includes(`"${id}"`) || onClick.includes(`'${targetId}'`) || onClick.includes(`"${targetId}"`);
@@ -877,10 +877,10 @@ window.switchSection = (id) => {
 };
 
 /**
- * Navegación inteligente desde el Dashboard a puntos específicos de conflicto.
+ * NavegaciÃ³n inteligente desde el Dashboard a puntos especÃ­ficos de conflicto.
  */
 window.goToOperationalIssue = (empId, date, type) => {
-    console.log(`[NAVEGACIÓN] Dirigiendo a: ${empId}, Fecha: ${date}, Tipo: ${type}`);
+    console.log(`[NAVEGACIÃ“N] Dirigiendo a: ${empId}, Fecha: ${date}, Tipo: ${type}`);
 
     if (type === 'SIN_ID_INTERNO' || type === 'PLAZA_PENDIENTE') {
         // Problemas de base de datos -> Ir al Excel
@@ -991,7 +991,7 @@ window.goToPreviewRecord = (empId, date) => {
         const input = document.getElementById('datePicker');
         if (input) {
             input.value = monday;
-            // Si flatpickr está activo, actualizarlo
+            // Si flatpickr estÃ¡ activo, actualizarlo
             if (input._flatpickr) input._flatpickr.setDate(monday);
         }
     }
@@ -1016,11 +1016,11 @@ window.goToPreviewRecord = (empId, date) => {
                  break;
              }
         }
-        if (!found) console.warn(`[NAVEGACIÓN] No se encontró la fila para ${empId} en Vista Previa`);
+        if (!found) console.warn(`[NAVEGACIÃ“N] No se encontrÃ³ la fila para ${empId} en Vista Previa`);
     }, 1200);
 };
 // ==========================================
-// MÓDULO: MODO EXCEL (RESTAURADO)
+// MÃ“DULO: MODO EXCEL (RESTAURADO)
 // ==========================================
 window.renderExcelView = async () => {
     try {
@@ -1067,11 +1067,11 @@ window.renderExcelView = async () => {
             const idInt = profile.id_interno || profile.id || empId;
             return `${profile.nombre || empId} [${idInt}]`;
         };
-        const TURNO_MAP = { 'M': 'Manana', 'MANANA': 'Manana', 'Mañana': 'Manana', 'T': 'Tarde', 'Tarde': 'Tarde', 'N': 'Noche', 'Noche': 'Noche', 'D': 'Descanso', 'Descanso': 'Descanso', '-': 'Pendiente de asig', 'ÃƒÆ’Ã†’Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â': 'Pendiente de asig', '': 'Pendiente de asig', null: 'Pendiente de asig' };
+        const TURNO_MAP = { 'M': 'Manana', 'MANANA': 'Manana', 'MaÃ±ana': 'Manana', 'T': 'Tarde', 'Tarde': 'Tarde', 'N': 'Noche', 'Noche': 'Noche', 'D': 'Descanso', 'Descanso': 'Descanso', '-': 'Pendiente de asig', 'ÃƒÆ’Ã†â€™Ãƒâ€ â€™ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â': 'Pendiente de asig', '': 'Pendiente de asig', null: 'Pendiente de asig' };
         let totalPendientes = 0;
         let totalSupportPendientes = 0;
         let totalNoId = 0;
-        // PHASE 1: Group WITHOUT employee filter ÃƒÆ’Ã†’Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â to compute available employees
+        // PHASE 1: Group WITHOUT employee filter ÃƒÆ’Ã†â€™Ãƒâ€ â€™ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â to compute available employees
         const grouped = {};
         // Pre-compute support staff set for fast lookup
         const _supportStaffSet = new Set();
@@ -1092,7 +1092,7 @@ window.renderExcelView = async () => {
             if (selectedHotel !== 'all' && h !== selectedHotel) return;
             const wStart = window.getWeekStartISO(record.fecha);
             const val = record.turno || '-';
-            const isPending = (val === '-' || !val || String(val).includes('ÃƒÆ’Ã†’Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â'));
+            const isPending = (val === '-' || !val || String(val).includes('ÃƒÆ’Ã†â€™Ãƒâ€ â€™ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â'));
             const isSupport = _isSupport(empId);
             const hasId = _hasValidId(empId);
             if (!hasId) _noIdSet.add(empId);
@@ -1255,7 +1255,7 @@ window.handleExcelCellChange = (sel) => {
     }
     const selects = document.querySelectorAll('.turno-edit-select');
     let changes = 0;
-    const REVERSE_MAP = { 'Manana': 'M', 'Mañana': 'M', 'Tarde': 'T', 'Noche': 'N', 'Descanso': 'D', 'Pendiente de asig': '-' };
+    const REVERSE_MAP = { 'Manana': 'M', 'MaÃ±ana': 'M', 'Tarde': 'T', 'Noche': 'N', 'Descanso': 'D', 'Pendiente de asig': '-' };
     selects.forEach(s => {
         const currentDb = REVERSE_MAP[s.value] || s.value;
         if (s.dataset.original !== currentDb) changes++;
@@ -1276,7 +1276,7 @@ window.saveTurnosBaseDirect = async () => {
         const selects = document.querySelectorAll('select.turno-edit-select');
         const updates = [];
         const blocked = [];
-        const REVERSE_MAP = { 'Manana': 'M', 'Mañana': 'M', 'Tarde': 'T', 'Noche': 'N', 'Descanso': 'D', 'Pendiente de asig': '-' };
+        const REVERSE_MAP = { 'Manana': 'M', 'MaÃ±ana': 'M', 'Tarde': 'T', 'Noche': 'N', 'Descanso': 'D', 'Pendiente de asig': '-' };
         selects.forEach(sel => {
             const original = sel.dataset.original;
             const currentDb = REVERSE_MAP[sel.value] || sel.value;
@@ -1293,7 +1293,7 @@ window.saveTurnosBaseDirect = async () => {
             }
         });
         if (blocked.length > 0) {
-            alert(`ÃƒÆ’Ã†’Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã¢â‚¬Â¦Ãƒâ€šÃ‚¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â ÃƒÆ’Ã†’Ãƒâ€šÃ‚Â¯ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¸ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â No se pueden guardar turnos para empleados sin ID interno vá¡lido:\n${blocked.join(', ')}`);
+            alert(`ÃƒÆ’Ã†â€™Ãƒâ€ â€™ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÂ¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â ÃƒÆ’Ã†â€™Ãƒâ€ â€™ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¯ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¸ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â No se pueden guardar turnos para empleados sin ID interno vÃ¡Â¡lido:\n${blocked.join(', ')}`);
         }
         if (updates.length === 0) {
             alert('No hay cambios que guardar.');
@@ -1303,17 +1303,17 @@ window.saveTurnosBaseDirect = async () => {
         const { error } = await window.supabase.from('turnos').upsert(updates, { onConflict: 'empleado_id,fecha' });
         if (error) throw error;
         window.pendingChangesCount = 0;
-        alert('ÃƒÆ’Ã†’Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã¢â‚¬Â¦ÃƒÂ¢Ã¢â€šÂ¬Ã…“ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â¦ Cambios base guardados correctamente.');
+        alert('ÃƒÆ’Ã†â€™Ãƒâ€ â€™ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦â€œÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¦ Cambios base guardados correctamente.');
         await window.renderExcelView();
     } catch (err) {
         console.error(err);
-        alert('ÃƒÆ’Ã†’Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚ÂÃƒÆ’Ã¢â‚¬Â¦ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ Error al guardar: ' + err.message);
+        alert('ÃƒÆ’Ã†â€™Ãƒâ€ â€™ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚ÂÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¢ Error al guardar: ' + err.message);
         if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-save"></i> Guardar cambios'; }
     }
 };
 
 // ==========================================
-// MÓDULO: AáÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¹Ã…“ADIR REFUERZO (MODAL OPERATIVO)
+// MÃ“DULO: AÃ¡ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Â¹Ãƒâ€¦â€œADIR REFUERZO (MODAL OPERATIVO)
 // ==========================================
 window.openRefuerzoModal = async () => {
     const m = document.getElementById('modalRefuerzo');
@@ -1326,13 +1326,13 @@ window.openRefuerzoModal = async () => {
     const [hotels, emps] = await Promise.all([window.getAvailableHotels(), window.TurnosDB.getEmpleados()]);
     const selectedHotel = document.getElementById('excelHotel')?.value || 'all';
 
-    // Hotel select ÃƒÆ’Ã†’Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â pre-select current Excel filter
+    // Hotel select ÃƒÆ’Ã†â€™Ãƒâ€ â€™ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â pre-select current Excel filter
     const rfHotel = document.getElementById('rfHotel');
     if (rfHotel) {
         rfHotel.innerHTML = hotels.map(h => `<option value="${h}"${h === selectedHotel && selectedHotel !== 'all' ? ' selected' : ''}>${h}</option>`).join('');
     }
 
-    // Employee select ÃƒÆ’Ã†’Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â only structural support/ocasional staff with valid EMP-XXXX IDs
+    // Employee select ÃƒÆ’Ã†â€™Ãƒâ€ â€™ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â only structural support/ocasional staff with valid EMP-XXXX IDs
     const rfEmp = document.getElementById('rfEmp');
     if (rfEmp) {
         const supportEmps = emps
@@ -1400,13 +1400,13 @@ window.openRefuerzoModal = async () => {
     const [hotels, emps] = await Promise.all([window.getAvailableHotels(), window.TurnosDB.getEmpleados()]);
     const selectedHotel = document.getElementById('excelHotel')?.value || 'all';
 
-    // Hotel select ÃƒÆ’Ã†’Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â pre-select current Excel filter
+    // Hotel select ÃƒÆ’Ã†â€™Ãƒâ€ â€™ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â pre-select current Excel filter
     const rfHotel = document.getElementById('rfHotel');
     if (rfHotel) {
         rfHotel.innerHTML = hotels.map(h => `<option value="${h}"${h === selectedHotel && selectedHotel !== 'all' ? ' selected' : ''}>${h}</option>`).join('');
     }
 
-    // Employee select ÃƒÆ’Ã†’Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â only structural support/ocasional staff with valid EMP-XXXX IDs
+    // Employee select ÃƒÆ’Ã†â€™Ãƒâ€ â€™ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â only structural support/ocasional staff with valid EMP-XXXX IDs
     const rfEmp = document.getElementById('rfEmp');
     if (rfEmp) {
         const supportEmps = emps
@@ -1517,7 +1517,7 @@ window.saveRefuerzo = async () => {
             dates.push(window.isoDate(cur));
             cur.setDate(cur.getDate() + 1);
         }
-        if (dates.length > 31) { status.innerHTML = '<span style="color:var(--danger);">Rango má¡ximo: 31 Dias.</span>'; return; }
+        if (dates.length > 31) { status.innerHTML = '<span style="color:var(--danger);">Rango mÃ¡Â¡ximo: 31 Dias.</span>'; return; }
     }
 
     try {
@@ -1590,7 +1590,7 @@ window.saveRefuerzo = async () => {
 };
 
 // ==========================================
-// MÓDULO: CAMBIOS DE TURNO (DASHBOARD OPERATIVO)
+// MÃ“DULO: CAMBIOS DE TURNO (DASHBOARD OPERATIVO)
 // ==========================================
 window.initChangesControls = () => {
     const rangeInput = document.getElementById('chRange');
@@ -1867,12 +1867,12 @@ window.ensureChangeEditModal = () => {
                 </label>
                 <label style="display:grid; gap:7px; font-size:0.68rem; color:#64748b; font-weight:900; text-transform:uppercase;">Turno original
                     <select id="edit-change-origin" style="height:48px; border:1px solid #d5e1ef; border-radius:14px; padding:0 14px; font-size:0.95rem; font-weight:700;">
-                        <option value="">ÃƒÆ’Ã†’Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â</option><option value="Mañana">Mañana</option><option value="Tarde">Tarde</option><option value="Noche">Noche</option><option value="Descanso">Descanso</option>
+                        <option value="">ÃƒÆ’Ã†â€™Ãƒâ€ â€™ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â</option><option value="MaÃ±ana">MaÃ±ana</option><option value="Tarde">Tarde</option><option value="Noche">Noche</option><option value="Descanso">Descanso</option>
                     </select>
                 </label>
                 <label style="display:grid; gap:7px; font-size:0.68rem; color:#64748b; font-weight:900; text-transform:uppercase;">Turno solicitado
                     <select id="edit-change-dest" style="height:48px; border:1px solid #d5e1ef; border-radius:14px; padding:0 14px; font-size:0.95rem; font-weight:700;">
-                        <option value="">ÃƒÆ’Ã†’Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â</option><option value="Mañana">Mañana</option><option value="Tarde">Tarde</option><option value="Noche">Noche</option><option value="Descanso">Descanso</option>
+                        <option value="">ÃƒÆ’Ã†â€™Ãƒâ€ â€™ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â</option><option value="MaÃ±ana">MaÃ±ana</option><option value="Tarde">Tarde</option><option value="Noche">Noche</option><option value="Descanso">Descanso</option>
                     </select>
                 </label>
                 <label style="display:grid; gap:7px; font-size:0.68rem; color:#64748b; font-weight:900; text-transform:uppercase;">Tipo
@@ -1941,7 +1941,7 @@ window.getOperativeStaffForDateHotel = async (date, hotel) => {
         };
         const isOperationalShiftLabel = (shiftLabel) => {
             const raw = String(shiftLabel || '').trim();
-            if (!raw || raw === 'ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â' || raw === '-') return false;
+            if (!raw || raw === 'ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â' || raw === '-') return false;
             const code = window.normalizeShiftValue ? window.normalizeShiftValue(raw) : '';
             if (['M', 'T', 'N', 'D'].includes(code)) return true;
             const key = window.TurnosRules?.shiftKey ? window.TurnosRules.shiftKey(raw, '') : '';
@@ -2045,7 +2045,7 @@ window.refreshChangeEditOperativeSelects = async () => {
         selectEl.value = withCurrent.includes(desired) ? desired : '';
     };
     render(empSelect, currentEmp || fallbackEmp, 'Selecciona solicitante');
-    render(targetSelect, currentTarget || fallbackTarget, 'Sin compaÁ±ero');
+    render(targetSelect, currentTarget || fallbackTarget, 'Sin compaÃÂ±ero');
 };
 
 window.closeChangeEditModal = () => {
@@ -2084,7 +2084,7 @@ window.editChange = async (id) => {
         };
         const toShiftSelectValue = (value) => {
             const norm = window.normalizeShiftValue ? window.normalizeShiftValue(value) : String(value || '').trim().toUpperCase();
-            if (norm === 'M') return 'Mañana';
+            if (norm === 'M') return 'MaÃ±ana';
             if (norm === 'T') return 'Tarde';
             if (norm === 'N') return 'Noche';
             if (norm === 'D') return 'Descanso';
@@ -2133,7 +2133,7 @@ window.saveChangeEdit = async (event) => {
             const raw = String(value || '').trim();
             if (!raw) return null;
             const code = window.normalizeShiftValue ? window.normalizeShiftValue(raw) : null;
-            if (!code) throw new Error(`Turno no vá¡lido: ${raw}`);
+            if (!code) throw new Error(`Turno no vÃ¡Â¡lido: ${raw}`);
             return code;
         };
         const turnoOriginal = toCanonicalShift(document.getElementById('edit-change-origin')?.value || null);
@@ -2180,7 +2180,7 @@ window.saveChangeEdit = async (event) => {
 };
 
 window.anularChange = async (id) => {
-    if (!confirm("¿Estás seguro de anular este cambio operativo?")) return;
+    if (!confirm("Â¿EstÃ¡s seguro de anular este cambio operativo?")) return;
     try {
         const eventos = await window.TurnosDB.fetchEventos();
         const evento = (eventos || []).find(ev => String(ev.id) === String(id));
@@ -2193,7 +2193,7 @@ window.anularChange = async (id) => {
 };
 
 // ==========================================
-// MÓDULO: SOLICITUDES (RESTAURADO)
+// MÃ“DULO: SOLICITUDES (RESTAURADO)
 // ==========================================
 window.renderRequests = async () => {
     try {
@@ -2207,7 +2207,7 @@ window.renderRequests = async () => {
         <div class="requests-toolbar" style="display:flex; align-items:center; gap:20px; margin-bottom:20px; background:white; padding:15px 25px; border-radius:16px; border:1px solid #e2e8f0; box-shadow:0 4px 6px -1px rgba(0,0,0,0.05);">
             <div style="font-size:0.75rem; font-weight:800; color:#64748b; text-transform:uppercase; letter-spacing:0.05em;">Filtrar por:</div>
             <select id="requestsFilter" class="toolbar-input" style="padding:8px 15px; border-radius:10px; border:1px solid #cbd5e1; background:#f8fafc; font-weight:700; color:#1e293b; cursor:pointer;" onchange="window._requestsFilter = this.value; window.renderRequests()">
-                <option value="pendiente" ${window._requestsFilter === 'pendiente' ? 'selected' : ''}>Pendientes de Revisión</option>
+                <option value="pendiente" ${window._requestsFilter === 'pendiente' ? 'selected' : ''}>Pendientes de RevisiÃ³n</option>
                 <option value="aprobada" ${window._requestsFilter === 'aprobada' ? 'selected' : ''}>Aprobadas</option>
                 <option value="rechazada" ${window._requestsFilter === 'rechazada' ? 'selected' : ''}>Rechazadas</option>
                 <option value="all" ${window._requestsFilter === 'all' ? 'selected' : ''}>Todas las Solicitudes</option>
@@ -2264,7 +2264,7 @@ window.renderRequests = async () => {
                         ${(req.fechas || []).map(f => `
                             <div style="background:#f8fafc; padding:12px; border-radius:12px; border:1px solid #e2e8f0;">
                                 <div style="font-weight:800; font-size:0.85rem;">${f.fecha}</div>
-                                <div style="font-size:0.8rem; color:#64748b;">${f.origen} ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¢ ${f.destino}</div>
+                                <div style="font-size:0.8rem; color:#64748b;">${f.origen} ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¾Ãƒâ€šÃ‚Â¢ ${f.destino}</div>
                             </div>
                         `).join('')}
                     </div>
@@ -2273,12 +2273,12 @@ window.renderRequests = async () => {
         }).join('');
     } catch (e) {
         console.error("[ADMIN ERROR] renderRequests:", e);
-        container.innerHTML = '<div style="padding:2rem; color:red; font-weight:800;">ÃƒÆ’Ã†’Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚ÂÃƒÆ’Ã¢â‚¬Â¦ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ Error cargando solicitudes: ' + e.message + '</div>';
+        container.innerHTML = '<div style="padding:2rem; color:red; font-weight:800;">ÃƒÆ’Ã†â€™Ãƒâ€ â€™ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚ÂÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¢ Error cargando solicitudes: ' + e.message + '</div>';
     }
 };
 
 window.handleRequestAction = async (id, newState) => {
-    if (!confirm(`¿Estás seguro de marcar como ${newState}?`)) return;
+    if (!confirm(`Â¿EstÃ¡s seguro de marcar como ${newState}?`)) return;
     try {
         await window.TurnosDB.actualizarEstadoPeticion(id, newState);
         alert('Solicitud actualizada.');
@@ -2287,7 +2287,7 @@ window.handleRequestAction = async (id, newState) => {
 };
 
 // ==========================================
-// MÓDULO: FICHA EMPLEADO HELPERS (RESTAURADO)
+// MÃ“DULO: FICHA EMPLEADO HELPERS (RESTAURADO)
 // ==========================================
 window.enableEmployeeProfileEdit = () => {
     window._employeeProfileTab = 'config';
@@ -2350,7 +2350,7 @@ window.openEmpDrawer = (id) => {
     window.renderEmployeeProfile?.();
 };
 
-// 1.2 SISTEMA DE DIAGNÓSTICO VISUAL DE ERRORES
+// 1.2 SISTEMA DE DIAGNÃ“STICO VISUAL DE ERRORES
 window.showDiagnostic = (error, source = 'Error Global') => {
     const overlay = $('#diagnostic-overlay');
     if (!overlay) return;
@@ -2358,10 +2358,10 @@ window.showDiagnostic = (error, source = 'Error Global') => {
     const message = error.message || String(error);
     const stack = error.stack || '';
 
-    // Extraer archivo y línea (simplificado)
+    // Extraer archivo y lÃ­nea (simplificado)
     const stackLines = stack.split('\n');
     const firstLine = stackLines[0] || '';
-    const secondLine = stackLines[1] || ''; // Suele contener la ubicación real
+    const secondLine = stackLines[1] || ''; // Suele contener la ubicaciÃ³n real
     const locMatch = secondLine.match(/at\s+(.+)\s+\((.+):(\d+):(\d+)\)/) || secondLine.match(/at\s+(.+):(\d+):(\d+)/);
 
     let location = 'Desconocida';
@@ -2371,14 +2371,14 @@ window.showDiagnostic = (error, source = 'Error Global') => {
         location = `${file.split('/').pop()} : L${line}`;
     }
 
-    // Mapeo de módulos
+    // Mapeo de mÃ³dulos
     let module = 'Desconocido';
     let section = null;
     if (stack.includes('renderDashboard')) { module = 'Dashboard'; section = 'home'; }
     else if (stack.includes('renderEmployeeProfile')) { module = 'Ficha Empleado'; section = 'employees'; }
     else if (stack.includes('renderExcelView')) { module = 'Modo Excel'; section = 'excel'; }
     else if (stack.includes('renderPreview')) { module = 'Vista Previa'; section = 'preview'; }
-    else if (stack.includes('publishToSupabase')) { module = 'Publicación'; }
+    else if (stack.includes('publishToSupabase')) { module = 'PublicaciÃ³n'; }
     else if (message.includes('isoDate')) { module = 'Sistema (Fechas)'; }
 
     $('#diag-module-tag').textContent = `${module} [${location}]`;
@@ -2392,17 +2392,17 @@ window.showDiagnostic = (error, source = 'Error Global') => {
             window.switchSection(section);
             overlay.style.display = 'none';
         };
-        modBtn.textContent = `Ir a sección: ${module}`;
+        modBtn.textContent = `Ir a secciÃ³n: ${module}`;
     } else {
         modBtn.style.display = 'none';
     }
 
     overlay.style.display = 'block';
-    console.error('[DIAGNÓSTICO]', { module, message, location, stack });
+    console.error('[DIAGNÃ“STICO]', { module, message, location, stack });
 };
 
 window.copyDiagnostic = () => {
-    const text = `ERROR DIAGNÓSTICO\nMódulo: ${$('#diag-module-tag').textContent}\nMensaje: ${$('#diag-message').textContent}\nStack: ${$('#diag-stack').textContent}`;
+    const text = `ERROR DIAGNÃ“STICO\nMÃ³dulo: ${$('#diag-module-tag').textContent}\nMensaje: ${$('#diag-message').textContent}\nStack: ${$('#diag-stack').textContent}`;
     navigator.clipboard.writeText(text).then(() => alert('Copiado al portapapeles'));
 };
 
@@ -2682,7 +2682,7 @@ window.groupConsecutiveEvents = (events) => {
                 const nextStart = new Date(e.fecha_inicio + 'T12:00:00');
                 const diffDays = Math.round((nextStart - lastEnd) / (1000 * 60 * 60 * 24));
 
-                // Criterios de agrupación: consecutivo, mismo tipo, mismo hotel, mismo sustituto, mismo estado
+                // Criterios de agrupaciÃ³n: consecutivo, mismo tipo, mismo hotel, mismo sustituto, mismo estado
                 const sameType = (currentGroup.tipo || '').split(' ')[0] === (e.tipo || '').split(' ')[0];
                 const sameHotel = currentGroup.hotel_origen === e.hotel_origen;
                 const sameSust = (currentGroup.empleado_destino_id || currentGroup.sustituto_id) === (e.empleado_destino_id || e.sustituto_id);
@@ -2742,7 +2742,7 @@ window.buildEmployeeProfileModel = (empleadoId, fechaReferencia) => {
         ajuste_vacaciones_dias: profile.ajuste_vacaciones_dias || 0
     };
 
-    // INTENTO DE RECUPERAR TURNOS BASE DESDE áÃƒÆ’Ã¢â‚¬Â¦Ãƒâ€šÃ‚¡LTIMA CONSULTA GLOBAL (Aislamiento)
+    // INTENTO DE RECUPERAR TURNOS BASE DESDE Ã¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÂ¡LTIMA CONSULTA GLOBAL (Aislamiento)
     let excelSource = window._adminExcelEditableRows || window._adminExcelBaseOriginalRows || null;
     let fallbackRaw = window._lastRawTurnosBase || [];
 
@@ -2933,8 +2933,8 @@ window.employeeStatusMeta = (status) => {
 window.employeeNorm = (val) => String(val || '').toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
 
 window.openEmployeeDayDetail = (fecha) => {
-    console.log("Detalle de día:", fecha);
-    // Podríamos abrir un mini-modal con los detalles tecnicos del turno resuelto
+    console.log("Detalle de dÃ­a:", fecha);
+    // PodrÃ­amos abrir un mini-modal con los detalles tecnicos del turno resuelto
 };
 
 window.renderEmployeeProfileCalendar = (model) => {
@@ -2949,7 +2949,19 @@ window.renderEmployeeProfileCalendar = (model) => {
             <div class="emp-calendar-grid month" style="display:grid; grid-template-columns:repeat(7, 1fr); gap:4px;">
                 ${days.map(day => {
                     const label = window.employeeShiftLabel(day).replace('&mdash;', '-').replace('PENDIENTE DE ASIGNAR', '-').replace('Descanso', 'D');
-                    const labelShort = label.length > 2 ? label.charAt(0) : label;
+                    const incidenciaTipo = day.incidencia ? window.normalizeTipo(day.incidencia.tipo) : '';
+                    const turnoRaw = String(day.turno || '').trim().toUpperCase();
+                    const turnoBaseRaw = String(day.turnoBase || day.detalle?.turnoBase || '').trim().toUpperCase();
+                    const labelRaw = String(label || '').trim().toUpperCase();
+                    const isVacation =
+                        incidenciaTipo === 'VAC' ||
+                        /VAC/.test(labelRaw) ||
+                        labelRaw === 'V' ||
+                        turnoRaw.startsWith('VAC') ||
+                        turnoRaw === 'V' ||
+                        turnoBaseRaw.startsWith('VAC') ||
+                        turnoBaseRaw === 'V';
+                    const labelShort = isVacation ? '&#x1F3D6;&#xFE0F;' : (label.length > 2 ? label.charAt(0) : label);
                     const isToday = day.fecha === window.isoDate(new Date());
 
                     let statusClass = '';
@@ -2995,10 +3007,10 @@ window.toggleEmployeeSupportFields = (type) => {
     if (note) note.hidden = !reduced;
 };
 // ==========================================
-// 2. EXCEL SOURCE LOADER Á¯?ÃƒÆ’Ã†’ÃƒÂ¢Ã¢â€šÂ¬Ã…¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â½ delegado a excel-loader.js
+// 2. EXCEL SOURCE LOADER ÃÂ¯?ÃƒÆ’Ã†â€™Ãƒâ€ â€™ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â½ delegado a excel-loader.js
 // ==========================================
-// La función loadExcelSourceRows() la provee window.ExcelLoader (excel-loader.js).
-// window._sharedExcelSourceRows es la caché compartida con index y mobile.
+// La funciÃ³n loadExcelSourceRows() la provee window.ExcelLoader (excel-loader.js).
+// window._sharedExcelSourceRows es la cachÃ© compartida con index y mobile.
 
 // ==========================================
 // 3. RENDER PREVIEW (WEEKLY / MONTHLY)
@@ -3069,14 +3081,14 @@ window.buildPuestoId = (hotelId, rowIndex) => `${hotelId}::${String(rowIndex).pa
 window.normalizePreviewTurno = (value) => {
     let raw = String(value ?? '').trim();
     raw = raw
-        .replaceAll('Ã¢â‚¬”', '-')
-        .replaceAll('Ã¢â‚¬“', '-')
-        .replaceAll('Ã¢â‚¬"', '-')
-        .replaceAll('Ãƒ—', '-')
-        .replaceAll('MaÃƒÂ±ana', 'Manana')
-        .replaceAll('Mañana', 'Manana');
+        .replaceAll('ÃƒÂ¢Ã¢â€šÂ¬â€', '-')
+        .replaceAll('ÃƒÂ¢Ã¢â€šÂ¬â€œ', '-')
+        .replaceAll('ÃƒÂ¢Ã¢â€šÂ¬"', '-')
+        .replaceAll('ÃƒÆ’â€”', '-')
+        .replaceAll('MaÃƒÆ’Ã‚Â±ana', 'Manana')
+        .replaceAll('MaÃ±ana', 'Manana');
     if (!raw) return '';
-    if (raw === '-' || raw === '—') return '';
+    if (raw === '-' || raw === 'â€”') return '';
     if (window.ExcelLoader?.shiftFromExcel) return window.ExcelLoader.shiftFromExcel(raw);
     return raw;
 };
@@ -3097,12 +3109,12 @@ window.createPuestosPreviewModel = ({
     eventos = [],
     employees = []
 } = {}) => {
-    // 1. INICIALIZACIÓN DE DATOS BASE
+    // 1. INICIALIZACIÃ“N DE DATOS BASE
     const baseRowsFlat = [];
     const puestosMap = new Map();
     const ausenciaSustitucionMap = new Map(); // normSustitutoId -> [{ titularId, normTitular, fi, ff }]
     
-    // REGRESION V140: Mapas obligatorios de resolución operativa
+    // REGRESION V140: Mapas obligatorios de resoluciÃ³n operativa
     const operationalOccupantByOriginalEmployeeId = new Map(); // date -> Map<origId, operId>
     const originalEmployeeByOperationalOccupantId = new Map(); // date -> Map<operId, origId>
     
@@ -3111,7 +3123,7 @@ window.createPuestosPreviewModel = ({
         originalEmployeeByOperationalOccupantId.set(d, new Map());
     });
 
-    // A) Construir baseRows y puestos para el índice
+    // A) Construir baseRows y puestos para el Ã­ndice
     sourceRows.forEach(sRow => {
         const puestoId = window.buildPuestoId(hotel, sRow.rowIndex);
         if (!puestosMap.has(puestoId)) {
@@ -3214,7 +3226,7 @@ window.createPuestosPreviewModel = ({
             ff
         });
 
-        // Inyectar en mapas de resolución operativa (V140)
+        // Inyectar en mapas de resoluciÃ³n operativa (V140)
         dates.forEach(d => {
             if (window.eventoAplicaEnFecha(ev, d)) {
                 operationalOccupantByOriginalEmployeeId.get(d).set(normTitularReal, normSust);
@@ -3223,7 +3235,7 @@ window.createPuestosPreviewModel = ({
         });
     });
 
-    // 2. CONSTRUIR ÁNDICE GLOBAL (con visibilidad de sustituciones)
+    // 2. CONSTRUIR ÃÂNDICE GLOBAL (con visibilidad de sustituciones)
     const { baseIndex } = window.buildIndices(employees, eventos, baseRowsFlat);
     baseIndex.ausenciaSustitucionMap = ausenciaSustitucionMap;
     baseIndex.operationalOccupantByOriginalEmployeeId = operationalOccupantByOriginalEmployeeId;
@@ -3235,12 +3247,12 @@ window.createPuestosPreviewModel = ({
         return valA - valB;
     });
 
-    // Re-mapear el puestoOrden visual para que sea correlativo 1..N según el orden final
+    // Re-mapear el puestoOrden visual para que sea correlativo 1..N segÃºn el orden final
     puestos.forEach((p, idx) => {
         p.puestoOrden = idx + 1;
     });
 
-    // 3. FUNCIONES DE RESOLUCIÓN
+    // 3. FUNCIONES DE RESOLUCIÃ“N
 
     const getCelda = (puestoId, fecha) => {
         const puesto = puestosMap.get(puestoId);
@@ -3350,7 +3362,7 @@ window.createPuestosPreviewModel = ({
 
         // 1. PRE-PROCESAR ESTADO DE LA SEMANA
         const weekStatus = new Map(); // normTitular -> { tipo, sustitutoId, ... }
-        const substitutesMap = new Map(); // normSustituto -> { normTitular, ... } (para saber quién cubre a quién)
+        const substitutesMap = new Map(); // normSustituto -> { normTitular, ... } (para saber quiÃ©n cubre a quiÃ©n)
 
         eventos.forEach(ev => {
             const tipo = window.normalizeTipo(ev.tipo);
@@ -3397,7 +3409,7 @@ window.createPuestosPreviewModel = ({
             const v9Order = window.getV9ExcelOrder(hotel, r.week_start || firstDate, r.empleadoId) || 500;
             const status = weekStatus.get(normTitular);
 
-            // CASO A: TITULAR ESTÁ AUSENTE
+            // CASO A: TITULAR ESTÃÂ AUSENTE
             if (status) {
                 const titularName = getDisplayName(r.empleadoId, r);
                 absentRows.push({
@@ -3455,7 +3467,7 @@ window.createPuestosPreviewModel = ({
                 if (occupantId && !isVacante) assignedNorms.add(normOcc);
 
             }
-            // CASO B: TITULAR ESTÁ PRESENTE
+            // CASO B: TITULAR ESTÃÂ PRESENTE
             else {
                 const statusInThisHotel = substitutesMap.get(normTitular);
                 const isSubbingInThisHotel = statusInThisHotel && window.eventoPerteneceAHotel && window.eventoPerteneceAHotel(statusInThisHotel.payload || statusInThisHotel, hotel);
@@ -3481,7 +3493,7 @@ window.createPuestosPreviewModel = ({
             }
         });
 
-        // 3. PROCESAR REFUERZOS EXPLÁCITOS
+        // 3. PROCESAR REFUERZOS EXPLÃÂCITOS
         eventos.forEach(ev => {
             const isExplicitRef = Boolean(ev.isRefuerzo === true || ev.origen === 'refuerzo' || ev.payload?.tipo_modulo === 'refuerzo' || ev.meta?.refuerzo === true);
             if (!isExplicitRef) return;
@@ -3528,7 +3540,7 @@ window.createPuestosPreviewModel = ({
         getPuesto: (id) => puestosMap.get(id),
         getCelda,
         getTurnoEmpleado: getTurnoEmpleadoExtended,
-        getCeldaByEmpleado: getTurnoEmpleadoExtended, // Alias para facilitar publicación
+        getCeldaByEmpleado: getTurnoEmpleadoExtended, // Alias para facilitar publicaciÃ³n
         getEmployees,
         getEmpleadosVisibles: (start, end) => getEmployees(),
         estaDeVacaciones: (empId, fechas) => (fechas || []).some(f => getTurnoEmpleadoExtended(empId, f).incidencia === 'VAC'),
@@ -3536,7 +3548,7 @@ window.createPuestosPreviewModel = ({
         getEmployeeName: (id) => getDisplayName(id)
     };
 };
-// --- DIAGNÓSTICO DEL MODELO (Solicitado por el usuario) ---
+// --- DIAGNÃ“STICO DEL MODELO (Solicitado por el usuario) ---
 window.debugPreviewModel = () => {
     const models = Object.values(window._previewPuestosModels || {});
     if (!models.length) {
@@ -3570,14 +3582,14 @@ window.debugPreviewModel = () => {
 window.buildPuestoCellTitle = (celda) => {
     const parts = [
         `Puesto: ${celda.puesto_id}`,
-        `Base: ${celda.turno_base || 'Á¯?ÃƒÆ’Ã†’ÃƒÂ¢Ã¢â€šÂ¬Ã…¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â½ '}`,
-        `Titular: ${celda.titular || 'Á¯?ÃƒÆ’Ã†’ÃƒÂ¢Ã¢â€šÂ¬Ã…¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â½ '}`
+        `Base: ${celda.turno_base || 'ÃÂ¯?ÃƒÆ’Ã†â€™Ãƒâ€ â€™ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â½ '}`,
+        `Titular: ${celda.titular || 'ÃÂ¯?ÃƒÆ’Ã†â€™Ãƒâ€ â€™ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â½ '}`
     ];
 
     if (celda.incidencia) parts.push(`Incidencia: ${celda.incidencia}`);
     if (celda.real && celda.real !== celda.titular) parts.push(`Real: ${celda.real}`);
     if (celda.cambio && celda.turno !== celda.turno_base) {
-        parts.push(`Cambio: ${celda.turno_base || 'Á¯?ÃƒÆ’Ã†’ÃƒÂ¢Ã¢â€šÂ¬Ã…¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â½ '} -> ${celda.turno || 'Á¯?ÃƒÆ’Ã†’ÃƒÂ¢Ã¢â€šÂ¬Ã…¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â½ '}`);
+        parts.push(`Cambio: ${celda.turno_base || 'ÃÂ¯?ÃƒÆ’Ã†â€™Ãƒâ€ â€™ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â½ '} -> ${celda.turno || 'ÃÂ¯?ÃƒÆ’Ã†â€™Ãƒâ€ â€™ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â½ '}`);
     }
 
     return parts.join('\n');
@@ -3606,7 +3618,7 @@ window.renderPuestoCell = (celda) => {
     return `
         <div title="${escapeHtml(window.buildPuestoCellTitle(celda))}" style="display:flex; flex-direction:column; gap:6px; min-height:82px; padding:10px 8px; border-radius:12px; background:#ffffff;">
             <div style="display:inline-flex; align-items:center; justify-content:center; padding:8px 6px; border-radius:10px; font-size:0.8rem; font-weight:800; ${def.adminStyle || 'background:#f8fafc; color:#1e293b; border:1px solid #e2e8f0;'}">
-                ${escapeHtml(celda.turno || celda.turno_base || 'Á¯?ÃƒÆ’Ã†’ÃƒÂ¢Ã¢â€šÂ¬Ã…¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â½ ')}
+                ${escapeHtml(celda.turno || celda.turno_base || 'ÃÂ¯?ÃƒÆ’Ã†â€™Ãƒâ€ â€™ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â½ ')}
             </div>
             <div style="font-size:0.73rem; line-height:1.25; color:#334155; font-weight:700;">
                 ${escapeHtml(celda.titular || 'Sin titular')}${celda.incidencia ? ` <span style="color:#b45309;">(${escapeHtml(celda.incidencia)})</span>` : ''}
@@ -3699,7 +3711,7 @@ window.detectarErrores = (previewModel) => {
                 });
             }
 
-            // --- 5. REACTIVAR DETECCIÁ¯?ÃƒÆ’Ã†’ÃƒÂ¢Ã¢â€šÂ¬Ã…¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â½ N DE ERROR REAL ---
+            // --- 5. REACTIVAR DETECCIÃÂ¯?ÃƒÆ’Ã†â€™Ãƒâ€ â€™ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â½ N DE ERROR REAL ---
             if (celda.incidencia && celda.turno && celda.turno !== celda.incidencia) {
                 const empleadoKey = celda.titular_id || celda.titular || '';
                 const fechaNormalizada = String(fecha || '').slice(0, 10);
@@ -3801,14 +3813,14 @@ window.validarPreviewModel = (previewModel) => {
 };
 
 window.getTurnoEmpleadoLabel = (turnoEmpleado) => {
-    if (!turnoEmpleado) return 'Á¯?ÃƒÆ’Ã†’ÃƒÂ¢Ã¢â€šÂ¬Ã…¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â½ ';
+    if (!turnoEmpleado) return 'ÃÂ¯?ÃƒÆ’Ã†â€™Ãƒâ€ â€™ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â½ ';
     if (turnoEmpleado.conflicto) return 'Conflicto';
     if (turnoEmpleado.incidencia === 'VAC') return 'Vacaciones';
     if (turnoEmpleado.incidencia === 'BAJA') return 'Baja';
     if (turnoEmpleado.incidencia === 'PERM') return 'Permiso';
 
     const key = window.TurnosRules?.shiftKey(turnoEmpleado.turno || '', 'NORMAL') || '';
-    return window.TurnosRules?.definitions?.[key]?.label || turnoEmpleado.turno || 'ÃƒÆ’Ã†’Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â';
+    return window.TurnosRules?.definitions?.[key]?.label || turnoEmpleado.turno || 'ÃƒÆ’Ã†â€™Ãƒâ€ â€™ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â';
 };
 
 window.renderEmpleadoRowHeader = (employee, { showVacationIcon = false, isCompact = false } = {}) => {
@@ -3818,7 +3830,7 @@ window.renderEmpleadoRowHeader = (employee, { showVacationIcon = false, isCompac
     if (employee?.isVacante) {
         return `
         <div style="display:flex; flex-direction:column; gap:2px;">
-            <span style="font-weight:800; color:#ef4444; font-size:0.82rem; line-height:1.3;">ÃƒÆ’Ã†’Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã¢â‚¬Â¦Ãƒâ€šÃ‚¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â ÃƒÆ’Ã†’Ãƒâ€šÃ‚Â¯ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¸ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â VACANTE</span>
+            <span style="font-weight:800; color:#ef4444; font-size:0.82rem; line-height:1.3;">ÃƒÆ’Ã†â€™Ãƒâ€ â€™ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÂ¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â ÃƒÆ’Ã†â€™Ãƒâ€ â€™ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¯ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¸ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â VACANTE</span>
         </div>`;
     }
 
@@ -3876,7 +3888,7 @@ window.renderEmpleadoCell = (turnoEmpleado, { isCompact = false } = {}) => {
     if (isCompact) {
         // VISTA MENSUAL
         const labelText = style.label || turnoVisible || '-';
-        const compactIcons = (style.icon ? ` ${style.icon}` : '') + (hayCambio ? ' ↻' : '');
+        const compactIcons = (style.icon ? ` ${style.icon}` : '') + (hayCambio ? ' â†»' : '');
 
         return `
         <div style="display:flex; align-items:center; justify-content:center; padding:4px 2px; border-radius:6px; font-size:0.7rem; font-weight:700; min-height:45px; background:${style.bg}; color:${style.color}; border:1px solid rgba(0,0,0,0.05);">
@@ -3886,7 +3898,7 @@ window.renderEmpleadoCell = (turnoEmpleado, { isCompact = false } = {}) => {
         // VISTA SEMANAL
         let label = style.label || turnoVisible || '-';
 
-        // CORRECCIÓN V12.5.16: Bloqueo de CT en render
+        // CORRECCIÃ“N V12.5.16: Bloqueo de CT en render
         if (window.isInvalidLegacyChangeValue && window.isInvalidLegacyChangeValue(label)) {
             label = turnoEmpleado.turnoBase || '-';
             console.warn('[RENDER_GUARD_DEBUG] Bloqueado CT en render cell', { labelOriginal: style.label || turnoVisible });
@@ -3959,7 +3971,7 @@ window.DateManager = {
         if (this.state.view === 'weekly') {
             d.setDate(d.getDate() - 7);
         } else {
-            d.setMonth(d.getMonth() - 1, 1); // Ir al día 1 del mes anterior
+            d.setMonth(d.getMonth() - 1, 1); // Ir al dÃ­a 1 del mes anterior
         }
         this.state.currentDate = window.isoDate(d);
         this.syncAndRender();
@@ -3970,7 +3982,7 @@ window.DateManager = {
         if (this.state.view === 'weekly') {
             d.setDate(d.getDate() + 7);
         } else {
-            d.setMonth(d.getMonth() + 1, 1); // Ir al día 1 del mes siguiente
+            d.setMonth(d.getMonth() + 1, 1); // Ir al dÃ­a 1 del mes siguiente
         }
         this.state.currentDate = window.isoDate(d);
         this.syncAndRender();
@@ -4027,7 +4039,7 @@ window.DateManager = {
 };
 
 /**
- * REGLA MAESTRA v12.5: Pipeline de Resolución Consolidado "Admin Preview"
+ * REGLA MAESTRA v12.5: Pipeline de ResoluciÃ³n Consolidado "Admin Preview"
  * Resuelve la operativa LIVE independientemente de publicaciones.
  */
 window.resolveAdminPreviewWeek = async (hotel, weekStart) => {
@@ -4046,7 +4058,7 @@ window.resolveAdminPreviewWeek = async (hotel, weekStart) => {
     // 2. INCORPORAR EDICIONES LOCALES (Excel Loader)
     const excelSource = await window.loadAdminExcelSourceRows();
     const hotelSourceRows = (excelSource[hotel] || []).filter(r => r.weekStart === weekStart);
-    // Note: returns raw data only ÃƒÆ’Ã†’Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒ…Ã¢â‚¬Å“ full resolution handled by renderPreview
+    // Note: returns raw data only ÃƒÆ’Ã†â€™Ãƒâ€ â€™ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’â€¦ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œ full resolution handled by renderPreview
     return { hotelSourceRows };
 };
 
@@ -4218,7 +4230,7 @@ window.renderPreview = async () => {
                         const absCode = resolved.incidencia ? (resolved.incidencia === 'PERMISO' ? 'PERM' : resolved.incidencia === 'FORMACION' ? 'FORM' : resolved.incidencia === 'BAJA' ? 'BAJA' : resolved.incidencia === 'VAC' ? 'VAC' : resolved.incidencia) : null;
                         let rawIcons = [...new Set([...(visual.icon ? [visual.icon] : []), ...(resolved.icon ? [resolved.icon] : (resolved.icons || [])), ...((resolved.cambio || resolved.intercambio) ? ['\u{1F504}'] : [])])];
                         let icons = rawIcons.filter(icon => {
-                            if (icon === '\u{1F4CC}' || icon === '📌Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒ…Ã¢â‚¬Å“ÃƒÆ’Ã¢â‚¬Â¦ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢') return window.TurnosRules ? window.TurnosRules.shouldShowPin(resolved) : false;
+                            if (icon === '\u{1F4CC}' || icon === 'ðŸ“ŒÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’â€¦ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¢') return window.TurnosRules ? window.TurnosRules.shouldShowPin(resolved) : false;
                             return true;
                         });
                         daysMap[c.date] = {
@@ -4313,7 +4325,7 @@ window.renderPreview = async () => {
                         const celda = previewModel.getCelda(puesto.puesto_id, dateKey);
                         const shiftKey = window.TurnosRules?.shiftKey(celda.turno || celda.turno_base, 'NORMAL') || '';
                         const displayName = String(celda.real || celda.titular || puesto.excelLabel || puesto.label).split(' ')[0];
-                        const title = `${puesto.label} ÃƒÆ’Ã†’ÃƒÂ¢Ã¢â€šÂ¬Ã…¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€š· ${celda.titular || 'Sin titular'}${celda.real && celda.real !== celda.titular ? ` -> ${celda.real}` : ''}`;
+                        const title = `${puesto.label} ÃƒÆ’Ã†â€™Ãƒâ€ â€™ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Â· ${celda.titular || 'Sin titular'}${celda.real && celda.real !== celda.titular ? ` -> ${celda.real}` : ''}`;
 
                         if (celda.incidencia) {
                             const absClass = celda.incidencia === 'VAC' ? 'vac' : (celda.incidencia === 'BAJA' ? 'b' : 'p');
@@ -4334,7 +4346,7 @@ window.renderPreview = async () => {
 
                     const badge = (list, cls, defaultIcon) => {
                         if (!list.length) return '';
-                        const names = list.map(item => `<span title="${item.title || ''}">${item.name}</span>`).join(' ÃƒÆ’Ã†’ÃƒÂ¢Ã¢â€šÂ¬Ã…¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€š· ');
+                        const names = list.map(item => `<span title="${item.title || ''}">${item.name}</span>`).join(' ÃƒÆ’Ã†â€™Ãƒâ€ â€™ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Â· ');
                         return `<div class="cal2-group cal2-${cls}"><span class="cal2-names">${names}</span></div>`;
                     };
 
@@ -4343,9 +4355,9 @@ window.renderPreview = async () => {
                         <div class="cal2-content">
                             ${badge(groups.M,'m','')}
                             ${badge(groups.T,'t','')}
-                            ${badge(groups.N,'n','ÃƒÆ’Ã†’Ãƒâ€šÃ‚Â°ÃƒÆ’Ã¢â‚¬Â¦Ãƒâ€šÃ‚Â¸ÃƒÆ’Ã¢â‚¬Â¦ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¾Ãƒâ€šÃ‚Â¢')}
+                            ${badge(groups.N,'n','ÃƒÆ’Ã†â€™Ãƒâ€ â€™ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â°ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¸ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¾ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢')}
                             ${badge(groups.D,'d','')}
-                            ${groups.ABS.map(a => `<div class="cal2-group cal2-${a.cls}" title="${a.title || ''}"><span class="cal2-icon">${a.icon === 'V' ? 'ÃƒÆ’Ã†’Ãƒâ€šÃ‚Â°ÃƒÆ’Ã¢â‚¬Â¦Ãƒâ€šÃ‚Â¸ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã…“ÃƒÆ’Ã†’Ãƒâ€šÃ‚Â¯ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¸ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â' : (a.icon === 'B' ? 'ÃƒÆ’Ã†’Ãƒâ€šÃ‚Â°ÃƒÆ’Ã¢â‚¬Â¦Ãƒâ€šÃ‚Â¸ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¤ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¢' : (a.icon === 'P' ? '📌Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒ…Ã¢â‚¬Å“ÃƒÆ’Ã†’Ãƒâ€šÃ‚Â¯ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¸ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â' : a.icon))}</span><span class="cal2-names">${a.name}</span></div>`).join('')}
+                            ${groups.ABS.map(a => `<div class="cal2-group cal2-${a.cls}" title="${a.title || ''}"><span class="cal2-icon">${a.icon === 'V' ? 'ÃƒÆ’Ã†â€™Ãƒâ€ â€™ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â°ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¸ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚ÂÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦â€œÃƒÆ’Ã†â€™Ãƒâ€ â€™ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¯ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¸ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â' : (a.icon === 'B' ? 'ÃƒÆ’Ã†â€™Ãƒâ€ â€™ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â°ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¸ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¤ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¾Ãƒâ€šÃ‚Â¢' : (a.icon === 'P' ? 'ðŸ“ŒÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚ÂÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’â€¦ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œÃƒÆ’Ã†â€™Ãƒâ€ â€™ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¯ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¸ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â' : a.icon))}</span><span class="cal2-names">${a.name}</span></div>`).join('')}
                         </div>
                     </div>`);
                 });
@@ -4357,7 +4369,7 @@ window.renderPreview = async () => {
                 hotelSection.innerHTML = `<div style="background:white; border-radius:18px; overflow:hidden; border:1px solid #e8ecf0;">
                     <div style="padding:15px 20px; background:#f8fafc; border-bottom:1px solid #e4e9f0; font-weight:800; display:flex; justify-content:space-between; align-items:center;">
                         <span>${hName}</span>
-                        <span style="font-size:0.75rem; color:#94a3b8; font-weight:400;">Resolución Motor V3</span>
+                        <span style="font-size:0.75rem; color:#94a3b8; font-weight:400;">ResoluciÃ³n Motor V3</span>
                     </div>
                     <div class="cal2-header"><div>LUN</div><div>MAR</div><div>MIE</div><div>JUE</div><div>VIE</div><div>SAB</div><div>DOM</div></div>
                     <div class="cal2-grid">${cells.join('')}</div>
@@ -4426,7 +4438,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Cargar empleados inicialmente
     if (window.populateEmployees) window.populateEmployees();
 
-    // Opcional: recargar empleados al hacer click en el menú "Empleados"
+    // Opcional: recargar empleados al hacer click en el menÃº "Empleados"
     document.querySelectorAll('.menu a').forEach(a => {
         a.addEventListener('click', (e) => {
             if (a.getAttribute('href') === '#section-employees') {
@@ -4442,17 +4454,23 @@ function escapeHtml(value) {
 window.sanitizeUiText = (value) => {
     let s = String(value ?? '');
     s = s
-        .replaceAll('Ãƒâ€š·', ' Â· ')
-        .replaceAll('ÃƒÂ¢Ã¢â‚¬Â Ã‚Âº', ' â†»')
-        .replaceAll('🌙', ' ðŸŒ™')
-        .replaceAll('', '')
-        .replaceAll('Ãƒâ€šÃ‚', '')
-        .replaceAll('·', ' Â· ');
+        .replaceAll('Â·', ' · ')
+        .replaceAll('Ãƒâ€š·', ' · ')
+        .replaceAll('Ãƒâ€š', ' ')
+        .replaceAll('ÃƒÂ¢Ã¢â‚¬Â Ã‚Âº', ' ↻')
+        .replaceAll('â†»', '↻')
+        .replaceAll('â†’', '→')
+        .replaceAll('â†', '←')
+        .replaceAll('ðŸŒ™', '🌙')
+        .replaceAll('ÃƒÆ’Ã¢â‚¬Å¡Â·', ' · ')
+        .replaceAll('ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â Ãƒâ€šÃ‚Âº', ' ↻')
+        .replaceAll('ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€š', ' ')
+        .replaceAll('Â', '');
     return s.replace(/\s{2,}/g, ' ').trim();
 };
 
 // ==========================================
-// DIAGNÁ¯?ÃƒÆ’Ã†’ÃƒÂ¢Ã¢â€šÂ¬Ã…¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â½ STICO VAC Á¯?ÃƒÆ’Ã†’ÃƒÂ¢Ã¢â€šÂ¬Ã…¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â½  llamar desde consola o con DEBUG_MODE=true
+// DIAGNÃÂ¯?ÃƒÆ’Ã†â€™Ãƒâ€ â€™ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â½ STICO VAC ÃÂ¯?ÃƒÆ’Ã†â€™Ãƒâ€ â€™ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â½  llamar desde consola o con DEBUG_MODE=true
 // ==========================================
 window.debugVacCristina = (fechaTest = '2026-04-20') => {
     const eventos = window.eventosActivos || [];
@@ -4467,7 +4485,7 @@ window.debugVacCristina = (fechaTest = '2026-04-20') => {
         JSON.stringify(e).toLowerCase().includes('cumbria')
     );
 
-    console.group('[VAC DEBUG DIAGNÁ¯?ÃƒÆ’Ã†’ÃƒÂ¢Ã¢â€šÂ¬Ã…¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â½ STICO]');
+    console.group('[VAC DEBUG DIAGNÃÂ¯?ÃƒÆ’Ã†â€™Ãƒâ€ â€™ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â½ STICO]');
     console.log('[VAC DEBUG TODOS EVENTOS] Total:', eventos.length);
     console.log('[VAC DEBUG CRISTINA]', todosCristina);
     console.log('[VAC DEBUG TIPO VAC]', todosVAC);
@@ -4493,14 +4511,14 @@ window.debugVacCristina = (fechaTest = '2026-04-20') => {
             resolveId: resolveId
         });
         console.log(`[TEST CRISTINA VAC ${fechaTest}]`, testResult);
-        console.log('[INTERPRETACIÁ¯?ÃƒÆ’Ã†’ÃƒÂ¢Ã¢â€šÂ¬Ã…¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â½ N]',
+        console.log('[INTERPRETACIÃÂ¯?ÃƒÆ’Ã†â€™Ãƒâ€ â€™ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â½ N]',
             testResult.incidencia === 'VAC' || testResult.turno === 'VAC'
-                ? 'Á¯?ÃƒÆ’Ã†’ÃƒÂ¢Ã¢â€šÂ¬Ã…¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â½S& Motor resuelve VAC correctamente'
+                ? 'ÃÂ¯?ÃƒÆ’Ã†â€™Ãƒâ€ â€™ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â½S& Motor resuelve VAC correctamente'
                 : todosCristina.length === 0
-                    ? 'Á¯?ÃƒÆ’Ã†’ÃƒÂ¢Ã¢â€šÂ¬Ã…¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â½R PROBLEMA DE DATOS: no hay eventos de Cristina en eventosActivos Á¯?ÃƒÆ’Ã†’ÃƒÂ¢Ã¢â€šÂ¬Ã…¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â½   fallo en fetch/query'
+                    ? 'ÃÂ¯?ÃƒÆ’Ã†â€™Ãƒâ€ â€™ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â½R PROBLEMA DE DATOS: no hay eventos de Cristina en eventosActivos ÃÂ¯?ÃƒÆ’Ã†â€™Ãƒâ€ â€™ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â½   fallo en fetch/query'
                     : todosVAC.filter(e => JSON.stringify(e).toLowerCase().includes('cristina')).length === 0
-                        ? 'Á¯?ÃƒÆ’Ã†’ÃƒÂ¢Ã¢â€šÂ¬Ã…¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â½R PROBLEMA DE MATCHING: hay eventos de Cristina pero ninguno de tipo VAC Á¯?ÃƒÆ’Ã†’ÃƒÂ¢Ã¢â€šÂ¬Ã…¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â½   posible discrepancia campo tipo'
-                        : 'Á¯?ÃƒÆ’Ã†’ÃƒÂ¢Ã¢â€šÂ¬Ã…¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â½aÁ¯?ÃƒÆ’Ã†’ÃƒÂ¢Ã¢â€šÂ¬Ã…¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â½Á¯ÃƒÆ’Ã†’ÃƒÂ¢Ã¢â€šÂ¬Ã…¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¸  PROBLEMA DE MOTOR/RENDER: el evento VAC existe y matchea pero resolveEmployeeDay no lo aplica'
+                        ? 'ÃÂ¯?ÃƒÆ’Ã†â€™Ãƒâ€ â€™ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â½R PROBLEMA DE MATCHING: hay eventos de Cristina pero ninguno de tipo VAC ÃÂ¯?ÃƒÆ’Ã†â€™Ãƒâ€ â€™ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â½   posible discrepancia campo tipo'
+                        : 'ÃÂ¯?ÃƒÆ’Ã†â€™Ãƒâ€ â€™ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â½aÃÂ¯?ÃƒÆ’Ã†â€™Ãƒâ€ â€™ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â½ÃÂ¯ÃƒÆ’Ã†â€™Ãƒâ€ â€™ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¸  PROBLEMA DE MOTOR/RENDER: el evento VAC existe y matchea pero resolveEmployeeDay no lo aplica'
         );
         return testResult;
     } else {
@@ -4511,7 +4529,7 @@ window.debugVacCristina = (fechaTest = '2026-04-20') => {
 
 function fmtDateLegacy(date) {
     if (!date) return '-';
-    // Forzar mediodía para evitar desfases por zona horaria al parsear YYYY-MM-DD
+    // Forzar mediodÃ­a para evitar desfases por zona horaria al parsear YYYY-MM-DD
     const d = new Date(String(date).includes('T') ? date : date + 'T12:00:00');
     if (isNaN(d.getTime())) return date;
     return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${String(d.getFullYear()).slice(-2)}`;
@@ -4519,14 +4537,14 @@ function fmtDateLegacy(date) {
 window.fmtDateLegacy = fmtDateLegacy;
 
 // ==========================================
-// 6. GESTIÁ¯?ÃƒÆ’Ã†’ÃƒÂ¢Ã¢â€šÂ¬Ã…¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â½ N DE EMPLEADOS Y PERSONAL (RESTORED)
+// 6. GESTIÃÂ¯?ÃƒÆ’Ã†â€™Ãƒâ€ â€™ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â½ N DE EMPLEADOS Y PERSONAL (RESTORED)
 // ==========================================
 window.populateEmployees = async () => {
     const area = $('#employeesContent'); if (!area) return;
     area.innerHTML = '<div style="padding:4rem; text-align:center;"><i class="fas fa-spinner fa-spin"></i> Cargando empleados...</div>';
 
     try {
-        // Rango de 30 Dias pasados y 7 Dias futuros para estadísticas y estado
+        // Rango de 30 Dias pasados y 7 Dias futuros para estadÃ­sticas y estado
         const today = new Date();
         const end = new Date();
         end.setDate(today.getDate() + 7);
@@ -4537,7 +4555,7 @@ window.populateEmployees = async () => {
         const todayISO = window.isoDate(today) || today.toISOString().split('T')[0];
 
         const { rows, eventos } = await window.TurnosDB.fetchRangoCalculado(startISO, endISO);
-        // Usar eventosGlobales si Vista Previa ya los cargó con rango ampliado;
+        // Usar eventosGlobales si Vista Previa ya los cargÃ³ con rango ampliado;
         // si no, usar los propios (rango hoy-30 a hoy+7)
         if (!window.eventosGlobales || window.eventosGlobales.length === 0) {
             window.eventosGlobales = eventos;
@@ -4577,7 +4595,7 @@ window.populateEmployees = async () => {
 
         const hotelsList = await window.TurnosDB.getHotels();
 
-        // Iterar el motor por cada hotel y cada día para extraer el Roster final operativo
+        // Iterar el motor por cada hotel y cada dÃ­a para extraer el Roster final operativo
         hotelsList.forEach(hName => {
             const hotelExcelRows = excelSource[hName] || [];
             const baseRowsFlat = [];
@@ -4610,7 +4628,7 @@ window.populateEmployees = async () => {
                 const weekSeed = hotelExcelRows.find(r => window.getFechasSemana(r?.weekStart).includes(date));
                 if (!weekSeed) return;
 
-                // Lunes correspondiente a este día
+                // Lunes correspondiente a este dÃ­a
                 const weekStartIso = weekSeed.weekStart;
                 const fechasSemana = window.getFechasSemana(weekStartIso);
                 const sourceIndex = Math.max(0, fechasSemana.indexOf(date));
@@ -4633,7 +4651,7 @@ window.populateEmployees = async () => {
                     // entry.displayAs trae el nombre normalizado pero visualmente correcto
                     const s = getStat(entry.displayAs || entry.id || entry.norm, hName);
 
-                    let label = cell.turno || 'Á¯?ÃƒÆ’Ã†’ÃƒÂ¢Ã¢â€šÂ¬Ã…¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â½ ';
+                    let label = cell.turno || 'ÃÂ¯?ÃƒÆ’Ã†â€™Ãƒâ€ â€™ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â½ ';
                     if (cell.tipo && cell.tipo !== 'NORMAL' && cell.tipo !== 'CT') label = cell.tipo;
 
                     const cls = window.TurnosRules ? window.TurnosRules.shiftKey(label, cell.tipo) : '';
@@ -4660,7 +4678,7 @@ window.populateEmployees = async () => {
 
         const hotels = [...new Set(Object.values(stats).map(s => s.hotel))].sort();
         if (hotels.length === 0) {
-            area.innerHTML = '<div style="padding:4rem; text-align:center; opacity:0.5;">No hay datos de empleados en los últimos 30 Dias.</div>';
+            area.innerHTML = '<div style="padding:4rem; text-align:center; opacity:0.5;">No hay datos de empleados en los Ãºltimos 30 Dias.</div>';
             return;
         }
 
@@ -4674,7 +4692,7 @@ window.populateEmployees = async () => {
                 const hue = Math.abs(empName.length * 137.5) % 360;
 
                 const futureShifts = s.history.filter(h => h.fecha >= todayISO).sort((a,b) => a.fecha.localeCompare(b.fecha));
-                const currentState = futureShifts[0] || { cls: 'x', turno: 'Á¯?ÃƒÆ’Ã†’ÃƒÂ¢Ã¢â€šÂ¬Ã…¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â½ ', cell: {} };
+                const currentState = futureShifts[0] || { cls: 'x', turno: 'ÃÂ¯?ÃƒÆ’Ã†â€™Ãƒâ€ â€™ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â½ ', cell: {} };
                 const nextWorkingShift = futureShifts.find(h => ['m', 't', 'n'].includes(h.cls)) || null;
 
                 let stateText = 'Activo';
@@ -4703,7 +4721,7 @@ window.populateEmployees = async () => {
                         </div>
                         <div class="ep-stats">
                             <div class="ep-stat"><span class="ep-label">Hoy</span><span class="ep-val color-${currentState.cls}" style="font-size:0.9rem;">${currentState.turno}</span></div>
-                            <div class="ep-stat"><span class="ep-label">Proximo</span><span class="ep-val ${nextWorkingShift ? 'color-' + nextWorkingShift.cls : ''}" style="font-size:0.9rem;">${nextWorkingShift ? nextWorkingShift.turno + ' (' + nextDate + ')' : 'Á¯?ÃƒÆ’Ã†’ÃƒÂ¢Ã¢â€šÂ¬Ã…¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â½ '}</span></div>
+                            <div class="ep-stat"><span class="ep-label">Proximo</span><span class="ep-val ${nextWorkingShift ? 'color-' + nextWorkingShift.cls : ''}" style="font-size:0.9rem;">${nextWorkingShift ? nextWorkingShift.turno + ' (' + nextDate + ')' : 'ÃÂ¯?ÃƒÆ’Ã†â€™Ãƒâ€ â€™ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â½ '}</span></div>
                         </div>
                         <div class="ep-footer">
                              ${totalWork > 0 ? `<div class="ep-progress-label">Actividad 30 Dias</div>` : ''}
@@ -4715,7 +4733,7 @@ window.populateEmployees = async () => {
             }).join('');
             return `<div class="emp-hotel-section">
                 <div class="section-title-premium">
-                    <span class="stp-icon">Á¯?ÃƒÆ’Ã†’ÃƒÂ¢Ã¢â€šÂ¬Ã…¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â½xÁ¯?ÃƒÆ’Ã†’ÃƒÂ¢Ã¢â€šÂ¬Ã…¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â½Á¯?ÃƒÆ’Ã†’ÃƒÂ¢Ã¢â€šÂ¬Ã…¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â½</span>
+                    <span class="stp-icon">ÃÂ¯?ÃƒÆ’Ã†â€™Ãƒâ€ â€™ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â½xÃÂ¯?ÃƒÆ’Ã†â€™Ãƒâ€ â€™ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â½ÃÂ¯?ÃƒÆ’Ã†â€™Ãƒâ€ â€™ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â½</span>
                     <h2>${hotel}</h2>
                     <span class="stp-count">${emps.length} empleados activos</span>
                 </div>
@@ -5164,7 +5182,7 @@ window.renderEmployeeHistoryItem = (h) => `
     <div class="history-item compact">
         <div class="hi-date"><span class="hi-day">${new Date(`${h.fecha}T12:00:00`).toLocaleDateString('es-ES', {day:'2-digit'})}</span><span class="hi-month">${new Date(`${h.fecha}T12:00:00`).toLocaleDateString('es-ES', {month:'short'}).replace('.','').toUpperCase()}</span></div>
         <div class="hi-info"><div class="sc-label">${window.employeeShiftBadge(h.turno || '')}</div></div>
-        <div class="hi-type">${h.cell?.cambio ? '<span class="emp-change-icon">Á¯?ÃƒÆ’Ã†’ÃƒÂ¢Ã¢â€šÂ¬Ã…¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â½x  </span>' : ''}</div>
+        <div class="hi-type">${h.cell?.cambio ? '<span class="emp-change-icon">ÃÂ¯?ÃƒÆ’Ã†â€™Ãƒâ€ â€™ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â½x  </span>' : ''}</div>
     </div>
 `;
 
@@ -5173,7 +5191,7 @@ window.renderEmployeeHistoryItem = (h) => `
 // ==========================================
 
 /**
- * Motor de Conflictos V3: Análisis contextual y agrupado.
+ * Motor de Conflictos V3: AnÃ¡lisis contextual y agrupado.
  * Evita ruido y prioriza la operativa real.
  */
 window.detectarConflictosOperativos = async (fecha, hotel, inputEventos = null, inputResolveId = null) => {
@@ -5183,7 +5201,7 @@ window.detectarConflictosOperativos = async (fecha, hotel, inputEventos = null, 
         INFO: []
     };
 
-    // V12.5.2: Garantizar contexto si no se pasa explícitamente (ej. desde publicación)
+    // V12.5.2: Garantizar contexto si no se pasa explÃ­citamente (ej. desde publicaciÃ³n)
     let eventos = inputEventos;
     let resolveId = inputResolveId;
     let emps = (window._employeeLineModels || []).filter(e => e.activo !== false && (hotel === 'TODOS' || e.hotel === hotel));
@@ -5214,7 +5232,7 @@ window.detectarConflictosOperativos = async (fecha, hotel, inputEventos = null, 
 
     const todayISO = window.isoDate(new Date());
 
-    // 1. Análisis de Integridad (Agrupado)
+    // 1. AnÃ¡lisis de Integridad (Agrupado)
     // Filtramos empleados reales (excluyendo plazas pendientes como '??') que no tengan ID Interno
     const empsSinId = emps.filter(e => (!e.id_interno || String(e.id_interno).trim() === '') && e.id !== '??');
     if (empsSinId.length > 0) {
@@ -5222,13 +5240,13 @@ window.detectarConflictosOperativos = async (fecha, hotel, inputEventos = null, 
             type: 'SIN_ID',
             count: empsSinId.length,
             title: 'Mapeo de Identidad Pendiente',
-            desc: `Existen ${empsSinId.length} perfiles operativos sin identificador único persistente (id_interno).`,
-            suggestion: 'Asigna un código EMP-XXXX desde la ficha de cada empleado para asegurar la integridad histórica.',
+            desc: `Existen ${empsSinId.length} perfiles operativos sin identificador Ãºnico persistente (id_interno).`,
+            suggestion: 'Asigna un cÃ³digo EMP-XXXX desde la ficha de cada empleado para asegurar la integridad histÃ³rica.',
             action: { label: 'Ir a Personal', fn: 'window.switchSection("employees")' }
         });
     }
 
-    // 2. Análisis por Empleado (Contextual)
+    // 2. AnÃ¡lisis por Empleado (Contextual)
     for (const emp of emps) {
         const empId = emp.id || emp.nombre;
         // Ignorar sustitutos o refuerzos si el nombre contiene marcas temporales (ej. "REF-")
@@ -5243,8 +5261,8 @@ window.detectarConflictosOperativos = async (fecha, hotel, inputEventos = null, 
             resolveId: resolveId
         }) : null;
 
-        // A. Ausencia de Turno Crítica
-        // Solo para fijos con jornada completa y >2 Dias de vacío total
+        // A. Ausencia de Turno CrÃ­tica
+        // Solo para fijos con jornada completa y >2 Dias de vacÃ­o total
         if (!info || (!info.turno && !info.incidencia)) {
             const isFijoCompleto = String(emp.tipo || '').toLowerCase().includes('fijo') && !String(emp.tipo || '').toLowerCase().includes('parcial');
 
@@ -5258,8 +5276,8 @@ window.detectarConflictosOperativos = async (fecha, hotel, inputEventos = null, 
                     groupedConflicts.CRITICAL.push({
                         type: 'SIN_TURNO',
                         empId, fecha,
-                        title: 'Falta de Programación Crítica',
-                        desc: `${emp.nombre} lleva >2 Dias sin asignación ni descanso registrado.`,
+                        title: 'Falta de ProgramaciÃ³n CrÃ­tica',
+                        desc: `${emp.nombre} lleva >2 Dias sin asignaciÃ³n ni descanso registrado.`,
                         suggestion: 'Asignar turno o marcar Descanso (D) para evitar incidencias legales.'
                     });
                 }
@@ -5267,8 +5285,8 @@ window.detectarConflictosOperativos = async (fecha, hotel, inputEventos = null, 
         }
 
         // B. Regla de Jornada Progresiva (5d/6d/7+)
-        // Solo cuenta como trabajo: cls 'm' (Mañana), 't' (Tarde), 'n' (Noche).
-        // 'Á¯?ÃƒÆ’Ã†’ÃƒÂ¢Ã¢â€šÂ¬Ã…¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â½ ', D, VAC, BAJA, PERM no son trabajo.
+        // Solo cuenta como trabajo: cls 'm' (MaÃ±ana), 't' (Tarde), 'n' (Noche).
+        // 'ÃÂ¯?ÃƒÆ’Ã†â€™Ãƒâ€ â€™ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â½ ', D, VAC, BAJA, PERM no son trabajo.
         const WORK_CLS = new Set(['m', 't', 'n']);
         const esTurnoLaboral = (h) => WORK_CLS.has(h?.cls);
 
@@ -5292,14 +5310,14 @@ window.detectarConflictosOperativos = async (fecha, hotel, inputEventos = null, 
             if (workedDays >= 7) {
                 groupedConflicts.CRITICAL.push({ type: 'JORNADA', severity: 'CRITICAL', empId, title: 'Riesgo Laboral Extremo', desc: `${emp.nombre} lleva ${workedDays} Dias laborales seguidos (${diasContados.slice(0,3).join(', ')}...).`, suggestion: 'Bloquear jornada y asignar descanso hoy.' });
             } else if (workedDays === 6) {
-                groupedConflicts.WARNING.push({ type: 'JORNADA', severity: 'WARNING', empId, title: 'Exceso de Jornada', desc: `${emp.nombre} lleva 6 Dias laborales: ${diasContados.join(', ')}.`, suggestion: 'Programar descanso mañana.' });
+                groupedConflicts.WARNING.push({ type: 'JORNADA', severity: 'WARNING', empId, title: 'Exceso de Jornada', desc: `${emp.nombre} lleva 6 Dias laborales: ${diasContados.join(', ')}.`, suggestion: 'Programar descanso maÃ±ana.' });
             } else if (workedDays === 5) {
-                groupedConflicts.INFO.push({ type: 'JORNADA', severity: 'INFO', empId, title: 'Proximo a límite (5d)', desc: `${emp.nombre} cumplirá¡ 5 Dias laborales hoy.`, suggestion: 'Sugerido descanso en 48h.' });
+                groupedConflicts.INFO.push({ type: 'JORNADA', severity: 'INFO', empId, title: 'Proximo a lÃ­mite (5d)', desc: `${emp.nombre} cumplirÃ¡Â¡ 5 Dias laborales hoy.`, suggestion: 'Sugerido descanso en 48h.' });
             }
         }
     }
 
-    // 3. Cobertura Crítica (Turnos Clave)
+    // 3. Cobertura CrÃ­tica (Turnos Clave)
     const shiftsBySlot = {};
     for (const emp of emps) {
         const infoArr = window.resolverTurnoFinal ? window.resolverTurnoFinal({
@@ -5316,14 +5334,14 @@ window.detectarConflictosOperativos = async (fecha, hotel, inputEventos = null, 
         }
     }
 
-    // Verificar "Noche Recepción"
+    // Verificar "Noche RecepciÃ³n"
     const nocheRecepcion = Object.keys(shiftsBySlot).find(k => k.includes('Noche') && k.includes('Recep'));
     if (!nocheRecepcion) {
         groupedConflicts.CRITICAL.push({
             type: 'COBERTURA',
             title: 'Turno Clave sin Cobertura',
-            desc: 'No hay nadie asignado al turno de Noche en Recepción hoy.',
-            suggestion: 'Asignar un recepcionista o retén de emergencia.'
+            desc: 'No hay nadie asignado al turno de Noche en RecepciÃ³n hoy.',
+            suggestion: 'Asignar un recepcionista o retÃ©n de emergencia.'
         });
     }
 
@@ -5337,7 +5355,7 @@ window.detectarConflictosOperativos = async (fecha, hotel, inputEventos = null, 
                 type: 'DUPLICADO',
                 title: 'Exceso de Capacidad',
                 desc: `Puesto ${puestoKey} superado (${names.length}/${capacidad}).`,
-                suggestion: 'Mover refuerzo a otro hotel o sección.'
+                suggestion: 'Mover refuerzo a otro hotel o secciÃ³n.'
             });
         }
     });
@@ -5428,7 +5446,7 @@ window.showPublishPreview = async (targetHotel = null, targetWeekStart = null) =
     const base = new Date(rawDate + 'T12:00:00');
     const weekStart = window.isoDate(window.getMonday(base));
     
-    // Almacenar para persistencia robusta (V12.6.4)
+    // Almacenar para persistencia robusta
     window._publishTargetHotel = hotelSel;
     window._publishTargetWeek = weekStart; 
     
@@ -5437,186 +5455,11 @@ window.showPublishPreview = async (targetHotel = null, targetWeekStart = null) =
 
     console.log("[PUBLISH_PREVIEW] dates", { weekStart, weekEnd });
 
-    // 2. Generar Snapshot Preview (Sin guardar)
+    // 2. Generar Snapshot Preview
     let snapshots = [];
     try {
         console.log("[PUBLISH_PREVIEW] building snapshot for", { weekStart, hotelSel });
         snapshots = await window.buildPublicationSnapshotPreview(weekStart, hotelSel);
-        
-        if (snapshots.length > 0) {
-            const snap = snapshots[0];
-            console.log("[PUBLISH_PREVIEW] preflight check", {
-                hotel: snap.hotel_id,
-                rows: snap.rows?.length,
-                firstRow: snap.rows?.[0]?.nombreVisible || snap.rows?.[0]?.nombre,
-                firstKeys: Object.keys(snap.rows?.[0]?.turnosOperativos || snap.rows?.[0]?.cells || snap.rows?.[0]?.dias || {})
-            });
-        }
-    } catch (e) {
-        console.error("[PUBLISH_PREVIEW] Error building snapshot:", e);
-        alert('Error al generar la previsualización del snapshot: ' + e.message);
-        return;
-    }
-
-    if (snapshots.length === 0) {
-        console.warn("[PUBLISH_PREVIEW] No snapshots returned for", { weekStart, hotelSel });
-        alert('No hay datos operativos para publicar en esta selección.');
-        return;
-    }
-
-    // 3. Validar Snapshot (Bloqueante)
-    const validation = await window.validatePublicationSnapshot(snapshots);
-    const cleanValidationMessage = (msg) => {
-        const c = (...codes) => String.fromCharCode(...codes);
-        return String(msg || '')
-            .replaceAll(c(0x00f0, 0x0178, 0x201d, 0x201e), 'cambio')
-            .replaceAll(c(0x00e2, 0x2020, 0x201d), '<->')
-            .replaceAll(c(0x00e2, 0x2020, 0x2019), '<->')
-            .replaceAll(c(0x00e2, 0x20ac, 0x201d), '-');
-    };
-
-    // 4. Mostrar Modal con Resultado
-    const modalId = 'publishPreviewModal';
-    let modal = document.getElementById(modalId);
-    if (!modal) {
-        modal = document.createElement('div');
-        modal.id = modalId;
-        modal.className = 'drawer-overlay';
-        modal.style.display = 'none';
-        modal.style.alignItems = 'center';
-        modal.style.justifyContent = 'center';
-        modal.style.zIndex = '10000';
-        modal.onclick = () => modal.classList.remove('open');
-        document.body.appendChild(modal);
-    }
-    
-    window._publishTargetHotel = hotelSel;
-    window._publishTargetWeek = weekStart;
-    
-    const hotelSummary = snapshots.map(s => `
-        <div style="background: white; padding: 12px; border-radius: 8px; border: 1px solid #e2e8f0; margin-bottom: 8px; display: flex; justify-content: space-between;">
-            <span style="font-weight: 700; color: #0f172a;">${s.hotel_nombre}</span>
-            <span style="background: #f1f5f9; padding: 2px 8px; border-radius: 12px; font-size: 0.7rem; font-weight: 700;">${s.rows.length} empleados</span>
-        </div>
-    `).join('');
-
-    const validationHtml = validation.ok
-        ? `<div style="background: #f0fdf4; border: 1px solid #bbf7d0; color: #15803d; padding: 16px; border-radius: 12px; margin-bottom: 24px; display: flex; align-items: center; gap: 12px;">
-             <i class="fas fa-check-circle"></i>
-             <div>
-                <strong>Integridad Validada</strong>
-                <span style="font-size: 0.85rem;">El snapshot cumple con todas las reglas de protección.</span>
-             </div>
-           </div>`
-        : `<div style="background: #fef2f2; border: 1px solid #fecaca; color: #b91c1c; padding: 16px; border-radius: 12px; margin-bottom: 24px;">
-             <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
-                <i class="fas fa-times-circle" style="font-size: 1.2rem;"></i>
-                <strong>Errores Críticos Detectados</strong>
-             </div>
-             <ul style="margin: 0; padding-left: 20px; font-size: 0.85rem; line-height: 1.5;">
-                ${validation.errors.map(e => `<li>${cleanValidationMessage(e)}</li>`).join('')}
-             </ul>
-           </div>`;
-
-    const visibleWarnings = validation.warnings.filter(w => !window.isPublicationWarningAuthorized(w, snapshots));
-    const authorizedWarningsCount = validation.warnings.length - visibleWarnings.length;
-    window._pendingPublicationWarningSnapshots = snapshots;
-    window._pendingPublicationWarnings = visibleWarnings;
-    const warningsHtml = visibleWarnings.length > 0
-        ? `<div style="background: #fffbeb; border: 1px solid #fef3c7; color: #b45309; padding: 16px; border-radius: 12px; margin-bottom: 24px;">
-             <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 8px;">
-                <i class="fas fa-exclamation-triangle" style="font-size: 1.1rem;"></i>
-                <strong style="font-size: 0.9rem;">Advertencias de Cobertura</strong>
-             </div>
-             <ul style="margin: 0; padding-left: 20px; font-size: 0.8rem; opacity: 0.9;">
-                ${visibleWarnings.slice(0, 5).map(w => `<li>${cleanValidationMessage(w)}</li>`).join('')}
-                ${visibleWarnings.length > 5 ? `<li>... y ${visibleWarnings.length - 5} avisos más.</li>` : ''}
-             </ul>
-           </div>`
-        : '';
-    const authorizedWarningsHtml = authorizedWarningsCount > 0
-        ? `<div style="background:#eff6ff;border:1px solid #dbeafe;color:#1e40af;padding:10px 12px;border-radius:10px;margin-bottom:16px;font-size:0.78rem;font-weight:700;">
-             ${authorizedWarningsCount} advertencia${authorizedWarningsCount === 1 ? '' : 's'} ya autorizada${authorizedWarningsCount === 1 ? '' : 's'} para esta semana. No se volverán a tratar como pendiente.
-           </div>`
-        : '';
-
-    modal.innerHTML = `
-        <div class="drawer-content" style="max-width: 600px; padding: 0; border-radius: 24px; overflow: hidden; background: #f8fafc;">
-            <header style="padding: 24px 32px; background: #0f172a; color: white;">
-                <h2 id="snapshotPublishTitle" style="margin: 0; font-size: 1.25rem;">Publicar Snapshot de Turnos</h2>
-                <p style="margin: 4px 0 0 0; font-size: 0.85rem; opacity: 0.8;">Semana del ${weekStart} al ${weekEnd}</p>
-            </header>
-
-            <div style="padding: 32px; overflow-y: auto; max-height: 65vh;">
-                ${validationHtml}
-                ${authorizedWarningsHtml}
-                ${warningsHtml}
-
-                <section style="margin-bottom: 24px;">
-                    <h3 style="font-size: 0.85rem; font-weight: 800; color: #64748b; text-transform: uppercase; margin-bottom: 12px; letter-spacing: 0.05em;">Hoteles Incluidos</h3>
-                    ${hotelSummary}
-                </section>
-
-                <div style="background: #eff6ff; border: 1px solid #dbeafe; padding: 16px; border-radius: 12px; font-size: 0.85rem; color: #1e40af;">
-                    <strong>Nota:</strong> Al publicar, se creará una versión inmutable (Snapshot) que será la única fuente de verdad para el Cuadrante Público. Los cambios locales en el Excel también se sincronizarán con la base de datos.
-                </div>
-            </div>
-
-            <footer style="padding: 24px 32px; background: white; border-top: 1px solid #e2e8f0; display: flex; justify-content: flex-end; gap: 12px;">
-                <button onclick="document.getElementById('${modalId}').classList.remove('open')" style="padding: 12px 24px; border: 1px solid #e2e8f0; border-radius: 12px; background: white; font-weight: 700; cursor: pointer; color: #64748b;">Cancelar</button>
-                <button id="btnConfirmPublish"
-                        onclick="window.publishToSupabase()"
-                        ${!validation.ok ? 'disabled style="opacity: 0.5; cursor: not-allowed;"' : ''}
-                        style="padding: 12px 32px; border: none; border-radius: 12px; background: #3b82f6; color: white; font-weight: 800; cursor: pointer; box-shadow: 0 4px 10px rgba(59, 130, 246, 0.3);">
-                    Confirmar y Publicar
-                </button>
-            </footer>
-        </div>
-    `;
-    modal.style.display = 'flex';
-    modal.style.justifyContent = 'center'; 
-    modal.classList.add('open');
-    
-    const inner = modal.querySelector('.drawer-content');
-    if (inner) {
-        inner.style.transform = 'none';
-        inner.style.margin = 'auto';
-    }
-};
-
-
-window.showPublishPreview = async (targetHotel = null, targetWeekStart = null) => {
-    // 1. Identificar rango y hotel
-    const hotelSel = targetHotel || $('#prevHotel')?.value || 'all';
-    const rawDate = targetWeekStart || window._previewDate;
-    
-    const base = new Date(rawDate + 'T12:00:00');
-    const weekStart = window.isoDate(window.getMonday(base));
-    
-    // Almacenar para persistencia robusta (V12.6.4)
-    window._publishTargetHotel = hotelSel;
-    window._publishTargetWeek = weekStart; 
-    
-    console.log("[PUBLISH_PREVIEW] target resolved", { hotelSel, weekStart });
-    const weekEnd = window.addIsoDays(weekStart, 6);
-
-    console.log("[PUBLISH_PREVIEW] dates", { weekStart, weekEnd });
-
-    // 2. Generar Snapshot Preview (Sin guardar)
-    let snapshots = [];
-    try {
-        console.log("[PUBLISH_PREVIEW] building snapshot for", { weekStart, hotelSel });
-        snapshots = await window.buildPublicationSnapshotPreview(weekStart, hotelSel);
-        
-        if (snapshots.length > 0) {
-            const snap = snapshots[0];
-            console.log("[PUBLISH_PREVIEW] preflight check", {
-                hotel: snap.hotel_id,
-                rows: snap.rows?.length,
-                firstRow: snap.rows?.[0]?.nombreVisible || snap.rows?.[0]?.nombre,
-                firstKeys: Object.keys(snap.rows?.[0]?.turnosOperativos || snap.rows?.[0]?.cells || snap.rows?.[0]?.dias || {})
-            });
-        }
     } catch (e) {
         console.error("[PUBLISH_PREVIEW] Error building snapshot:", e);
         window.showPublishNotification({ type: 'error', title: 'Error al generar previsualización', message: e.message });
@@ -5629,7 +5472,7 @@ window.showPublishPreview = async (targetHotel = null, targetWeekStart = null) =
         return;
     }
 
-    // 3. Validar Snapshot (Bloqueante)
+    // 3. Validar Snapshot
     const validation = await window.validatePublicationSnapshot(snapshots);
     const cleanValidationMessage = (msg) => {
         const c = (...codes) => String.fromCharCode(...codes);
@@ -5654,10 +5497,7 @@ window.showPublishPreview = async (targetHotel = null, targetWeekStart = null) =
         modal.onclick = () => modal.classList.remove('open');
         document.body.appendChild(modal);
     }
-    
-    window._publishTargetHotel = hotelSel;
-    window._publishTargetWeek = weekStart;
-    
+
     const hotelSummary = snapshots.map(s => `
         <div style="background: white; padding: 12px; border-radius: 8px; border: 1px solid #e2e8f0; margin-bottom: 8px; display: flex; justify-content: space-between;">
             <span style="font-weight: 700; color: #0f172a;">${s.hotel_nombre}</span>
@@ -5687,6 +5527,7 @@ window.showPublishPreview = async (targetHotel = null, targetWeekStart = null) =
     const authorizedWarningsCount = validation.warnings.length - visibleWarnings.length;
     window._pendingPublicationWarningSnapshots = snapshots;
     window._pendingPublicationWarnings = visibleWarnings;
+    
     const warningsHtml = visibleWarnings.length > 0
         ? `<div style="background: #fffbeb; border: 1px solid #fef3c7; color: #b45309; padding: 16px; border-radius: 12px; margin-bottom: 24px;">
              <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 8px;">
@@ -5699,6 +5540,7 @@ window.showPublishPreview = async (targetHotel = null, targetWeekStart = null) =
              </ul>
            </div>`
         : '';
+        
     const authorizedWarningsHtml = authorizedWarningsCount > 0
         ? `<div style="background:#eff6ff;border:1px solid #dbeafe;color:#1e40af;padding:10px 12px;border-radius:10px;margin-bottom:16px;font-size:0.78rem;font-weight:700;">
              ${authorizedWarningsCount} advertencia${authorizedWarningsCount === 1 ? '' : 's'} ya autorizada${authorizedWarningsCount === 1 ? '' : 's'} para esta semana. No se volverán a tratar como pendiente.
@@ -5751,53 +5593,53 @@ window.showPublishPreview = async (targetHotel = null, targetWeekStart = null) =
 
 /**
  * showPublishNotification — Aviso no bloqueante en Dashboard.
- * type: 'success' | 'warning' | 'error'
  */
-window.showPublishNotification = function({ type = 'info', title = '', message = '', actionLabel = '', autoClose = true } = {}) {
-    // Intentar inyectar en el panel de control o en el body como fallback
-    const container =
-        document.getElementById('dashboard-notifications') ||
-        document.querySelector('.risk-list-container') ||
-        document.querySelector('.dashboard-grid') ||
-        document.querySelector('.main-content') ||
-        document.body;
+window.showPublishNotification = function({ type = 'info', title = '', message = '', actionLabel = '', autoClose = true, duration } = {}) {
+    // Toast flotante — no ocupa espacio en el grid del Dashboard
+    let container = document.getElementById('toast-container');
+    if (!container) {
+        container = document.createElement('div');
+        container.id = 'toast-container';
+        document.body.appendChild(container);
+    }
 
     const colors = {
-        success: { bg: '#f0fdf4', border: '#bbf7d0', text: '#15803d', icon: 'fa-check-circle' },
-        warning: { bg: '#fffbeb', border: '#fef3c7', text: '#b45309', icon: 'fa-exclamation-triangle' },
-        error:   { bg: '#fef2f2', border: '#fecaca', text: '#b91c1c', icon: 'fa-times-circle' },
-        info:    { bg: '#eff6ff', border: '#dbeafe', text: '#1e40af', icon: 'fa-info-circle' }
+        success: { bg: 'var(--success-dim, #ecfdf5)', border: 'var(--success, #166534)', text: 'var(--success, #166534)', icon: 'fa-check-circle' },
+        warning: { bg: 'var(--warning-dim, #fffbeb)', border: 'var(--warning, #92400e)', text: 'var(--warning, #92400e)', icon: 'fa-exclamation-triangle' },
+        error:   { bg: 'var(--error-dim, #fef2f2)', border: 'var(--error, #991b1b)', text: 'var(--error, #991b1b)', icon: 'fa-times-circle' },
+        info:    { bg: '#eff6ff', border: '#bfdbfe', text: '#1e40af', icon: 'fa-info-circle' }
     };
     const c = colors[type] || colors.info;
 
-    const notice = document.createElement('div');
-    notice.style.cssText = [
-        `background:${c.bg}`, `border:1.5px solid ${c.border}`, `color:${c.text}`,
-        'padding:14px 18px', 'border-radius:12px', 'margin-bottom:12px',
-        'display:flex', 'align-items:flex-start', 'gap:12px',
-        'font-size:0.88rem', 'line-height:1.5', 'box-shadow:0 2px 8px rgba(0,0,0,0.07)',
-        'animation:fadeInDown 0.3s ease', 'position:relative'
-    ].join(';');
-    notice.innerHTML = [
-        `<i class="fas ${c.icon}" style="margin-top:2px;flex-shrink:0"></i>`,
-        `<div style="flex:1"><strong>${title}</strong>`,
-        message ? `<div style="margin-top:4px;opacity:0.9">${message}</div>` : '',
-        actionLabel ? `<button onclick="this.closest('[data-publish-notice]').remove()" style="margin-top:8px;padding:4px 10px;border:1px solid ${c.border};border-radius:6px;background:white;color:${c.text};font-weight:700;font-size:0.8rem;cursor:pointer">${actionLabel}</button>` : '',
-        '</div>',
-        `<button onclick="this.parentElement.remove()" style="background:none;border:none;cursor:pointer;font-size:1rem;color:${c.text};opacity:0.5;padding:0;flex-shrink:0" title="Cerrar">&times;</button>`
-    ].join('');
-    notice.dataset.publishNotice = '1';
+    const toast = document.createElement('div');
+    toast.className = `app-toast app-toast-${type}`;
+    toast.innerHTML = `
+        <button type="button" class="app-toast-close" aria-label="Cerrar">&times;</button>
+        <div class="app-toast-title"><i class="fas ${c.icon}" style="margin-right:8px"></i>${title}</div>
+        <div class="app-toast-message">${message}</div>
+    `;
 
-    // Insertar al principio del container
-    container.insertBefore(notice, container.firstChild);
+    const closeButton = toast.querySelector(".app-toast-close");
+    closeButton?.addEventListener("click", () => {
+        toast.classList.add("app-toast-leaving");
+        setTimeout(() => toast.remove(), 250);
+    });
 
-    // Auto-cierre después de 12s (solo para success/warning)
-    if (autoClose && type !== 'error') {
-        setTimeout(() => { if (notice.parentNode) notice.remove(); }, 12000);
+    container.appendChild(toast);
+
+    // Duraciones por tipo: success=5s, warning=10s, error=no-autocierre
+    const ms = duration || (type === 'success' ? 5000 : type === 'warning' ? 10000 : (type === 'error' ? 0 : 7000));
+    if (autoClose && ms > 0) {
+        setTimeout(() => {
+            if (toast.parentNode) {
+                toast.classList.add("app-toast-leaving");
+                setTimeout(() => toast.remove(), 250);
+            }
+        }, ms);
     }
 
     console.log(`[PUBLISH_NOTICE][${type.toUpperCase()}]`, title, message);
-    return notice;
+    return toast;
 };
 
 window.publishToSupabase = async () => {
@@ -5814,7 +5656,7 @@ window.publishToSupabase = async () => {
         
         console.log("[PUBLISH_EXECUTE] start", { hotelSel, rawDate });
         
-        if (!rawDate) throw new Error("No hay una fecha de referencia seleccionada para la publicación.");
+        if (!rawDate) throw new Error("No hay una fecha de referencia seleccionada para la publicaciÃ³n.");
         
         const base = new Date(rawDate + 'T12:00:00');
         const weekStart = window.isoDate(window.getMonday(base));
@@ -5850,7 +5692,7 @@ window.publishToSupabase = async () => {
             }
         }
 
-        // 3. Guardar Snapshots en publicaciones_cuadrante (FASE A Crítica / FASE B Best-Effort)
+        // 3. Guardar Snapshots en publicaciones_cuadrante (FASE A CrÃ­tica / FASE B Best-Effort)
         console.log("[PUBLISH_EXECUTE] saving snapshots", snapshots.length);
         let globalNeedsCleanup = false;
         
@@ -5880,11 +5722,11 @@ window.publishToSupabase = async () => {
         document.getElementById('publishPreviewModal')?.classList.remove('open');
         console.log("[PUBLISH_EXECUTE] success!");
         if (globalNeedsCleanup) {
-            console.warn('[DAO_PUBLISH] Publicación creada, limpieza automática bloqueada por RLS.');
+            console.warn('[DAO_PUBLISH] Publicacion creada, limpieza automatica bloqueada por RLS.');
             window.showPublishNotification({
                 type: 'warning',
                 title: 'Publicación creada',
-                message: 'La nueva versión se guardó correctamente. Supabase no permitió desactivar automáticamente versiones anteriores por RLS. La vista pública usará la versión más reciente; queda pendiente limpieza SQL de duplicados activos.',
+                message: 'La nueva versión se guardó correctamente. Queda pendiente limpieza SQL de duplicados activos.',
                 actionLabel: 'Ver limpieza SQL',
                 autoClose: true
             });
@@ -5934,19 +5776,19 @@ window.validatePublishChanges = (changes) => {
     changes.forEach(c => {
         // 1. Empleados sin ID
         if (!c.displayName || c.displayName === '?' || c.displayName.length < 2) {
-            errors.push(`Empleado con nombre inválido en ${c.weekStart}: "${c.displayName}"`);
+            errors.push(`Empleado con nombre invÃ¡lido en ${c.weekStart}: "${c.displayName}"`);
         }
 
         // 2. Fechas inconsistentes (ya se filtran en ExcelLoader pero re-verificamos)
         if (!c.weekStart || isNaN(new Date(c.weekStart).getTime())) {
-            errors.push(`Fecha de semana inválido para ${c.displayName}: ${c.weekStart}`);
+            errors.push(`Fecha de semana invÃ¡lido para ${c.displayName}: ${c.weekStart}`);
         }
 
-        // 3. Turnos inválidos
+        // 3. Turnos invÃ¡lidos
         c.row.values.forEach((v, idx) => {
             const vNorm = String(v || '').toUpperCase().trim();
-            if (vNorm && !validShifts.has(vNorm) && !vNorm.includes('x Á¯ÃƒÆ’Ã†’ÃƒÂ¢Ã¢â€šÂ¬Ã…¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¸ ')) {
-                // Permitimos valores que no estén en el set si son descriptivos,
+            if (vNorm && !validShifts.has(vNorm) && !vNorm.includes('x ÃÂ¯ÃƒÆ’Ã†â€™Ãƒâ€ â€™ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¸ ')) {
+                // Permitimos valores que no estÃ©n en el set si son descriptivos,
                 // pero alertamos si parecen basura
                 if (vNorm.length > 10) errors.push(`Turno sospechoso en ${c.weekStart} (${c.displayName}): ${vNorm}`);
             }
@@ -5957,13 +5799,13 @@ window.validatePublishChanges = (changes) => {
 };
 
     /**
-     * TAREA CODEX: Función central para generar el snapshot exacto de lo que se ve en Admin.
-     * Genera el JSON sin guardarlo, para previsualización y validación.
+     * TAREA CODEX: FunciÃ³n central para generar el snapshot exacto de lo que se ve en Admin.
+     * Genera el JSON sin guardarlo, para previsualizaciÃ³n y validaciÃ³n.
      */
     window.buildPublicationSnapshotPreview = async (weekStart, hotelName = 'all') => {
-        // Validación de fecha
+        // ValidaciÃ³n de fecha
         if (!weekStart || isNaN(new Date(weekStart).getTime())) {
-            throw new Error(`Fecha de semana inválido recibida: ${weekStart}`);
+            throw new Error(`Fecha de semana invÃ¡lido recibida: ${weekStart}`);
         }
 
         const cache = window._lastRenderedPreviewSnapshotSource;
@@ -5975,7 +5817,7 @@ window.validatePublishChanges = (changes) => {
         const dates = [0,1,2,3,4,5,6].map(i => window.addIsoDays(weekStart, i));
 
         for (const hName of hotelsToProcess) {
-            // Intentar recuperar del cache del render actual con validación estricta (V12.6 Fix)
+            // Intentar recuperar del cache del render actual con validaciÃ³n estricta (V12.6 Fix)
             let hotelData = null;
             if (cache && cache.hoteles && cache.semana_inicio === weekStart) {
                 const found = cache.hoteles.find(h => h.hotel === hName);
@@ -5989,7 +5831,7 @@ window.validatePublishChanges = (changes) => {
                         const rowKeys = Object.keys(cells);
                         if (rowKeys.length > 0) {
                             rowsTotal++;
-                            // Verificamos si la mayoría de las celdas de esta fila pertenecen a la semana esperada
+                            // Verificamos si la mayorÃ­a de las celdas de esta fila pertenecen a la semana esperada
                             const validKeys = rowKeys.filter(k => expectedDates.includes(k));
                             if (validKeys.length >= rowKeys.length / 2) {
                                 rowsValid++;
@@ -5999,16 +5841,16 @@ window.validatePublishChanges = (changes) => {
                         }
                     });
 
-                    // Criterio de aceptación del cache: >90% de filas con datos coherentes
+                    // Criterio de aceptaciÃ³n del cache: >90% de filas con datos coherentes
                     if (rowsTotal > 0 && rowsValid / rowsTotal > 0.9) {
                         hotelData = found.empleados;
                     } else {
-                        console.error(`[SNAPSHOT] Cache ABORTADO para ${hName}: inconsistencia masiva de fechas (${rowsValid}/${rowsTotal} filas vá¡lidas).`);
+                        console.error(`[SNAPSHOT] Cache ABORTADO para ${hName}: inconsistencia masiva de fechas (${rowsValid}/${rowsTotal} filas vÃ¡Â¡lidas).`);
                     }
                 }
             }
 
-            // Si no hay cache (o forzamos reconstrucción), regenerar modelo fiel
+            // Si no hay cache (o forzamos reconstrucciÃ³n), regenerar modelo fiel
             if (!hotelData) {
                 console.warn(`[SNAPSHOT] Regenerando datos para ${hName} (no cache found)`);
                 const profiles = await window.TurnosDB.getEmpleados();
@@ -6059,7 +5901,7 @@ window.validatePublishChanges = (changes) => {
                         if (retryModel.puestos.length > 0) {
                              // Continuar con el modelo recuperado
                              // En vez de return, asignamos al objeto exterior si es posible, 
-                             // pero lo más limpio es inyectar el código de modelado aquí.
+                             // pero lo mÃ¡s limpio es inyectar el cÃ³digo de modelado aquÃ­.
                              Object.assign(previewModel, retryModel);
                         }
                     }
@@ -6084,14 +5926,14 @@ window.validatePublishChanges = (changes) => {
                     dates.forEach(fecha => {
                         // REGLA DE ORO V12.1: Siempre resolver para el ID del ocupante de esta fila (emp.employee_id).
                         // El motor (getTurnoEmpleadoExtended) ya se encarga de heredar el turno del titular
-                        // si este empleado es un sustituto. Si resolvemos para el titular, obtendríamos
+                        // si este empleado es un sustituto. Si resolvemos para el titular, obtendrÃ­amos
                         // su incidencia (VAC/BAJA), lo cual es incorrecto para la fila operativa del sustituto.
                         const resolveId = emp.employee_id;
                         const resolved = previewModel.getTurnoEmpleado(resolveId, fecha);
 
                         const visual = window.TurnosRules ? window.TurnosRules.describeCell(resolved) : { label: resolved.turno, icons: resolved.icons || [] };
 
-                        // B4 FIX: Garantizar códigos canónicos para ausencias.
+                        // B4 FIX: Garantizar cÃ³digos canÃ³nicos para ausencias.
                         const absCode = resolved.incidencia
                             ? (resolved.incidencia === 'PERMISO' ? 'PERM'
                                : resolved.incidencia === 'FORMACION' ? 'FORM'
@@ -6108,7 +5950,7 @@ window.validatePublishChanges = (changes) => {
                         
                         // Regla Definitiva V12.5.32: Centralizar filtro de pin
                         icons = icons.filter(icon => {
-                            if (icon === '\u{1F4CC}' || icon === '📌Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒ…Ã¢â‚¬Å“ÃƒÆ’Ã¢â‚¬Â¦ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢') {
+                            if (icon === '\u{1F4CC}' || icon === 'ðŸ“ŒÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’â€¦ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¢') {
                                 return window.TurnosRules ? window.TurnosRules.shouldShowPin(resolved) : false;
                             }
                             return true;
@@ -6167,14 +6009,14 @@ window.validatePublishChanges = (changes) => {
                 }));
             }
 
-            // Verificación de integridad final (V12.6 Guard)
+            // VerificaciÃ³n de integridad final (V12.6 Guard)
             const finalExpectedDates = [0,1,2,3,4,5,6].map(i => window.addIsoDays(weekStart, i));
             const sampleRow = hotelData[0];
             const sampleKeys = Object.keys(sampleRow.cells || sampleRow.dias || {});
             const hasCorrectDates = sampleKeys.some(k => finalExpectedDates.includes(k));
 
             if (!hasCorrectDates && hotelData.length > 0) {
-                throw new Error(`[ABORT] El snapshot generado para ${hName} es incoherente con la semana ${weekStart}. Publicación cancelada.`);
+                throw new Error(`[ABORT] El snapshot generado para ${hName} es incoherente con la semana ${weekStart}. PublicaciÃ³n cancelada.`);
             }
 
             snapshots.push({
@@ -6211,7 +6053,7 @@ window.validatePublishChanges = (changes) => {
 
                 // [C] No missing IDs
                 if (!row.empleado_id || row.empleado_id === '?' || row.empleado_id.length < 2) {
-                    errors.push(`[BLOQUEO] Empleado sin ID vá¡lido: "${empName}" en ${hName}`);
+                    errors.push(`[BLOQUEO] Empleado sin ID vÃ¡Â¡lido: "${empName}" en ${hName}`);
                 }
 
                 // [I] No _DUP
@@ -6219,10 +6061,10 @@ window.validatePublishChanges = (changes) => {
                     errors.push(`[BLOQUEO] Nombre contiene marcador de duplicado (_DUP): "${empName}"`);
                 }
 
-                // [K] Validación de Extras Justificados
+                // [K] ValidaciÃ³n de Extras Justificados
                 const isExtra = row.rowType === 'extra' || row.rowType === 'refuerzo' || row.origenOrden === 'auto_extra';
                 if (isExtra && !row.evento_id) {
-                    errors.push(`[BLOQUEO] Fila extra sin justificación explícita (sin evento): "${empName}" en ${hName}`);
+                    errors.push(`[BLOQUEO] Fila extra sin justificaciÃ³n explÃ­cita (sin evento): "${empName}" en ${hName}`);
                 }
 
                 // [L] EMP-XXXX Visibility Check
@@ -6238,7 +6080,7 @@ window.validatePublishChanges = (changes) => {
                     if (code && !validCodes.has(code) && !code.includes('\uFFFD')) {
                         // Si es algo muy raro, bloqueamos
                         if (code.length > 8) {
-                            errors.push(`[BLOQUEO] Código de turno ilegal: "${code}" para ${empName} el ${fecha}`);
+                            errors.push(`[BLOQUEO] CÃ³digo de turno ilegal: "${code}" para ${empName} el ${fecha}`);
                         }
                     }
 
@@ -6249,20 +6091,20 @@ window.validatePublishChanges = (changes) => {
 
                     // [F] Critical coverage (Absence without substitute)
                     if (cell.isAbsence && !cell.sustituto) {
-                        // REGLA: Las vacantes son avisos operativos, no bloqueos automá¡ticos
+                        // REGLA: Las vacantes son avisos operativos, no bloqueos automÃ¡Â¡ticos
                         warnings.push(`[AVISO] Ausencia sin sustituto: ${empName} (${cell.type}) el ${fecha}`);
                     }
                 });
 
-                // [N] Validación de Filas Vacías (Regla 6)
+                // [N] ValidaciÃ³n de Filas VacÃ­as (Regla 6)
                 const cellsArray = Object.values(row.cells);
                 const hasAnyContent = cellsArray.some(c => {
                     const code = (c.code || '').toUpperCase().trim();
-                    return code && code !== '\u2014' && code !== 'ÃƒÆ’Ã†’Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â' && code !== '';
+                    return code && code !== '\u2014' && code !== 'ÃƒÆ’Ã†â€™Ãƒâ€ â€™ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â' && code !== '';
                 });
 
                 if (row.rowType === 'operativo' && !hasAnyContent) {
-                    errors.push(`[BLOQUEO] Fila operativa sin turnos (vacía): "${empName}" en ${hName}`);
+                    errors.push(`[BLOQUEO] Fila operativa sin turnos (vacÃ­a): "${empName}" en ${hName}`);
                 }
 
                 if (row.rowType === 'ausencia_informativa') {
@@ -6277,7 +6119,7 @@ window.validatePublishChanges = (changes) => {
                 }
             });
 
-            // [M] Validación de Cobertura Obligatoria de Eventos (B2/B3 FIX)
+            // [M] ValidaciÃ³n de Cobertura Obligatoria de Eventos (B2/B3 FIX)
             // B2: snap usa week_start/week_end/hotel_id, NO semana_inicio/semana_fin/hotel
             // B3: normalizar estado del evento con normalizeEstado(); comparar hotel con hotel_id
             const events = window.eventosGlobales || [];
@@ -6295,7 +6137,7 @@ window.validatePublishChanges = (changes) => {
                 const tipoEv = window.normalizeTipo(ev.tipo);
                 if (!['VAC', 'BAJA', 'PERM', 'PERMISO'].includes(tipoEv)) return;
 
-                // Intersección con la semana
+                // IntersecciÃ³n con la semana
                 const evStart = window.normalizeDate ? window.normalizeDate(ev.fecha_inicio) : (ev.fecha_inicio || '');
                 const evEnd   = window.normalizeDate ? window.normalizeDate(ev.fecha_fin || ev.fecha_inicio) : (ev.fecha_fin || ev.fecha_inicio || '');
                 if (!evStart || !wStart || evStart > wEnd || evEnd < wStart) return;
@@ -6306,7 +6148,7 @@ window.validatePublishChanges = (changes) => {
                 if (!row) {
                     errors.push(`[BLOQUEO] Evento ${tipoEv} de ${ev.empleado_id} no aparece en el snapshot de ${snapHotelId}`);
                 } else {
-                    // Verificar que cada día de la ausencia tenga el código correcto en el snapshot
+                    // Verificar que cada dÃ­a de la ausencia tenga el cÃ³digo correcto en el snapshot
                     const cellDates = Object.keys(row.cells).filter(d =>
                         d >= evStart && d <= evEnd && d >= wStart && d <= wEnd
                     );
@@ -6319,19 +6161,19 @@ window.validatePublishChanges = (changes) => {
                         const code = String(cell.code || '').toUpperCase();
                         const type = String(cell.type || '').toUpperCase();
 
-                        // Códigos esperados: VACÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¢VAC, BAJAÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¢BAJA, PERMISO/PERMÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¢PERM
+                        // CÃ³digos esperados: VACÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¾Ãƒâ€šÃ‚Â¢VAC, BAJAÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¾Ãƒâ€šÃ‚Â¢BAJA, PERMISO/PERMÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¾Ãƒâ€šÃ‚Â¢PERM
                         const expectedCodes = { 'VAC': 'VAC', 'BAJA': 'BAJA', 'PERMISO': 'PERM', 'PERM': 'PERM' };
                         const expected = expectedCodes[tipoEv];
 
                         const isRendered = expected && (code === expected || code.startsWith(expected) || type === expected);
                         if (!isRendered) {
-                            errors.push(`[BLOQUEO] Evento ${tipoEv} no renderizado para ${row.nombreVisible} el ${d} ÃƒÆ’Ã†’Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â snapshot tiene code="${code}" type="${type}"`);
+                            errors.push(`[BLOQUEO] Evento ${tipoEv} no renderizado para ${row.nombreVisible} el ${d} ÃƒÆ’Ã†â€™Ãƒâ€ â€™ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â snapshot tiene code="${code}" type="${type}"`);
                         }
                     });
                 }
             });
 
-            // [O] Validación de Consistencia de Cambios de Turno / Intercambios
+            // [O] ValidaciÃ³n de Consistencia de Cambios de Turno / Intercambios
             events.forEach(ev => {
                 if (window.normalizeEstado(ev.estado) === 'anulado') return;
                 const tipoEv = window.normalizeTipo(ev.tipo);
@@ -6360,8 +6202,8 @@ window.validatePublishChanges = (changes) => {
                     });
                 };
 
-                // RESOLUCIÓN OPERATIVA (V140)
-                // Los cambios se validan contra el ocupante real del día.
+                // RESOLUCIÃ“N OPERATIVA (V140)
+                // Los cambios se validan contra el ocupante real del dÃ­a.
                 const resolvedOrig = window.getOperationalOccupant ? window.getOperationalOccupant(idOrig, evStart, events, snapHotelId) : idOrig;
                 const resolvedDest = idDest ? (window.getOperationalOccupant ? window.getOperationalOccupant(idDest, evStart, events, snapHotelId) : idDest) : null;
 
@@ -6373,23 +6215,23 @@ window.validatePublishChanges = (changes) => {
                     const cell = row.cells[evStart];
                     if (!cell) return;
                     const isChanged = !!cell.changed || !!cell.intercambio || (cell.origen && cell.origen.includes('CAMBIO'));
-                    const hasIcon = Array.isArray(cell.icons) && cell.icons.includes('📌Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒ…Ã‚Â¾');
+                    const hasIcon = Array.isArray(cell.icons) && cell.icons.includes('ðŸ“ŒÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚ÂÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’â€¦Ãƒâ€šÃ‚Â¾');
                     if (!isChanged && !hasIcon) {
-                        errors.push(`[BLOQUEO] El ${role} del cambio (${id}) no muestra el icono 📌Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒ…Ã‚Â¾ el ${evStart} en ${snapHotelId}`);
+                        errors.push(`[BLOQUEO] El ${role} del cambio (${id}) no muestra el icono ðŸ“ŒÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚ÂÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’â€¦Ãƒâ€šÃ‚Â¾ el ${evStart} en ${snapHotelId}`);
                     }
                 };
 
                 checkCell(rowOrig, ev.empleado_id, 'Origen');
                 if (idDest) checkCell(rowDest, ev.empleado_destino_id || ev.sustituto_id, 'Destino');
 
-                // [O.1] Verificación de Existencia de Sustituto en Cuadrante
+                // [O.1] VerificaciÃ³n de Existencia de Sustituto en Cuadrante
                 if (idDest && !rowDest) {
                     errors.push(`[BLOQUEO] El sustituto ${idDest} para ${idOrig} el ${evStart} no existe en las filas del snapshot.`);
                 }
             });
         }
 
-        // [B] [E] Duplicados operativos y conflictos de localización
+        // [B] [E] Duplicados operativos y conflictos de localizaciÃ³n
         const allEmps = {};
         snapshots.forEach(snap => {
             snap.rows.forEach(row => {
@@ -6441,7 +6283,7 @@ window.validatePublishChanges = (changes) => {
                 source: 'publish-validation',
                 severity,
                 type: 'VALIDACION_PUBLICACION',
-                title: severity === 'critical' ? 'Bloqueo de publicación' : 'Advertencia de cobertura',
+                title: severity === 'critical' ? 'Bloqueo de publicaciÃ³n' : 'Advertencia de cobertura',
                 desc: text.replace('[BLOQUEO] ', '').replace('[AVISO] ', ''),
                 empId,
                 fecha,
@@ -6463,14 +6305,14 @@ window.validatePublishChanges = (changes) => {
 
 
 window.revertirPublicacion = async (logId) => {
-    if (!confirm('¿Estás seguro de revertir esta publicación? Se restaurará¡n los turnos anteriores registrados en el log.')) return;
+    if (!confirm('Â¿EstÃ¡s seguro de revertir esta publicaciÃ³n? Se restaurarÃ¡Â¡n los turnos anteriores registrados en el log.')) return;
 
     try {
-        window.addLog(`Iniciando reversión de publicación ${logId}...`, 'warn');
+        window.addLog(`Iniciando reversiÃ³n de publicaciÃ³n ${logId}...`, 'warn');
         const log = await window.TurnosDB.getLog(logId);
 
         if (!log || !log.cambios_detalle_json || log.revertida) {
-            throw new Error('El log no es vá¡lido o ya ha sido revertido.');
+            throw new Error('El log no es vÃ¡Â¡lido o ya ha sido revertido.');
         }
 
         const revertData = log.cambios_detalle_json.map(d => ({
@@ -6485,8 +6327,8 @@ window.revertirPublicacion = async (logId) => {
         await window.TurnosDB.bulkUpsert(revertData);
         await window.TurnosDB.updateLog(logId, { revertida: true, estado: 'revertido' });
 
-        window.addLog(`Reversión completada: ${revertData.length} turnos restaurados.`, 'ok');
-        alert('Publicación revertida con éxito.');
+        window.addLog(`ReversiÃ³n completada: ${revertData.length} turnos restaurados.`, 'ok');
+        alert('PublicaciÃ³n revertida con Ã©xito.');
 
         window.renderDashboard();
         window.renderPreview();
@@ -6501,7 +6343,7 @@ window.revertirPublicacion = async (logId) => {
 // ==========================================
 
 /**
- * FORMATEO DE FECHAS PARA UI (ESPAÑOL)
+ * FORMATEO DE FECHAS PARA UI (ESPAÃ‘OL)
  */
 window.formatDateES = (isoStr) => {
     if (!isoStr) return '--/--/----';
@@ -6514,14 +6356,17 @@ window.formatDateES = (isoStr) => {
 };
 
 /**
- * MOTOR DE DETECCIÓN DE CAMBIOS PENDIENTES DE PUBLICAR (V12.6)
+ * MOTOR DE DETECCIÃ“N DE CAMBIOS PENDIENTES DE PUBLICAR (V12.6)
  * Compara eventos aprobados/actualizados contra el snapshot activo.
  */
 window.detectPendingPublicationChanges = async () => {
     try {
         const today = window.isoDate(new Date());
-        const startScan = window.addIsoDays(today, -14); 
+        const startScan = window.addIsoDays(today, -14);
         const endScan = window.addIsoDays(today, 60);
+        // FIX: snapshots se buscan 7 dÃ­as antes para capturar semanas cuyo lunes
+        // cae antes del corte de startScan (ej: semana 20/04 con startScan=21/04)
+        const snapStartScan = window.addIsoDays(startScan, -7);
 
         const [eventos, snapshots] = await Promise.all([
             window.TurnosDB.client
@@ -6532,9 +6377,9 @@ window.detectPendingPublicationChanges = async () => {
                 .lte('fecha_inicio', endScan),
             window.TurnosDB.client
                 .from('publicaciones_cuadrante')
-                .select('id, hotel, semana_inicio, semana_fin, version, created_at')
+                .select('id, hotel, semana_inicio, semana_fin, version, fecha_publicacion, created_at')
                 .eq('estado', 'activo')
-                .gte('semana_inicio', startScan)
+                .gte('semana_inicio', snapStartScan)
                 .lte('semana_inicio', endScan)
         ]);
 
@@ -6544,7 +6389,7 @@ window.detectPendingPublicationChanges = async () => {
         const evs = eventos.data || [];
         const snaps = snapshots.data || [];
 
-        // Agrupar snaps por hotel y semana (última versión activa)
+        // Agrupar snaps por hotel y semana (Ãºltima versiÃ³n activa)
         const snapsMap = {};
         snaps.forEach(s => {
             const key = `${window.normalizeId(s.hotel)}|${s.semana_inicio}`;
@@ -6563,11 +6408,13 @@ window.detectPendingPublicationChanges = async () => {
             const key = `${window.normalizeId(hotel)}|${monday}`;
             const snap = snapsMap[key];
 
-            // Regla: Pendiente si no hay snapshot o si el evento es posterior al snapshot
-            // Añadimos un buffer de 2 segundos para evitar falsos positivos por latencia de red/servidor
+            // Comparar contra fecha_publicacion (mÃ¡s fiable) o created_at como fallback.
+            // Buffer de 2s para evitar falsos positivos por latencia.
             const evUpdate = new Date(ev.updated_at || ev.created_at).getTime();
-            const snapCreate = snap ? new Date(snap.created_at).getTime() : 0;
-            const isPending = !snap || (evUpdate > (snapCreate + 2000));
+            const snapTs = snap
+                ? new Date(snap.fecha_publicacion || snap.created_at).getTime()
+                : 0;
+            const isPending = !snap || (evUpdate > (snapTs + 2000));
 
             if (isPending) {
                 let p = pending.find(item => item.key === key);
@@ -6699,7 +6546,7 @@ window.renderDashboard = async () => {
         console.error('[ADMIN ERROR] DAO (TurnosDB) no inicializado. Revisa el orden de scripts y posibles errores de sintaxis.');
         return;
     }
-    // Evitar ejecuciones duplicadas en ráfaga (debouncing preventivo)
+    // Evitar ejecuciones duplicadas en rÃ¡faga (debouncing preventivo)
     const now = Date.now();
     if (window._lastDashboardRender && (now - window._lastDashboardRender < 500)) return;
     window._lastDashboardRender = now;
@@ -6778,7 +6625,7 @@ window.renderDashboard = async () => {
                 severity: h.status === 'desfasado' ? 'critical' : 'warning',
                 type: 'COVERAGE_GAP',
                 title: 'Desfase de cobertura',
-                desc: `El hotel <b>${h.hotel}</b> está publicado hasta el ${window.formatDateES(h.lastWeekEnd)}, por detrás del máximo global (${window.formatDateES(coverage.maxPublishedUntil)}).`,
+                desc: `El hotel <b>${h.hotel}</b> estÃ¡ publicado hasta el ${window.formatDateES(h.lastWeekEnd)}, por detrÃ¡s del mÃ¡ximo global (${window.formatDateES(coverage.maxPublishedUntil)}).`,
                 action: {
                     label: 'Ver Cobertura',
                     fn: `window.switchSection('home')`
@@ -6786,7 +6633,7 @@ window.renderDashboard = async () => {
             }))
         ];
 
-        // Auditoría de ID Interno (Fase 1)
+        // AuditorÃ­a de ID Interno (Fase 1)
         const empsSinIdInterno = (empleados || []).filter(e => (!e.id_interno || String(e.id_interno).trim() === '') && e.activo !== false && e.id !== '??');
         if (empsSinIdInterno.length > 0) {
             allRisks.push({
@@ -6806,7 +6653,7 @@ window.renderDashboard = async () => {
                 type: 'PLAZA_PENDIENTE',
                 empId: '??',
                 title: 'Plaza Pendiente de Definir',
-                desc: `Existe un registro provisional (${plazaPendiente.id}) para planificación de coberturas.`
+                desc: `Existe un registro provisional (${plazaPendiente.id}) para planificaciÃ³n de coberturas.`
             });
         }
 
@@ -6871,11 +6718,11 @@ window.renderDashboard = async () => {
                     <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:20px;">
                         <div>
                             <h3 style="margin:0; font-size:1rem; font-weight:800;"><i class="fas fa-layer-group" style="margin-right:10px; color:#3b82f6;"></i> COBERTURA PUBLICADA</h3>
-                            <p style="margin:5px 0 0; font-size:0.75rem; color:var(--text-dim);">Estado de sincronización de cuadrantes en producción</p>
+                            <p style="margin:5px 0 0; font-size:0.75rem; color:var(--text-dim);">Estado de sincronizaciÃ³n de cuadrantes en producciÃ³n</p>
                         </div>
                         <div style="text-align:right;">
                             <div style="font-size:1.5rem; font-weight:900; color:var(--text);">${globalDate}</div>
-                            <div style="font-size:0.65rem; font-weight:800; color:var(--text-dim); text-transform:uppercase;">Cobertura Global Mínima</div>
+                            <div style="font-size:0.65rem; font-weight:800; color:var(--text-dim); text-transform:uppercase;">Cobertura Global MÃ­nima</div>
                         </div>
                     </div>
 
@@ -6884,9 +6731,9 @@ window.renderDashboard = async () => {
                             <thead>
                                 <tr style="border-bottom:2px solid var(--bg3);">
                                     <th style="text-align:left; padding:10px; color:var(--text-dim); font-size:0.65rem; text-transform:uppercase;">Hotel</th>
-                                    <th style="text-align:left; padding:10px; color:var(--text-dim); font-size:0.65rem; text-transform:uppercase;">Última Semana</th>
+                                    <th style="text-align:left; padding:10px; color:var(--text-dim); font-size:0.65rem; text-transform:uppercase;">Ãšltima Semana</th>
                                     <th style="text-align:left; padding:10px; color:var(--text-dim); font-size:0.65rem; text-transform:uppercase;">Publicado Hasta</th>
-                                    <th style="text-align:center; padding:10px; color:var(--text-dim); font-size:0.65rem; text-transform:uppercase;">Versión</th>
+                                    <th style="text-align:center; padding:10px; color:var(--text-dim); font-size:0.65rem; text-transform:uppercase;">VersiÃ³n</th>
                                     <th style="text-align:center; padding:10px; color:var(--text-dim); font-size:0.65rem; text-transform:uppercase;">Estado</th>
                                 </tr>
                             </thead>
@@ -6923,7 +6770,7 @@ window.renderDashboard = async () => {
 
         // --- BLOQUE D: ACCIONES ---
         /**
-         * Función robusta para publicar cambios desde una tarjeta de pendiente (V12.6.2)
+         * FunciÃ³n robusta para publicar cambios desde una tarjeta de pendiente (V12.6.2)
          */
         window.publishPendingChangesForCard = async (payload) => {
             console.log("[PUBLISH_CLICK] handler invoked");
@@ -6932,7 +6779,7 @@ window.renderDashboard = async () => {
             const hotel = payload.hotel;
             const weekStart = payload.weekStart;
 
-            if (!confirm(`Vas a publicar los cambios aceptados para ${hotel} durante la semana ${weekStart}. Esto actualizará la Vista Pública y la app móvil. ¿Confirmar publicación?`)) {
+            if (!confirm(`Vas a publicar los cambios aceptados para ${hotel} durante la semana ${weekStart}. Esto actualizarÃ¡ la Vista PÃºblica y la app mÃ³vil. Â¿Confirmar publicaciÃ³n?`)) {
                 console.log("[PUBLISH_CLICK] publication cancelled by user");
                 return;
             }
@@ -6967,7 +6814,7 @@ window.renderDashboard = async () => {
             $('#stat-pending-requests').style.color = cambiosKpi > 0 ? '#f59e0b' : 'inherit';
         }
 
-        // --- BLOQUE E: ACCIONES RÁPIDAS ---
+        // --- BLOQUE E: ACCIONES RÃÂPIDAS ---
         const quickActions = $('#dashboard-quick-actions');
         if (quickActions) {
             quickActions.innerHTML = `
@@ -6996,7 +6843,7 @@ window.renderDashboard = async () => {
             `;
         }
 
-        // --- BLOQUE D: ACTIVIDAD / AUDITORÁA ---
+        // --- BLOQUE D: ACTIVIDAD / AUDITORÃÂA ---
         const timeline = $('#dashboard-timeline');
         if (timeline) {
             try {
@@ -7048,11 +6895,11 @@ window.renderDashboard = async () => {
                 }
             } catch (err) {
                 console.error('[AUDITORIA ERROR]', err);
-                timeline.innerHTML = '<div style="padding:40px; text-align:center; color:var(--error); font-size:0.8rem;">Auditoría no disponible.</div>';
+                timeline.innerHTML = '<div style="padding:40px; text-align:center; color:var(--error); font-size:0.8rem;">AuditorÃ­a no disponible.</div>';
             }
         }
 
-        // --- 4. ESTADO DE SINCRONIZACIÁ¯?ÃƒÆ’Ã†’ÃƒÂ¢Ã¢â€šÂ¬Ã…¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â½N ---
+        // --- 4. ESTADO DE SINCRONIZACIÃÂ¯?ÃƒÆ’Ã†â€™Ãƒâ€ â€™ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â½N ---
         const syncStatus = window.TurnosDB._channel?.status || (window.realtimeActivo ? 'ok' : 'connecting');
         if ($('#sync-cloud-status')) {
             $('#sync-cloud-status').textContent = (syncStatus === 'ok' || syncStatus === 'SUBSCRIBED') ? 'ACTIVO' : 'RECONECTANDO';
@@ -7078,7 +6925,7 @@ window.renderDashboard = async () => {
 // --- REACTIVIDAD REAL-TIME ---
 window.aplicarCambioLocal = (payload) => {
     // console.log("Realtime Payload:", payload);
-    // Solo refrescar dashboard si está visible para no saturar
+    // Solo refrescar dashboard si estÃ¡ visible para no saturar
     if ($('#section-home').classList.contains('active')) {
         if (window._dashRefreshTimer) clearTimeout(window._dashRefreshTimer);
         window._dashRefreshTimer = setTimeout(window.renderDashboard, 1000);
@@ -7117,7 +6964,7 @@ window.updateSidebarBadges = async () => {
 };
 
 // ==========================================
-// 10. HELPERS Y GESTIÓN DE PERFIL DE EMPLEADO
+// 10. HELPERS Y GESTIÃ“N DE PERFIL DE EMPLEADO
 // ==========================================
 
 window.escapeHtml = (str) => {
@@ -7131,10 +6978,11 @@ window.escapeHtml = (str) => {
 };
 
 window.renderEmployeeProfileField = ([label, value]) => {
+    const displayValue = (value === null || value === undefined || value === '') ? '0' : value;
     return `
         <div class="emp-ficha-field">
             <label>${label}</label>
-            <div class="emp-ficha-field-value">${value || 'No definido'}</div>
+            <div class="emp-ficha-field-value">${displayValue}</div>
         </div>
     `;
 };
@@ -7635,7 +7483,7 @@ window.buildEmployeeProfileModel = (empId, refISO) => {
     if (!rawTypeField) alerts.push({ level: 'warn', text: 'Empleado sin tipo informado' });
     if (!profile.id_interno) alerts.push({ level: 'warn', text: 'Empleado sin ID interno' });
     if (laborStatus.cls === 'inactivo' && futureAssignedDays.length > 0) alerts.push({ level: 'danger', text: 'Empleado inactivo con turnos futuros' });
-    if (['apoyo', 'ocasional'].includes(structuralType) && /refuerzo/.test(window.employeeNorm(rawTypeField))) alerts.push({ level: 'warn', text: 'Apoyo/Ocasional marcado erróneamente como refuerzo' });
+    if (['apoyo', 'ocasional'].includes(structuralType) && /refuerzo/.test(window.employeeNorm(rawTypeField))) alerts.push({ level: 'warn', text: 'Apoyo/Ocasional marcado errÃ³neamente como refuerzo' });
     if (groupedEvents.some(ev => ['VAC', 'BAJA', 'IT', 'PERM', 'PERMISO', 'FORMACION'].includes(window.normalizeTipo ? window.normalizeTipo(ev.tipo) : String(ev.tipo || '').toUpperCase()) && !(ev.empleado_destino_id || ev.sustituto_id || ev.payload?.sustituto_id || ev.payload?.sustituto))) {
         alerts.push({ level: 'warn', text: 'Evento sin sustituto' });
     }
@@ -7917,8 +7765,8 @@ window.setEmployeeProfileYear = async (year) => {
 };
 
 window.openEmployeeDayDetail = (date) => {
-    console.log("Detalle del día:", date);
-    // Podríamos abrir un mini-modal con los detalles tecnicos del turno resuelto
+    console.log("Detalle del dÃ­a:", date);
+    // PodrÃ­amos abrir un mini-modal con los detalles tecnicos del turno resuelto
 };
 
 window.toggleEmployeeSupportFields = (type) => {
@@ -7990,10 +7838,10 @@ window.renderEmployeeProfileEditForm = (emp, model) => {
     const warnsHTML = warns.length ? `<div style="display:grid;gap:7px;margin-bottom:14px;">${warns.map(w=>`<div style="padding:9px 12px;border-radius:11px;border:1px solid rgba(245,158,11,0.3);background:rgba(245,158,11,0.05);font-size:0.78rem;font-weight:600;color:var(--text);">[!] ${escapeHtml(w)}</div>`).join('')}</div>` : '';
 
     const card = (val, label, icon, active, name) =>
-        `<label style="display:flex;flex-direction:column;align-items:center;padding:8px 6px;border:2px solid ${active?'#6366f1':'var(--border)'};border-radius:10px;cursor:pointer;text-align:center;gap:2px;user-select:none;" class="smart-choice">
+        `<label style="display:flex;flex-direction:column;align-items:center;padding:5px 4px;border:2px solid ${active?'#6366f1':'var(--border)'};border-radius:9px;cursor:pointer;text-align:center;gap:1px;user-select:none;min-height:34px;" class="smart-choice">
             <input type="radio" name="${name}" value="${val}" style="display:none;" ${active?'checked':''} onchange="window.updateSmartProfileExplainer?.()">
-            <span style="font-size:0.95rem;">${icon}</span>
-            <strong style="font-size:0.73rem;line-height:1.2;">${label}</strong>
+            <span style="font-size:0.82rem;line-height:1;">${icon}</span>
+            <strong style="font-size:0.70rem;line-height:1.1;">${label}</strong>
         </label>`;
 
     return `
@@ -8015,10 +7863,10 @@ window.renderEmployeeProfileEditForm = (emp, model) => {
 
                 <label class="span-2" style="display:block;margin-top:4px;">
                     <span>Que tipo de empleado es?</span>
-                    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-top:6px;">
-                        ${card('fijo','Fijo','•',smartTipoSel==='fijo','smart-tipo')}
-                        ${card('ocasional','Ocasional','â—‹',smartTipoSel==='ocasional','smart-tipo')}
-                        ${card('pendiente','Pendiente','…',smartTipoSel==='pendiente','smart-tipo')}
+                    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:6px;">
+                        ${card('fijo','Fijo','F',smartTipoSel==='fijo','smart-tipo')}
+                        ${card('ocasional','Ocasional','O',smartTipoSel==='ocasional','smart-tipo')}
+                        ${card('pendiente','Pendiente','P',smartTipoSel==='pendiente','smart-tipo')}
                     </div>
                     <input type="hidden" id="edit-emp-tipo" value="${canonTipo}">
                     <input type="hidden" id="edit-emp-estado" value="${rawEstado}">
@@ -8026,7 +7874,7 @@ window.renderEmployeeProfileEditForm = (emp, model) => {
 
                 <label class="span-2" style="display:block;">
                     <span>Que funcion hara en el cuadrante?</span>
-                    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-top:6px;">
+                    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:6px;">
                         ${card('titular','Titular','T',currentRole==='titular','smart-rol')}
                         ${card('sustituto','Sustituto','S',currentRole==='sustituto','smart-rol')}
                         ${card('refuerzo','Refuerzo','R',currentRole==='refuerzo','smart-rol')}
@@ -8036,7 +7884,7 @@ window.renderEmployeeProfileEditForm = (emp, model) => {
 
                 <label class="span-2" style="display:block;">
                     <span>En que hotel trabajara?</span>
-                    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-top:6px;">
+                    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:6px;">
                         ${card('cumbria','Cumbria','C',assignedHotels.has('Cumbria Spa&Hotel')&&!hasBoth,'smart-hotel')}
                         ${card('guadiana','Guadiana','G',assignedHotels.has('Sercotel Guadiana')&&!hasBoth,'smart-hotel')}
                         ${card('ambos','Ambos','CG',hasBoth,'smart-hotel')}
@@ -8169,16 +8017,29 @@ window.renderEmployeeProfile = () => {
         const monthCountRows = monthRows;
         const monthlyResume = monthCountRows.reduce((acc, day) => {
             const code = window.employeeProfileShiftCodeMeta(day.turno || day.detalle?.turno).code;
+            const incidenciaTipo = day.incidencia ? window.normalizeTipo(day.incidencia.tipo) : '';
+            const turnoRaw = String(day.turno || '').trim().toUpperCase();
+            const turnoBaseRaw = String(day.turnoBase || day.detalle?.turnoBase || '').trim().toUpperCase();
+            const labelRaw = String(window.employeeShiftLabel(day) || '').trim().toUpperCase();
+            const isVacation =
+                incidenciaTipo === 'VAC' ||
+                code === 'VAC' ||
+                /VAC/.test(labelRaw) ||
+                labelRaw === 'V' ||
+                turnoRaw.startsWith('VAC') ||
+                turnoRaw === 'V' ||
+                turnoBaseRaw.startsWith('VAC') ||
+                turnoBaseRaw === 'V';
             if (code === 'M') acc.m++;
             else if (code === 'T') acc.t++;
             else if (code === 'N') acc.n++;
             else if (code === 'D') acc.d++;
-            else if (code === 'VAC') acc.v++;
+            else if (isVacation) acc.v++;
             else if (code === 'BAJA') acc.b++;
             if (day.cambio) acc.c++;
             return acc;
         }, { m: 0, t: 0, n: 0, d: 0, v: 0, b: 0, c: 0 });
-        const monthlyResumeHtml = `<div style="display:grid; gap:8px;">
+        const monthlyResumeHtml = `<div style="display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:8px; margin:0 0 12px;">
             ${window.renderEmployeeProfileField(['Mananas', monthlyResume.m])}
             ${window.renderEmployeeProfileField(['Tardes', monthlyResume.t])}
             ${window.renderEmployeeProfileField(['Noches', monthlyResume.n])}
@@ -8187,10 +8048,9 @@ window.renderEmployeeProfile = () => {
             ${window.renderEmployeeProfileField(['Bajas / Permisos', monthlyResume.b])}
             ${window.renderEmployeeProfileField(['Cambios', monthlyResume.c])}
         </div>`;
-        const tableRows = visibleMonthRows.map(day => { const finalMeta = window.employeeProfileShiftCodeMeta(day.turno || day.detalle?.turno); const baseMeta = window.employeeProfileShiftCodeMeta(day.turnoBase || day.detalle?.turnoBase); return { fecha: day.fecha, main: `<strong>${escapeHtml(day.diaSemana || new Date(`${day.fecha}T12:00:00`).toLocaleDateString('es-ES', { weekday: 'short' }))}</strong> Â· ${escapeHtml(emp.hotel || model.hotelActual || 'No informado')}`, secondary: `Base: ${escapeHtml(baseMeta.code)} Â· Resuelto: ${escapeHtml(finalMeta.code)}${day.cambio ? ' â†»' : ''}${finalMeta.code === 'N' ? ' ðŸŒ™' : ''}${day.incidencia ? ` Â· ${escapeHtml(window.employeeProfileEventLabel(day.incidencia))}` : ''}`, badge: escapeHtml(day.detalle?.origen || day.incidencia?.tipo || 'base') }; });
-        tabContent = `<div style="display:grid; grid-template-columns:1.2fr 0.9fr; gap:18px; align-items:start;"><section class="emp-card glass" style="padding:20px; border-radius:18px; border:1px solid var(--border);"><div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;"><div><h3 style="margin:0; font-size:0.9rem; font-weight:800;">Turnos del periodo</h3><div style="font-size:0.72rem; color:var(--text-dim); font-weight:700; margin-top:4px;">Navegacion mensual</div></div><div style="display:flex; gap:8px;"><button onclick="window.moveEmployeeProfilePeriod(-1)" class="btn-premium" aria-label="Mes anterior" title="Mes anterior" style="padding:8px 12px; min-width:118px; border-radius:12px; font-weight:800;"><i class="fas fa-chevron-left" style="margin-right:8px;"></i>Anterior</button><button onclick="window.moveEmployeeProfilePeriod(1)" class="btn-premium" aria-label="Mes siguiente" title="Mes siguiente" style="padding:8px 12px; min-width:118px; border-radius:12px; font-weight:800;">Siguiente<i class="fas fa-chevron-right" style="margin-left:8px;"></i></button></div></div><div style="margin-bottom:12px; font-size:0.8rem; color:var(--accent); font-weight:800; text-transform:capitalize;">${titlePeriod}</div>${renderRowsTable(tableRows, isOccasionalProfile ? 'Sin turnos asignados en este periodo.' : 'No hay turnos para este periodo.')}</section><section class="emp-card glass" style="padding:20px; border-radius:18px; border:1px solid var(--border);"><h3 style="margin:0 0 14px; font-size:0.9rem; font-weight:800;">Resumen mensual</h3>${monthlyResumeHtml}</section></div>`;
+        tabContent = `<div style="display:grid; grid-template-columns:1.2fr 0.9fr; gap:18px; align-items:start;"><section class="emp-card glass" style="padding:20px; border-radius:18px; border:1px solid var(--border);"><div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;"><div><h3 style="margin:0; font-size:0.9rem; font-weight:800;">Turnos del periodo</h3><div style="font-size:0.72rem; color:var(--text-dim); font-weight:700; margin-top:4px;">Navegacion mensual</div></div><div style="display:flex; gap:8px;"><button onclick="window.moveEmployeeProfilePeriod(-1)" class="btn-premium" aria-label="Mes anterior" title="Mes anterior" style="padding:8px 12px; min-width:118px; border-radius:12px; font-weight:800;"><i class="fas fa-chevron-left" style="margin-right:8px;"></i>Anterior</button><button onclick="window.moveEmployeeProfilePeriod(1)" class="btn-premium" aria-label="Mes siguiente" title="Mes siguiente" style="padding:8px 12px; min-width:118px; border-radius:12px; font-weight:800;">Siguiente<i class="fas fa-chevron-right" style="margin-left:8px;"></i></button></div></div><div style="margin-bottom:12px; font-size:0.8rem; color:var(--accent); font-weight:800; text-transform:capitalize;">${titlePeriod}</div>${monthlyResumeHtml}</section><section class="emp-card glass" style="padding:20px; border-radius:18px; border:1px solid var(--border);"><h3 style="margin:0 0 14px; font-size:0.9rem; font-weight:800;">Calendario</h3>${window.renderEmployeeProfileCalendar(model)}</section></div>`;
     } else if (safeTab === 'vacations' && supportsVacations) {
-        const vacRows = (model.yearGroupedVacs || []).sort((a, b) => String(a.fecha_inicio || '').localeCompare(String(b.fecha_inicio || ''))).map(ev => { const days = Math.max(1, Math.round((new Date(`${ev.fecha_fin || ev.fecha_inicio}T12:00:00`) - new Date(`${ev.fecha_inicio}T12:00:00`)) / 86400000) + 1); return { fecha: ev.fecha_inicio, main: `<strong>${escapeHtml(window.employeeProfileDateRangeLabel(ev.fecha_inicio, ev.fecha_fin || ev.fecha_inicio))}</strong>`, secondary: `${days} Dias naturales${ev.isGroup ? ' Â· agrupado' : ''} Â· ${refDate.getFullYear()}`, badge: escapeHtml(ev.estado || 'activo') }; });
+        const vacRows = (model.yearGroupedVacs || []).sort((a, b) => String(a.fecha_inicio || '').localeCompare(String(b.fecha_inicio || ''))).map(ev => { const days = Math.max(1, Math.round((new Date(`${ev.fecha_fin || ev.fecha_inicio}T12:00:00`) - new Date(`${ev.fecha_inicio}T12:00:00`)) / 86400000) + 1); return { fecha: ev.fecha_inicio, main: `<strong>${escapeHtml(window.employeeProfileDateRangeLabel(ev.fecha_inicio, ev.fecha_fin || ev.fecha_inicio))}</strong>`, secondary: `${days} Dias naturales${ev.isGroup ? ' &middot; agrupado' : ''} &middot; ${refDate.getFullYear()}`, badge: escapeHtml(ev.estado || 'activo') }; });
         tabContent = `<div style="display:grid; grid-template-columns:1.1fr 0.9fr; gap:18px;"><section class="emp-card glass" style="padding:20px; border-radius:18px; border:1px solid var(--border);"><h3 style="margin:0 0 14px; font-size:0.9rem; font-weight:800;">Vacaciones ${refDate.getFullYear()}</h3>${renderRowsTable(vacRows, 'No hay vacaciones registradas en el ano en curso.')}</section><section class="emp-card glass" style="padding:20px; border-radius:18px; border:1px solid var(--border);"><h3 style="margin:0 0 14px; font-size:0.9rem; font-weight:800;">Saldo vacacional</h3><div style="display:grid; gap:10px;">${window.renderEmployeeProfileField(['Derecho anual', model.vacaciones.applies ? `${model.vacaciones.derechoAnual} dias` : 'No aplica'])}${window.renderEmployeeProfileField(['Consumidas', model.vacaciones.applies ? `${model.vacaciones.usadas} dias` : 'No aplica'])}${window.renderEmployeeProfileField(['Previstas ano', model.vacaciones.applies ? `${model.annualKpis.vacacionesPlanificadas} dias` : 'No aplica'])}${window.renderEmployeeProfileField(['Previstas futuras', model.vacaciones.applies ? `${model.vacaciones.previstas} dias` : 'No aplica'])}${window.renderEmployeeProfileField(['Ajuste manual', model.vacaciones.applies ? `${model.vacaciones.saldo >= 0 ? '+' : ''}${model.vacaciones.saldo} dias` : 'No aplica'])}${window.renderEmployeeProfileField(['Saldo final ano', vacationBalanceLabel])}</div></section></div>`;
     } else if (safeTab === 'leaves') {
         const selectedYear = refDate.getFullYear();
@@ -8210,8 +8070,8 @@ window.renderEmployeeProfile = () => {
             const days = countNaturalDays(ev);
             return {
                 fecha: ev.fecha_inicio,
-                main: `<strong>${escapeHtml(window.employeeProfileEventLabel(ev))}</strong> Â· ${escapeHtml(window.employeeProfileDateRangeLabel(ev.fecha_inicio, ev.fecha_fin || ev.fecha_inicio))}`,
-                secondary: `${days} dia${days === 1 ? '' : 's'} naturales Â· ${escapeHtml(ev.observaciones || 'Sin observaciones')}`,
+                main: `<strong>${escapeHtml(window.employeeProfileEventLabel(ev))}</strong> &middot; ${escapeHtml(window.employeeProfileDateRangeLabel(ev.fecha_inicio, ev.fecha_fin || ev.fecha_inicio))}`,
+                secondary: `${days} dia${days === 1 ? '' : 's'} naturales &middot; ${escapeHtml(ev.observaciones || 'Sin observaciones')}`,
                 badge: escapeHtml(ev.estado || 'activo')
             };
         });
@@ -8226,23 +8086,23 @@ window.renderEmployeeProfile = () => {
             const shiftLabel = window.employeeProfileChangeShiftLabel(ev);
             return {
                 fecha: ev.fecha_inicio,
-                main: `<strong>${escapeHtml(window.employeeProfileEventLabel(ev))}</strong> Â· ${escapeHtml(actorLabel)} Â· ${escapeHtml(window.employeeProfileDateRangeLabel(ev.fecha_inicio, ev.fecha_fin || ev.fecha_inicio))}`,
-                secondary: `${shiftLabel ? `${escapeHtml(shiftLabel)} Â· ` : ''}${escapeHtml(ev.observaciones || 'Sin observaciones')} Â· origen ${escapeHtml(window.employeeProfileReadableSource(ev))}`,
-                badge: `${escapeHtml(ev.estado || 'activo')} â†»`
+                main: `<strong>${escapeHtml(window.employeeProfileEventLabel(ev))}</strong> &middot; ${escapeHtml(actorLabel)} &middot; ${escapeHtml(window.employeeProfileDateRangeLabel(ev.fecha_inicio, ev.fecha_fin || ev.fecha_inicio))}`,
+                secondary: `${shiftLabel ? `${escapeHtml(shiftLabel)} &middot; ` : ''}${escapeHtml(ev.observaciones || 'Sin observaciones')} &middot; origen ${escapeHtml(window.employeeProfileReadableSource(ev))}`,
+                badge: `${escapeHtml(ev.estado || 'activo')} &#8635;`
             };
         });
         const years = model.availableYears || [selectedYear];
         const yearTabs = `<div class="emp-year-tabs">${years.map(year => `<button type="button" class="emp-year-tab ${year === selectedYear ? 'active' : ''}" onclick="window.setEmployeeProfileYear(${year})">${year}</button>`).join('')}</div>`;
         tabContent = `<section class="emp-card glass emp-year-card" style="padding:20px; border-radius:18px; border:1px solid var(--border);"><div class="emp-year-header"><div><h3 style="margin:0 0 6px; font-size:0.9rem; font-weight:800;">Cambios de turno ${selectedYear}</h3><div class="emp-year-subtitle">Mostrando todo el ano natural, del 01/01/${selectedYear} al 31/12/${selectedYear}.</div></div>${yearTabs}</div><div class="emp-leave-summary"><span><strong>${changeRows.length}</strong> registros</span></div>${renderRowsTable(changeRows, `No hay cambios de turno registrados en ${selectedYear}.`)}</section>`;
     } else if (safeTab === 'substitutions') {
-        const doneRows = model.substitutionsDone.map(ev => ({ fecha: ev.fecha_inicio, main: `<strong>${escapeHtml(window.employeeProfileEventLabel(ev))}</strong> Â· cubre a ${escapeHtml(ev.empleado_id || 'No informado')}`, secondary: `${escapeHtml(window.employeeProfileDateRangeLabel(ev.fecha_inicio, ev.fecha_fin || ev.fecha_inicio))} Â· hotel ${escapeHtml(window.getEventoHotel ? window.getEventoHotel(ev) : (ev.hotel || ev.hotel_origen || ev.hotel_destino || emp.hotel || 'No informado'))}`, badge: escapeHtml(ev.id || ev.evento_id || 'sin id') }));
-        const receivedRows = model.substitutionsReceived.map(ev => ({ fecha: ev.fecha_inicio, main: `<strong>${escapeHtml(window.employeeProfileEventLabel(ev))}</strong> Ãƒâ€š· sustituye ${escapeHtml(ev.empleado_destino_id || ev.sustituto_id || ev.payload?.sustituto || 'No informado')}`, secondary: `${escapeHtml(window.employeeProfileDateRangeLabel(ev.fecha_inicio, ev.fecha_fin || ev.fecha_inicio))} Ãƒâ€š· motivo ${escapeHtml(ev.observaciones || 'Sin observaciones')}`, badge: escapeHtml(ev.id || ev.evento_id || 'sin id') }));
+        const doneRows = model.substitutionsDone.map(ev => ({ fecha: ev.fecha_inicio, main: `<strong>${escapeHtml(window.employeeProfileEventLabel(ev))}</strong> &middot; cubre a ${escapeHtml(ev.empleado_id || 'No informado')}`, secondary: `${escapeHtml(window.employeeProfileDateRangeLabel(ev.fecha_inicio, ev.fecha_fin || ev.fecha_inicio))} &middot; hotel ${escapeHtml(window.getEventoHotel ? window.getEventoHotel(ev) : (ev.hotel || ev.hotel_origen || ev.hotel_destino || emp.hotel || 'No informado'))}`, badge: escapeHtml(ev.id || ev.evento_id || 'sin id') }));
+        const receivedRows = model.substitutionsReceived.map(ev => ({ fecha: ev.fecha_inicio, main: `<strong>${escapeHtml(window.employeeProfileEventLabel(ev))}</strong> &middot; sustituye ${escapeHtml(ev.empleado_destino_id || ev.sustituto_id || ev.payload?.sustituto || 'No informado')}`, secondary: `${escapeHtml(window.employeeProfileDateRangeLabel(ev.fecha_inicio, ev.fecha_fin || ev.fecha_inicio))} &middot; motivo ${escapeHtml(ev.observaciones || 'Sin observaciones')}`, badge: escapeHtml(ev.id || ev.evento_id || 'sin id') }));
         tabContent = `<div style="display:grid; grid-template-columns:1fr 1fr; gap:18px;"><section class="emp-card glass" style="padding:20px; border-radius:18px; border:1px solid var(--border);"><h3 style="margin:0 0 14px; font-size:0.9rem; font-weight:800;">Sustituciones realizadas</h3>${renderRowsTable(doneRows, 'No ha realizado sustituciones en este periodo.')}</section><section class="emp-card glass" style="padding:20px; border-radius:18px; border:1px solid var(--border);"><h3 style="margin:0 0 14px; font-size:0.9rem; font-weight:800;">Sustituciones recibidas</h3>${renderRowsTable(receivedRows, 'No ha recibido sustituciones en este periodo.')}</section></div>`;
     } else if (safeTab === 'reinforcements') {
-        const refRows = model.explicitRefuerzoEvents.map(ev => ({ fecha: ev.fecha_inicio, main: `<strong>${escapeHtml(window.employeeProfileDateRangeLabel(ev.fecha_inicio, ev.fecha_fin || ev.fecha_inicio))}</strong> Ãƒâ€š· ${escapeHtml(window.getEventoHotel ? window.getEventoHotel(ev) : (ev.hotel || ev.hotel_origen || ev.hotel_destino || emp.hotel || 'No informado'))}`, secondary: `Turno ${escapeHtml(ev.turno || ev.payload?.turno || 'No informado')} Ãƒâ€š· origen ${escapeHtml(window.employeeProfileReadableSource(ev))}`, badge: escapeHtml(ev.id || ev.evento_id || 'sin id') }));
+        const refRows = model.explicitRefuerzoEvents.map(ev => ({ fecha: ev.fecha_inicio, main: `<strong>${escapeHtml(window.employeeProfileDateRangeLabel(ev.fecha_inicio, ev.fecha_fin || ev.fecha_inicio))}</strong> &middot; ${escapeHtml(window.getEventoHotel ? window.getEventoHotel(ev) : (ev.hotel || ev.hotel_origen || ev.hotel_destino || emp.hotel || 'No informado'))}`, secondary: `Turno ${escapeHtml(ev.turno || ev.payload?.turno || 'No informado')} &middot; origen ${escapeHtml(window.employeeProfileReadableSource(ev))}`, badge: escapeHtml(ev.id || ev.evento_id || 'sin id') }));
         tabContent = `<section class="emp-card glass" style="padding:20px; border-radius:18px; border:1px solid var(--border);"><h3 style="margin:0 0 14px; font-size:0.9rem; font-weight:800;">Refuerzos explicitos</h3>${renderRowsTable(refRows, 'No hay refuerzos explicitos para este empleado en el periodo.')}</section>`;
     } else if (safeTab === 'history') {
-        const historyRows = (model.yearGroupedEvents || model.groupedEvents || []).slice().sort((a, b) => String(b.fecha_inicio || '').localeCompare(String(a.fecha_inicio || ''))).map(ev => ({ fecha: ev.fecha_inicio, main: `<strong>${escapeHtml(window.employeeProfileEventLabel(ev))}</strong> Ãƒâ€š· ${escapeHtml(window.employeeProfileDateRangeLabel(ev.fecha_inicio, ev.fecha_fin || ev.fecha_inicio))}`, secondary: `${escapeHtml(window.employeeProfileActorLabel(ev))} Ãƒâ€š· ${escapeHtml(ev.observaciones || 'Sin observaciones')} Ãƒâ€š· origen ${escapeHtml(window.employeeProfileReadableSource(ev))}`, badge: escapeHtml(ev.estado || 'activo') }));
+        const historyRows = (model.yearGroupedEvents || model.groupedEvents || []).slice().sort((a, b) => String(b.fecha_inicio || '').localeCompare(String(a.fecha_inicio || ''))).map(ev => ({ fecha: ev.fecha_inicio, main: `<strong>${escapeHtml(window.employeeProfileEventLabel(ev))}</strong> &middot; ${escapeHtml(window.employeeProfileDateRangeLabel(ev.fecha_inicio, ev.fecha_fin || ev.fecha_inicio))}`, secondary: `${escapeHtml(window.employeeProfileActorLabel(ev))} &middot; ${escapeHtml(ev.observaciones || 'Sin observaciones')} &middot; origen ${escapeHtml(window.employeeProfileReadableSource(ev))}`, badge: escapeHtml(ev.estado || 'activo') }));
         tabContent = `<section class="emp-card glass" style="padding:20px; border-radius:18px; border:1px solid var(--border);"><h3 style="margin:0 0 14px; font-size:0.9rem; font-weight:800;">Historial</h3>${renderRowsTable(historyRows, 'No hay historico de eventos para este empleado.')}</section>`;
     }
     body.innerHTML = `<div class="employee-profile-container" style="padding:10px;">${headerHTML}${kpiHTML}<div class="emp-content-area" style="min-height:400px;">${tabContent}</div><div style="margin-top:24px; padding-top:14px; border-top:1px solid var(--border); font-size:0.66rem; color:var(--text-dim); display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap;"><span>ID tecnico: ${escapeHtml(emp.id || 'N/A')}</span><span>UUID: ${escapeHtml(emp.uuid || 'N/A')}</span><span>Tipo estructural: ${escapeHtml(model.structuralType || 'fijo')}</span></div></div>`;
@@ -8324,7 +8184,7 @@ document.addEventListener('DOMContentLoaded', () => {
     setTimeout(window.renderDashboard, 1000);
     if (window.TurnosDB?.initRealtime) window.TurnosDB.initRealtime();
 
-    // Polling de badges cada 30s (má¡s el tiempo real si está activo)
+    // Polling de badges cada 30s (mÃ¡Â¡s el tiempo real si estÃ¡ activo)
     window.updateSidebarBadges();
     setInterval(window.updateSidebarBadges, 30000);
 });
@@ -8332,7 +8192,7 @@ document.addEventListener('DOMContentLoaded', () => {
 // INTEGRITY CHECK
 console.log("[Admin] Validando carga v13.3...");
 ["isoDate", "switchSection", "loadAdminExcelSourceRows", "populateEmployees", "renderDashboard", "renderRequests"].forEach(fn => {
-    if (typeof window[fn] !== "function") console.error("[Admin ERROR] window." + fn + " no está definida.");
+    if (typeof window[fn] !== "function") console.error("[Admin ERROR] window." + fn + " no estÃ¡ definida.");
 });
 
 window.cancelVacationGroup = async (idx) => {
@@ -8357,8 +8217,8 @@ window.cancelVacationGroup = async (idx) => {
 
 window.manageBajaGroup = async (id, ids) => {
     if (ids && ids.length > 1) {
-        if (confirm(`Este periodo consta de ${ids.length} eventos diarios agrupados. ?Deseas gestionar el periodo completo?\n\n(Pulsa Cancelar si prefieres gestionar solo el día inicial)`)) {
-            // Por ahora, como no hay edición masiva, abrimos el primero pero avisamos
+        if (confirm(`Este periodo consta de ${ids.length} eventos diarios agrupados. ?Deseas gestionar el periodo completo?\n\n(Pulsa Cancelar si prefieres gestionar solo el dÃ­a inicial)`)) {
+            // Por ahora, como no hay ediciÃ³n masiva, abrimos el primero pero avisamos
             window._editingGroupIds = ids;
         }
     }
@@ -8395,7 +8255,7 @@ window.diagnoseOperationalOrder = (hotel, weekStart) => {
     console.groupEnd();
 };
 
-// ÃƒÆ’Ã†’Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†’Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†’Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…¡Ãƒâ€šÃ‚Â¬ SMART PROFILE: live explainer + radioÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¢hidden sync ÃƒÆ’Ã†’Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†’Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†’Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†’Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†’Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†’Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†’Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†’Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†’Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†’Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†’Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†’Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†’Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†’Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†’Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†’Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†’Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†’Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†’Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†’Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†’Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†’Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…¡Ãƒâ€šÃ‚Â¬
+// ÃƒÆ’Ã†â€™Ãƒâ€ â€™ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚ÂÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€ â€™ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚ÂÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€ â€™ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚ÂÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ SMART PROFILE: live explainer + radioÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¾Ãƒâ€šÃ‚Â¢hidden sync ÃƒÆ’Ã†â€™Ãƒâ€ â€™ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚ÂÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€ â€™ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚ÂÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€ â€™ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚ÂÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€ â€™ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚ÂÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€ â€™ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚ÂÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€ â€™ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚ÂÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€ â€™ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚ÂÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€ â€™ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚ÂÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€ â€™ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚ÂÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€ â€™ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚ÂÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€ â€™ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚ÂÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€ â€™ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚ÂÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€ â€™ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚ÂÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€ â€™ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚ÂÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€ â€™ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚ÂÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€ â€™ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚ÂÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€ â€™ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚ÂÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€ â€™ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚ÂÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€ â€™ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚ÂÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€ â€™ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚ÂÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€ â€™ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚ÂÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€ â€™ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚ÂÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬
 window.updateSmartProfileExplainer = () => {
     const tipoRadio  = document.querySelector('input[name="smart-tipo"]:checked');
     const rolRadio   = document.querySelector('input[name="smart-rol"]:checked');
@@ -8447,7 +8307,7 @@ window.updateSmartProfileExplainer = () => {
     });
 };
 
-// ÃƒÆ’Ã†’Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†’Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†’Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…¡Ãƒâ€šÃ‚Â¬ SMART PROFILE: canonical save with hard validations ÃƒÆ’Ã†’Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†’Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†’Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†’Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†’Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†’Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†’Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†’Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†’Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†’Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†’Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†’Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†’Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†’Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†’Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†’Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†’Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†’Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†’Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†’Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…¡Ãƒâ€šÃ‚Â¬
+// ÃƒÆ’Ã†â€™Ãƒâ€ â€™ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚ÂÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€ â€™ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚ÂÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€ â€™ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚ÂÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ SMART PROFILE: canonical save with hard validations ÃƒÆ’Ã†â€™Ãƒâ€ â€™ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚ÂÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€ â€™ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚ÂÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€ â€™ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚ÂÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€ â€™ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚ÂÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€ â€™ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚ÂÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€ â€™ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚ÂÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€ â€™ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚ÂÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€ â€™ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚ÂÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€ â€™ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚ÂÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€ â€™ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚ÂÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€ â€™ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚ÂÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€ â€™ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚ÂÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€ â€™ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚ÂÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€ â€™ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚ÂÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€ â€™ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚ÂÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€ â€™ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚ÂÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€ â€™ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚ÂÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€ â€™ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚ÂÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€ â€™ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚ÂÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€ â€™ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚ÂÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬
 window.saveEmployeeProfileV2 = async (event) => {
     if (event?.preventDefault) event.preventDefault();
     window.updateSmartProfileExplainer?.();
@@ -8475,7 +8335,7 @@ window.saveEmployeeProfileV2 = async (event) => {
     const vacAnuales = Number(document.getElementById('edit-emp-vac-anuales')?.value || 44);
     const observaciones = document.getElementById('edit-emp-observaciones')?.value?.trim() || null;
 
-    // ÃƒÆ’Ã†’Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†’Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…¡Ãƒâ€šÃ‚Â¬ HARD VALIDATIONS ÃƒÆ’Ã†’Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†’Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†’Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†’Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†’Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†’Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†’Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†’Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†’Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†’Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†’Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†’Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†’Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†’Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†’Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†’Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†’Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†’Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†’Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†’Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†’Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†’Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†’Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†’Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†’Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†’Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†’Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†’Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†’Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†’Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†’Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†’Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†’Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†’Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†’Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†’Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†’Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†’Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†’Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†’Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†’Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†’Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†’Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†’Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†’Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†’Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†’Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†’Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†’Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†’Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†’Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†’Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…¡Ãƒâ€šÃ‚Â¬
+    // ÃƒÆ’Ã†â€™Ãƒâ€ â€™ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚ÂÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€ â€™ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚ÂÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ HARD VALIDATIONS ÃƒÆ’Ã†â€™Ãƒâ€ â€™ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚ÂÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€ â€™ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚ÂÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€ â€™ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚ÂÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€ â€™ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚ÂÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€ â€™ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚ÂÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€ â€™ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚ÂÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€ â€™ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚ÂÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€ â€™ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚ÂÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€ â€™ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚ÂÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€ â€™ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚ÂÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€ â€™ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚ÂÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€ â€™ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚ÂÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€ â€™ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚ÂÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€ â€™ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚ÂÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€ â€™ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚ÂÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€ â€™ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚ÂÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€ â€™ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚ÂÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€ â€™ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚ÂÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€ â€™ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚ÂÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€ â€™ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚ÂÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€ â€™ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚ÂÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€ â€™ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚ÂÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€ â€™ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚ÂÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€ â€™ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚ÂÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€ â€™ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚ÂÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€ â€™ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚ÂÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€ â€™ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚ÂÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€ â€™ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚ÂÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€ â€™ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚ÂÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€ â€™ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚ÂÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€ â€™ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚ÂÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€ â€™ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚ÂÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€ â€™ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚ÂÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€ â€™ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚ÂÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€ â€™ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚ÂÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€ â€™ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚ÂÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€ â€™ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚ÂÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€ â€™ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚ÂÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€ â€™ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚ÂÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€ â€™ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚ÂÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€ â€™ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚ÂÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€ â€™ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚ÂÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€ â€™ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚ÂÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€ â€™ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚ÂÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€ â€™ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚ÂÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€ â€™ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚ÂÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€ â€™ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚ÂÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€ â€™ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚ÂÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€ â€™ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚ÂÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€ â€™ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚ÂÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€ â€™ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚ÂÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€ â€™ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚ÂÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬
     const INVALID_TIPOS = ['sustituto', 'titular', 'refuerzo', 'placeholder', 'pendiente'];
     const INVALID_ROLES = ['fijo', 'ocasional', 'placeholder', 'pendiente', 'apoyo'];
     const VALID_HOTELS  = ['Cumbria Spa&Hotel', 'Sercotel Guadiana'];
@@ -8524,6 +8384,7 @@ window.saveEmployeeProfileV2 = async (event) => {
         showErr('Error al guardar: ' + (e.message || String(e)));
     }
 };
+
 
 
 
