@@ -1,4 +1,4 @@
-﻿/* mobile.app.js (V3.2 Premium - Admin Standard) */
+/* mobile.app.js (V3.2 Premium - Admin Standard) */
 (function () {
   const $  = (s, root = document) => root.querySelector(s);
   const $$ = (s, root = document) => Array.from(root.querySelectorAll(s));
@@ -68,6 +68,15 @@
   let orientationRefreshTimer = null;
   let lastViewportSignature = "";
   let lastLayoutMode = "";
+
+  // ── Auto-refresh móvil ────────────────────────────────────────────────────
+  // Auto-refresh público cada 15 minutos para evitar interrupciones de lectura.
+  const MOBILE_AUTO_REFRESH_MS = window.__DEBUG_REFRESH_MS || (15 * 60 * 1000);
+  const MOBILE_IDLE_THRESHOLD_MS = 60 * 1000;
+  let _mobileLastInteractionAt = Date.now();
+  let _mobileLastRenderTime = 0;
+  let _mobilePeriodicTimer = null;
+  // ─────────────────────────────────────────────────────────────────────────
 
   function escapeHtml(value) {
     return String(value ?? "").replace(/[&<>"']/g, ch => ({
@@ -518,11 +527,48 @@
   }
   window.setInterval(watchViewportRotation, 500);
 
+  // Rastrear interacción del usuario para posponer auto-refresh si está activo
+  ["scroll", "click", "touchstart", "keydown", "change"].forEach(evt => {
+    window.addEventListener(evt, () => { _mobileLastInteractionAt = Date.now(); }, { passive: true });
+  });
+
+  // Refresco silencioso periódico móvil: preserva hotel, semana y scroll
+  function _silentMobileRefresh() {
+    const idleMs = Date.now() - _mobileLastInteractionAt;
+    if (idleMs < MOBILE_IDLE_THRESHOLD_MS) {
+      console.log('[PUBLIC_REFRESH] Usuario activo (móvil), refresco pospuesto.');
+      return;
+    }
+    if (!hotelSelect || !hotelSelect.value) return; // No hay hotel seleccionado
+    console.log('[PUBLIC_REFRESH] Refrescando datos móvil sin recargar página.');
+    // Preservar scroll antes del rerender
+    const prevScrollY = window.scrollY;
+    const prevHotel = hotelSelect.value;
+    const prevWeek = dateInput ? dateInput.value : '';
+    window.refreshMobileView().then(() => {
+      // Restaurar hotel y semana si el rerender los alteró
+      if (hotelSelect && prevHotel) hotelSelect.value = prevHotel;
+      if (dateInput && prevWeek) dateInput.value = prevWeek;
+      // Restaurar scroll
+      requestAnimationFrame(() => {
+        window.scrollTo({ top: prevScrollY, behavior: 'instant' });
+      });
+      console.log('[PUBLIC_REFRESH] Estado móvil preservado', { prevScrollY, prevHotel, prevWeek });
+    });
+  }
+
   window.initMobileSunc = async function() {
     const viewportState = applyOrientationMode();
     lastViewportSignature = getViewportSignature();
     lastLayoutMode = `${viewportState.isLandscape ? "landscape" : "portrait"}:${viewportState.width <= 380 ? "tight" : viewportState.width <= 430 ? "narrow" : viewportState.width >= 700 ? "wide" : "normal"}`;
     await window.refreshMobileView();
+    _mobileLastRenderTime = Date.now();
+    // Iniciar auto-refresh periódico
+    if (_mobilePeriodicTimer) clearInterval(_mobilePeriodicTimer);
+    _mobilePeriodicTimer = setInterval(() => {
+      if (!document.hidden) _silentMobileRefresh();
+    }, MOBILE_AUTO_REFRESH_MS);
+    console.log('[PUBLIC_REFRESH] Auto-refresh móvil configurado cada 15 minutos.');
   };
 })();
 

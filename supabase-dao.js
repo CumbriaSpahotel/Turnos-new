@@ -1097,7 +1097,7 @@ window.TurnosDB = {
                 rows: snapshot?.rows?.length
             });
 
-            // 2. Insertar nuevo snapshot activo
+            // --- FASE A: INSERT PRINCIPAL (CRÍTICA) ---
             const { data: newSnap, error: snapErr } = await client
                 .from('publicaciones_cuadrante')
                 .insert([{
@@ -1121,13 +1121,17 @@ window.TurnosDB = {
                 .select()
                 .single();
             
-            console.log("[DAO_PUBLISH] result", newSnap);
             if (snapErr) {
-                console.error("[DAO_PUBLISH] error", snapErr);
-                throw snapErr;
+                console.error("[DAO_PUBLISH] Critical INSERT failure:", snapErr);
+                throw snapErr; // El fallo en el INSERT es crítico
             }
 
-            // 3. Marcar snapshots anteriores como 'reemplazado'
+            console.log("[DAO_PUBLISH] Insert success:", newSnap.id);
+
+            // --- FASE B: INACTIVAR VERSIONES ANTERIORES (BEST-EFFORT) ---
+            let needsManualCleanup = false;
+            let warning = null;
+
             const { error: upErr } = await client
                 .from('publicaciones_cuadrante')
                 .update({ estado: 'reemplazado', updated_at: new Date().toISOString() })
@@ -1137,20 +1141,22 @@ window.TurnosDB = {
                 .neq('id', newSnap.id);
             
             if (upErr) {
-                console.warn('[DAO] Error al marcar versiones anteriores como reemplazadas:', upErr);
+                needsManualCleanup = true;
+                warning = upErr.message || 'Permiso denegado (RLS) al inactivar versiones anteriores.';
+                console.warn('[DAO_PUBLISH] Publicación creada, pero no se pudieron inactivar versiones anteriores por RLS.', upErr);
+                
                 window.reportOperationalDiagnostic?.({
                     source: 'supabase-dao',
                     severity: 'warning',
-                    type: 'SUPABASE_REPLACE_PREVIOUS',
-                    title: 'Supabase no reemplazó versiones anteriores',
-                    desc: `${hotel} ${semanaInicio}: ${upErr.message || 'permiso denegado al marcar snapshots anteriores como reemplazados'}`,
+                    type: 'SUPABASE_REPLACE_PREVIOUS_RLS',
+                    title: 'Snapshots duplicados (RLS)',
+                    desc: `Publicación OK, pero ${hotel} (${semanaInicio}) requiere limpieza manual de versiones anteriores debido a políticas RLS.`,
                     section: 'changes',
-                    actionLabel: 'Ver Cambios',
-                    key: `supabase-dao|replace-previous|${hotel}|${semanaInicio}`
+                    key: `rls-cleanup|${hotel}|${semanaInicio}`
                 });
             }
 
-            // 4. Log de auditoría
+            // 4. Log de auditoría (No bloqueante)
             try {
                 await this.insertLog({
                     cambios_totales: resumen?.emps || 0,
@@ -1160,20 +1166,28 @@ window.TurnosDB = {
                         semana_fin: semanaFin,
                         hotel: hotel,
                         version: nextVersion,
-                        rollback_target: lastId
+                        rollback_target: lastId,
+                        warning: warning
                     },
                     usuario: usuario || 'ADMIN'
                 });
             } catch (logErr) {
-                console.warn("DAO: Error al registrar log de auditoría (no bloqueante):", logErr.message);
+                console.warn("DAO: Error al registrar log de auditoría:", logErr.message);
             }
 
-            return true;
+            return {
+                success: true,
+                warning: warning,
+                needsManualCleanup: needsManualCleanup,
+                publication: newSnap
+            };
+
         } catch (err) {
             console.error("DAO Error (publishCuadranteSnapshot):", err);
             throw err;
         }
     },
+
 
     isValidPublicSnapshot(snapshot) {
         if (!snapshot) return false;

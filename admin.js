@@ -5634,11 +5634,13 @@ window.publishToSupabase = async () => {
             }
         }
 
-        // 3. Guardar Snapshots en publicaciones_cuadrante
+        // 3. Guardar Snapshots en publicaciones_cuadrante (FASE A Crítica / FASE B Best-Effort)
         console.log("[PUBLISH_EXECUTE] saving snapshots", snapshots.length);
+        let globalNeedsCleanup = false;
+        
         for (const snap of snapshots) {
             console.log("[PUBLISH_EXECUTE] publishing hotel", snap.hotel_id);
-            await window.TurnosDB.publishCuadranteSnapshot({
+            const result = await window.TurnosDB.publishCuadranteSnapshot({
                 semanaInicio: snap.week_start,
                 semanaFin: snap.week_end,
                 hotel: snap.hotel_id,
@@ -5646,6 +5648,10 @@ window.publishToSupabase = async () => {
                 resumen: { emps: snap.rows.length },
                 usuario: 'ADMIN'
             });
+
+            if (result && result.needsManualCleanup) {
+                globalNeedsCleanup = true;
+            }
         }
         
         console.log("[PUBLISH_EXECUTE] authorizing warnings");
@@ -5657,7 +5663,11 @@ window.publishToSupabase = async () => {
 
         document.getElementById('publishPreviewModal')?.classList.remove('open');
         console.log("[PUBLISH_EXECUTE] success!");
-        alert('Publicación completada con éxito.');
+        if (globalNeedsCleanup) {
+            alert('Publicación creada correctamente.\n\nNOTA: Supabase bloqueó la desactivación automática de versiones anteriores por políticas de seguridad (RLS). Se requiere limpieza manual de duplicados activos desde el SQL Editor.');
+        } else {
+            alert('Publicación completada con éxito.');
+        }
 
         if (window.renderExcelView) window.renderExcelView();
         if (window.renderPreview) window.renderPreview();
