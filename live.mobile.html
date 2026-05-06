@@ -915,6 +915,7 @@
       width: 100%;
       text-align: center;
       color: transparent;
+      -webkit-text-fill-color: transparent;
       caret-color: transparent;
       position: relative;
     }
@@ -926,6 +927,11 @@
     #dateInput::-webkit-datetime-edit-day-field,
     #dateInput::-webkit-datetime-edit-year-field {
       color: transparent;
+      -webkit-text-fill-color: transparent;
+    }
+
+    #dateInput::-webkit-date-and-time-value {
+      opacity: 0;
     }
 
     .date-shell {
@@ -1062,6 +1068,11 @@
 
     .dark-mode .name-cell {
       background: linear-gradient(180deg, rgba(23, 32, 51, 0.96), rgba(23, 32, 51, 0.9)) !important;
+    }
+
+    .dark-mode .emp-name {
+      color: #e2e8f0 !important;
+      text-shadow: 0 1px 1px rgba(2, 6, 23, 0.4);
     }
 
     .dark-mode .bottom-nav {
