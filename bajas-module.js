@@ -13,8 +13,8 @@ let _skipDomCache = false;
 
 const TIPOS_BAJA=['BAJA','PERM','PERMISO','IT','BAJA_MEDICA','FORMACION','AUSENCIA','OTRO'];
 const TIPO_LABEL={BAJA:'Baja Médica / IT',PERM:'Permiso',PERMISO:'Permiso',IT:'Baja Médica / IT',BAJA_MEDICA:'Baja Médica / IT',FORMACION:'Formación',AUSENCIA:'Ausencia',OTRO:'Otro'};
-const TIPO_COLOR={BAJA:'#f87171',PERM:'#a78bfa',PERMISO:'#a78bfa',IT:'#f87171',BAJA_MEDICA:'#f87171',FORMACION:'#60a5fa',AUSENCIA:'#94a3b8',OTRO:'#94a3b8'};
-const TIPO_BG={BAJA:'rgba(239,68,68,0.1)',PERM:'rgba(139,92,246,0.1)',PERMISO:'rgba(139,92,246,0.1)',IT:'rgba(239,68,68,0.1)',BAJA_MEDICA:'rgba(239,68,68,0.1)',FORMACION:'rgba(96,165,250,0.1)',AUSENCIA:'rgba(148,163,184,0.1)',OTRO:'rgba(148,163,184,0.1)'};
+const TIPO_COLOR={BAJA:'#475569',PERM:'#a78bfa',PERMISO:'#a78bfa',IT:'#475569',BAJA_MEDICA:'#475569',FORMACION:'#60a5fa',AUSENCIA:'#94a3b8',OTRO:'#94a3b8'};
+const TIPO_BG={BAJA:'#f1f5f9',PERM:'rgba(139,92,246,0.1)',PERMISO:'rgba(139,92,246,0.1)',IT:'#f1f5f9',BAJA_MEDICA:'#f1f5f9',FORMACION:'rgba(96,165,250,0.1)',AUSENCIA:'rgba(148,163,184,0.1)',OTRO:'rgba(148,163,184,0.1)'};
 const ESTADO_COLOR={pendiente:'#f59e0b',activo:'#10b981',aprobado:'#3b82f6',rechazado:'#ef4444',anulado:'#6b7280',finalizado:'#6b7280'};
 const ESTADO_BG={pendiente:'rgba(245,158,11,0.1)',activo:'rgba(16,185,129,0.1)',aprobado:'rgba(59,130,246,0.1)',rechazado:'rgba(239,68,68,0.1)',anulado:'rgba(107,114,128,0.1)',finalizado:'rgba(107,114,128,0.08)'};
 

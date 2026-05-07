@@ -2968,10 +2968,12 @@ window.renderEmployeeProfileCalendar = (model) => {
                     if (day.incidencia) {
                         const type = window.normalizeTipo(day.incidencia.tipo);
                         if (type === 'VAC') statusClass = 'vac';
-                        else if (type === 'BAJA' || type === 'IT') statusClass = 'baja';
+                        else if (type === 'BAJA') statusClass = 'baja';
                         else statusClass = 'event';
                     } else if (labelShort.toUpperCase() === 'V' || /VAC/i.test(label) || String(day.turno || '').toUpperCase().startsWith('VAC')) {
                         statusClass = 'vac';
+                    } else if (labelShort.toUpperCase() === 'B' || /BAJA|IT|INCAPACIDAD/i.test(label) || /BAJA|IT|INCAPACIDAD/i.test(String(day.turno || ''))) {
+                        statusClass = 'baja';
                     } else if (label === 'D' || label === 'Descanso') {
                         statusClass = 'descanso';
                     } else if (['M','T','N'].includes(labelShort.toUpperCase())) {
@@ -7987,9 +7989,10 @@ window.renderEmployeeProfile = () => {
     const kpiHTML = `<div class="emp-kpi-grid" style="display:grid; grid-template-columns:repeat(${Math.max(4, kpiCards.length)}, minmax(100px, 1fr)); gap:8px; margin-bottom:10px;">${kpiCards.map(([label, value]) => {
         const valStr = String(value || '').toUpperCase();
         const labStr = String(label || '').toUpperCase();
-        const isBaja = (valStr.includes('BAJA') || valStr.includes('IT')) && (labStr.includes('ESTADO') || labStr.includes('INCIDENCIA'));
+        const isBaja = (valStr.includes('BAJA') || valStr.includes('IT') || valStr.includes('INCAPACIDAD')) && (labStr.includes('ESTADO') || labStr.includes('INCIDENCIA') || labStr.includes('TURNO'));
         const bg = isBaja ? '#f1f5f9 !important' : 'white';
-        return `<div class="emp-kpi-card glass" style="padding:14px; border-radius:16px; border:1px solid var(--border); background:${bg};"><label style="display:block; font-size:0.6rem; font-weight:800; color:var(--text-dim); text-transform:uppercase; margin-bottom:4px;">${escapeHtml(label)}</label><strong style="font-size:0.95rem; color:var(--text);">${escapeHtml(String(value ?? '-'))}</strong></div>`;
+        const fg = isBaja ? '#475569 !important' : 'var(--text)';
+        return `<div class="emp-kpi-card glass" style="padding:14px; border-radius:16px; border:1px solid var(--border); background:${bg};"><label style="display:block; font-size:0.6rem; font-weight:800; color:var(--text-dim); text-transform:uppercase; margin-bottom:4px;">${escapeHtml(label)}</label><strong style="font-size:0.95rem; color:${fg};">${escapeHtml(String(value ?? '-'))}</strong></div>`;
     }).join('')}</div>`;
     let tabContent = '';
     if (safeTab === 'summary') {

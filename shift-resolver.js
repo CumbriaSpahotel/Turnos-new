@@ -1,4 +1,4 @@
-﻿/* shift-resolver.js
+/* shift-resolver.js
  * MOTOR ÚNICO DE RESOLUCIÓN DE TURNOS
  * v5.0 - Estabilización Estructural
  */
@@ -145,9 +145,9 @@ console.log("[ShiftResolver] Iniciando carga v5.0...");
             .replace(/\s+/g, '_')
             .replace(/_+$/, ''); // quitar _ finales
         
-        if (v.startsWith('VAC')) return 'VAC'; // VAC, VACACIONES, VAC_ðŸ–ï¸ quitado el emoji
-        if (['BAJA', 'BAJA_MEDICA', 'BM', 'IT', 'INCAPACIDAD'].includes(v)) return 'BAJA';
-        if (v.startsWith('PERM')) return 'PERM'; // unify PERMISO â†’ PERM
+        if (v.startsWith('VAC')) return 'VAC'; 
+        if (v.includes('BAJA') || v.includes('IT') || v.includes('INCAPACIDAD') || v.startsWith('BM')) return 'BAJA';
+        if (v.startsWith('PERM')) return 'PERM'; 
         
         if (v === 'CT' || v === 'CAMBIO_TURNO' || v === 'CAMBIO_DE_TURNO' || v === 'CAMBIO_DE_TURNOS') return 'CAMBIO_TURNO';
         if (v === 'INTERCAMBIO' || v === 'INTERCAMBIO_TURNO' || v === 'INTERCAMBIO_DE_TURNO' || v === 'INTERCAMBIO_DE_TURNOS') return 'INTERCAMBIO_TURNO';
