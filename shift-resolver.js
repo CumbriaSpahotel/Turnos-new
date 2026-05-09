@@ -516,9 +516,19 @@ console.log("[ShiftResolver] Iniciando carga v5.0...");
         'SIN_TURNO': 8
     };
 
+    const canonicalShiftToken = (value) => {
+        const raw = String(value || '').trim();
+        if (!raw) return '';
+        return raw
+            .toUpperCase()
+            .normalize('NFD')
+            .replace(/[\u0300-\u036f]/g, '')
+            .replace(/[^A-Z]/g, '');
+    };
+
     window.isValidShiftValue = (value) => {
-        const t = String(value || "").trim().toUpperCase();
-        return ["M", "T", "N", "D", "MAÑANA", "MANANA", "TARDE", "NOCHE", "DESCANSO"].includes(t);
+        const t = canonicalShiftToken(value);
+        return ["M", "T", "N", "D", "MANANA", "MAANA", "TARDE", "NOCHE", "DESCANSO"].includes(t);
     };
 
     window.isInvalidLegacyChangeValue = (value) => {
@@ -528,9 +538,9 @@ console.log("[ShiftResolver] Iniciando carga v5.0...");
 
     window.normalizeShiftValue = (value) => {
         if (window.TurnosRules && window.TurnosRules.isEmptyShift && window.TurnosRules.isEmptyShift(value)) return null;
-        const t = String(value || "").trim().toUpperCase();
-        if (!t || t === '-' || t === '—') return null;
-        if (t === "M" || t === "MAÑANA" || t === "MANANA") return "M";
+        const t = canonicalShiftToken(value);
+        if (!t || t === '-') return null;
+        if (t === "M" || t === "MANANA" || t === "MAANA") return "M";
         if (t === "T" || t === "TARDE") return "T";
         if (t === "N" || t === "NOCHE") return "N";
         if (t === "D" || t === "DESCANSO") return "D";
