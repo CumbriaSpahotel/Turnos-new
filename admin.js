@@ -827,6 +827,23 @@ window.cleanLogText = (value) => String(value ?? '')
     .replace(/\s+/g, ' ')
     .trim();
 
+window.fixMojibake = (value) => {
+    const raw = String(value ?? '');
+    if (!raw) return '';
+    if (!/[\u00C2\u00C3\u00E2]/.test(raw)) return raw;
+    try {
+        const decodeLatin1Utf8 = (str) => {
+            const bytes = Uint8Array.from(Array.from(str), (ch) => ch.charCodeAt(0) & 0xff);
+            return new TextDecoder('utf-8', { fatal: false }).decode(bytes);
+        };
+        let fixed = decodeLatin1Utf8(raw);
+        if (/[\u00C2\u00C3\u00E2]/.test(fixed)) fixed = decodeLatin1Utf8(fixed);
+        return fixed;
+    } catch (_) {
+        return raw;
+    }
+};
+
 window.DEBUG_MODE = false;
 
 // --- NAVEGACIÃ“N ---
@@ -2207,7 +2224,7 @@ window.renderRequests = async () => {
         <div class="requests-toolbar" style="display:flex; align-items:center; gap:20px; margin-bottom:20px; background:white; padding:15px 25px; border-radius:16px; border:1px solid #e2e8f0; box-shadow:0 4px 6px -1px rgba(0,0,0,0.05);">
             <div style="font-size:0.75rem; font-weight:800; color:#64748b; text-transform:uppercase; letter-spacing:0.05em;">Filtrar por:</div>
             <select id="requestsFilter" class="toolbar-input" style="padding:8px 15px; border-radius:10px; border:1px solid #cbd5e1; background:#f8fafc; font-weight:700; color:#1e293b; cursor:pointer;" onchange="window._requestsFilter = this.value; window.renderRequests()">
-                <option value="pendiente" ${window._requestsFilter === 'pendiente' ? 'selected' : ''}>Pendientes de RevisiÃ³n</option>
+                <option value="pendiente" ${window._requestsFilter === 'pendiente' ? 'selected' : ''}>Pendientes de Revision</option>
                 <option value="aprobada" ${window._requestsFilter === 'aprobada' ? 'selected' : ''}>Aprobadas</option>
                 <option value="rechazada" ${window._requestsFilter === 'rechazada' ? 'selected' : ''}>Rechazadas</option>
                 <option value="all" ${window._requestsFilter === 'all' ? 'selected' : ''}>Todas las Solicitudes</option>
@@ -2245,10 +2262,10 @@ window.renderRequests = async () => {
                     <div style="display:flex; justify-content:space-between; align-items:flex-start;">
                         <div>
                             <div style="display:flex; align-items:center; gap:8px;">
-                                <div style="font-size:0.7rem; font-weight:800; color:#0ea5e9; text-transform:uppercase;">${req.hotel}</div>
+                                <div style="font-size:0.7rem; font-weight:800; color:#0ea5e9; text-transform:uppercase;">${window.escapeHtml(window.fixMojibake(req.hotel))}</div>
                                 <span style="font-size:0.65rem; padding:2px 8px; border-radius:10px; background:${statusColor}22; color:${statusColor}; font-weight:800; text-transform:uppercase;">${statusLabel}</span>
                             </div>
-                            <h3 style="font-size:1.1rem; font-weight:800; margin:4px 0;">${req.solicitante} ${req.companero ? '& ' + req.companero : ''}</h3>
+                            <h3 style="font-size:1.1rem; font-weight:800; margin:4px 0;">${window.escapeHtml(window.fixMojibake(req.solicitante))} ${req.companero ? '& ' + window.escapeHtml(window.fixMojibake(req.companero)) : ''}</h3>
                             <div style="font-size:0.8rem; color:#64748b;">Solicitado el ${new Date(req.created_at).toLocaleString()}</div>
                         </div>
                         ${req.estado === 'pendiente' ? `
@@ -2263,8 +2280,8 @@ window.renderRequests = async () => {
                     <div style="margin-top:16px; display:grid; grid-template-columns:repeat(auto-fill, minmax(200px, 1fr)); gap:12px;">
                         ${(req.fechas || []).map(f => `
                             <div style="background:#f8fafc; padding:12px; border-radius:12px; border:1px solid #e2e8f0;">
-                                <div style="font-weight:800; font-size:0.85rem;">${f.fecha}</div>
-                                <div style="font-size:0.8rem; color:#64748b;">${f.origen} ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¾Ãƒâ€šÃ‚Â¢ ${f.destino}</div>
+                                <div style="font-weight:800; font-size:0.85rem;">${window.escapeHtml(f.fecha)}</div>
+                                <div style="font-size:0.8rem; color:#64748b;">${window.escapeHtml(window.fixMojibake(f.origen))} -> ${window.escapeHtml(window.fixMojibake(f.destino))}</div>
                             </div>
                         `).join('')}
                     </div>
@@ -2273,12 +2290,12 @@ window.renderRequests = async () => {
         }).join('');
     } catch (e) {
         console.error("[ADMIN ERROR] renderRequests:", e);
-        container.innerHTML = '<div style="padding:2rem; color:red; font-weight:800;">ÃƒÆ’Ã†â€™Ãƒâ€ â€™ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚ÂÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¢ Error cargando solicitudes: ' + e.message + '</div>';
+        container.innerHTML = '<div style="padding:2rem; color:red; font-weight:800;">Error cargando solicitudes: ' + e.message + '</div>';
     }
 };
 
 window.handleRequestAction = async (id, newState) => {
-    if (!confirm(`Â¿EstÃ¡s seguro de marcar como ${newState}?`)) return;
+    if (!confirm(`Seguro que quieres marcar como ${newState}?`)) return;
     try {
         await window.TurnosDB.actualizarEstadoPeticion(id, newState);
         alert('Solicitud actualizada.');
