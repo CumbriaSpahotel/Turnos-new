@@ -1,4 +1,4 @@
-﻿// describeCell centralizado en turnos-rules.js
+// describeCell centralizado en turnos-rules.js
 
 window.formatDisplayName = (name) => {
     if (!name) return '';
@@ -7872,78 +7872,64 @@ window.renderEmployeeProfileEditForm = (emp, model) => {
     const warnsHTML = warns.length ? `<div style="display:grid;gap:6px;margin-bottom:10px;">${warns.map(w=>`<div style="padding:7px 10px;border-radius:10px;border:1px solid rgba(245,158,11,0.3);background:rgba(245,158,11,0.05);font-size:0.74rem;font-weight:600;color:var(--text);">[!] ${escapeHtml(w)}</div>`).join('')}</div>` : '';
 
     const card = (val, label, icon, active, name) =>
-        `<label style="display:flex;flex-direction:column;align-items:center;padding:3px 4px;border:2px solid ${active?'#6366f1':'var(--border)'};border-radius:9px;cursor:pointer;text-align:center;gap:1px;user-select:none;min-height:28px;" class="smart-choice">
+        `<label style="display:flex;align-items:center;padding:3px 8px;border:2px solid ${active?'#6366f1':'var(--border)'};border-radius:8px;cursor:pointer;gap:6px;user-select:none;min-height:26px;background:${active?'rgba(99,102,241,0.05)':'white'};" class="smart-choice">
             <input type="radio" name="${name}" value="${val}" style="display:none;" ${active?'checked':''} onchange="window.updateSmartProfileExplainer?.()">
-            <span style="font-size:0.76rem;line-height:1;">${icon}</span>
-            <strong style="font-size:0.67rem;line-height:1;">${label}</strong>
+            <span style="font-size:0.72rem;opacity:0.8;">${icon}</span>
+            <strong style="font-size:0.68rem;white-space:nowrap;">${label}</strong>
         </label>`;
 
     return `
-        <section class="emp-card glass emp-edit-card" style="padding:10px 12px;border-radius:12px;border:1px solid var(--border);max-width:980px;margin:0 auto;">
+        <section class="emp-card glass emp-edit-card" style="padding:12px 14px;border-radius:12px;border:1px solid var(--border);max-width:100%;margin:0;">
             ${warnsHTML}
-            <div class="emp-behavior-note">
-                <div class="emp-behavior-title">Comportamiento en el cuadrante</div>
-                <div id="empBehaviorText">${explText}</div>
+            <div class="emp-behavior-note" style="margin-bottom:12px;">
+                <div class="emp-behavior-title">Operativa</div>
+                <div id="empBehaviorText" style="font-weight:600;font-size:0.72rem;">${explText}</div>
             </div>
-            <form class="emp-edit-form" onsubmit="window.saveEmployeeProfileV2(event)" style="gap:6px;max-width:940px;margin:0 auto;">
-                <div class="span-2" style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">
-                    <label style="margin:0;"><span style="font-size:0.64rem;">ID tecnico</span><input type="text" value="${escapeHtml(emp.id||'')}" disabled style="height:30px;font-size:0.74rem;"><small>No editable</small></label>
-                    <label style="margin:0;"><span style="font-size:0.64rem;">EMP-ID (ID interno)</span><input type="text" value="${escapeHtml(emp.id_interno||'')}" disabled style="height:30px;font-size:0.74rem;"><small>No editable</small></label>
-                </div>
-                <label><span>Nombre</span><input id="edit-emp-nombre" type="text" value="${escapeHtml(emp.nombre||'')}" oninput="window.updateSmartProfileExplainer?.()" style="height:34px;"></label>
-                <label><span>Puesto</span><input id="edit-emp-puesto" type="text" value="${escapeHtml(emp.puesto||emp.categoria||'')}" style="height:34px;"></label>
-                <label><span>Email</span><input id="edit-emp-email" type="email" value="${escapeHtml(emp.email||'')}" style="height:34px;"></label>
-                <label><span>Telefono</span><input id="edit-emp-telefono" type="text" value="${escapeHtml(emp.telefono||'')}" style="height:34px;"></label>
+            <form class="emp-edit-form" onsubmit="window.saveEmployeeProfileV2(event)" style="display:grid;grid-template-columns:repeat(auto-fill, minmax(200px, 1fr));gap:8px;">
+                <label style="padding:6px 10px;"><span>ID técnico</span><input type="text" value="${escapeHtml(emp.id||'')}" disabled style="height:28px;font-size:0.74rem;background:#f8fafc;"><small>No editable</small></label>
+                <label style="padding:6px 10px;"><span>ID interno</span><input type="text" value="${escapeHtml(emp.id_interno||'')}" disabled style="height:28px;font-size:0.74rem;background:#f8fafc;"><small>No editable</small></label>
+                <label style="padding:6px 10px;"><span>Nombre</span><input id="edit-emp-nombre" type="text" value="${escapeHtml(emp.nombre||'')}" oninput="window.updateSmartProfileExplainer?.()" style="height:30px;font-size:0.78rem;"></label>
+                <label style="padding:6px 10px;"><span>Puesto</span><input id="edit-emp-puesto" type="text" value="${escapeHtml(emp.puesto||emp.categoria||'')}" style="height:30px;font-size:0.78rem;"></label>
+                <label style="padding:6px 10px;"><span>Email</span><input id="edit-emp-email" type="email" value="${escapeHtml(emp.email||'')}" style="height:30px;font-size:0.78rem;"></label>
+                <label style="padding:6px 10px;"><span>Teléfono</span><input id="edit-emp-telefono" type="text" value="${escapeHtml(emp.telefono||'')}" style="height:30px;font-size:0.78rem;"></label>
 
-                <label class="span-2" style="display:block;margin-top:2px;">
-                    <span>Que tipo de empleado es?</span>
-                    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:4px;">
-                        ${card('fijo','Fijo','F',smartTipoSel==='fijo','smart-tipo')}
-                        ${card('ocasional','Ocasional','O',smartTipoSel==='ocasional','smart-tipo')}
-                        ${card('pendiente','Pendiente','P',smartTipoSel==='pendiente','smart-tipo')}
+                <div class="span-2" style="border:1px solid var(--border);border-radius:10px;padding:8px 10px;background:rgba(255,255,255,0.5);">
+                    <span style="font-size:0.62rem;font-weight:900;text-transform:uppercase;color:var(--text-dim);display:block;margin-bottom:6px;">Tipo, Función y Hotel</span>
+                    <div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center;">
+                        <div style="display:flex;gap:4px;padding-right:8px;border-right:1px solid var(--border);">
+                            ${card('fijo','Fijo','<i class="fas fa-user-tie"></i>',smartTipoSel==='fijo','smart-tipo')}
+                            ${card('ocasional','Ocasional','<i class="fas fa-user-clock"></i>',smartTipoSel==='ocasional','smart-tipo')}
+                            ${card('pendiente','Pendiente','<i class="fas fa-user-slash"></i>',smartTipoSel==='pendiente','smart-tipo')}
+                        </div>
+                        <div style="display:flex;gap:4px;padding:0 8px;border-right:1px solid var(--border);">
+                            ${card('titular','Titular','<i class="fas fa-star"></i>',currentRole==='titular','smart-rol')}
+                            ${card('sustituto','Sustituto','<i class="fas fa-exchange-alt"></i>',currentRole==='sustituto','smart-rol')}
+                            ${card('refuerzo','Refuerzo','<i class="fas fa-plus"></i>',currentRole==='refuerzo','smart-rol')}
+                        </div>
+                        <div style="display:flex;gap:4px;padding-left:4px;">
+                            ${card('cumbria','Cumbria','<i class="fas fa-hotel"></i>',assignedHotels.has('Cumbria Spa&Hotel')&&!hasBoth,'smart-hotel')}
+                            ${card('guadiana','Guadiana','<i class="fas fa-hotel"></i>',assignedHotels.has('Sercotel Guadiana')&&!hasBoth,'smart-hotel')}
+                            ${card('ambos','Ambos','<i class="fas fa-city"></i>',hasBoth,'smart-hotel')}
+                        </div>
                     </div>
                     <input type="hidden" id="edit-emp-tipo" value="${canonTipo}">
                     <input type="hidden" id="edit-emp-estado" value="${rawEstado}">
-                </label>
-
-                <label class="span-2" style="display:block;">
-                    <span>Que funcion hara en el cuadrante?</span>
-                    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:4px;">
-                        ${card('titular','Titular','T',currentRole==='titular','smart-rol')}
-                        ${card('sustituto','Sustituto','S',currentRole==='sustituto','smart-rol')}
-                        ${card('refuerzo','Refuerzo','R',currentRole==='refuerzo','smart-rol')}
-                    </div>
                     <input type="hidden" id="edit-emp-rol" value="${currentRole}">
-                </label>
-
-                <label class="span-2" style="display:block;">
-                    <span>En que hotel trabajara?</span>
-                    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:4px;">
-                        ${card('cumbria','Cumbria','C',assignedHotels.has('Cumbria Spa&Hotel')&&!hasBoth,'smart-hotel')}
-                        ${card('guadiana','Guadiana','G',assignedHotels.has('Sercotel Guadiana')&&!hasBoth,'smart-hotel')}
-                        ${card('ambos','Ambos','CG',hasBoth,'smart-hotel')}
-                    </div>
                     <input type="hidden" id="edit-emp-hotel" value="${escapeHtml(currentHotel)}">
                     <input type="hidden" id="edit-emp-hoteles-hidden" value="${escapeHtml([...assignedHotels].join(','))}">
-                </label>
+                </div>
 
-                <label>
-                    <span>Estado</span>
-                    <select id="edit-emp-estado-select" onchange="window.updateSmartProfileExplainer?.()" style="height:34px;">
+                <label style="padding:6px 10px;">
+                    <span>Estado laboral</span>
+                    <select id="edit-emp-estado-select" onchange="window.updateSmartProfileExplainer?.()" style="height:30px;font-size:0.78rem;padding:0 8px;">
                         ${['Activo','Pendiente','Inactivo','Baja','Excedencia'].map(e=>`<option value="${e}" ${rawEstado===e?'selected':''}>${e}</option>`).join('')}
                     </select>
                 </label>
-                <label>
-                    <span>Vacaciones/ano</span>
-                    <input id="edit-emp-vac-anuales" type="number" min="0" step="1" value="${escapeHtml(emp.vacaciones_anuales||model?.vacaciones?.derechoAnual||44)}" style="height:34px;">
+                <label style="padding:6px 10px;">
+                    <span>Vacaciones/año</span>
+                    <input id="edit-emp-vac-anuales" type="number" min="0" step="1" value="${escapeHtml(emp.vacaciones_anuales||model?.vacaciones?.derechoAnual||44)}" style="height:30px;font-size:0.78rem;">
                 </label>
-                <label class="span-2"><span>Observaciones</span><textarea id="edit-emp-observaciones" rows="2" style="min-height:44px;">${escapeHtml(emp.observaciones||emp.notas||'')}</textarea></label>
-
-                <div id="empProfileSaveError" style="display:none;padding:8px 12px;border-radius:10px;background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.25);color:#dc2626;font-size:0.78rem;font-weight:700;" class="span-2"></div>
-                <div class="emp-edit-actions span-2" style="margin-top:4px;">
-                    <span id="empProfileSaveStatus" style="font-size:0.76rem;font-weight:700;color:var(--text-dim);">El ID no se modifica en este formulario.</span>
-                    <button type="submit" class="emp-save-btn">Guardar cambios</button>
-                </div>
+                <label class="span-2" style="padding:6px 10px;"><span>Observaciones</span><textarea id="edit-emp-observaciones" rows="2" style="min-height:36px;font-size:0.78rem;padding:6px 10px;">${escapeHtml(emp.observaciones||emp.notas||'')}</textarea></label>
             </form>
         </section>
     `;
