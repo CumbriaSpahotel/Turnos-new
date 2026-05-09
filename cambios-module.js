@@ -316,13 +316,13 @@
                         </label>
                         <label style="display:grid; gap:7px; font-size:0.68rem; color:#64748b; font-weight:900; text-transform:uppercase;">Turno original
                             <select id="edit-change-origin" style="height:48px; border:1px solid #d5e1ef; border-radius:14px; padding:0 14px; font-size:0.95rem; font-weight:700;">
-                                <option value="">—</option><option value="Mañana">Mañana</option><option value="Tarde">Tarde</option><option value="Noche">Noche</option><option value="Descanso">Descanso</option>
-                            </select>
+                        <option value="">&mdash;</option><option value="M">Ma&ntilde;ana</option><option value="T">Tarde</option><option value="N">Noche</option><option value="D">Descanso</option>
+                    </select>
                         </label>
                         <label style="display:grid; gap:7px; font-size:0.68rem; color:#64748b; font-weight:900; text-transform:uppercase;">Turno solicitado
                             <select id="edit-change-dest" style="height:48px; border:1px solid #d5e1ef; border-radius:14px; padding:0 14px; font-size:0.95rem; font-weight:700;">
-                                <option value="">—</option><option value="Mañana">Mañana</option><option value="Tarde">Tarde</option><option value="Noche">Noche</option><option value="Descanso">Descanso</option>
-                            </select>
+                        <option value="">&mdash;</option><option value="M">Ma&ntilde;ana</option><option value="T">Tarde</option><option value="N">Noche</option><option value="D">Descanso</option>
+                    </select>
                         </label>
                         <label style="display:grid; gap:7px; font-size:0.68rem; color:#64748b; font-weight:900; text-transform:uppercase;">Tipo
                             <select id="edit-change-type" style="height:48px; border:1px solid #d5e1ef; border-radius:14px; padding:0 14px; font-size:0.95rem; font-weight:700;">
@@ -372,13 +372,13 @@
                     if (field) field.value = value || '';
                 };
                 const toShiftSelectValue = (value) => {
-                    const norm = window.normalizeShiftValue ? window.normalizeShiftValue(value) : String(value || '').trim().toUpperCase();
-                    if (norm === 'M') return 'Mañana';
-                    if (norm === 'T') return 'Tarde';
-                    if (norm === 'N') return 'Noche';
-                    if (norm === 'D') return 'Descanso';
-                    return value || '';
-                };
+            const norm = window.normalizeShiftValue ? window.normalizeShiftValue(value) : String(value || '').trim().toUpperCase();
+            if (norm === 'M') return 'M';
+            if (norm === 'T') return 'T';
+            if (norm === 'N') return 'N';
+            if (norm === 'D') return 'D';
+            return '';
+        };
                 setValue('edit-change-date', ev.fecha_inicio || '');
                 setValue('edit-change-hotel', ev.hotel_origen || ev.hotel_destino || '');
                 setValue('edit-change-employee', ev.empleado_id || '');

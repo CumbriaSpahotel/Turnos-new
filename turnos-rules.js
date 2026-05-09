@@ -22,18 +22,22 @@
         const upperType = String(type || 'NORMAL').toUpperCase();
         const text = normalizeText(turno);
 
-        // Si hay un turno estándar (M, T, N, D), priorizamos su definición visual
+        // REGLA MAESTRA V12.7: Priorización de clasificación
+        // 1. Turnos de trabajo (M, T, N): prioridad absoluta para permitir 📌 en sustituciones
         if (text.startsWith('m') || text.includes('manana')) return 'm';
         if (text.startsWith('t') || text.includes('tarde')) return 't';
         if (text.startsWith('n') || text.includes('noche')) return 'n';
+
+        // 2. Ausencias (VAC, BAJA, PERM): prioridad sobre descansos y otros estados
+        if (upperType.startsWith('VAC')) return 'v';
+        if (upperType.startsWith('BAJA') || upperType.startsWith('IT') || upperType === 'BM') return 'b';
+        if (upperType.startsWith('PERM')) return 'p';
+        
+        // 3. Descanso (D): solo si no hay una ausencia superior
         if (text.startsWith('d') || text.includes('descanso')) return 'd';
 
-        // Si no es un turno estándar pero es de tipo Cambio, devolvemos 'ct'
+        // 4. Otros estados y fallbacks
         if (isCtType(upperType)) return 'ct';
-        if (upperType.startsWith('VAC')) return 'v';
-        if (upperType.startsWith('BAJA')) return 'b';
-        if (upperType.startsWith('PERM')) return 'p';
-
         if (!text) return '';
         if (text.startsWith('v') || text.includes('vac')) return 'v';
         if (text.startsWith('b') || text.includes('baja')) return 'b';

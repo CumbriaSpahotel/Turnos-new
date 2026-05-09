@@ -1884,12 +1884,12 @@ window.ensureChangeEditModal = () => {
                 </label>
                 <label style="display:grid; gap:7px; font-size:0.68rem; color:#64748b; font-weight:900; text-transform:uppercase;">Turno original
                     <select id="edit-change-origin" style="height:48px; border:1px solid #d5e1ef; border-radius:14px; padding:0 14px; font-size:0.95rem; font-weight:700;">
-                        <option value="">ÃƒÆ’Ã†â€™Ãƒâ€ â€™ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â</option><option value="MaÃ±ana">MaÃ±ana</option><option value="Tarde">Tarde</option><option value="Noche">Noche</option><option value="Descanso">Descanso</option>
+                        <option value="">&mdash;</option><option value="M">Ma&ntilde;ana</option><option value="T">Tarde</option><option value="N">Noche</option><option value="D">Descanso</option>
                     </select>
                 </label>
                 <label style="display:grid; gap:7px; font-size:0.68rem; color:#64748b; font-weight:900; text-transform:uppercase;">Turno solicitado
                     <select id="edit-change-dest" style="height:48px; border:1px solid #d5e1ef; border-radius:14px; padding:0 14px; font-size:0.95rem; font-weight:700;">
-                        <option value="">ÃƒÆ’Ã†â€™Ãƒâ€ â€™ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â</option><option value="MaÃ±ana">MaÃ±ana</option><option value="Tarde">Tarde</option><option value="Noche">Noche</option><option value="Descanso">Descanso</option>
+                        <option value="">&mdash;</option><option value="M">Ma&ntilde;ana</option><option value="T">Tarde</option><option value="N">Noche</option><option value="D">Descanso</option>
                     </select>
                 </label>
                 <label style="display:grid; gap:7px; font-size:0.68rem; color:#64748b; font-weight:900; text-transform:uppercase;">Tipo
@@ -2101,11 +2101,11 @@ window.editChange = async (id) => {
         };
         const toShiftSelectValue = (value) => {
             const norm = window.normalizeShiftValue ? window.normalizeShiftValue(value) : String(value || '').trim().toUpperCase();
-            if (norm === 'M') return 'MaÃ±ana';
-            if (norm === 'T') return 'Tarde';
-            if (norm === 'N') return 'Noche';
-            if (norm === 'D') return 'Descanso';
-            return value || '';
+            if (norm === 'M') return 'M';
+            if (norm === 'T') return 'T';
+            if (norm === 'N') return 'N';
+            if (norm === 'D') return 'D';
+            return '';
         };
         setValue('edit-change-date', ev.fecha_inicio || '');
         setValue('edit-change-hotel', ev.hotel_origen || ev.hotel_destino || '');
@@ -2149,8 +2149,19 @@ window.saveChangeEdit = async (event) => {
         const toCanonicalShift = (value) => {
             const raw = String(value || '').trim();
             if (!raw) return null;
-            const code = window.normalizeShiftValue ? window.normalizeShiftValue(raw) : null;
-            if (!code) throw new Error(`Turno no vÃ¡Â¡lido: ${raw}`);
+            let code = window.normalizeShiftValue ? window.normalizeShiftValue(raw) : null;
+            if (!code) {
+                const token = raw
+                    .toUpperCase()
+                    .normalize('NFD')
+                    .replace(/[\u0300-\u036f]/g, '')
+                    .replace(/[^A-Z]/g, '');
+                if (token === 'M' || token === 'MANANA' || token === 'MAANA') code = 'M';
+                else if (token === 'T' || token === 'TARDE') code = 'T';
+                else if (token === 'N' || token === 'NOCHE') code = 'N';
+                else if (token === 'D' || token === 'DESCANSO') code = 'D';
+            }
+            if (!code) throw new Error(`Turno no valido: ${raw}`);
             return code;
         };
         const turnoOriginal = toCanonicalShift(document.getElementById('edit-change-origin')?.value || null);
@@ -5963,13 +5974,13 @@ window.validatePublishChanges = (changes) => {
 
                         let icons = [...new Set([
                             ...((visual.icons && visual.icons.length > 0) ? visual.icons : (visual.icon ? [visual.icon] : [])),
-                            ...(resolved.icon ? [resolved.icon] : (resolved.icons || [])),
+                            ...(resolved.icons || (resolved.icon ? [resolved.icon] : [])),
                             ...((resolved.cambio || resolved.intercambio) ? ['\u{1F504}'] : [])
                         ])];
                         
                         // Regla Definitiva V12.5.32: Centralizar filtro de pin
                         icons = icons.filter(icon => {
-                            if (icon === '\u{1F4CC}' || icon === 'ðŸ“ŒÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’â€¦ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¢') {
+                            if (icon === '\u{1F4CC}' || icon === '📌') {
                                 return window.TurnosRules ? window.TurnosRules.shouldShowPin(resolved) : false;
                             }
                             return true;
@@ -6737,11 +6748,11 @@ window.renderDashboard = async () => {
                     <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:20px;">
                         <div>
                             <h3 style="margin:0; font-size:1rem; font-weight:800;"><i class="fas fa-layer-group" style="margin-right:10px; color:#3b82f6;"></i> COBERTURA PUBLICADA</h3>
-                            <p style="margin:5px 0 0; font-size:0.75rem; color:var(--text-dim);">Estado de sincronizaciÃ³n de cuadrantes en producciÃ³n</p>
+                            <p style="margin:5px 0 0; font-size:0.75rem; color:var(--text-dim);">Estado de sincronizaci&oacute;n de cuadrantes en producci&oacute;n</p>
                         </div>
                         <div style="text-align:right;">
                             <div style="font-size:1.5rem; font-weight:900; color:var(--text);">${globalDate}</div>
-                            <div style="font-size:0.65rem; font-weight:800; color:var(--text-dim); text-transform:uppercase;">Cobertura Global MÃ­nima</div>
+                            <div style="font-size:0.65rem; font-weight:800; color:var(--text-dim); text-transform:uppercase;">Cobertura Global M&iacute;nima</div>
                         </div>
                     </div>
 
@@ -6750,9 +6761,9 @@ window.renderDashboard = async () => {
                             <thead>
                                 <tr style="border-bottom:2px solid var(--bg3);">
                                     <th style="text-align:left; padding:10px; color:var(--text-dim); font-size:0.65rem; text-transform:uppercase;">Hotel</th>
-                                    <th style="text-align:left; padding:10px; color:var(--text-dim); font-size:0.65rem; text-transform:uppercase;">Ãšltima Semana</th>
+                                    <th style="text-align:left; padding:10px; color:var(--text-dim); font-size:0.65rem; text-transform:uppercase;">&Uacute;ltima Semana</th>
                                     <th style="text-align:left; padding:10px; color:var(--text-dim); font-size:0.65rem; text-transform:uppercase;">Publicado Hasta</th>
-                                    <th style="text-align:center; padding:10px; color:var(--text-dim); font-size:0.65rem; text-transform:uppercase;">VersiÃ³n</th>
+                                    <th style="text-align:center; padding:10px; color:var(--text-dim); font-size:0.65rem; text-transform:uppercase;">Versi&oacute;n</th>
                                     <th style="text-align:center; padding:10px; color:var(--text-dim); font-size:0.65rem; text-transform:uppercase;">Estado</th>
                                 </tr>
                             </thead>
@@ -7864,13 +7875,13 @@ window.renderEmployeeProfileEditForm = (emp, model) => {
         </label>`;
 
     return `
-        <section class="emp-card glass emp-edit-card" style="padding:10px 12px;border-radius:12px;border:1px solid var(--border);">
+        <section class="emp-card glass emp-edit-card" style="padding:10px 12px;border-radius:12px;border:1px solid var(--border);max-width:980px;margin:0 auto;">
             ${warnsHTML}
             <div class="emp-behavior-note">
                 <div class="emp-behavior-title">Comportamiento en el cuadrante</div>
                 <div id="empBehaviorText">${explText}</div>
             </div>
-            <form class="emp-edit-form" onsubmit="window.saveEmployeeProfileV2(event)" style="gap:6px;">
+            <form class="emp-edit-form" onsubmit="window.saveEmployeeProfileV2(event)" style="gap:6px;max-width:940px;margin:0 auto;">
                 <div class="span-2" style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">
                     <label style="margin:0;"><span style="font-size:0.64rem;">ID tecnico</span><input type="text" value="${escapeHtml(emp.id||'')}" disabled style="height:30px;font-size:0.74rem;"><small>No editable</small></label>
                     <label style="margin:0;"><span style="font-size:0.64rem;">EMP-ID (ID interno)</span><input type="text" value="${escapeHtml(emp.id_interno||'')}" disabled style="height:30px;font-size:0.74rem;"><small>No editable</small></label>
