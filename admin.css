@@ -2432,8 +2432,8 @@ input, select, textarea { color: var(--text); }
 
 .emp-cal-vac { background: #ccfbf1 !important; }
 .emp-cal-vac strong { color: #0f766e !important; }
-.emp-cal-baja { background: #fee2e2 !important; }
-.emp-cal-baja strong { color: #991b1b !important; }
+.emp-cal-baja { background: #f1f5f9 !important; }
+.emp-cal-baja strong { color: #475569 !important; }
 .emp-cal-m { background: #eff6ff; }
 .emp-cal-t { background: #fffbeb; }
 .emp-cal-n { background: #f5f3ff; }
@@ -4067,14 +4067,19 @@ input, select, textarea { color: var(--text); }
   color: #0369a1 !important;
 }
 
-#empDrawer .emp-cal-cell.st-baja,
 #empDrawer .emp-cal-cell.st-event {
   background: #ffe4e6 !important;
   border-color: #fda4af !important;
 }
-#empDrawer .emp-cal-cell.st-baja .shift-tag,
+#empDrawer .emp-cal-cell.st-baja {
+  background: #f1f5f9 !important;
+  border-color: #cbd5e1 !important;
+}
 #empDrawer .emp-cal-cell.st-event .shift-tag {
   color: #be123c !important;
+}
+#empDrawer .emp-cal-cell.st-baja .shift-tag {
+  color: #475569 !important;
 }
 
 /* --- TOAST NOTIFICATIONS --- */

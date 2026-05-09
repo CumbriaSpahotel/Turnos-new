@@ -2985,10 +2985,12 @@ window.renderEmployeeProfileCalendar = (model) => {
                     if (day.incidencia) {
                         const type = window.normalizeTipo(day.incidencia.tipo);
                         if (type === 'VAC') statusClass = 'vac';
-                        else if (type === 'BAJA' || type === 'IT') statusClass = 'baja';
+                        else if (type === 'BAJA') statusClass = 'baja';
                         else statusClass = 'event';
                     } else if (labelShort.toUpperCase() === 'V' || /VAC/i.test(label) || String(day.turno || '').toUpperCase().startsWith('VAC')) {
                         statusClass = 'vac';
+                    } else if (labelShort.toUpperCase() === 'B' || /BAJA|IT|INCAPACIDAD/i.test(label) || /BAJA|IT|INCAPACIDAD/i.test(String(day.turno || ''))) {
+                        statusClass = 'baja';
                     } else if (label === 'D' || label === 'Descanso') {
                         statusClass = 'descanso';
                     } else if (['M','T','N'].includes(labelShort.toUpperCase())) {
@@ -3005,7 +3007,7 @@ window.renderEmployeeProfileCalendar = (model) => {
                     ].filter(Boolean).join(' ');
 
                     return `
-                        <div class="${cls}" onclick="window.openEmployeeDayDetail('${day.fecha}')" title="${day.fecha}: ${label}" style="aspect-ratio:1/1; display:flex; flex-direction:column; align-items:center; justify-content:center; border-radius:8px; cursor:pointer; position:relative; font-size:0.75rem; border:1px solid transparent;">
+                        <div class="${cls}" onclick="window.openEmployeeDayDetail('${day.fecha}')" title="${day.fecha}: ${label}" style="aspect-ratio:1/1; display:flex; flex-direction:column; align-items:center; justify-content:center; border-radius:8px; cursor:pointer; position:relative; font-size:0.75rem; border:1px solid transparent; ${statusClass==='baja' ? 'background:#f1f5f9 !important; color:#475569 !important; border-color:rgba(71,85,105,0.2) !important;' : ''}">
                             <span class="day-num" style="font-size:0.6rem; opacity:0.5; position:absolute; top:2px; right:4px;">${day.fecha.split('-')[2]}</span>
                             <span class="shift-tag" style="font-weight:900;">${labelShort}</span>
                             ${day.icon ? `<span style="position:absolute; bottom:2px; left:2px; font-size:0.6rem;">${day.icon}</span>` : ''}
@@ -7990,7 +7992,7 @@ window.renderEmployeeProfile = () => {
         `;
     }
     const monthRows = (model.calendario || []).filter(day => !day.outsideMonth);
-    const renderRowsTable = (rows, emptyText) => rows.length > 0 ? `<div style="display:grid; gap:10px;">${rows.map(row => `<div style="display:grid; grid-template-columns:92px 1fr 1fr 120px; gap:12px; align-items:center; padding:12px 14px; border:1px solid var(--border); border-radius:14px; background:white;"><strong style="font-size:0.78rem; color:var(--text);">${escapeHtml(window.fmtDateFicha(row.fecha) || '-')}</strong><span style="font-size:0.78rem; color:var(--text);">${window.sanitizeUiText(row.main)}</span><span style="font-size:0.76rem; color:var(--text-dim);">${window.sanitizeUiText(row.secondary || '-')}</span><span style="font-size:0.74rem; color:var(--accent); font-weight:700; text-align:right;">${window.sanitizeUiText(row.badge || '-')}</span></div>`).join('')}</div>` : `<div style="padding:26px; text-align:center; opacity:0.45; font-size:0.82rem;">${emptyText}</div>`;
+    const renderRowsTable = (rows, emptyText) => rows.length > 0 ? `<div style="display:grid; gap:10px;">${rows.map(row => `<div style="display:grid; grid-template-columns:92px 1fr 1fr 120px; gap:12px; align-items:center; padding:12px 14px; border:1px solid var(--border); border-radius:14px; background:${row.isBaja ? '#f1f5f9 !important' : 'white'};"><strong style="font-size:0.78rem; color:var(--text);">${escapeHtml(window.fmtDateFicha(row.fecha) || '-')}</strong><span style="font-size:0.78rem; color:var(--text);">${window.sanitizeUiText(row.main)}</span><span style="font-size:0.76rem; color:var(--text-dim);">${window.sanitizeUiText(row.secondary || '-')}</span><span style="font-size:0.74rem; color:var(--accent); font-weight:700; text-align:right;">${window.sanitizeUiText(row.badge || '-')}</span></div>`).join('')}</div>` : `<div style="padding:26px; text-align:center; opacity:0.45; font-size:0.82rem;">${emptyText}</div>`;
     const alertHTML = model.alerts.length > 0 ? `<section class="emp-card glass" style="padding:18px 20px; border-radius:18px; border:1px solid var(--border);"><h3 style="margin:0 0 12px; font-size:0.88rem; font-weight:800;">Alertas</h3><div style="display:grid; gap:10px;">${model.alerts.map(alert => `<div class="emp-alert-box" style="display:flex; align-items:flex-start; gap:10px; padding:11px 13px; border-radius:13px; border:1px solid ${alert.level === 'danger' ? 'rgba(239,68,68,0.25)' : 'rgba(245,158,11,0.25)'}; background:${alert.level === 'danger' ? 'rgba(239,68,68,0.06)' : 'rgba(245,158,11,0.06)'};"><i class="fas ${alert.level === 'danger' ? 'fa-triangle-exclamation' : 'fa-circle-info'}" style="color:${alert.level === 'danger' ? '#dc2626' : '#d97706'};"></i><span style="font-size:0.8rem; font-weight:600; color:var(--text);">${escapeHtml(alert.text)}</span></div>`).join('')}</div></section>` : '';
     const headerHTML = `<div class="emp-premium-header"><div class="emp-header-info"><div class="emp-avatar" style="background:var(--accent); color:white; width:52px; height:52px; border-radius:15px; display:flex; align-items:center; justify-content:center; font-size:1.3rem; font-weight:800; box-shadow:0 8px 16px rgba(0,0,0,0.08);">${escapeHtml((emp.nombre || 'E').charAt(0))}</div><div class="emp-title-block"><h2 style="margin:0; font-size:1.2rem; font-weight:800; color:var(--text);">${escapeHtml(emp.nombre)}</h2><div style="margin-top:4px; font-size:0.74rem; color:#94a3b8; font-weight:600;">${escapeHtml(emp.id_interno || 'No informado')}</div><div style="display:flex; flex-wrap:wrap; gap:8px; margin-top:10px;"><span class="status-pill ${model.typeMeta.cls}">${escapeHtml(model.typeMeta.label)}</span><span class="status-pill ${model.laborStatus.cls}">${escapeHtml(model.laborStatus.label)}</span><span class="status-pill ${model.currentRoleMeta.cls}">${escapeHtml(model.currentRoleMeta.label)}</span><span class="status-pill activo">${escapeHtml(assignedHotelLabel)}</span></div></div></div><div class="emp-header-actions" style="display:grid; gap:4px; text-align:right; max-width:230px;"><div style="font-size:0.72rem; color:var(--text-dim); font-weight:700; text-transform:uppercase;">Edicion</div><div style="font-size:0.82rem; color:var(--text); font-weight:700;">ID protegido</div><div style="font-size:0.72rem; color:var(--text-dim); line-height:1.35;">El ID interno no se edita. El resto de datos se gestiona desde la pestana Ficha.</div></div></div>`;
     const kpiCards = [
@@ -8001,7 +8003,14 @@ window.renderEmployeeProfile = () => {
     ];
     if (supportsPending) kpiCards.push(['Pendientes', model.annualKpis.diasPendiente]);
     if (supportsVacations) kpiCards.push(['Saldo vac.', vacationBalanceLabel]);
-    const kpiHTML = `<div class="emp-kpi-grid" style="display:grid; grid-template-columns:repeat(${Math.max(4, kpiCards.length)}, minmax(100px, 1fr)); gap:8px; margin-bottom:10px;">${kpiCards.map(([label, value]) => `<div class="emp-kpi-card glass" style="padding:14px; border-radius:16px; border:1px solid var(--border);"><label style="display:block; font-size:0.6rem; font-weight:800; color:var(--text-dim); text-transform:uppercase; margin-bottom:4px;">${escapeHtml(label)}</label><strong style="font-size:0.95rem; color:var(--text);">${escapeHtml(String(value ?? '-'))}</strong></div>`).join('')}</div>`;
+    const kpiHTML = `<div class="emp-kpi-grid" style="display:grid; grid-template-columns:repeat(${Math.max(4, kpiCards.length)}, minmax(100px, 1fr)); gap:8px; margin-bottom:10px;">${kpiCards.map(([label, value]) => {
+        const valStr = String(value || '').toUpperCase();
+        const labStr = String(label || '').toUpperCase();
+        const isBaja = (valStr.includes('BAJA') || valStr.includes('IT') || valStr.includes('INCAPACIDAD')) && (labStr.includes('ESTADO') || labStr.includes('INCIDENCIA') || labStr.includes('TURNO'));
+        const bg = isBaja ? '#f1f5f9 !important' : 'white';
+        const fg = isBaja ? '#475569 !important' : 'var(--text)';
+        return `<div class="emp-kpi-card glass" style="padding:14px; border-radius:16px; border:1px solid var(--border); background:${bg};"><label style="display:block; font-size:0.6rem; font-weight:800; color:var(--text-dim); text-transform:uppercase; margin-bottom:4px;">${escapeHtml(label)}</label><strong style="font-size:0.95rem; color:${fg};">${escapeHtml(String(value ?? '-'))}</strong></div>`;
+    }).join('')}</div>`;
     let tabContent = '';
     if (safeTab === 'summary') {
         if (isOccasionalProfile) {
@@ -8085,11 +8094,13 @@ window.renderEmployeeProfile = () => {
         const leaveEventsYear = (model.yearLeavePermissionEvents || []).slice().sort((a, b) => String(a.fecha_inicio || '').localeCompare(String(b.fecha_inicio || '')));
         const leaveRows = leaveEventsYear.map(ev => {
             const days = countNaturalDays(ev);
+            const isBaja = String(ev.tipo || '').toUpperCase().includes('BAJA') || String(ev.tipo || '').toUpperCase().includes('IT');
             return {
                 fecha: ev.fecha_inicio,
                 main: `<strong>${escapeHtml(window.employeeProfileEventLabel(ev))}</strong> &middot; ${escapeHtml(window.employeeProfileDateRangeLabel(ev.fecha_inicio, ev.fecha_fin || ev.fecha_inicio))}`,
                 secondary: `${days} dia${days === 1 ? '' : 's'} naturales &middot; ${escapeHtml(ev.observaciones || 'Sin observaciones')}`,
-                badge: escapeHtml(ev.estado || 'activo')
+                badge: escapeHtml(ev.estado || 'activo'),
+                isBaja: isBaja
             };
         });
         const totalDays = leaveEventsYear.reduce((acc, ev) => acc + countNaturalDays(ev), 0);
