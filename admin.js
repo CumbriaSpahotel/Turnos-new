@@ -2149,6 +2149,56 @@ window.editChange = async (id) => {
     }
 };
 
+window.openNewChangeModal = async () => {
+    try {
+        window.ensureChangeEditModal();
+        const hotels = await window.TurnosDB.getHotels();
+        
+        const ev = {
+            id: 'NEW_' + Date.now(),
+            tipo: 'INTERCAMBIO_TURNO',
+            estado: 'activo',
+            fecha_inicio: window.isoDate ? window.isoDate(new Date()) : new Date().toISOString().split('T')[0],
+            observaciones: 'Manual',
+            payload: {
+                creado_desde: 'manual_admin',
+                creado_at: new Date().toISOString()
+            }
+        };
+        window._editingChangeEvent = ev;
+
+        const hotelSelect = document.getElementById('edit-change-hotel');
+        if (hotelSelect) {
+            hotelSelect.innerHTML = `<option value="">Sin hotel</option>${(hotels || []).map(h => `<option value="${escapeHtml(h)}">${escapeHtml(h)}</option>`).join('')}`;
+        }
+
+        const setValue = (fieldId, value) => {
+            const field = document.getElementById(fieldId);
+            if (field) field.value = value || '';
+        };
+
+        setValue('edit-change-date', ev.fecha_inicio);
+        setValue('edit-change-hotel', '');
+        setValue('edit-change-employee', '');
+        setValue('edit-change-target', '');
+        await window.refreshChangeEditOperativeSelects();
+        setValue('edit-change-origin', '');
+        setValue('edit-change-dest', '');
+        setValue('edit-change-type', 'INTERCAMBIO_TURNO');
+        setValue('edit-change-status', 'activo');
+        setValue('edit-change-obs', 'Manual');
+
+        const idLabel = document.getElementById('changeEditId');
+        if (idLabel) idLabel.textContent = `Nuevo cambio manual`;
+        const sourceLabel = document.getElementById('changeEditSource');
+        if (sourceLabel) sourceLabel.textContent = '';
+        
+        document.getElementById('changeEditModal').style.display = 'flex';
+    } catch (err) {
+        alert('No se pudo abrir el creador: ' + err.message);
+    }
+};
+
 window.saveChangeEdit = async (event) => {
     event.preventDefault();
     const original = window._editingChangeEvent;
@@ -2190,8 +2240,13 @@ window.saveChangeEdit = async (event) => {
         const observaciones = document.getElementById('edit-change-obs')?.value?.trim() || null;
         if (!fecha || !empleado) throw new Error('Fecha y solicitante son obligatorios');
 
+        const eventToSave = { ...original };
+        if (String(eventToSave.id).startsWith('NEW_')) {
+            delete eventToSave.id;
+        }
+
         await window.TurnosDB.upsertEvento({
-            ...original,
+            ...eventToSave,
             tipo,
             empleado_id: empleado,
             empleado_destino_id: companero,
@@ -3318,14 +3373,14 @@ window.createPuestosPreviewModel = ({
         return {
             turno: res.turno,
             titular: getDisplayName(asig.titular_id),
-            real: getDisplayName(res.empleadoId),
+            real: getDisplayName(res.sustituidoPor || res.empleadoId),
             incidencia: res.incidencia,
             puesto_id: puestoId,
             hotel_id: hotel,
             fecha,
             turno_base: res.turnoBase,
             titular_id: asig.titular_id,
-            real_id: res.empleadoId,
+            real_id: res.sustituidoPor || res.empleadoId,
             cobertura: !!res.sustitutoId || (res.empleadoId !== asig.titular_id),
             cambio: res.cambio,
             intercambio: res.intercambio,
@@ -3566,6 +3621,37 @@ window.createPuestosPreviewModel = ({
             assignedNorms.add(normEmpId);
         });
 
+        // 4. PROCESAR SUSTITUTOS ACTIVOS (Garantizar que Esther y otros no desaparezcan)
+        eventos.forEach(ev => {
+            if (window.normalizeEstado(ev.estado) === 'anulado') return;
+            const tipo = window.normalizeTipo(ev.tipo);
+            if (!['VAC', 'BAJA', 'PERMISO', 'PERM', 'FORMACION', 'FORM', 'SUSTITUCION', 'COBERTURA'].includes(tipo)) return;
+            if (window.eventoPerteneceAHotel && !window.eventoPerteneceAHotel(ev, hotel)) return;
+
+            const fi = window.normalizeDate(ev.fecha_inicio);
+            const ff = window.normalizeDate(ev.fecha_fin || ev.fecha_inicio);
+            if (!dates.some(d => d >= fi && d <= ff)) return;
+
+            const sustId = ev.empleado_destino_id || ev.sustituto_id || ev.sustituto || ev.participante_b;
+            if (!sustId) return;
+            const normSustId = resolveId(sustId);
+            if (assignedNorms.has(normSustId)) return;
+
+            // Si llegamos aquí, el sustituto está activo en esta semana pero no tiene fila
+            const empName = getDisplayName(sustId);
+            extraRefuerzoRows.push({
+                hotel,
+                employee_id: sustId,
+                empleadoId: sustId,
+                nombre: empName,
+                puestoOrden: 3000,
+                rowType: 'operativo_ext',
+                origenOrden: 'sustituto_activo',
+                evento_id: ev.id
+            });
+            assignedNorms.add(normSustId);
+        });
+
         operationalRows.sort((a, b) => a.puestoOrden - b.puestoOrden);
         absentRows.sort((a, b) => a.puestoOrden - b.puestoOrden);
         extraRefuerzoRows.sort((a, b) => (a.nombre || '').localeCompare(b.nombre || ''));
@@ -3608,7 +3694,7 @@ window.renderPuestoCell = (celda) => {
     const shiftKey = window.TurnosRules?.shiftKey(celda.turno || celda.turno_base, 'NORMAL') || 'empty';
     const def = window.TurnosRules?.definitions?.[shiftKey] || window.TurnosRules?.definitions?.empty || { adminStyle: '' };
     const replacementLine = celda.real && celda.real !== celda.titular
-        ? `<div style="font-size:0.72rem; font-weight:700; color:#0f172a;">&rarr; ${escapeHtml(celda.real)}</div>`
+        ? `<div style="font-size:0.72rem; font-weight:700; color:#0f172a;">📌 ${escapeHtml(celda.real)}</div>`
         : '';
     const changeLine = !replacementLine && celda.cambio && celda.turno_base && celda.turno !== celda.turno_base
         ? `<div style="font-size:0.68rem; color:#64748b;">Base ${escapeHtml(celda.turno_base)}</div>`

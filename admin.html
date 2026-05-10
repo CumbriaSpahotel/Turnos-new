@@ -319,6 +319,9 @@
                         <option value="all">Ver Todos</option>
                         <option value="anulado">Anulados</option>
                     </select>
+                    <button class="btn-publish-premium" onclick="window.openNewChangeModal()" style="margin:0; background:linear-gradient(135deg,#6366f1,#4f46e5); border:none;">
+                        <i class="fas fa-plus"></i> Añadir Cambio Manual
+                    </button>
                     <button id="btnSyncChanges" class="btn-publish-premium" onclick="window.syncGapsFromExcel('btnSyncChanges')" style="margin:0; background:linear-gradient(135deg,#34d399,#10b981); border:none;">
                         <i class="fas fa-magic"></i> Completar Supabase
                     </button>
@@ -444,7 +447,7 @@
                 <div><label style="display:block; font-size:0.6rem; font-weight:800; color:var(--text-dim); margin-bottom:5px;">INICIO</label><input type="date" id="mbDateStart" class="btn-premium" style="width:100%;"></div>
                 <div><label style="display:block; font-size:0.6rem; font-weight:800; color:var(--text-dim); margin-bottom:5px;">FIN</label><input type="date" id="mbDateEnd" class="btn-premium" style="width:100%;"></div>
                 <div style="grid-column: span 2;"><label style="display:block; font-size:0.6rem; font-weight:800; color:var(--text-dim); margin-bottom:5px;">SUSTITUTO</label><select id="mbSustituto" class="btn-premium" style="width:100%;"></select></div>
-                <div><label style="display:block; font-size:0.6rem; font-weight:800; color:var(--text-dim); margin-bottom:5px;">ESTADO</label><select id="mbEstado" class="btn-premium" style="width:100%;"><option value="activo">Activo</option><option value="pendiente">Pendiente</option><option value="aprobado">Aprobado</option></select></div>
+                <div><label style="display:block; font-size:0.6rem; font-weight:800; color:var(--text-dim); margin-bottom:5px;">ESTADO</label><select id="mbEstado" class="btn-premium" style="width:100%;"><option value="activo">Activo</option><option value="pendiente">Pendiente</option><option value="aprobado">Aprobado</option><option value="anulado">Anulado</option><option value="rechazado">Rechazado</option></select></div>
                 <div><label style="display:block; font-size:0.6rem; font-weight:800; color:var(--text-dim); margin-bottom:5px;">ADJUNTOS</label><input type="file" class="btn-premium" style="width:100%; opacity:0.4; pointer-events:none;" title="Adjuntos no habilitados todavía" disabled><div style="font-size:0.55rem; color:var(--text-dim); margin-top:3px;">Adjuntos no habilitados todavía.</div></div>
                 <div style="grid-column: span 2;"><label style="display:block; font-size:0.6rem; font-weight:800; color:var(--text-dim); margin-bottom:5px;">OBSERVACIONES / MOTIVO</label><textarea id="mbObs" class="btn-premium" style="width:100%; min-height:80px;" placeholder="Motivo o notas adicionales..."></textarea></div>
             </div>
