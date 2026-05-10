@@ -1,4 +1,4 @@
-(function () {
+﻿(function () {
     const normalizeText = (value) => String(value || '')
         .toLowerCase()
         .normalize('NFD')
@@ -507,3 +507,4 @@
     };
     window.groupConsecutiveEvents = groupConsecutiveEvents; // Alias para compatibilidad modular
 })();
+

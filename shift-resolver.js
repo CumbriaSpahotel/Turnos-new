@@ -1,4 +1,4 @@
-/* shift-resolver.js
+﻿/* shift-resolver.js
  * MOTOR ÚNICO DE RESOLUCIÓN DE TURNOS
  * v5.0 - Estabilización Estructural
  */
@@ -170,14 +170,39 @@ console.log("[ShiftResolver] Iniciando carga v5.0...");
         return matches;
     };
 
+    window.getEventOriginCandidates = (evento = {}) => {
+        const p = evento.payload || {};
+        return [
+            evento.empleado_id, evento.empleado_a_id, evento.origen_id,
+            evento.empleado, evento.empleado_nombre, evento.nombre,
+            evento.titular, evento.titular_id, evento.id_empleado,
+            evento.participante_a, p.empleado_id, p.solicitante,
+            p.solicitante_id, p.titular, p.titular_id
+        ].filter(Boolean);
+    };
+
+    window.getEventOriginRaw = (evento = {}) => window.getEventOriginCandidates(evento)[0] || '';
+
+    window.getEventDestinationCandidates = (evento = {}) => {
+        const p = evento.payload || {};
+        return [
+            evento.empleado_destino_id, evento.empleado_b_id, evento.destino_id,
+            evento.sustituto_id, evento.empleado_destino, evento.empleado_destino_nombre,
+            evento.sustituto, evento.sustituto_nombre, evento.participante_b,
+            evento.companero, evento.destinatario, p.empleado_destino_id,
+            p.empleado_b_id, p.destino_id, p.sustituto_id, p.empleado_destino,
+            p.empleado_destino_nombre, p.sustituto, p.sustituto_nombre,
+            p.participante_b, p.companero, p['compa\u00f1ero'],
+            p.companero_id, p.destinatario, p.destinatario_id
+        ].filter(Boolean);
+    };
+
+    window.getEventDestinationRaw = (evento = {}) => window.getEventDestinationCandidates(evento)[0] || '';
+
     window.isTitularOfAbsence = (evento, empleadoId, context = {}) => {
         const target = window.normalizeId(empleadoId);
         if (!target) return false;
-        const candidatosTitular = [
-            evento.empleado_id, evento.empleado_a_id, evento.origen_id, evento.empleado,
-            evento.empleado_nombre, evento.nombre, evento.titular, evento.titular_id,
-            evento.id_empleado, evento.participante_a, evento.payload?.empleado_id
-        ].filter(Boolean).map(window.normalizeId);
+        const candidatosTitular = window.getEventOriginCandidates(evento).map(window.normalizeId);
         const normalizedTarget = context.resolveId ? context.resolveId(target) : target;
         return candidatosTitular.some(c => {
             const normalizedC = context.resolveId ? context.resolveId(c) : c;
@@ -190,16 +215,8 @@ console.log("[ShiftResolver] Iniciando carga v5.0...");
         if (!target) return false;
         if (context.hotel && !window.eventoPerteneceAHotel(evento, context.hotel)) return false;
         const tipo = window.normalizeTipo(evento.tipo);
-        const candidatosTitular = [
-            evento.empleado_id, evento.empleado_a_id, evento.origen_id, evento.empleado,
-            evento.empleado_nombre, evento.nombre, evento.titular, evento.titular_id,
-            evento.id_empleado, evento.participante_a, evento.payload?.empleado_id
-        ].filter(Boolean).map(window.normalizeId);
-        const candidatosDestino = [
-            evento.empleado_destino_id, evento.empleado_b_id, evento.destino_id, evento.sustituto_id,
-            evento.empleado_destino, evento.empleado_destino_nombre, evento.sustituto, evento.participante_b,
-            evento.payload?.empleado_destino_id, evento.payload?.sustituto_id, evento.payload?.sustituto
-        ].filter(Boolean).map(window.normalizeId);
+        const candidatosTitular = window.getEventOriginCandidates(evento).map(window.normalizeId);
+        const candidatosDestino = window.getEventDestinationCandidates(evento).map(window.normalizeId);
         const candidatos = [...new Set([...candidatosTitular, ...candidatosDestino])];
         const strippedTarget = target.replace(/^(vacante|placeholder)-?/, '');
         if (candidatos.includes(target) || candidatos.includes(strippedTarget)) return true;
@@ -208,16 +225,8 @@ console.log("[ShiftResolver] Iniciando carga v5.0...");
 
     window.getOtroEmpleadoDelCambio = (evento, empleadoId) => {
         const target = window.normalizeId(empleadoId);
-        const candidatosA = [
-            evento.empleado_id, evento.empleado_a_id, evento.origen_id, evento.empleado,
-            evento.empleado_nombre, evento.nombre, evento.titular, evento.titular_id,
-            evento.id_empleado, evento.participante_a, evento.payload?.empleado_id
-        ].filter(Boolean).map(window.normalizeId);
-        const candidatosB = [
-            evento.empleado_destino_id, evento.empleado_b_id, evento.destino_id, evento.sustituto_id,
-            evento.empleado_destino, evento.empleado_destino_nombre, evento.sustituto, evento.participante_b,
-            evento.payload?.empleado_destino_id, evento.payload?.sustituto_id, evento.payload?.sustituto
-        ].filter(Boolean).map(window.normalizeId);
+        const candidatosA = window.getEventOriginCandidates(evento).map(window.normalizeId);
+        const candidatosB = window.getEventDestinationCandidates(evento).map(window.normalizeId);
         const isA = candidatosA.includes(target);
         const isB = candidatosB.includes(target);
         if (isA) return candidatosB[0] || '';
@@ -275,7 +284,7 @@ console.log("[ShiftResolver] Iniciando carga v5.0...");
             if (fecha < fi || fecha > ff) return false;
             const t = window.normalizeTipo(ev.tipo);
             if (t !== 'SUSTITUCION' && t !== 'COBERTURA' && t !== 'VAC' && t !== 'BAJA' && t !== 'PERMISO') return false;
-            const destId = window.normalizeId(ev.empleado_destino_id || ev.destino_id || ev.sustituto_id || ev.participante_b);
+            const destId = window.normalizeId(window.getEventDestinationRaw(ev));
             const sustNombre = ev.sustituto ? window.normalizeId(ev.sustituto) : null;
             return destId === empIdNorm || sustNombre === empIdNorm;
         });
@@ -307,10 +316,10 @@ console.log("[ShiftResolver] Iniciando carga v5.0...");
             window.eventoAplicaEnFecha(e, date) &&
             window.isTitularOfAbsence(e, normId) &&
             ['VAC', 'BAJA', 'PERMISO', 'PERM', 'FORMACION', 'IT', 'SUSTITUCION', 'COBERTURA'].includes(window.normalizeTipo(e.tipo)) &&
-            (e.empleado_destino_id || e.sustituto_id || e.sustituto || e.payload?.sustituto_id || e.payload?.sustituto)
+            (window.getEventDestinationRaw(e))
         );
         if (ev) {
-            const sustId = window.normalizeId(ev.empleado_destino_id || ev.sustituto_id || ev.sustituto || ev.payload?.sustituto_id || ev.payload?.sustituto);
+            const sustId = window.normalizeId(window.getEventDestinationRaw(ev));
             if (sustId && sustId !== normId) {
                 return window.getOperationalOccupant(sustId, date, events, hotel, context);
             }
@@ -377,9 +386,9 @@ console.log("[ShiftResolver] Iniciando carga v5.0...");
         eventos.forEach(ev => {
             if (window.normalizeEstado(ev.estado) === 'anulado') return;
             if (!window.eventoAplicaEnFecha(ev, date)) return;
-            const destId = window.normalizeId(ev.empleado_destino_id || ev.destino_id || ev.sustituto_id || ev.participante_b);
+            const destId = window.normalizeId(window.getEventDestinationRaw(ev));
             if (destId === empId) {
-                const tId = window.normalizeId(ev.empleado_id || ev.titular_id || ev.titular);
+                const tId = window.normalizeId(window.getEventOriginRaw(ev));
                 if (tId && tId !== empId) titularesSubstituidos.push(tId);
             }
         });
@@ -406,32 +415,59 @@ console.log("[ShiftResolver] Iniciando carga v5.0...");
                 result.origen = tipo;
                 result.icon = window.getTurnoIcon(tipo);
                 result.icons = [result.icon];
-                const sustId = window.normalizeId(ev.empleado_destino_id || ev.sustituto_id || ev.sustituto || ev.participante_b);
+                const sustId = window.normalizeId(window.getEventDestinationRaw(ev));
                 if (sustId && sustId !== empId) result.sustituidoPor = sustId;
                 break;
             }
 
-            if (['VAC', 'BAJA', 'PERMISO', 'SUSTITUCION', 'COBERTURA'].includes(tipo) && !window.isTitularOfAbsence(ev, empId)) {
-                const tId = window.normalizeId(ev.empleado_id || ev.titular_id || ev.titular);
+            if (['VAC', 'BAJA', 'PERMISO', 'PERM', 'SUSTITUCION', 'COBERTURA'].includes(tipo) && !window.isTitularOfAbsence(ev, empId)) {
+                const tId = window.normalizeId(window.getEventOriginRaw(ev));
                 result.sustituyeA = tId;
                 result.incidenciaCubierta = tipo;
+                result.absenceType = tipo;
+                result.isCoverageMarker = true;
                 result.origen = tipo;
                 result.turno = window.getTurnoBaseDeEmpleado(tId, date, baseIndex) || '—';
+                const coverShift = window.normalizeShiftValue(result.turno);
+                if (['BAJA', 'PERMISO', 'PERM'].includes(tipo) && coverShift && coverShift !== 'D') {
+                    result.icon = '\u{1F4CC}';
+                    result.icons = [...new Set([...(result.icons || []), '\u{1F4CC}'])];
+                }
                 continue;
             }
 
             if (['INTERCAMBIO_TURNO', 'CAMBIO_TURNO', 'CT'].includes(tipo)) {
-                const requestedA = window.normalizeId(ev.empleado_id || ev.titular_id || ev.titular);
-                const requestedB = window.normalizeId(ev.empleado_destino_id || ev.destino_id || ev.sustituto_id || ev.participante_b);
+                const requestedA = window.normalizeId(window.getEventOriginRaw(ev));
+                const requestedB = window.normalizeId(window.getEventDestinationRaw(ev));
                 const resolvedA = window.getOperationalOccupant(requestedA, date, eventos, hotel, { baseIndex });
                 const resolvedB = window.getOperationalOccupant(requestedB, date, eventos, hotel, { baseIndex });
                 const strippedEmpId = empId.replace(/^(vacante|placeholder)-?/, '');
                 const isOrigin = empId === resolvedA || strippedEmpId === resolvedA;
                 const isDestination = empId === resolvedB || strippedEmpId === resolvedB;
+                const tOrigRaw = ev.turno_original || ev.turno_origen || ev.payload?.turno_original || ev.payload?.turno_origen || ev.payload?.origen;
+                const tDestRaw = ev.turno_nuevo || ev.turno_destino || ev.payload?.turno_nuevo || ev.payload?.turno_destino || ev.payload?.destino;
+                const hasValidOriginShift = window.isValidShiftValue(tOrigRaw);
+                const hasValidDestinationShift = window.isValidShiftValue(tDestRaw);
+
+                if (tipo === 'INTERCAMBIO_TURNO' && !requestedB) continue;
+                if (tipo === 'CAMBIO_TURNO' && !requestedB && !hasValidDestinationShift) continue;
 
                 if (isOrigin || isDestination) {
-                    let tOrigRaw = ev.turno_original || ev.turno_origen || ev.payload?.turno_original || ev.payload?.turno_origen || ev.payload?.origen;
-                    let tDestRaw = ev.turno_nuevo || ev.turno_destino || ev.payload?.turno_nuevo || ev.payload?.turno_destino || ev.payload?.destino;
+                    if (tipo === 'CAMBIO_TURNO' && !requestedB) {
+                        if (!isOrigin || !hasValidDestinationShift) continue;
+                        const currentCode = window.normalizeShiftValue(result.turno);
+                        const originalCode = window.normalizeShiftValue(tOrigRaw);
+                        if (hasValidOriginShift && currentCode && originalCode !== currentCode) continue;
+                        result.turno = tDestRaw;
+                        result.cambio = true;
+                        result.intercambio = false;
+                        result.icon = '\u{1F504}';
+                        result.icons = ['\u{1F504}'];
+                        result.origen = tipo;
+                        continue;
+                    }
+
+                    if (!requestedB || !hasValidOriginShift || !hasValidDestinationShift) continue;
                     const isLegacyCT = window.isInvalidLegacyChangeValue(tOrigRaw) || window.isInvalidLegacyChangeValue(tDestRaw);
                     const tOpA = (isOrigin ? result.turno : window.getTurnoOperativoBase(requestedA, date, { baseIndex, eventos })) || '—';
                     const tOpB = (isDestination ? result.turno : window.getTurnoOperativoBase(requestedB, date, { baseIndex, eventos })) || '—';
@@ -454,10 +490,6 @@ console.log("[ShiftResolver] Iniciando carga v5.0...");
                     if (!window.isValidShiftValue(tOrigRaw) || !window.isValidShiftValue(tDestRaw) || isLegacyCT || isIncoherente) {
                         finalTurnoOrigen = tOpB;
                         finalTurnoDestino = tOpA;
-                    }
-
-                    if (window.normalizeId(empId).includes('proximamente') || window.normalizeId(empId).includes('diana') || window.normalizeId(empId).includes('dani')) {
-                        console.log('[DEBUG EXCHANGES]', { empId, isOrigin, isDestination, tOrigRaw, tDestRaw, tOpA, tOpB, finalTurnoOrigen, finalTurnoDestino, isIncoherente, isLegacyCT, eventOrigCode, eventDestCode, baseOrigCode, baseDestCode });
                     }
 
                     if (window.DEBUG_MODE) {
@@ -564,3 +596,6 @@ console.log("[ShiftResolver] Iniciando carga v5.0...");
 
     console.log("[ShiftResolver] Carga finalizada v5.0.");
 })();
+
+
+
