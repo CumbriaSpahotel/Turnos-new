@@ -4516,6 +4516,8 @@ window.renderPreview = async () => {
                             String(employee.tipoPersonal || employee.tipo || '').toLowerCase().includes('ocasional')
                         ),
                         hasVacationInVisibleRange: Object.values(daysMap).some(d => d.code === 'VAC' || d.origen === 'VAC'),
+                        hasBajaInVisibleRange: Object.values(daysMap).some(d => (d.code || d.type || '').includes('BAJA') || (d.code || d.type || '').includes('IT')),
+                        hasPermisoInVisibleRange: Object.values(daysMap).some(d => (d.code || d.type || '').includes('PERM')),
                         dias: daysMap
                     };
                 })
@@ -8131,3 +8133,32 @@ window.diagnoseOperationalOrder = (hotel, weekStart) => {
 };
 
 
+
+window.goToRiskPreview = (hotel, weekStart) => {
+    console.log('[NAV_DASHBOARD_PREVIEW]', { hotel, weekStart });
+    // 1. Cambiar a la sección de Vista Previa
+    if (window.switchSection) window.switchSection('preview');
+    
+    // 2. Esperar a que el DOM se actualice
+    setTimeout(() => {
+        const hotelSelect = document.getElementById('previewHotel');
+        const dateInput = document.getElementById('previewDate');
+        
+        if (hotelSelect) {
+            hotelSelect.value = hotel;
+            hotelSelect.dispatchEvent(new Event('change'));
+        }
+        
+        if (dateInput) {
+            dateInput.value = weekStart;
+            if (dateInput._flatpickr) {
+                dateInput._flatpickr.setDate(weekStart, true);
+            }
+        }
+        
+        // 3. Forzar el renderizado de la vista previa
+        if (window.renderPreview) {
+            window.renderPreview();
+        }
+    }, 150);
+};

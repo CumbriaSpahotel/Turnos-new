@@ -243,14 +243,20 @@
     const shouldShowPinSustitucion = (cell, employee, context) => {
         if (!cell) return false;
         
+        // 1. Determinar el tipo de ausencia que se está cubriendo
+        const rawAbs = (
+            cell.incidencia || cell.incidenciaTitular || cell.tipoAusenciaTitular ||
+            cell.ausenciaCubierta || cell.coberturaTipo || cell.sustituyeTipo ||
+            cell.absenceType || cell.tipoAbsence || cell.tipoAusencia ||
+            (cell.origen && cell.origen.startsWith('SUSTITUCION_') ? cell.origen.replace('SUSTITUCION_', '') : null) ||
+            cell.sourceType || cell.reason || cell.source || cell.sourceReason || ''
         );
         const upAbs = String(rawAbs).toUpperCase();
         
         // Regla estricta: solo BAJA, PERMISO, IT (evitando falsos positivos con la palabra 'SUSTITUCION')
         const isMedPerm = (
-            upAbs === 'BAJA' || upAbs === 'PERMISO' || upAbs === 'IT' || upAbs === 'PERM' ||
-            upAbs.endsWith('_BAJA') || upAbs.endsWith('_PERMISO') || upAbs.endsWith('_PERM') || upAbs.endsWith('_IT') ||
-            upAbs.includes('EVENTO_BAJA') || upAbs.includes('EVENTO_PERM')
+            upAbs.includes('BAJA') || upAbs.includes('IT') || upAbs.includes('BM') || 
+            upAbs.includes('PERMISO') || upAbs.includes('PERM') || upAbs.includes('REPOSO')
         );
 
         // Exclusiones explícitas (prioridad absoluta)
@@ -259,23 +265,41 @@
         // 2. Determinar si el turno es válido para llevar pin (M, T, N, D)
         const rawShift = cell.code || cell.turno || cell.turnoFinal || cell.label || '';
         const sKey = shiftKey(rawShift, cell.type || cell.estadoFinal || 'NORMAL');
-        // V13.31: El pin 📌 se muestra en Mañana, Tarde, Noche y Descanso si es cobertura de Baja/Permiso
+        // El pin 📌 se muestra en Mañana, Tarde, Noche y Descanso si es cobertura de Baja/Permiso
         const isValidPinShift = ['m', 't', 'n', 'd'].includes(sKey);
 
         // 3. Confirmar que es una cobertura
         const isCoverage = !!(
-            cell.isCoverageMarker === true || 
+            cell.sustituto || 
+            cell.sustituidoPor || 
+            cell.sustitucion ||
+            cell.esSustituto ||
+            cell.titular_cubierto ||
+            cell.sustituyeA ||
             cell.icon === '\u{1F4CC}' || 
             (Array.isArray(cell.icons) && (cell.icons.includes('\u{1F4CC}') || cell.icons.includes('📌'))) ||
-            cell.sustituyeA || 
-            cell.titular_cubierto || 
             (cell.origen && cell.origen.includes('SUSTITUCION'))
         );
 
-        return isMedPerm && isValidPinShift && isCoverage;
+        const result = isMedPerm && isValidPinShift && isCoverage;
+
+        if (window.DEBUG_MODE && context?.view === 'index' && (employee?.nombre || '').includes('Esther')) {
+            console.log('[INDEX_PIN_SUSTITUCION_CHECK]', {
+                hotel: context.hotel,
+                weekStart: context.weekStart,
+                fecha: cell.fecha,
+                empleado: employee?.nombre,
+                turno: rawShift,
+                sustituyeA: cell.titular_cubierto || cell.sustituyeA || '?',
+                tipoAusenciaTitular: upAbs,
+                shouldShowPin: result
+            });
+        }
+
+        return result;
     };
 
-    const getPublicCellDisplay = (cell, options = {}) => {
+    const getPublicCellDisplay = (cell, options = {}, employee = null, context = null) => {
         const compact = !!options.compact;
         const code = String(cell?.code || '').trim().toUpperCase();
         const type = String(cell?.type || '').trim().toUpperCase();
@@ -335,7 +359,7 @@
         if (isChanged && !isVac && !isBaja && !isPerm && !isForm) icons.add('\u{1F504}');
         
         // REGLA MAESTRA 📌: Solo si shouldShowPinSustitucion es true
-        if (shouldShowPinSustitucion(cell)) {
+        if (shouldShowPinSustitucion(cell, employee, context)) {
             icons.add('\u{1F4CC}');
         } else {
             // Saneamiento de seguridad: si se coló un 📌 por error, lo quitamos
@@ -486,33 +510,50 @@
 
     const isPublicEmployeeVisible = (employee) => {
         if (!employee) return false;
+        
         const name = String(employee.nombre || employee.nombreVisible || employee.name || employee.empleado || '').trim().toLowerCase();
         const id = String(employee.empleado_id || employee.id || '').trim().toLowerCase();
         const type = String(employee.tipo || employee.tipo_personal || employee.tipoPersonal || '').trim().toLowerCase();
 
-        const blocked = [
-            'vacante',
-            'âš\u00a0 vacante',
-            'sin asignar',
-            'sinasignar',
-            '?',
-            '¿?',
-            'placeholder',
-            'técnica',
-            'tecnica',
-            'control'
-        ];
+        // 1. REGLA OBLIGATORIA: VACANTE siempre oculto
+        if (name === 'vacante' || name.includes('vacante') || id === 'vacante') return false;
+        if (name === '¿?' || id === '¿?') return false;
 
-        // Check if name or ID matches blocked patterns
-        const isBlocked = blocked.some(b => name.includes(b) || id.includes(b) || type.includes(b));
-        if (isBlocked) return false;
+        // 2. Determinar si tiene turnos operativos reales en este snapshot
+        const daysMap = employee.turnosOperativos || employee.cells || employee.dias || {};
+        const turns = Object.values(daysMap);
+        const hasOperationalTurns = turns.some(t => {
+            const code = String(t.code || t.turno || t.turnoFinal || '').toUpperCase();
+            // Si tiene un turno que no sea vacío/dash, es operativo
+            return code && code !== '—' && code !== '' && code !== 'SIN_TURNO';
+        });
 
-        // Check explicit flags
-        if (employee.esPlaceholder === true) return false;
-        if (employee.interno === true) return false;
-        if (employee.publicVisible === false) return false;
-        if (employee.rowType === 'tecnica' || employee.rowType === 'control') return false;
+        // 3. REGLA OBLIGATORIA: Próximamente es visible si es operativo
+        const isProximamente = name.includes('proximamente') || name.includes('próximamente');
+        if (isProximamente) return true;
 
+        // 4. Si es un sustituto operativo con turnos reales, es visible
+        const isOperationalSub = !!(
+            employee.esSustituto || 
+            employee.sustitucion || 
+            employee.sustituyeA || 
+            employee.titular_cubierto ||
+            employee.operativo === true
+        );
+        if (isOperationalSub && hasOperationalTurns) return true;
+
+        // 5. Filtros restrictivos para placeholders técnicos puros
+        const blockedPatterns = ['sin asignar', 'sinasignar', 'placeholder', 'técnica', 'tecnica', 'control'];
+        const matchesBlocked = blockedPatterns.some(p => name.includes(p) || id.includes(p));
+        
+        // Si es un placeholder bloqueado y NO tiene turnos reales, se oculta
+        if (matchesBlocked && !hasOperationalTurns) return false;
+
+        // 6. Respetar flags explícitos de base de datos
+        if (employee.internalOnly === true && !hasOperationalTurns) return false;
+        if (employee.publicVisible === false && !hasOperationalTurns) return false;
+
+        // Caso por defecto: se muestra
         return true;
     };
 

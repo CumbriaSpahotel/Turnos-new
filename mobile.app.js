@@ -455,14 +455,23 @@
                     const allRows = Array.from(uniqueEmpsMap.values());
                     const filtered = allRows.filter(r => {
                         const isVisible = window.TurnosRules.isPublicEmployeeVisible(r);
-                        if (!isVisible) {
-                            console.log('[PUBLIC_ROW_FILTER]', {
-                                vista: 'mobile',
-                                empleado: r.nombre || r.nombreVisible,
-                                empleadoId: r.empleado_id || r.id,
-                                renderPublic: false,
-                                reason: 'internal_placeholder'
-                            });
+                        const name = r.nombre || r.nombreVisible || 'Unknown';
+                        if (isVisible && (name.includes('Próximamente') || name.includes('VACANTE'))) {
+                             console.log('[PUBLIC_ROW_FILTER]', {
+                                 view: 'mobile',
+                                 hotel: hotelSelect?.value || 'ALL',
+                                 weekStart: dateInput.value,
+                                 empleado: name,
+                                 renderPublic: true,
+                                 reason: 'operational_substitute_visible'
+                             });
+                        } else if (!isVisible) {
+                             console.log('[PUBLIC_ROW_FILTER]', {
+                                 view: 'mobile',
+                                 empleado: name,
+                                 renderPublic: false,
+                                 reason: 'internal_placeholder_hidden'
+                             });
                         }
                         return isVisible;
                     });
@@ -489,13 +498,21 @@
                             </div>
                             ${dates.map(f => {
                                 const day = daysMap[f] || {};
-                                const display = window.TurnosRules.getPublicCellDisplay(day, { compact: true });
+                                const context = { view: 'mobile', hotel: hotelSelect?.value || 'ALL', weekStart: dateInput.value };
+                                const display = window.TurnosRules.getPublicCellDisplay(day, { compact: true }, emp, context);
                                 const visual = window.TurnosRules.describeCell(day);
                                 const shiftToken = getMobileShiftToken(display.text, visual.mobileClass);
+                                
+                                // REGLA OBLIGATORIA: En móvil también debemos mostrar 📌 si es sustituto de Baja/Permiso
+                                let labelContent = getMobileShiftLabel(day, display.text, visual.mobileClass);
+                                if (display.icons && display.icons.includes('\u{1F4CC}') && !labelContent.includes('\u{1F4CC}')) {
+                                    labelContent += ' <span class="pin-mobile">\u{1F4CC}</span>';
+                                }
+
                                 return `
                                     <div class="grid-cell" title="${escapeHtml(day.titular_cubierto ? 'Cubriendo a ' + day.titular_cubierto : '')}">
                                         <div class="badge-container">
-                                            <span class="badge-shift ${shiftToken}" data-shift="${escapeHtml(shiftToken)}">${getMobileShiftLabel(day, display.text, shiftToken)}</span>
+                                            <span class="badge-shift ${shiftToken}" data-shift="${escapeHtml(shiftToken)}">${labelContent}</span>
                                         </div>
                                     </div>
                                 `;

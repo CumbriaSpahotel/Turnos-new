@@ -769,21 +769,22 @@
 
         const table = new window.VirtualTable(viewport, { columns, rowHeight: 62 });
 
-        table.renderCellContent = function(cell, data, empName, fecha) {
+        table.renderCellContent = function(cell, data, rowData, fecha) {
             if (!data || data.code === '—' || data.code === '') {
                 return cell.innerHTML = '<span class="empty-dash">—</span>';
             }
-            const display = window.TurnosRules.getPublicCellDisplay(data, { compact: false });
+            const context = {
+                view: 'index',
+                hotel: snap.hotel,
+                weekStart: snap.semana_inicio
+            };
+            const display = window.TurnosRules.getPublicCellDisplay(data, { compact: false }, rowData, context);
             const cls = window.TurnosRules.shiftKey(data.code, data.type);
             
             cell.innerHTML = '';
             const pill = document.createElement('div');
             pill.className = `turno-pill v-${cls}`;
             pill.textContent = display.label;
-            
-            // Los iconos ya vienen procesados en display.icons via TurnosRules.getPublicCellDisplay
-            // pero si queremos forzar que NO se dupliquen, usamos solo display.text si no es compacto
-            // o añadimos los iconos filtrando duplicados
             
             if (display.icons) {
                 const currentText = pill.textContent;
@@ -842,19 +843,22 @@
             `;
 
             dates.forEach((f, i) => {
-                table.renderCellContent(tds[i+1], daysMap[f], rowData.nombre, f);
+                table.renderCellContent(tds[i+1], daysMap[f], rowData, f);
             });
         };
 
         const filteredRows = rows.filter(r => {
             const isVisible = window.TurnosRules.isPublicEmployeeVisible(r);
-            if (!isVisible && window.DEBUG_MODE) {
+            const name = r.nombre || r.nombreVisible || 'Unknown';
+            
+            if (window.DEBUG_MODE && (name.includes('Próximamente') || name.includes('VACANTE'))) {
                 console.log('[PUBLIC_ROW_FILTER]', {
-                    vista: 'index',
-                    empleado: r.nombre || r.nombreVisible,
-                    empleadoId: r.empleado_id || r.id,
-                    renderPublic: false,
-                    reason: 'internal_placeholder'
+                    view: 'index',
+                    hotel: snap.hotel,
+                    weekStart: snap.semana_inicio,
+                    empleado: name,
+                    renderPublic: isVisible,
+                    reason: isVisible ? 'operational_substitute_visible' : 'internal_placeholder_hidden'
                 });
             }
             return isVisible;
