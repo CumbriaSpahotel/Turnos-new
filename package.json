@@ -1,4 +1,7 @@
 {
+  "scripts": {
+    "regression-check": "node scripts/regression-check.js"
+  },
   "dependencies": {
     "@supabase/supabase-js": "^2.105.3"
   }

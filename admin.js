@@ -1,4 +1,4 @@
-﻿// describeCell centralizado en turnos-rules.js
+// describeCell centralizado en turnos-rules.js
 
 window.formatDisplayName = (name) => {
     if (!name) return '';
@@ -17,7 +17,7 @@ window.isoDate = (date) => {
     return `${y}-${m}-${day}`;
 };
 window.fmtDateLegacy = (dateStr) => {
-    if (!dateStr) return 'â€”';
+    if (!dateStr) return '—';
     const parts = dateStr.split('-');
     if (parts.length !== 3) return dateStr;
     return `${parts[2]}/${parts[1]}/${parts[0].slice(2)}`;
@@ -173,10 +173,10 @@ window.normalizeV9Key = (value) => {
     
     // 1. Convertir a string segura (ya hecho arriba)
     
-    // 2. Normalizar Unicode NFKD (separa diacrÃ­ticos)
+    // 2. Normalizar Unicode NFKD (separa diacríticos)
     s = s.normalize('NFKD');
     
-    // 3. Eliminar marcas diacrÃ­ticas (acentos, virgulillas, etc.)
+    // 3. Eliminar marcas diacríticas (acentos, virgulillas, etc.)
     s = s.replace(/[\u0300-\u036f]/g, '');
     
     // 4. Eliminar soft hyphen (\u00AD)
@@ -188,13 +188,13 @@ window.normalizeV9Key = (value) => {
     // 6. Eliminar caracteres de control
     s = s.replace(/[\u0000-\u001F\u007F-\u009F]/g, '');
     
-    // 7. Sustituir apÃ³strofes y guiones raros
-    s = s.replace(/['`Â´â€˜â€™]/g, "'").replace(/[â€â€‘â€’â€“â€”â€•]/g, "-");
+    // 7. Sustituir apóstrofes y guiones raros
+    s = s.replace(/['`Â´€˜’]/g, "'").replace(/[€€‘€’–—€•]/g, "-");
     
     // 8. Sustituir espacios no separables por espacio normal
     s = s.replace(/[\u00A0\u202F]/g, " ");
     
-    // 9. Colapsar espacios mÃºltiples
+    // 9. Colapsar espacios múltiples
     s = s.replace(/\s+/g, ' ');
     
     // 10. Trim
@@ -231,12 +231,12 @@ window.loadV9ExcelOrderMap = async () => {
     }
 
     if (!rawData) {
-        console.warn("[V9_ORDER] No se pudo obtener el mapa de orden. Usando fallback vacÃ­o.");
+        console.warn("[V9_ORDER] No se pudo obtener el mapa de orden. Usando fallback vacío.");
         window.v9ExcelOrderMap = new Map();
         return window.v9ExcelOrderMap;
     }
 
-    // Indexar para bÃºsqueda rÃ¡pida: [hotel][week][empleado] -> orderData
+    // Indexar para búsqueda rápida: [hotel][week][empleado] -> orderData
     const index = {};
     rawData.forEach(item => {
         const h = window.normalizeV9Key(item.hotel);
@@ -326,7 +326,7 @@ window.updateConnectionUI = (status, msg = '') => {
     const config = {
         connecting: { color: '#f59e0b', text: 'Conectando...', kpi: '...' },
         connected: { color: '#10b981', text: 'Supabase conectado', kpi: 'Online' },
-        error: { color: '#ef4444', text: 'Error de conexiÃ³n', kpi: 'Offline' },
+        error: { color: '#ef4444', text: 'Error de conexión', kpi: 'Offline' },
         unconfigured: { color: '#64748b', text: 'Sin configurar', kpi: 'N/A' }
     };
 
@@ -380,7 +380,7 @@ window.checkSupabaseConnection = async () => {
         const isConfigError = err.message.includes('URL') || err.message.includes('Key');
         window.updateConnectionUI(isConfigError ? 'unconfigured' : 'error', err.message);
         
-        if (window.addLog) window.addLog(`Fallo de conexiÃ³n: ${err.message}`, 'error');
+        if (window.addLog) window.addLog(`Fallo de conexión: ${err.message}`, 'error');
     }
 };
 // Ejecutar una vez al cargar para limpiar el error reportado por el usuario
@@ -507,7 +507,7 @@ window.renderVacations = async () => {
             <section class="glass-panel" style="padding:10px 18px; margin-bottom:12px; border:1px solid var(--border); border-radius:12px;">
                 <div style="display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap;">
                     <div>
-                        <h2 style="margin:0; font-size:1rem;">GestiÃ³n anual de vacaciones</h2>
+                        <h2 style="margin:0; font-size:1rem;">Gestión anual de vacaciones</h2>
                     </div>
                     <div class="header-controls" style="display:flex; gap:8px;">
                         <select id="vacHotel" class="btn-premium" onchange="window.renderVacations()">
@@ -541,8 +541,8 @@ window.renderVacations = async () => {
                     <div style="font-size:2rem; font-weight:900; margin-top:4px;">${new Set(visible.map(p => p.empId)).size}</div>
                 </div>
                 <div class="glass-panel" style="padding:16px; border:1px solid var(--border); border-radius:15px;">
-                    <div style="font-size:0.7rem; color:var(--text-dim); font-weight:800; text-transform:uppercase;">PrÃ³xima salida</div>
-                    <div style="font-size:1.15rem; font-weight:900; margin-top:8px;">${visible.length ? visible[0].empId : 'â€”'}</div>
+                    <div style="font-size:0.7rem; color:var(--text-dim); font-weight:800; text-transform:uppercase;">Próxima salida</div>
+                    <div style="font-size:1.15rem; font-weight:900; margin-top:8px;">${visible.length ? visible[0].empId : '—'}</div>
                 </div>
             </div>
 
@@ -555,7 +555,7 @@ window.renderVacations = async () => {
                             <th style="padding:1rem; text-align:left; font-size:0.7rem; color:var(--text-dim); text-transform:uppercase;">Hotel</th>
                             <th style="padding:1rem; text-align:left; font-size:0.7rem; color:var(--text-dim); text-transform:uppercase;">Sustituto</th>
                             <th style="padding:1rem; text-align:center; font-size:0.7rem; color:var(--text-dim); text-transform:uppercase;">Estado</th>
-                            <th style="padding:1rem; text-align:center; font-size:0.7rem; color:var(--text-dim); text-transform:uppercase;">Periodo / DuraciÃ³n</th>
+                            <th style="padding:1rem; text-align:center; font-size:0.7rem; color:var(--text-dim); text-transform:uppercase;">Periodo / Duración</th>
                             <th style="padding:1rem; text-align:center; font-size:0.7rem; color:var(--text-dim); text-transform:uppercase;">Acciones</th>
                         </tr>
                     </thead>
@@ -564,15 +564,15 @@ window.renderVacations = async () => {
                             <tr style="border-top:1px solid var(--border);">
                                 <td style="padding:1rem; font-weight:700; color:var(--accent);">${p.empId}</td>
                                 <td style="padding:1rem; font-size:0.85rem;">${p.hotel}</td>
-                                <td style="padding:1rem; font-size:0.85rem; color:var(--text-dim);">${p.sustituto || 'â€”'}</td>
+                                <td style="padding:1rem; font-size:0.85rem; color:var(--text-dim);">${p.sustituto || '—'}</td>
                                 <td style="padding:1rem; text-align:center;">
                                     <span style="background:${p.end >= todayKey ? 'rgba(16,185,129,0.1)' : 'rgba(255,255,255,0.05)'}; color:${p.end >= todayKey ? '#10b981' : 'var(--text-dim)'}; padding:4px 10px; border-radius:8px; font-weight:800; font-size:0.6rem;">
                                         ${p.end >= todayKey ? 'PENDIENTE' : 'PASADA'}
                                     </span>
                                 </td>
                                 <td style="padding:1rem; text-align:center;">
-                                    <div style="font-weight:700;">${window.fmtDateLegacy(p.start)} â€” ${window.fmtDateLegacy(p.end)}</div>
-                                    <div style="font-size:0.65rem; color:var(--text-dim); margin-top:4px; font-weight:700;">${Math.round((new Date(p.end + 'T12:00:00') - new Date(p.start + 'T12:00:00')) / 86400000) + 1} DÃAS</div>
+                                    <div style="font-weight:700;">${window.fmtDateLegacy(p.start)} — ${window.fmtDateLegacy(p.end)}</div>
+                                    <div style="font-size:0.65rem; color:var(--text-dim); margin-top:4px; font-weight:700;">${Math.round((new Date(p.end + 'T12:00:00') - new Date(p.start + 'T12:00:00')) / 86400000) + 1} DÍAS</div>
                                 </td>
                                 <td style="padding:1rem; text-align:center;">
                                     <button class="btn-premium" onclick="window.editVacationByIndex(${idx})" style="padding:5px 10px; font-size:0.7rem;">Gestionar</button>
@@ -660,7 +660,7 @@ window.saveVacation = async (e) => {
         };
 
         if (!payload.fecha_inicio || !payload.fecha_fin) {
-            alert("Por favor, selecciona un rango de fechas vÃ¡lido en el calendario.");
+            alert("Por favor, selecciona un rango de fechas válido en el calendario.");
             return;
         }
 
@@ -674,15 +674,15 @@ window.saveVacation = async (e) => {
         window.resetVacationForm();
         await window.renderVacations();
 
-        // --- BLOQUE E: ACCIONES RÃPIDAS ---
+        // --- BLOQUE E: ACCIONES RÁPIDAS ---
         const quickActions = $('#dashboard-quick-actions');
         if (quickActions) {
             quickActions.innerHTML = `
                 <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap:15px;">
-                    <button class="btn-premium" onclick="window.switchSection('excel')" style="height:100px; flex-direction:column; gap:8px;"><i class="fas fa-file-excel fa-2x"></i><span>GestiÃ³n Excel</span></button>
+                    <button class="btn-premium" onclick="window.switchSection('excel')" style="height:100px; flex-direction:column; gap:8px;"><i class="fas fa-file-excel fa-2x"></i><span>Gestión Excel</span></button>
                     <button class="btn-premium" onclick="window.switchSection('preview')" style="height:100px; flex-direction:column; gap:8px;"><i class="fas fa-calendar-alt fa-2x"></i><span>Vista Previa</span></button>
                     <button class="btn-premium" onclick="window.switchSection('employees')" style="height:100px; flex-direction:column; gap:8px;"><i class="fas fa-users fa-2x"></i><span>Empleados</span></button>
-                    <button class="btn-premium" onclick="window.open('https://cumbriaspahotel.github.io/Turnos-new/', '_blank', 'noopener,noreferrer')" style="height:100px; flex-direction:column; gap:8px; background:var(--accent); color:white;"><i class="fas fa-external-link-alt fa-2x"></i><span>Vista PÃºblica</span></button>
+                    <button class="btn-premium" onclick="window.open('https://cumbriaspahotel.github.io/Turnos-new/', '_blank', 'noopener,noreferrer')" style="height:100px; flex-direction:column; gap:8px; background:var(--accent); color:white;"><i class="fas fa-external-link-alt fa-2x"></i><span>Vista Pública</span></button>
                 </div>
             `;
         }
@@ -818,10 +818,10 @@ window.renderBajas = async () => {
                                 <td style="padding:1rem; font-weight:700;">${b.empleado_id}</td>
                                 <td style="padding:1rem; font-size:0.85rem; color:var(--text-dim);">${b.hotel_origen || 'General'}</td>
                                 <td style="padding:1rem; text-align:center;">
-                                    <div style="font-weight:600;">${window.fmtDateLegacy(b.fecha_inicio)} â€” ${window.fmtDateLegacy(b.fecha_fin || b.fecha_inicio)}</div>
-                                    <div style="font-size:0.65rem; color:var(--text-dim); margin-top:4px; font-weight:700;">${Math.round((new Date((b.fecha_fin || b.fecha_inicio) + 'T12:00:00') - new Date(b.fecha_inicio + 'T12:00:00')) / 86400000) + 1} DÃAS ${b.isGroup ? '(Agrupados)' : 'NATURALES'}</div>
+                                    <div style="font-weight:600;">${window.fmtDateLegacy(b.fecha_inicio)} — ${window.fmtDateLegacy(b.fecha_fin || b.fecha_inicio)}</div>
+                                    <div style="font-size:0.65rem; color:var(--text-dim); margin-top:4px; font-weight:700;">${Math.round((new Date((b.fecha_fin || b.fecha_inicio) + 'T12:00:00') - new Date(b.fecha_inicio + 'T12:00:00')) / 86400000) + 1} DÍAS ${b.isGroup ? '(Agrupados)' : 'NATURALES'}</div>
                                 </td>
-                                <td style="padding:1rem; font-size:0.85rem;">${b.empleado_destino_id || 'â€”'}</td>
+                                <td style="padding:1rem; font-size:0.85rem;">${b.empleado_destino_id || '—'}</td>
                                 <td style="padding:1rem; text-align:center;">
                                     <span style="background:${b.estado === 'anulado' ? 'rgba(239,68,68,0.1)' : 'rgba(16,185,129,0.1)'}; color:${b.estado === 'anulado' ? '#ef4444' : '#10b981'}; padding:4px 10px; border-radius:8px; font-weight:800; font-size:0.6rem;">
                                         ${(b.estado || 'activo').toUpperCase()}
@@ -841,15 +841,15 @@ window.renderBajas = async () => {
 
 window.editBajaPeriod = async (id) => {
     try {
-        const data = await window.TurnosDB.fetchEventos(); // Usamos fetchEventos general para mÃ¡xima compatibilidad
+        const data = await window.TurnosDB.fetchEventos(); // Usamos fetchEventos general para máxima compatibilidad
         const match = data.find(b => String(b.id) === String(id));
-        if (!match) return alert('No se encontrÃ³ el registro: ' + id);
+        if (!match) return alert('No se encontró el registro: ' + id);
 
         _editingBajaData = match;
         $('#modalTitle').innerText = 'Gestionar Baja / Permiso';
         $('#btnDeleteBaja').style.display = 'block';
 
-        // Llenar empleados y hoteles si no estÃ¡n listos
+        // Llenar empleados y hoteles si no están listos
         const [hotels, emps] = await Promise.all([window.TurnosDB.getHotels(), window.TurnosDB.getEmpleados()]);
         $('#mbHotel').innerHTML = `<option value="" disabled>Seleccionar hotel...</option>` + hotels.map(h => `<option value="${h}" ${h === match.hotel_origen ? 'selected' : ''}>${h}</option>`).join('');
         $('#mbEmp').innerHTML = `<option value="" disabled>Seleccionar empleado...</option>` + emps.map(e => `<option value="${e.id}" ${e.id === match.empleado_id ? 'selected' : ''}>${e.nombre || e.id}</option>`).join('');
@@ -902,7 +902,7 @@ window.DEBUG_MODE = false;
 
 // --- NAVEGACIÃ“N ---
 window.switchSection = (id) => {
-    // Alias de navegaciÃ³n
+    // Alias de navegación
     const aliases = {
         'control': 'home', 'panel-control': 'home', 'dashboard': 'home',
         'gestion-excel': 'excel',
@@ -916,7 +916,7 @@ window.switchSection = (id) => {
     };
     const targetId = aliases[id] || id;
 
-    console.log(`[NAV] Cambiando a secciÃ³n: ${targetId} (original: ${id})`);
+    console.log(`[NAV] Cambiando a sección: ${targetId} (original: ${id})`);
     const sections = document.querySelectorAll('.section');
     const menuItems = document.querySelectorAll('.menu-item');
     
@@ -927,10 +927,10 @@ window.switchSection = (id) => {
     if (targetSec) {
         targetSec.classList.add('active');
     } else {
-        console.warn(`[NAV] SecciÃ³n section-${targetId} no encontrada en el DOM`);
+        console.warn(`[NAV] Sección section-${targetId} no encontrada en el DOM`);
     }
 
-    // Activar el botÃ³n correspondiente en el sidebar
+    // Activar el botón correspondiente en el sidebar
     const targetBtn = Array.from(menuItems).find(m => {
         const onClick = m.getAttribute('onclick') || '';
         return onClick.includes(`'${id}'`) || onClick.includes(`"${id}"`) || onClick.includes(`'${targetId}'`) || onClick.includes(`"${targetId}"`);
@@ -948,7 +948,7 @@ window.switchSection = (id) => {
 };
 
 /**
- * NavegaciÃ³n inteligente desde el Dashboard a puntos especÃ­ficos de conflicto.
+ * Navegación inteligente desde el Dashboard a puntos específicos de conflicto.
  */
 window.goToOperationalIssue = (empId, date, type) => {
     console.log(`[NAVEGACIÃ“N] Dirigiendo a: ${empId}, Fecha: ${date}, Tipo: ${type}`);
@@ -1014,7 +1014,7 @@ window.goToPreviewRecord = (empId, date) => {
         const input = document.getElementById('datePicker');
         if (input) {
             input.value = monday;
-            // Si flatpickr estÃ¡ activo, actualizarlo
+            // Si flatpickr está activo, actualizarlo
             if (input._flatpickr) input._flatpickr.setDate(monday);
         }
     }
@@ -1039,7 +1039,7 @@ window.goToPreviewRecord = (empId, date) => {
                  break;
              }
         }
-        if (!found) console.warn(`[NAVEGACIÃ“N] No se encontrÃ³ la fila para ${empId} en Vista Previa`);
+        if (!found) console.warn(`[NAVEGACIÃ“N] No se encontró la fila para ${empId} en Vista Previa`);
     }, 1200);
 };
 // ==========================================
@@ -1092,11 +1092,11 @@ window.renderExcelView = async () => {
             const idInt = profile.id_interno || profile.id || empId;
             return `${profile.nombre || empId} [${idInt}]`;
         };
-        const TURNO_MAP = { 'M': 'MaÃ±ana', 'MaÃ±ana': 'MaÃ±ana', 'T': 'Tarde', 'Tarde': 'Tarde', 'N': 'Noche', 'Noche': 'Noche', 'D': 'Descanso', 'Descanso': 'Descanso', '-': 'Pendiente de asignar', 'â€”': 'Pendiente de asignar', '': 'Pendiente de asignar', null: 'Pendiente de asignar' };
+        const TURNO_MAP = { 'M': 'Mañana', 'Mañana': 'Mañana', 'T': 'Tarde', 'Tarde': 'Tarde', 'N': 'Noche', 'Noche': 'Noche', 'D': 'Descanso', 'Descanso': 'Descanso', '-': 'Pendiente de asignar', '—': 'Pendiente de asignar', '': 'Pendiente de asignar', null: 'Pendiente de asignar' };
         let totalPendientes = 0;
         let totalSupportPendientes = 0;
         let totalNoId = 0;
-        // PHASE 1: Group WITHOUT employee filter â€” to compute available employees
+        // PHASE 1: Group WITHOUT employee filter — to compute available employees
         const grouped = {};
         // Pre-compute support staff set for fast lookup
         const _supportStaffSet = new Set();
@@ -1116,8 +1116,8 @@ window.renderExcelView = async () => {
             const h = record.hotel_id || 'Sin Hotel';
             if (selectedHotel !== 'all' && h !== selectedHotel) return;
             const wStart = window.getWeekStartISO(record.fecha);
-            const val = record.turno || 'â€”';
-            const isPending = (val === 'â€”' || val === '-' || !val);
+            const val = record.turno || '—';
+            const isPending = (val === '—' || val === '-' || !val);
             const isSupport = _isSupport(empId);
             const hasId = _hasValidId(empId);
             if (!hasId) _noIdSet.add(empId);
@@ -1129,7 +1129,7 @@ window.renderExcelView = async () => {
             }
             if (!grouped[h]) grouped[h] = {};
             if (!grouped[h][wStart]) grouped[h][wStart] = {};
-            if (!grouped[h][wStart][empId]) grouped[h][wStart][empId] = { values: Array(7).fill('â€”'), hasPending: false, hasSupportPending: false, isSupport, hasValidId: hasId };
+            if (!grouped[h][wStart][empId]) grouped[h][wStart][empId] = { values: Array(7).fill('—'), hasPending: false, hasSupportPending: false, isSupport, hasValidId: hasId };
             const offset = window.getDayOffsetFromWeek(wStart, record.fecha);
             if (offset >= 0 && offset <= 6) {
                 grouped[h][wStart][empId].values[offset] = val;
@@ -1205,9 +1205,9 @@ window.renderExcelView = async () => {
                         })()}
                     </select>
                 </div>
-                <div class="toolbar-group"><label>Filtro RÃ¡pido</label><label style="display:flex; align-items:center; gap:8px; cursor:pointer; font-size:0.8rem; text-transform:none; color:#1e293b; font-weight:600;"><input type="checkbox" id="excelOnlyPending" ${window.excelFilters.onlyPending ? 'checked' : ''} onchange="window.excelFilters.onlyPending=this.checked; window.renderExcelView()"> Solo Pendientes</label></div>
+                <div class="toolbar-group"><label>Filtro Rápido</label><label style="display:flex; align-items:center; gap:8px; cursor:pointer; font-size:0.8rem; text-transform:none; color:#1e293b; font-weight:600;"><input type="checkbox" id="excelOnlyPending" ${window.excelFilters.onlyPending ? 'checked' : ''} onchange="window.excelFilters.onlyPending=this.checked; window.renderExcelView()"> Solo Pendientes</label></div>
                 <div class="toolbar-group" style="margin-left:auto; text-align:right;"><label>Pendientes</label><div style="font-weight:900; color:#b91c1c; font-size:1.1rem;"><span id="excelCounter">${totalPendientes}</span></div>${totalSupportPendientes > 0 ? `<div style="font-size:0.7rem; color:#64748b; font-weight:500;">Apoyo: ${totalSupportPendientes}</div>` : ''}${_noIdSet.size > 0 ? `<div style="font-size:0.65rem; color:#ef4444; font-weight:500;">Sin ID: ${_noIdSet.size} emp.</div>` : ''}</div>
-                <button class="btn-premium" onclick="window.openRefuerzoModal()" style="padding:10px 18px; font-size:0.75rem; font-weight:700; white-space:nowrap; background:linear-gradient(135deg,#3b82f6,#2563eb); color:white; border:none; border-radius:12px; cursor:pointer;"><i class="fas fa-user-plus"></i> AÃ±adir refuerzo</button>
+                <button class="btn-premium" onclick="window.openRefuerzoModal()" style="padding:10px 18px; font-size:0.75rem; font-weight:700; white-space:nowrap; background:linear-gradient(135deg,#3b82f6,#2563eb); color:white; border:none; border-radius:12px; cursor:pointer;"><i class="fas fa-user-plus"></i> Añadir refuerzo</button>
                 <button id="btnGuardarBase" class="btn-save-base ${saveBtnActive ? 'active' : ''}" ${!saveBtnActive ? 'disabled' : ''} onclick="window.saveTurnosBaseDirect()" title="${!saveBtnActive ? 'No hay cambios pendientes' : 'Guardar todos los cambios realizados'}"><i class="fas fa-save"></i> ${saveBtnActive ? `Guardar cambios (${window.pendingChangesCount})` : 'Guardar base'}</button>
             </div>
         `;
@@ -1243,7 +1243,7 @@ window.renderExcelView = async () => {
                                             const mappedVal = TURNO_MAP[dbVal] || dbVal;
                                             const isPendiente = (mappedVal === 'Pendiente de asignar');
                                             const pendClass = isPendiente ? (row.isSupport ? 'turno-pendiente-soft' : 'turno-pendiente-alerta') : '';
-                                            const options = ['Pendiente de asignar', 'MaÃ±ana', 'Tarde', 'Noche', 'Descanso'].map(o => `<option value="${o}" ${o === mappedVal ? 'selected' : ''}>${o}</option>`).join('');
+                                            const options = ['Pendiente de asignar', 'Mañana', 'Tarde', 'Noche', 'Descanso'].map(o => `<option value="${o}" ${o === mappedVal ? 'selected' : ''}>${o}</option>`).join('');
                                             const currDate = new Date(row.weekStart); currDate.setDate(currDate.getDate() + offset);
                                             const dStr = window.isoDate(currDate);
                                             return `<td style="padding:6px; border-bottom:1px solid #f1f5f9; text-align:center;"><select class="turno-edit-select ${pendClass}" data-hotel="${row.hotel}" data-emp="${row.empId}" data-date="${dStr}" data-original="${dbVal}" style="width:110px; padding:6px; border:1px solid #e2e8f0; border-radius:8px; background:#f8fafc; text-align:center; color:#475569; font-size:0.8rem; cursor:pointer;" onchange="window.handleExcelCellChange(this)">${options}</select></td>`;
@@ -1280,7 +1280,7 @@ window.handleExcelCellChange = (sel) => {
     }
     const selects = document.querySelectorAll('.turno-edit-select');
     let changes = 0;
-    const REVERSE_MAP = { 'MaÃ±ana': 'M', 'Tarde': 'T', 'Noche': 'N', 'Descanso': 'D', 'Pendiente de asignar': 'â€”' };
+    const REVERSE_MAP = { 'Mañana': 'M', 'Tarde': 'T', 'Noche': 'N', 'Descanso': 'D', 'Pendiente de asignar': '—' };
     selects.forEach(s => {
         const currentDb = REVERSE_MAP[s.value] || s.value;
         if (s.dataset.original !== currentDb) changes++;
@@ -1301,7 +1301,7 @@ window.saveTurnosBaseDirect = async () => {
         const selects = document.querySelectorAll('select.turno-edit-select');
         const updates = [];
         const blocked = [];
-        const REVERSE_MAP = { 'MaÃ±ana': 'M', 'Tarde': 'T', 'Noche': 'N', 'Descanso': 'D', 'Pendiente de asignar': 'â€”' };
+        const REVERSE_MAP = { 'Mañana': 'M', 'Tarde': 'T', 'Noche': 'N', 'Descanso': 'D', 'Pendiente de asignar': '—' };
         selects.forEach(sel => {
             const original = sel.dataset.original;
             const currentDb = REVERSE_MAP[sel.value] || sel.value;
@@ -1318,7 +1318,7 @@ window.saveTurnosBaseDirect = async () => {
             }
         });
         if (blocked.length > 0) {
-            alert(`âš ï¸ No se pueden guardar turnos para empleados sin ID interno vÃ¡lido:\n${blocked.join(', ')}`);
+            alert(`⚠️ No se pueden guardar turnos para empleados sin ID interno válido:\n${blocked.join(', ')}`);
         }
         if (updates.length === 0) {
             alert('No hay cambios que guardar.');
@@ -1351,13 +1351,13 @@ window.openRefuerzoModal = async () => {
     const [hotels, emps] = await Promise.all([window.getAvailableHotels(), window.TurnosDB.getEmpleados()]);
     const selectedHotel = document.getElementById('excelHotel')?.value || 'all';
 
-    // Hotel select â€” pre-select current Excel filter
+    // Hotel select — pre-select current Excel filter
     const rfHotel = document.getElementById('rfHotel');
     if (rfHotel) {
         rfHotel.innerHTML = hotels.map(h => `<option value="${h}"${h === selectedHotel && selectedHotel !== 'all' ? ' selected' : ''}>${h}</option>`).join('');
     }
 
-    // Employee select â€” only structural support/ocasional staff with valid EMP-XXXX IDs
+    // Employee select — only structural support/ocasional staff with valid EMP-XXXX IDs
     const rfEmp = document.getElementById('rfEmp');
     if (rfEmp) {
         const supportEmps = emps
@@ -1369,7 +1369,7 @@ window.openRefuerzoModal = async () => {
             })
             .sort((a, b) => (a.nombre || '').localeCompare(b.nombre || ''));
         if (supportEmps.length === 0) {
-            rfEmp.innerHTML = '<option value="" disabled selected>No hay empleados de apoyo con ID vÃ¡lido</option>';
+            rfEmp.innerHTML = '<option value="" disabled selected>No hay empleados de apoyo con ID válido</option>';
         } else {
             rfEmp.innerHTML = '<option value="" disabled selected>Seleccionar empleado...</option>' +
                 supportEmps.map(e => `<option value="${e.id}">${e.nombre || e.id} [${e.id_interno}]</option>`).join('');
@@ -1383,7 +1383,7 @@ window.openRefuerzoModal = async () => {
 
     // Reset state
     document.getElementById('rfDateEnd').value = '';
-    document.getElementById('rfTurno').value = 'â€”';
+    document.getElementById('rfTurno').value = '—';
     document.getElementById('rfObs').value = '';
     document.querySelectorAll('input[name="rfTipo"]').forEach(r => { r.checked = (r.value === 'dia'); });
     window.updateRefuerzoFechas();
@@ -1425,13 +1425,13 @@ window.openRefuerzoModal = async () => {
     const [hotels, emps] = await Promise.all([window.getAvailableHotels(), window.TurnosDB.getEmpleados()]);
     const selectedHotel = document.getElementById('excelHotel')?.value || 'all';
 
-    // Hotel select â€” pre-select current Excel filter
+    // Hotel select — pre-select current Excel filter
     const rfHotel = document.getElementById('rfHotel');
     if (rfHotel) {
         rfHotel.innerHTML = hotels.map(h => `<option value="${h}"${h === selectedHotel && selectedHotel !== 'all' ? ' selected' : ''}>${h}</option>`).join('');
     }
 
-    // Employee select â€” only structural support/ocasional staff with valid EMP-XXXX IDs
+    // Employee select — only structural support/ocasional staff with valid EMP-XXXX IDs
     const rfEmp = document.getElementById('rfEmp');
     if (rfEmp) {
         const supportEmps = emps
@@ -1443,7 +1443,7 @@ window.openRefuerzoModal = async () => {
             })
             .sort((a, b) => (a.nombre || '').localeCompare(b.nombre || ''));
         if (supportEmps.length === 0) {
-            rfEmp.innerHTML = '<option value="" disabled selected>No hay empleados de apoyo con ID vÃ¡lido</option>';
+            rfEmp.innerHTML = '<option value="" disabled selected>No hay empleados de apoyo con ID válido</option>';
         } else {
             rfEmp.innerHTML = '<option value="" disabled selected>Seleccionar empleado...</option>' +
                 supportEmps.map(e => `<option value="${e.id}">${e.nombre || e.id} [${e.id_interno}]</option>`).join('');
@@ -1457,7 +1457,7 @@ window.openRefuerzoModal = async () => {
 
     // Reset state
     document.getElementById('rfDateEnd').value = '';
-    document.getElementById('rfTurno').value = 'â€”';
+    document.getElementById('rfTurno').value = '—';
     document.getElementById('rfObs').value = '';
     document.querySelectorAll('input[name="rfTipo"]').forEach(r => { r.checked = (r.value === 'dia'); });
     window.updateRefuerzoFechas();
@@ -1497,7 +1497,7 @@ window.saveRefuerzo = async () => {
     const hotel = document.getElementById('rfHotel')?.value;
     const empId = document.getElementById('rfEmp')?.value;
     const tipo = document.querySelector('input[name="rfTipo"]:checked')?.value || 'dia';
-    const turno = document.getElementById('rfTurno')?.value || 'â€”';
+    const turno = document.getElementById('rfTurno')?.value || '—';
     const obs = document.getElementById('rfObs')?.value || '';
     const dateStart = document.getElementById('rfDateStart')?.value;
     const dateEnd = document.getElementById('rfDateEnd')?.value;
@@ -1511,7 +1511,7 @@ window.saveRefuerzo = async () => {
     const emp = (window.empleadosGlobales || []).find(e => e.id === empId);
     const idInt = String(emp?.id_interno || '').trim();
     if (!/^EMP-\d{4,}$/.test(idInt)) {
-        status.innerHTML = '<span style="color:var(--danger);">Este empleado no tiene ID interno vÃ¡lido. No puede asignarse como refuerzo.</span>';
+        status.innerHTML = '<span style="color:var(--danger);">Este empleado no tiene ID interno válido. No puede asignarse como refuerzo.</span>';
         return;
     }
 
@@ -1542,7 +1542,7 @@ window.saveRefuerzo = async () => {
             dates.push(window.isoDate(cur));
             cur.setDate(cur.getDate() + 1);
         }
-        if (dates.length > 31) { status.innerHTML = '<span style="color:var(--danger);">Rango mÃ¡ximo: 31 dÃ­as.</span>'; return; }
+        if (dates.length > 31) { status.innerHTML = '<span style="color:var(--danger);">Rango máximo: 31 días.</span>'; return; }
     }
 
     try {
@@ -1570,8 +1570,8 @@ window.saveRefuerzo = async () => {
         // Block on conflicts
         if (conflicts.length > 0) {
             const cList = conflicts.map(c => `  ${c.date}: ${c.turno} en ${c.hotel}`).join('\n');
-            status.innerHTML = `<span style="color:var(--danger);">Conflicto de ubicaciÃ³n:<br><pre style="font-size:0.7rem; margin-top:4px;">${cList}</pre></span>`;
-            btn.disabled = false; btn.textContent = 'AÃ±adir refuerzo';
+            status.innerHTML = `<span style="color:var(--danger);">Conflicto de ubicación:<br><pre style="font-size:0.7rem; margin-top:4px;">${cList}</pre></span>`;
+            btn.disabled = false; btn.textContent = 'Añadir refuerzo';
             return;
         }
 
@@ -1579,7 +1579,7 @@ window.saveRefuerzo = async () => {
         if (duplicates.length > 0) {
             const dList = duplicates.map(d => `  ${d.date}: ${d.turno}`).join('\n');
             if (!confirm(`Ya existen turnos para ${emp?.nombre || empId} en ${hotel}:\n${dList}\n\nÂ¿Quieres reemplazarlos?`)) {
-                btn.disabled = false; btn.textContent = 'AÃ±adir refuerzo';
+                btn.disabled = false; btn.textContent = 'Añadir refuerzo';
                 return;
             }
         }
@@ -1597,9 +1597,9 @@ window.saveRefuerzo = async () => {
         const { error } = await window.supabase.from('turnos').upsert(records, { onConflict: 'empleado_id,fecha' });
         if (error) throw error;
 
-        if (window.addLog) window.addLog(`Refuerzo aÃ±adido: ${emp?.nombre || empId} en ${hotel} (${dates.length} dÃ­a${dates.length !== 1 ? 's' : ''})`, 'info');
+        if (window.addLog) window.addLog(`Refuerzo añadido: ${emp?.nombre || empId} en ${hotel} (${dates.length} día${dates.length !== 1 ? 's' : ''})`, 'info');
 
-        status.innerHTML = `<span style="color:#10b981;">âœ“ Refuerzo aÃ±adido: ${dates.length} dÃ­a${dates.length !== 1 ? 's' : ''}</span>`;
+        status.innerHTML = `<span style="color:#10b981;">âœ“ Refuerzo añadido: ${dates.length} día${dates.length !== 1 ? 's' : ''}</span>`;
         setTimeout(async () => {
             window.closeRefuerzoModal();
             await window.renderExcelView();
@@ -1610,7 +1610,7 @@ window.saveRefuerzo = async () => {
         status.innerHTML = `<span style="color:var(--danger);">Error: ${err.message}</span>`;
     } finally {
         btn.disabled = false;
-        btn.textContent = 'AÃ±adir refuerzo';
+        btn.textContent = 'Añadir refuerzo';
     }
 };
 
@@ -1770,11 +1770,11 @@ window.renderChanges = async () => {
         if ($('#ch-stat-emps')) $('#ch-stat-emps').textContent = affectedSet.size;
 
         const shiftLabel = (value) => {
-            if (window.isInvalidLegacyChangeValue(value)) return 'â€”';
+            if (window.isInvalidLegacyChangeValue(value)) return '—';
             const raw = String(value || '').trim();
-            if (!raw) return 'â€”';
+            if (!raw) return '—';
             const norm = window.normalizeShiftValue(raw);
-            if (norm === 'M') return 'MaÃ±ana';
+            if (norm === 'M') return 'Mañana';
             if (norm === 'T') return 'Tarde';
             if (norm === 'N') return 'Noche';
             if (norm === 'D') return 'Descanso';
@@ -1824,7 +1824,7 @@ window.renderChanges = async () => {
                     <td style="padding:15px; font-weight:700; color:#2563eb;">
                         <button type="button" onclick="event.stopPropagation(); window.editChange('${ev.id}')" title="Editar cambio" style="border:0; background:transparent; color:#2563eb; font:inherit; font-weight:800; padding:0; cursor:pointer;">${dateFmt}</button>
                     </td>
-                    <td style="padding:15px; font-size:0.85rem; color:#64748b;">${ev.hotel_origen || 'â€”'}</td>
+                    <td style="padding:15px; font-size:0.85rem; color:#64748b;">${ev.hotel_origen || '—'}</td>
                     <td style="padding:15px;">
                         <div style="font-weight:800; font-size:0.9rem;">${ev.empleado_id} ${ev.empleado_destino_id ? '<span style="color:#94a3b8; font-weight:400; margin:0 4px;">â†”</span> ' + ev.empleado_destino_id : ''}</div>
                     </td>
@@ -1833,7 +1833,7 @@ window.renderChanges = async () => {
                         <span class="panel-tag ${typeClass}" style="font-size:0.6rem; letter-spacing:0.02em;">${typeLabel}</span>
                         <div class="integrity-badge ${integrityClass}" style="font-size:0.55rem; margin-top:4px; font-weight:800;">${integrityLabel}</div>
                     </td>
-                    <td style="padding:15px; font-size:0.8rem; color:#64748b; max-width:200px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${ev.observaciones || 'â€”'}</td>
+                    <td style="padding:15px; font-size:0.8rem; color:#64748b; max-width:200px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${ev.observaciones || '—'}</td>
                     <td style="padding:15px; text-align:center;">
                         <div style="display:flex; gap:6px; justify-content:center;">
                             <button class="btn-icon" onclick="window.editChange('${ev.id}')" title="Gestionar"><i class="fas fa-edit"></i></button>
@@ -1850,11 +1850,11 @@ window.renderChanges = async () => {
         
         upcomingList.innerHTML = upcoming.map(ev => `
             <div style="padding:12px; border-radius:12px; background:#f8fafc; border:1px solid #e2e8f0;">
-                <div style="font-weight:800; font-size:0.8rem; color:#1e293b;">${window.TurnosDB.fmtDateLegacy(ev.fecha_inicio)} Â· ${ev.hotel_origen}</div>
+                <div style="font-weight:800; font-size:0.8rem; color:#1e293b;">${window.TurnosDB.fmtDateLegacy(ev.fecha_inicio)} · ${ev.hotel_origen}</div>
                 <div style="font-size:0.75rem; color:#64748b; margin-top:2px;">${ev.empleado_id} ${ev.empleado_destino_id ? 'â†” ' + ev.empleado_destino_id : ''}</div>
                 <div style="font-size:0.72rem; color:#475569; margin-top:6px; display:flex; gap:6px; align-items:center; flex-wrap:wrap;">${changeDetail(ev)}</div>
             </div>
-        `).join('') || '<div style="padding:10px; text-align:center; opacity:0.5; font-size:0.8rem;">No hay cambios prÃ³ximos.</div>';
+        `).join('') || '<div style="padding:10px; text-align:center; opacity:0.5; font-size:0.8rem;">No hay cambios próximos.</div>';
     } catch (err) {
         console.error('[CHANGES ERROR]', err);
         if (document.querySelector('#changes-body')) document.querySelector('#changes-body').innerHTML = '<tr><td colspan="7" style="padding:3rem; text-align:center; color:#b91c1c;">Error cargando cambios.</td></tr>';
@@ -1890,12 +1890,12 @@ window.ensureChangeEditModal = () => {
                 </label>
                 <label style="display:grid; gap:7px; font-size:0.68rem; color:#64748b; font-weight:900; text-transform:uppercase;">Turno original
                     <select id="edit-change-origin" style="height:48px; border:1px solid #d5e1ef; border-radius:14px; padding:0 14px; font-size:0.95rem; font-weight:700;">
-                        <option value="">â€”</option><option value="MaÃ±ana">MaÃ±ana</option><option value="Tarde">Tarde</option><option value="Noche">Noche</option><option value="Descanso">Descanso</option>
+                        <option value="">—</option><option value="Mañana">Mañana</option><option value="Tarde">Tarde</option><option value="Noche">Noche</option><option value="Descanso">Descanso</option>
                     </select>
                 </label>
                 <label style="display:grid; gap:7px; font-size:0.68rem; color:#64748b; font-weight:900; text-transform:uppercase;">Turno solicitado
                     <select id="edit-change-dest" style="height:48px; border:1px solid #d5e1ef; border-radius:14px; padding:0 14px; font-size:0.95rem; font-weight:700;">
-                        <option value="">â€”</option><option value="MaÃ±ana">MaÃ±ana</option><option value="Tarde">Tarde</option><option value="Noche">Noche</option><option value="Descanso">Descanso</option>
+                        <option value="">—</option><option value="Mañana">Mañana</option><option value="Tarde">Tarde</option><option value="Noche">Noche</option><option value="Descanso">Descanso</option>
                     </select>
                 </label>
                 <label style="display:grid; gap:7px; font-size:0.68rem; color:#64748b; font-weight:900; text-transform:uppercase;">Tipo
@@ -1947,7 +1947,7 @@ window.editChange = async (id) => {
         };
         const toShiftSelectValue = (value) => {
             const norm = window.normalizeShiftValue ? window.normalizeShiftValue(value) : String(value || '').trim().toUpperCase();
-            if (norm === 'M') return 'MaÃ±ana';
+            if (norm === 'M') return 'Mañana';
             if (norm === 'T') return 'Tarde';
             if (norm === 'N') return 'Noche';
             if (norm === 'D') return 'Descanso';
@@ -2027,7 +2027,7 @@ window.saveChangeEdit = async (event) => {
 };
 
 window.anularChange = async (id) => {
-    if (!confirm("Â¿EstÃ¡s seguro de anular este cambio operativo?")) return;
+    if (!confirm("Â¿Estás seguro de anular este cambio operativo?")) return;
     try {
         const eventos = await window.TurnosDB.fetchEventos();
         const evento = (eventos || []).find(ev => String(ev.id) === String(id));
@@ -2054,7 +2054,7 @@ window.renderRequests = async () => {
         <div class="requests-toolbar" style="display:flex; align-items:center; gap:20px; margin-bottom:20px; background:white; padding:15px 25px; border-radius:16px; border:1px solid #e2e8f0; box-shadow:0 4px 6px -1px rgba(0,0,0,0.05);">
             <div style="font-size:0.75rem; font-weight:800; color:#64748b; text-transform:uppercase; letter-spacing:0.05em;">Filtrar por:</div>
             <select id="requestsFilter" class="toolbar-input" style="padding:8px 15px; border-radius:10px; border:1px solid #cbd5e1; background:#f8fafc; font-weight:700; color:#1e293b; cursor:pointer;" onchange="window._requestsFilter = this.value; window.renderRequests()">
-                <option value="pendiente" ${window._requestsFilter === 'pendiente' ? 'selected' : ''}>Pendientes de RevisiÃ³n</option>
+                <option value="pendiente" ${window._requestsFilter === 'pendiente' ? 'selected' : ''}>Pendientes de Revisión</option>
                 <option value="aprobada" ${window._requestsFilter === 'aprobada' ? 'selected' : ''}>Aprobadas</option>
                 <option value="rechazada" ${window._requestsFilter === 'rechazada' ? 'selected' : ''}>Rechazadas</option>
                 <option value="all" ${window._requestsFilter === 'all' ? 'selected' : ''}>Todas las Solicitudes</option>
@@ -2111,21 +2111,45 @@ window.renderRequests = async () => {
                         ${(req.fechas || []).map(f => `
                             <div style="background:#f8fafc; padding:12px; border-radius:12px; border:1px solid #e2e8f0;">
                                 <div style="font-weight:800; font-size:0.85rem;">${f.fecha}</div>
-                                <div style="font-size:0.8rem; color:#64748b;">${f.origen} â†’ ${f.destino}</div>
+                                <div style="font-size:0.8rem; color:#64748b;">${f.origen} → ${f.destino}</div>
                             </div>
                         `).join('')}
                     </div>
+                    ${(function() {
+                        const _motivo = req.motivo || req.observacion || req.comentario
+                            || (req.payload && (req.payload.motivo || req.payload.observacion || req.payload.comentario))
+                            || '';
+                        const _obsAdmin = req.observacion_admin || req.nota_admin
+                            || (req.payload && req.payload.observacion_admin)
+                            || '';
+                        if (!_motivo && !_obsAdmin) return '';
+                        let _html = '<div style="margin-top:12px; padding:12px 14px; background:#f1f5f9; border-radius:10px; border-left:3px solid #cbd5e1; font-size:0.8rem;">';
+                        if (_motivo) {
+                            _html += '<div style="margin-bottom:' + (_obsAdmin ? '8px' : '0') + ';">'
+                                + '<span style="display:block; font-weight:800; color:#475569; font-size:0.68rem; text-transform:uppercase; letter-spacing:0.06em; margin-bottom:3px;">Motivo de la solicitud</span>'
+                                + '<span style="color:#0f172a; font-weight:600;">' + escapeHtml(_motivo) + '</span>'
+                                + '</div>';
+                        }
+                        if (_obsAdmin) {
+                            _html += '<div>'
+                                + '<span style="display:block; font-weight:800; color:#0ea5e9; font-size:0.68rem; text-transform:uppercase; letter-spacing:0.06em; margin-bottom:3px;">Observación admin</span>'
+                                + '<span style="color:#334155;">' + escapeHtml(_obsAdmin) + '</span>'
+                                + '</div>';
+                        }
+                        _html += '</div>';
+                        return _html;
+                    }())}
                 </div>
             `;
         }).join('');
     } catch (e) { 
         console.error("[ADMIN ERROR] renderRequests:", e);
-        container.innerHTML = '<div style="padding:2rem; color:red; font-weight:800;">âŒ Error cargando solicitudes: ' + e.message + '</div>'; 
+        container.innerHTML = '<div style="padding:2rem; color:red; font-weight:800;">❌ Error cargando solicitudes: ' + e.message + '</div>'; 
     }
 };
 
 window.handleRequestAction = async (id, newState) => {
-    if (!confirm(`Â¿EstÃ¡s seguro de marcar como ${newState}?`)) return;
+    if (!confirm(`Â¿Estás seguro de marcar como ${newState}?`)) return;
     try {
         await window.TurnosDB.actualizarEstadoPeticion(id, newState);
         alert('Solicitud actualizada.');
@@ -2252,10 +2276,10 @@ window.showDiagnostic = (error, source = 'Error Global') => {
     const message = error.message || String(error);
     const stack = error.stack || '';
     
-    // Extraer archivo y lÃ­nea (simplificado)
+    // Extraer archivo y línea (simplificado)
     const stackLines = stack.split('\n');
     const firstLine = stackLines[0] || '';
-    const secondLine = stackLines[1] || ''; // Suele contener la ubicaciÃ³n real
+    const secondLine = stackLines[1] || ''; // Suele contener la ubicación real
     const locMatch = secondLine.match(/at\s+(.+)\s+\((.+):(\d+):(\d+)\)/) || secondLine.match(/at\s+(.+):(\d+):(\d+)/);
     
     let location = 'Desconocida';
@@ -2265,14 +2289,14 @@ window.showDiagnostic = (error, source = 'Error Global') => {
         location = `${file.split('/').pop()} : L${line}`;
     }
 
-    // Mapeo de mÃ³dulos
+    // Mapeo de módulos
     let module = 'Desconocido';
     let section = null;
     if (stack.includes('renderDashboard')) { module = 'Dashboard'; section = 'home'; }
     else if (stack.includes('renderEmployeeProfile')) { module = 'Ficha Empleado'; section = 'employees'; }
     else if (stack.includes('renderExcelView')) { module = 'Modo Excel'; section = 'excel'; }
     else if (stack.includes('renderPreview')) { module = 'Vista Previa'; section = 'preview'; }
-    else if (stack.includes('publishToSupabase')) { module = 'PublicaciÃ³n'; }
+    else if (stack.includes('publishToSupabase')) { module = 'Publicación'; }
     else if (message.includes('isoDate')) { module = 'Sistema (Fechas)'; }
 
     $('#diag-module-tag').textContent = `${module} [${location}]`;
@@ -2286,7 +2310,7 @@ window.showDiagnostic = (error, source = 'Error Global') => {
             window.switchSection(section);
             overlay.style.display = 'none';
         };
-        modBtn.textContent = `Ir a secciÃ³n: ${module}`;
+        modBtn.textContent = `Ir a sección: ${module}`;
     } else {
         modBtn.style.display = 'none';
     }
@@ -2296,7 +2320,7 @@ window.showDiagnostic = (error, source = 'Error Global') => {
 };
 
 window.copyDiagnostic = () => {
-    const text = `ERROR DIAGNÃ“STICO\nMÃ³dulo: ${$('#diag-module-tag').textContent}\nMensaje: ${$('#diag-message').textContent}\nStack: ${$('#diag-stack').textContent}`;
+    const text = `ERROR DIAGNÃ“STICO\nMódulo: ${$('#diag-module-tag').textContent}\nMensaje: ${$('#diag-message').textContent}\nStack: ${$('#diag-stack').textContent}`;
     navigator.clipboard.writeText(text).then(() => alert('Copiado al portapapeles'));
 };
 
@@ -2369,7 +2393,7 @@ window.employeeShiftLabel = (item) => {
     const raw = item.turno || item.turnoBase || item.turno_base || '';
     if (!raw) return '&mdash;';
     const key = window.normalizePreviewTurno ? window.normalizePreviewTurno(raw) : String(raw).toUpperCase();
-    return ({ M: 'MaÃ±ana', T: 'Tarde', N: 'Noche', D: 'Descanso' }[key]) || raw;
+    return ({ M: 'Mañana', T: 'Tarde', N: 'Noche', D: 'Descanso' }[key]) || raw;
 };
 
 window.employeeFormatNumber = (value) => {
@@ -2569,7 +2593,7 @@ window.groupConsecutiveEvents = (events) => {
                 const nextStart = new Date(e.fecha_inicio + 'T12:00:00');
                 const diffDays = Math.round((nextStart - lastEnd) / (1000 * 60 * 60 * 24));
                 
-                // Criterios de agrupaciÃ³n: consecutivo, mismo tipo, mismo hotel, mismo sustituto, mismo estado
+                // Criterios de agrupación: consecutivo, mismo tipo, mismo hotel, mismo sustituto, mismo estado
                 const sameType = (currentGroup.tipo || '').split(' ')[0] === (e.tipo || '').split(' ')[0];
                 const sameHotel = currentGroup.hotel_origen === e.hotel_origen;
                 const sameSust = (currentGroup.empleado_destino_id || currentGroup.sustituto_id) === (e.empleado_destino_id || e.sustituto_id);
@@ -2820,8 +2844,8 @@ window.employeeStatusMeta = (status) => {
 window.employeeNorm = (val) => String(val || '').toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
 
 window.openEmployeeDayDetail = (fecha) => {
-    console.log("Detalle de dÃ­a:", fecha);
-    // PodrÃ­amos abrir un mini-modal con los detalles tÃ©cnicos del turno resuelto
+    console.log("Detalle de día:", fecha);
+    // Podríamos abrir un mini-modal con los detalles técnicos del turno resuelto
 };
 
 window.renderEmployeeProfileCalendar = (model) => {
@@ -3105,7 +3129,7 @@ window.renderEmployeeProfile = () => {
                             return `
                                 <div style="padding:14px; background:white; border-radius:18px; border:1px solid var(--border); border-top:4px solid ${accent}; box-shadow:0 4px 6px -1px rgba(0,0,0,0.05);">
                                     <div style="font-weight:900; font-size:0.7rem; color:${accent}; text-transform:uppercase; letter-spacing:0.05em; margin-bottom:4px;">${ev.tipo} ${ev.isGroup ? '(Agrupado)' : ''}</div>
-                                    <div style="font-weight:800; font-size:0.9rem; color:var(--text); margin-bottom:4px;">${window.fmtDateLegacy(ev.fecha_inicio)}${ev.fecha_fin && ev.fecha_fin !== ev.fecha_inicio ? ` â€” ${window.fmtDateLegacy(ev.fecha_fin)}` : ''}</div>
+                                    <div style="font-weight:800; font-size:0.9rem; color:var(--text); margin-bottom:4px;">${window.fmtDateLegacy(ev.fecha_inicio)}${ev.fecha_fin && ev.fecha_fin !== ev.fecha_inicio ? ` — ${window.fmtDateLegacy(ev.fecha_fin)}` : ''}</div>
                                     <div style="font-size:0.7rem; color:var(--text-dim); font-weight:700;">${days} D&Iacute;A${days > 1 ? 'S' : ''} NATURALES</div>
                                     <div style="margin-top:8px; font-size:0.7rem; font-style:italic; color:var(--text-dim); border-top:1px solid #f1f5f9; padding-top:8px;">${ev.observaciones || 'Sin detalles'}</div>
                                 </div>
@@ -3145,11 +3169,11 @@ window.renderEmployeeProfile = () => {
                         <div style="display:grid; grid-template-columns:1fr auto; gap:12px; align-items:center; padding:14px 16px; border:1px solid var(--border); border-radius:16px; background:rgba(255,255,255,0.9);">
                             <div>
                                 <div style="font-weight:800; font-size:0.84rem; color:var(--text);">${ev.tipo} ${ev.isGroup ? '(Agrupado)' : ''}</div>
-                                <span style="margin-left:10px; font-size:0.75rem; color:var(--text-dim);">${window.fmtDateLegacy(ev.fecha_inicio)}${ev.fecha_fin && ev.fecha_fin !== ev.fecha_inicio ? ` â€” ${window.fmtDateLegacy(ev.fecha_fin)}` : ''}</span>
+                                <span style="margin-left:10px; font-size:0.75rem; color:var(--text-dim);">${window.fmtDateLegacy(ev.fecha_inicio)}${ev.fecha_fin && ev.fecha_fin !== ev.fecha_inicio ? ` — ${window.fmtDateLegacy(ev.fecha_fin)}` : ''}</span>
                             </div>
                             <div style="font-size:0.8rem; font-weight:600; color:${ev.estado === 'anulado' ? '#ef4444' : '#10b981'};">${ev.estado || 'Finalizado'}</div>
                         </div>
-                    `).join('') : '<div style="padding:40px; text-align:center; opacity:0.4;">Sin registros histÃ³ricos.</div>'}
+                    `).join('') : '<div style="padding:40px; text-align:center; opacity:0.4;">Sin registros históricos.</div>'}
                 </div>
             </section>
         `;
@@ -3166,13 +3190,13 @@ window.renderEmployeeProfile = () => {
                             return `
                                 <div style="display:flex; justify-content:space-between; align-items:center; padding:15px; background:var(--bg2); border-radius:15px; border:1px solid var(--border);">
                                     <div>
-                                        <div style="font-weight:800; font-size:0.9rem;">${window.fmtDateLegacy(ev.fecha_inicio)}${ev.fecha_fin && ev.fecha_fin !== ev.fecha_inicio ? ` â€” ${window.fmtDateLegacy(ev.fecha_fin)}` : ''}</div>
+                                        <div style="font-weight:800; font-size:0.9rem;">${window.fmtDateLegacy(ev.fecha_inicio)}${ev.fecha_fin && ev.fecha_fin !== ev.fecha_inicio ? ` — ${window.fmtDateLegacy(ev.fecha_fin)}` : ''}</div>
                                         <div style="font-size:0.75rem; color:var(--text-dim); margin-top:3px;">${days} d&iacute;as naturales ${ev.isGroup ? '(Agrupados)' : ''}</div>
                                     </div>
                                     <span class="status-pill ${ev.estado === 'activo' ? 'activo' : 'baja'}">${ev.estado || 'activo'}</span>
                                 </div>
                             `;
-                        }).join('') : '<div style="padding:60px; text-align:center; opacity:0.4;">No hay periodos de vacaciones registrados este aÃ±o.</div>'}
+                        }).join('') : '<div style="padding:60px; text-align:center; opacity:0.4;">No hay periodos de vacaciones registrados este año.</div>'}
                     </div>
                 </section>
                 <section class="emp-card glass" style="padding:20px; border-radius:24px; border:1px solid var(--border); background:rgba(37,99,235,0.05);">
@@ -3238,7 +3262,7 @@ window.renderEmployeeProfile = () => {
                 ${tabContent}
             </div>
             <div style="margin-top:40px; padding-top:20px; border-top:1px solid var(--border); font-size:0.65rem; color:var(--text-dim); display:flex; justify-content:space-between;">
-                <span>ID TÃ©cnico: ${emp.id}</span>
+                <span>ID Técnico: ${emp.id}</span>
                 <span>UUID: ${emp.uuid || 'N/A'}</span>
             </div>
         </div>
@@ -3278,8 +3302,8 @@ window.saveEmployeeProfileInline = async () => {
 // ==========================================
 // 2. EXCEL SOURCE LOADER ï¿½ delegado a excel-loader.js
 // ==========================================
-// La funciÃ³n loadExcelSourceRows() la provee window.ExcelLoader (excel-loader.js).
-// window._sharedExcelSourceRows es la cachÃ© compartida con index y mobile.
+// La función loadExcelSourceRows() la provee window.ExcelLoader (excel-loader.js).
+// window._sharedExcelSourceRows es la caché compartida con index y mobile.
 
 // ==========================================
 // 3. RENDER PREVIEW (WEEKLY / MONTHLY)
@@ -3375,7 +3399,7 @@ window.createPuestosPreviewModel = ({
     const puestosMap = new Map();
     const ausenciaSustitucionMap = new Map(); // normSustitutoId -> [{ titularId, normTitular, fi, ff }]
 
-    // A) Construir baseRows y puestos para el Ã­ndice
+    // A) Construir baseRows y puestos para el índice
     sourceRows.forEach(sRow => {
         const puestoId = window.buildPuestoId(hotel, sRow.rowIndex);
         if (!puestosMap.has(puestoId)) {
@@ -3479,7 +3503,7 @@ window.createPuestosPreviewModel = ({
         });
     });
 
-    // 2. CONSTRUIR ÃNDICE GLOBAL (con visibilidad de sustituciones)
+    // 2. CONSTRUIR ÍNDICE GLOBAL (con visibilidad de sustituciones)
     const { baseIndex } = window.buildIndices(employees, eventos, baseRowsFlat);
     baseIndex.ausenciaSustitucionMap = ausenciaSustitucionMap;
 
@@ -3489,7 +3513,7 @@ window.createPuestosPreviewModel = ({
         return valA - valB;
     });
 
-    // Re-mapear el puestoOrden visual para que sea correlativo 1..N segÃºn el orden final
+    // Re-mapear el puestoOrden visual para que sea correlativo 1..N según el orden final
     puestos.forEach((p, idx) => {
         p.puestoOrden = idx + 1;
     });
@@ -3604,7 +3628,7 @@ window.createPuestosPreviewModel = ({
         
         // 1. PRE-PROCESAR ESTADO DE LA SEMANA
         const weekStatus = new Map(); // normTitular -> { tipo, sustitutoId, ... }
-        const substitutesMap = new Map(); // normSustituto -> { normTitular, ... } (para saber quiÃ©n cubre a quiÃ©n)
+        const substitutesMap = new Map(); // normSustituto -> { normTitular, ... } (para saber quién cubre a quién)
         
         eventos.forEach(ev => {
             const tipo = window.normalizeTipo(ev.tipo);
@@ -3651,7 +3675,7 @@ window.createPuestosPreviewModel = ({
             const v9Order = window.getV9ExcelOrder(hotel, r.week_start || firstDate, r.empleadoId) || 500;
             const status = weekStatus.get(normTitular);
 
-            // CASO A: TITULAR ESTÃ AUSENTE
+            // CASO A: TITULAR ESTÁ AUSENTE
             if (status) {
                 const titularName = getDisplayName(r.empleadoId, r);
                 absentRows.push({
@@ -3702,7 +3726,7 @@ window.createPuestosPreviewModel = ({
                 if (occupantId && !isVacante) assignedNorms.add(normOcc);
 
             } 
-            // CASO B: TITULAR ESTÃ PRESENTE
+            // CASO B: TITULAR ESTÁ PRESENTE
             else {
 if (!assignedNorms.has(normTitular)) {
                     const titularName = getDisplayName(r.empleadoId, r);
@@ -3722,7 +3746,7 @@ if (!assignedNorms.has(normTitular)) {
             }
         });
 
-        // 3. PROCESAR REFUERZOS EXPLÃCITOS
+        // 3. PROCESAR REFUERZOS EXPLÍCITOS
         eventos.forEach(ev => {
             const isExplicitRef = Boolean(ev.isRefuerzo === true || ev.origen === 'refuerzo' || ev.payload?.tipo_modulo === 'refuerzo' || ev.meta?.refuerzo === true);
             if (!isExplicitRef) return;
@@ -3769,7 +3793,7 @@ if (!assignedNorms.has(normTitular)) {
         getPuesto: (id) => puestosMap.get(id),
         getCelda,
         getTurnoEmpleado: getTurnoEmpleadoExtended,
-        getCeldaByEmpleado: getTurnoEmpleadoExtended, // Alias para facilitar publicaciÃ³n
+        getCeldaByEmpleado: getTurnoEmpleadoExtended, // Alias para facilitar publicación
         getEmployees,
         getEmpleadosVisibles: (start, end) => getEmployees(),
         estaDeVacaciones: (empId, fechas) => (fechas || []).some(f => getTurnoEmpleadoExtended(empId, f).incidencia === 'VAC'),
@@ -4049,7 +4073,7 @@ window.getTurnoEmpleadoLabel = (turnoEmpleado) => {
     if (turnoEmpleado.incidencia === 'PERM') return 'Permiso';
 
     const key = window.TurnosRules?.shiftKey(turnoEmpleado.turno || '', 'NORMAL') || '';
-    return window.TurnosRules?.definitions?.[key]?.label || turnoEmpleado.turno || 'â€”';
+    return window.TurnosRules?.definitions?.[key]?.label || turnoEmpleado.turno || '—';
 };
 
 window.renderEmpleadoRowHeader = (employee, { showVacationIcon = false, isCompact = false } = {}) => {
@@ -4059,7 +4083,7 @@ window.renderEmpleadoRowHeader = (employee, { showVacationIcon = false, isCompac
     if (employee?.isVacante) {
         return `
         <div style="display:flex; flex-direction:column; gap:2px;">
-            <span style="font-weight:800; color:#ef4444; font-size:0.82rem; line-height:1.3;">âš ï¸ VACANTE</span>
+            <span style="font-weight:800; color:#ef4444; font-size:0.82rem; line-height:1.3;">⚠️ VACANTE</span>
         </div>`;
     }
 
@@ -4087,7 +4111,7 @@ window.renderEmpleadoCell = (turnoEmpleado, { isCompact = false } = {}) => {
 
     const normalizeEmptyCellLabel = (value) => {
         const raw = String(value || '').trim();
-        if (!raw || raw === '-' || raw === '\u2014' || raw.includes('Â') || raw.includes('Ã¢') || raw.includes('â€')) return '\u2014';
+        if (!raw || raw === '-' || raw === '\u2014' || raw.includes('\u00c3\u00a2') || raw.includes('\u00ef\u00bf\u00bd')) return '\u2014';
         return window.fixMojibake ? window.fixMojibake(raw) : raw;
     };
     const turnoVisible = normalizeEmptyCellLabel(turnoEmpleado.incidencia || turnoEmpleado.turno || '');
@@ -4098,7 +4122,7 @@ window.renderEmpleadoCell = (turnoEmpleado, { isCompact = false } = {}) => {
         V:    { bg: '#e0f2fe', color: '#0369a1', border: '#7dd3fc', label: 'Vacaciones', icon: '\u{1F3D6}\u{FE0F}' },
         B:    { bg: '#fee2e2', color: '#b91c1c', border: '#fca5a5', label: 'Baja', icon: '' },
         P:    { bg: '#ffedd5', color: '#9a3412', border: '#fdba74', label: 'Permiso', icon: '' },
-        M:    { bg: '#dcfce7', color: '#166534', border: '#86efac', label: 'MaÃ±ana', icon: '' },
+        M:    { bg: '#dcfce7', color: '#166534', border: '#86efac', label: 'Mañana', icon: '' },
         T:    { bg: '#fef9c3', color: '#854d0e', border: '#fde047', label: 'Tarde', icon: '' },
         N:    { bg: '#dbeafe', color: '#1e40af', border: '#93c5fd', label: 'Noche', icon: '\u{1F319}' },
         D:    { bg: '#f1f5f9', color: '#475569', border: '#e2e8f0', label: 'Descanso', icon: '' }
@@ -4179,7 +4203,7 @@ window.DateManager = {
         if (this.state.view === 'weekly') {
             d.setDate(d.getDate() - 7);
         } else {
-            d.setMonth(d.getMonth() - 1, 1); // Ir al dÃ­a 1 del mes anterior
+            d.setMonth(d.getMonth() - 1, 1); // Ir al día 1 del mes anterior
         }
         this.state.currentDate = window.isoDate(d);
         this.syncAndRender();
@@ -4190,7 +4214,7 @@ window.DateManager = {
         if (this.state.view === 'weekly') {
             d.setDate(d.getDate() + 7);
         } else {
-            d.setMonth(d.getMonth() + 1, 1); // Ir al dÃ­a 1 del mes siguiente
+            d.setMonth(d.getMonth() + 1, 1); // Ir al día 1 del mes siguiente
         }
         this.state.currentDate = window.isoDate(d);
         this.syncAndRender();
@@ -4272,7 +4296,7 @@ window.renderPreview = async () => {
 
     try {
         window._previewPuestosModels = Object.create(null);
-        // TAREA CODEX: Cachear el resultado final para publicaciÃ³n exacta
+        // TAREA CODEX: Cachear el resultado final para publicación exacta
         window._lastRenderedPreviewSnapshotSource = {
             semana_inicio: '',
             semana_fin: '',
@@ -4291,7 +4315,7 @@ window.renderPreview = async () => {
                     const mm = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"][d.getMonth()];
                     return `${dd} de ${mm}`;
                 };
-                display.textContent = `${fmt(start)} â€” ${fmt(end)} ${end.getFullYear()}`;
+                display.textContent = `${fmt(start)} — ${fmt(end)} ${end.getFullYear()}`;
             }
         } else {
             const [y, m] = rawMonth.split('-').map(Number);
@@ -4307,8 +4331,8 @@ window.renderPreview = async () => {
         window._lastRenderedPreviewSnapshotSource.semana_inicio = startISO;
         window._lastRenderedPreviewSnapshotSource.semana_fin = endISO;
 
-        // Cargar eventos con rango extendido Â±90 dÃ­as para capturar periodos largos
-        // (ej. VAC Cristina 20/04ï¿½03/05 debe estar visible al ver semana 20/04 O 27/04)
+        // Cargar eventos con rango extendido ±90 días para capturar periodos largos
+        // (ej. VAC Cristina 20/04–03/05 debe estar visible al ver semana 20/04 O 27/04)
         const extStart = new Date(start); extStart.setDate(extStart.getDate() - 90);
         const extEnd   = new Date(end);   extEnd.setDate(extEnd.getDate() + 90);
         const extStartISO = window.isoDate(extStart);
@@ -4319,9 +4343,9 @@ window.renderPreview = async () => {
         const eventosAmpliados = await window.TurnosDB.fetchEventos(extStartISO, extEndISO);
         const eventos = eventosAmpliados;
 
-        // Guardar como global para que ficha, dashboard y mÃ³dulos secundarios lo usen
+        // Guardar como global para que ficha, dashboard y módulos secundarios lo usen
         window.eventosGlobales = eventosAmpliados;
-        window.eventosActivos  = eventosAmpliados; // compatibilidad con cÃ³digo anterior
+        window.eventosActivos  = eventosAmpliados; // compatibilidad con código anterior
 
         if (window.DEBUG_MODE === true) {
             console.log('[GLOBAL EVENTOS]', window.eventosGlobales?.length);
@@ -4434,7 +4458,7 @@ window.renderPreview = async () => {
 
             if (!deduplicatedList.length) continue;
 
-            // TAREA CODEX: Cachear el resultado final para publicaciÃ³n exacta
+            // TAREA CODEX: Cachear el resultado final para publicación exacta
             const hotelSnapshot = {
                 hotel: hName,
                 empleados: deduplicatedList.map((employee, idx) => {
@@ -4443,7 +4467,7 @@ window.renderPreview = async () => {
                         const resolved = previewModel.getTurnoEmpleado(employee.employee_id, c.date);
                         const visual = window.TurnosRules ? window.TurnosRules.describeCell(resolved) : { label: resolved.turno, icons: resolved.icons || [] };
                         
-                        // B4 FIX: Garantizar cÃ³digos canÃ³nicos para ausencias en el cache
+                        // B4 FIX: Garantizar códigos canónicos para ausencias en el cache
                         const absCode = resolved.incidencia
                             ? (resolved.incidencia === 'PERMISO' ? 'PERM'
                                : resolved.incidencia === 'FORMACION' ? 'FORM'
@@ -4540,7 +4564,7 @@ window.renderPreview = async () => {
                     employees: profiles,
                     dates: rosterDates,
                     hotel: hName,
-                    sourceRows: [] // El mensual no suele tener orden de Excel, pero se podrÃ­a cargar
+                    sourceRows: [] // El mensual no suele tener orden de Excel, pero se podría cargar
                 });
 
                 const firstDay = new Date(columns[0].date + 'T12:00:00');
@@ -4555,7 +4579,7 @@ window.renderPreview = async () => {
                         const celda = previewModel.getCelda(puesto.puesto_id, dateKey);
                         const shiftKey = window.TurnosRules?.shiftKey(celda.turno || celda.turno_base, 'NORMAL') || '';
                         const displayName = String(celda.real || celda.titular || puesto.excelLabel || puesto.label).split(' ')[0];
-                        const title = `${puesto.label} Â· ${celda.titular || 'Sin titular'}${celda.real && celda.real !== celda.titular ? ` -> ${celda.real}` : ''}`;
+                        const title = `${puesto.label} · ${celda.titular || 'Sin titular'}${celda.real && celda.real !== celda.titular ? ` -> ${celda.real}` : ''}`;
 
                         if (celda.incidencia) {
                             const absClass = celda.incidencia === 'VAC' ? 'vac' : (celda.incidencia === 'BAJA' ? 'b' : 'p');
@@ -4576,7 +4600,7 @@ window.renderPreview = async () => {
 
                     const badge = (list, cls, defaultIcon) => {
                         if (!list.length) return '';
-                        const names = list.map(item => `<span title="${escapeHtml(item.title || '')}">${escapeHtml(item.name)}${item.icon === 'ï¿½x' ? 'ï¿½x' : ''}</span>`).join(' Â· ');
+                        const names = list.map(item => `<span title="${escapeHtml(item.title || '')}">${escapeHtml(item.name)}${item.icon === 'ï¿½x' ? 'ï¿½x' : ''}</span>`).join(' · ');
                         return `<div class="cal2-group cal2-${cls}"><span class="cal2-icon">${defaultIcon}</span><span class="cal2-names">${names}</span></div>`;
                     };
 
@@ -4599,9 +4623,9 @@ window.renderPreview = async () => {
                 hotelSection.innerHTML = `<div style="background:white; border-radius:18px; overflow:hidden; border:1px solid #e8ecf0;">
                     <div style="padding:15px 20px; background:#f8fafc; border-bottom:1px solid #e4e9f0; font-weight:800; display:flex; justify-content:space-between; align-items:center;">
                         <span>${hName}</span>
-                        <span style="font-size:0.75rem; color:#94a3b8; font-weight:400;">ResoluciÃ³n Motor V3</span>
+                        <span style="font-size:0.75rem; color:#94a3b8; font-weight:400;">Resolución Motor V3</span>
                     </div>
-                    <div class="cal2-header"><div>LUN</div><div>MAR</div><div>MIï¿½0</div><div>JUE</div><div>VIE</div><div>SÃB</div><div>DOM</div></div>
+                    <div class="cal2-header"><div>LUN</div><div>MAR</div><div>MIï¿½0</div><div>JUE</div><div>VIE</div><div>SÁB</div><div>DOM</div></div>
                     <div class="cal2-grid">${cells.join('')}</div>
                 </div>`;
                 area.appendChild(hotelSection);
@@ -4670,7 +4694,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Cargar empleados inicialmente
     if (window.populateEmployees) window.populateEmployees();
 
-    // Opcional: recargar empleados al hacer click en el menÃº "Empleados"
+    // Opcional: recargar empleados al hacer click en el menú "Empleados"
     document.querySelectorAll('.menu a').forEach(a => {
         a.addEventListener('click', (e) => {
             if (a.getAttribute('href') === '#section-employees') {
@@ -4744,7 +4768,7 @@ window.debugVacCristina = (fechaTest = '2026-04-20') => {
 
 function fmtDateLegacy(date) {
     if (!date) return '-';
-    // Forzar mediodÃ­a para evitar desfases por zona horaria al parsear YYYY-MM-DD
+    // Forzar mediodía para evitar desfases por zona horaria al parsear YYYY-MM-DD
     const d = new Date(String(date).includes('T') ? date : date + 'T12:00:00');
     if (isNaN(d.getTime())) return date;
     return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${String(d.getFullYear()).slice(-2)}`;
@@ -4759,7 +4783,7 @@ window.populateEmployees = async () => {
     area.innerHTML = '<div style="padding:4rem; text-align:center;"><i class="fas fa-spinner fa-spin"></i> Cargando empleados...</div>';
     
     try {
-        // Rango de 30 dÃ­as pasados y 7 dÃ­as futuros para estadÃ­sticas y estado
+        // Rango de 30 días pasados y 7 días futuros para estadísticas y estado
         const today = new Date();
         const end = new Date();
         end.setDate(today.getDate() + 7);
@@ -4770,7 +4794,7 @@ window.populateEmployees = async () => {
         const todayISO = window.isoDate(today) || today.toISOString().split('T')[0];
 
         const { rows, eventos } = await window.TurnosDB.fetchRangoCalculado(startISO, endISO);
-        // Usar eventosGlobales si Vista Previa ya los cargÃ³ con rango ampliado;
+        // Usar eventosGlobales si Vista Previa ya los cargó con rango ampliado;
         // si no, usar los propios (rango hoy-30 a hoy+7)
         if (!window.eventosGlobales || window.eventosGlobales.length === 0) {
             window.eventosGlobales = eventos;
@@ -4810,14 +4834,14 @@ window.populateEmployees = async () => {
 
         const hotelsList = await window.TurnosDB.getHotels();
         
-        // Iterar el motor por cada hotel y cada dÃ­a para extraer el Roster final operativo
+        // Iterar el motor por cada hotel y cada día para extraer el Roster final operativo
         hotelsList.forEach(hName => {
             dates.forEach(date => {
                 const hotelExcelRows = excelSource[hName] || [];
                 const weekSeed = hotelExcelRows.find(r => window.getFechasSemana(r?.weekStart).includes(date));
                 if (!weekSeed) return;
 
-                // Lunes correspondiente a este dÃ­a
+                // Lunes correspondiente a este día
                 const weekStartIso = weekSeed.weekStart;
                 const fechasSemana = window.getFechasSemana(weekStartIso);
                 const sourceIndex = Math.max(0, fechasSemana.indexOf(date));
@@ -4867,7 +4891,7 @@ window.populateEmployees = async () => {
 
         const hotels = [...new Set(Object.values(stats).map(s => s.hotel))].sort();
         if (hotels.length === 0) {
-            area.innerHTML = '<div style="padding:4rem; text-align:center; opacity:0.5;">No hay datos de empleados en los Ãºltimos 30 dÃ­as.</div>';
+            area.innerHTML = '<div style="padding:4rem; text-align:center; opacity:0.5;">No hay datos de empleados en los últimos 30 días.</div>';
             return;
         }
 
@@ -4910,10 +4934,10 @@ window.populateEmployees = async () => {
                         </div>
                         <div class="ep-stats">
                             <div class="ep-stat"><span class="ep-label">Hoy</span><span class="ep-val color-${currentState.cls}" style="font-size:0.9rem;">${currentState.turno}</span></div>
-                            <div class="ep-stat"><span class="ep-label">PrÃ³ximo</span><span class="ep-val ${nextWorkingShift ? 'color-' + nextWorkingShift.cls : ''}" style="font-size:0.9rem;">${nextWorkingShift ? nextWorkingShift.turno + ' (' + nextDate + ')' : 'ï¿½'}</span></div>
+                            <div class="ep-stat"><span class="ep-label">Próximo</span><span class="ep-val ${nextWorkingShift ? 'color-' + nextWorkingShift.cls : ''}" style="font-size:0.9rem;">${nextWorkingShift ? nextWorkingShift.turno + ' (' + nextDate + ')' : 'ï¿½'}</span></div>
                         </div>
                         <div class="ep-footer">
-                             ${totalWork > 0 ? `<div class="ep-progress-label">Actividad 30 dÃ­as</div>` : ''}
+                             ${totalWork > 0 ? `<div class="ep-progress-label">Actividad 30 días</div>` : ''}
                              ${totalWork > 0 ? `<div class="ep-progress-bar"><div class="ep-progress-fill" style="width:${Math.min(100, (totalWork/30)*100)}%; background:hsl(${hue}, 70%, 50%)"></div></div>` : ''}
                              ${totalWork > 0 ? `<div class="ep-total">${totalWork} turnos totales</div>` : ''}
                         </div>
@@ -5278,7 +5302,7 @@ window.renderEmployeeHistoryItem = (h) => `
 // ==========================================
 
 /**
- * Motor de Conflictos V3: AnÃ¡lisis contextual y agrupado.
+ * Motor de Conflictos V3: Análisis contextual y agrupado.
  * Evita ruido y prioriza la operativa real.
  */
 window.detectarConflictosOperativos = async (fecha, hotel, inputEventos = null, inputResolveId = null) => {
@@ -5288,7 +5312,7 @@ window.detectarConflictosOperativos = async (fecha, hotel, inputEventos = null, 
         INFO: []
     };
     
-    // V12.5.2: Garantizar contexto si no se pasa explÃ­citamente (ej. desde publicaciÃ³n)
+    // V12.5.2: Garantizar contexto si no se pasa explícitamente (ej. desde publicación)
     let eventos = inputEventos;
     let resolveId = inputResolveId;
     let emps = (window._employeeLineModels || []).filter(e => e.activo !== false && (hotel === 'TODOS' || e.hotel === hotel));
@@ -5319,7 +5343,7 @@ window.detectarConflictosOperativos = async (fecha, hotel, inputEventos = null, 
     
     const todayISO = window.isoDate(new Date());
 
-    // 1. AnÃ¡lisis de Integridad (Agrupado)
+    // 1. Análisis de Integridad (Agrupado)
     // Filtramos empleados reales (excluyendo plazas pendientes como 'Â¿?') que no tengan ID Interno
     const empsSinId = emps.filter(e => (!e.id_interno || String(e.id_interno).trim() === '') && e.id !== 'Â¿?');
     if (empsSinId.length > 0) {
@@ -5327,13 +5351,13 @@ window.detectarConflictosOperativos = async (fecha, hotel, inputEventos = null, 
             type: 'SIN_ID',
             count: empsSinId.length,
             title: 'Mapeo de Identidad Pendiente',
-            desc: `Existen ${empsSinId.length} perfiles operativos sin identificador Ãºnico persistente (id_interno).`,
-            suggestion: 'Asigna un cÃ³digo EMP-XXXX desde la ficha de cada empleado para asegurar la integridad histÃ³rica.',
+            desc: `Existen ${empsSinId.length} perfiles operativos sin identificador único persistente (id_interno).`,
+            suggestion: 'Asigna un código EMP-XXXX desde la ficha de cada empleado para asegurar la integridad histórica.',
             action: { label: 'Ir a Personal', fn: 'window.switchSection("employees")' }
         });
     }
 
-    // 2. AnÃ¡lisis por Empleado (Contextual)
+    // 2. Análisis por Empleado (Contextual)
     for (const emp of emps) {
         const empId = emp.id || emp.nombre;
         // Ignorar sustitutos o refuerzos si el nombre contiene marcas temporales (ej. "REF-")
@@ -5348,8 +5372,8 @@ window.detectarConflictosOperativos = async (fecha, hotel, inputEventos = null, 
             resolveId: resolveId
         }) : null;
         
-        // A. Ausencia de Turno CrÃ­tica
-        // Solo para fijos con jornada completa y >2 dÃ­as de vacÃ­o total
+        // A. Ausencia de Turno Crítica
+        // Solo para fijos con jornada completa y >2 días de vacío total
         if (!info || (!info.turno && !info.incidencia)) {
             const isFijoCompleto = String(emp.tipo || '').toLowerCase().includes('fijo') && !String(emp.tipo || '').toLowerCase().includes('parcial');
             
@@ -5363,8 +5387,8 @@ window.detectarConflictosOperativos = async (fecha, hotel, inputEventos = null, 
                     groupedConflicts.CRITICAL.push({
                         type: 'SIN_TURNO',
                         empId, fecha,
-                        title: 'Falta de ProgramaciÃ³n CrÃ­tica',
-                        desc: `${emp.nombre} lleva >2 dÃ­as sin asignaciÃ³n ni descanso registrado.`,
+                        title: 'Falta de Programación Crítica',
+                        desc: `${emp.nombre} lleva >2 días sin asignación ni descanso registrado.`,
                         suggestion: 'Asignar turno o marcar Descanso (D) para evitar incidencias legales.'
                     });
                 }
@@ -5372,7 +5396,7 @@ window.detectarConflictosOperativos = async (fecha, hotel, inputEventos = null, 
         }
 
         // B. Regla de Jornada Progresiva (5d/6d/7+)
-        // Solo cuenta como trabajo: cls 'm' (MaÃ±ana), 't' (Tarde), 'n' (Noche).
+        // Solo cuenta como trabajo: cls 'm' (Mañana), 't' (Tarde), 'n' (Noche).
         // 'ï¿½', D, VAC, BAJA, PERM no son trabajo.
         const WORK_CLS = new Set(['m', 't', 'n']);
         const esTurnoLaboral = (h) => WORK_CLS.has(h?.cls);
@@ -5395,16 +5419,16 @@ window.detectarConflictosOperativos = async (fecha, hotel, inputEventos = null, 
             }
 
             if (workedDays >= 7) {
-                groupedConflicts.CRITICAL.push({ type: 'JORNADA', severity: 'CRITICAL', empId, title: 'Riesgo Laboral Extremo', desc: `${emp.nombre} lleva ${workedDays} dÃ­as laborales seguidos (${diasContados.slice(0,3).join(', ')}...).`, suggestion: 'Bloquear jornada y asignar descanso hoy.' });
+                groupedConflicts.CRITICAL.push({ type: 'JORNADA', severity: 'CRITICAL', empId, title: 'Riesgo Laboral Extremo', desc: `${emp.nombre} lleva ${workedDays} días laborales seguidos (${diasContados.slice(0,3).join(', ')}...).`, suggestion: 'Bloquear jornada y asignar descanso hoy.' });
             } else if (workedDays === 6) {
-                groupedConflicts.WARNING.push({ type: 'JORNADA', severity: 'WARNING', empId, title: 'Exceso de Jornada', desc: `${emp.nombre} lleva 6 dÃ­as laborales: ${diasContados.join(', ')}.`, suggestion: 'Programar descanso maÃ±ana.' });
+                groupedConflicts.WARNING.push({ type: 'JORNADA', severity: 'WARNING', empId, title: 'Exceso de Jornada', desc: `${emp.nombre} lleva 6 días laborales: ${diasContados.join(', ')}.`, suggestion: 'Programar descanso mañana.' });
             } else if (workedDays === 5) {
-                groupedConflicts.INFO.push({ type: 'JORNADA', severity: 'INFO', empId, title: 'PrÃ³ximo a lÃ­mite (5d)', desc: `${emp.nombre} cumplirÃ¡ 5 dÃ­as laborales hoy.`, suggestion: 'Sugerido descanso en 48h.' });
+                groupedConflicts.INFO.push({ type: 'JORNADA', severity: 'INFO', empId, title: 'Próximo a límite (5d)', desc: `${emp.nombre} cumplirá 5 días laborales hoy.`, suggestion: 'Sugerido descanso en 48h.' });
             }
         }
     }
 
-    // 3. Cobertura CrÃ­tica (Turnos Clave)
+    // 3. Cobertura Crítica (Turnos Clave)
     const shiftsBySlot = {};
     for (const emp of emps) {
         const infoArr = window.resolverTurnoFinal ? window.resolverTurnoFinal({ 
@@ -5421,14 +5445,14 @@ window.detectarConflictosOperativos = async (fecha, hotel, inputEventos = null, 
         }
     }
 
-    // Verificar "Noche RecepciÃ³n"
+    // Verificar "Noche Recepción"
     const nocheRecepcion = Object.keys(shiftsBySlot).find(k => k.includes('Noche') && k.includes('Recep'));
     if (!nocheRecepcion) {
         groupedConflicts.CRITICAL.push({
             type: 'COBERTURA',
             title: 'Turno Clave sin Cobertura',
-            desc: 'No hay nadie asignado al turno de Noche en RecepciÃ³n hoy.',
-            suggestion: 'Asignar un recepcionista o retÃ©n de emergencia.'
+            desc: 'No hay nadie asignado al turno de Noche en Recepción hoy.',
+            suggestion: 'Asignar un recepcionista o retén de emergencia.'
         });
     }
 
@@ -5442,7 +5466,7 @@ window.detectarConflictosOperativos = async (fecha, hotel, inputEventos = null, 
                 type: 'DUPLICADO',
                 title: 'Exceso de Capacidad',
                 desc: `Puesto ${puestoKey} superado (${names.length}/${capacidad}).`,
-                suggestion: 'Mover refuerzo a otro hotel o secciÃ³n.'
+                suggestion: 'Mover refuerzo a otro hotel o sección.'
             });
         }
     });
@@ -5505,19 +5529,19 @@ window.showPublishPreview = async () => {
     try {
         snapshots = await window.buildPublicationSnapshotPreview(weekStart, hotelSel);
     } catch (e) {
-        alert('Error al generar la previsualizaciÃ³n del snapshot: ' + e.message);
+        alert('Error al generar la previsualización del snapshot: ' + e.message);
         return;
     }
 
     if (snapshots.length === 0) {
-        alert('No hay datos operativos para publicar en esta selecciÃ³n.');
+        alert('No hay datos operativos para publicar en esta selección.');
         return;
     }
 
     // 3. Validar Snapshot (Bloqueante)
     const validation = await window.validatePublicationSnapshot(snapshots);
     
-    // 4. Crear Modal de PublicaciÃ³n
+    // 4. Crear Modal de Publicación
     const modalId = 'publishPreviewModal';
     let modal = document.getElementById(modalId);
     if (!modal) {
@@ -5542,13 +5566,13 @@ window.showPublishPreview = async () => {
              <i class="fas fa-check-circle" style="font-size: 1.2rem;"></i>
              <div>
                 <strong style="display: block;">Integridad Validada</strong>
-                <span style="font-size: 0.85rem;">El snapshot cumple con todas las reglas de protecciÃ³n.</span>
+                <span style="font-size: 0.85rem;">El snapshot cumple con todas las reglas de protección.</span>
              </div>
            </div>`
         : `<div style="background: #fef2f2; border: 1px solid #fecaca; color: #b91c1c; padding: 16px; border-radius: 12px; margin-bottom: 24px;">
              <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
                 <i class="fas fa-times-circle" style="font-size: 1.2rem;"></i>
-                <strong>Errores CrÃ­ticos Detectados</strong>
+                <strong>Errores Críticos Detectados</strong>
              </div>
              <ul style="margin: 0; padding-left: 20px; font-size: 0.85rem; line-height: 1.5;">
                 ${validation.errors.map(e => `<li>${e}</li>`).join('')}
@@ -5563,7 +5587,7 @@ window.showPublishPreview = async () => {
              </div>
              <ul style="margin: 0; padding-left: 20px; font-size: 0.8rem; opacity: 0.9;">
                 ${validation.warnings.slice(0, 5).map(w => `<li>${w}</li>`).join('')}
-                ${validation.warnings.length > 5 ? `<li>... y ${validation.warnings.length - 5} avisos mÃ¡s.</li>` : ''}
+                ${validation.warnings.length > 5 ? `<li>... y ${validation.warnings.length - 5} avisos más.</li>` : ''}
              </ul>
            </div>`
         : '';
@@ -5585,7 +5609,7 @@ window.showPublishPreview = async () => {
                 </section>
 
                 <div style="background: #eff6ff; border: 1px solid #dbeafe; padding: 16px; border-radius: 12px; font-size: 0.85rem; color: #1e40af;">
-                    <strong>Nota:</strong> Al publicar, se crearÃ¡ una versiÃ³n inmutable (Snapshot) que serÃ¡ la Ãºnica fuente de verdad para el Cuadrante PÃºblico. Los cambios locales en el Excel tambiÃ©n se sincronizarÃ¡n con la base de datos.
+                    <strong>Nota:</strong> Al publicar, se creará una versión inmutable (Snapshot) que será la única fuente de verdad para el Cuadrante Público. Los cambios locales en el Excel también se sincronizarán con la base de datos.
                 </div>
             </div>
 
@@ -5604,6 +5628,27 @@ window.showPublishPreview = async () => {
     modal.classList.add('open');
 };
 
+// cloneExcelRows: deep clone seguro para filas Excel/Snapshot.
+// Preserva turno, code, label, icons, changed, intercambio, sustitucion,
+// empleado_id, hotel, fecha, semana_inicio, cells y todos los demas campos.
+window.cloneExcelRows = window.cloneExcelRows || function cloneExcelRows(rows) {
+    const data = rows != null ? rows : {};
+    try {
+        if (typeof structuredClone === 'function') return structuredClone(data);
+        return JSON.parse(JSON.stringify(data));
+    } catch (_cloneErr) {
+        if (Array.isArray(data)) return data.map(r => Object.assign({}, r));
+        if (typeof data === 'object') {
+            const out = {};
+            Object.keys(data).forEach(k => {
+                out[k] = Array.isArray(data[k]) ? data[k].map(r => Object.assign({}, r)) : data[k];
+            });
+            return out;
+        }
+        return data;
+    }
+};
+
 window.publishToSupabase = async () => {
     const btn = document.getElementById('btnConfirmPublish');
     if (btn) {
@@ -5612,8 +5657,15 @@ window.publishToSupabase = async () => {
         btn.style.opacity = '0.7';
     }
 
+    // [PUBLISH_CLONE_CHECK]
+    console.log('[PUBLISH_CLONE_CHECK]', {
+        'typeof window.cloneExcelRows': typeof window.cloneExcelRows,
+        'typeof window._adminExcelEditableRows': typeof window._adminExcelEditableRows,
+        hasEditableRows: window._adminExcelEditableRows != null
+    });
+
     try {
-        const hotelSel = $('#prevHotel')?.value || 'all';
+        const hotelSel = ($('#prevHotel'))?.value || 'all';
         const rawDate = window._previewDate;
         const base = new Date(rawDate + 'T12:00:00');
         const weekStart = window.isoDate(window.getMonday(base));
@@ -5622,7 +5674,7 @@ window.publishToSupabase = async () => {
         const snapshots = await window.buildPublicationSnapshotPreview(weekStart, hotelSel);
         
         // 2. Sincronizar cambios de Excel (turnos crudos)
-        const changes = window.getExcelDiff();
+        const changes = window.getExcelDiff ? window.getExcelDiff() : [];
         if (changes.length > 0) {
             const flatData = [];
             changes.forEach(c => {
@@ -5664,7 +5716,7 @@ window.publishToSupabase = async () => {
         // 4. Actualizar estado local
         window._adminExcelBaseOriginalRows = window.cloneExcelRows(window._adminExcelEditableRows);
         
-        alert('PublicaciÃ³n completada con Ã©xito.');
+        alert('Publicación completada con éxito.');
         document.getElementById('publishPreviewModal')?.classList.remove('open');
         
         window.renderExcelView();
@@ -5672,7 +5724,7 @@ window.publishToSupabase = async () => {
         window.renderDashboard();
 
     } catch (error) {
-        console.error('Error en publicaciÃ³n:', error);
+        console.error('Error en publicación:', error);
         alert('Error al publicar: ' + error.message);
         if (btn) {
             btn.disabled = false;
@@ -5689,19 +5741,19 @@ window.validatePublishChanges = (changes) => {
     changes.forEach(c => {
         // 1. Empleados sin ID
         if (!c.displayName || c.displayName === '?' || c.displayName.length < 2) {
-            errors.push(`Empleado con nombre invÃ¡lido en ${c.weekStart}: "${c.displayName}"`);
+            errors.push(`Empleado con nombre inválido en ${c.weekStart}: "${c.displayName}"`);
         }
 
         // 2. Fechas inconsistentes (ya se filtran en ExcelLoader pero re-verificamos)
         if (!c.weekStart || isNaN(new Date(c.weekStart).getTime())) {
-            errors.push(`Fecha de semana invÃ¡lida para ${c.displayName}: ${c.weekStart}`);
+            errors.push(`Fecha de semana inválida para ${c.displayName}: ${c.weekStart}`);
         }
 
-        // 3. Turnos invÃ¡lidos
+        // 3. Turnos inválidos
         c.row.values.forEach((v, idx) => {
             const vNorm = String(v || '').toUpperCase().trim();
             if (vNorm && !validShifts.has(vNorm) && !vNorm.includes('x ï¸')) {
-                // Permitimos valores que no estÃ©n en el set si son descriptivos, 
+                // Permitimos valores que no estén en el set si son descriptivos, 
                 // pero alertamos si parecen basura
                 if (vNorm.length > 10) errors.push(`Turno sospechoso en ${c.weekStart} (${c.displayName}): ${vNorm}`);
             }
@@ -5711,11 +5763,82 @@ window.validatePublishChanges = (changes) => {
     return errors;
 };
 
-    /**
-     * TAREA CODEX: FunciÃ³n central para generar el snapshot exacto de lo que se ve en Admin.
-     * Genera el JSON sin guardarlo, para previsualizaciÃ³n y validaciÃ³n.
-     */
-    window.buildPublicationSnapshotPreview = async (weekStart, hotelName = 'all') => {
+window.validateSystemHealth = async (weekStartOrContext) => {
+    const health = { OK: true, CRITICAL: [], WARNING: [], INFO: [] };
+    try {
+        const wStart = typeof weekStartOrContext === 'string'
+            ? weekStartOrContext
+            : (weekStartOrContext.weekStart || '');
+        const hotelCtx = typeof weekStartOrContext === 'object'
+            ? weekStartOrContext.hotel
+            : '';
+        const events = await window.TurnosDB.fetchEventos(wStart);
+
+        // Detector de mojibake en eventos
+        const MOJIBAKE_RE = /\u00c3[\u00c2\u0192\u00b1\u00a9\u00b3\u00a1]|\u00c2[\u00b0\u00b7\u00aa\u00ba]|\uFFFD/;
+        events.forEach(ev => {
+            for (const [key, val] of Object.entries(ev)) {
+                if (typeof val !== 'string' || !val) continue;
+                if (MOJIBAKE_RE.test(val)) {
+                    health.WARNING.push({
+                        title: 'Mojibake Detectado',
+                        desc: 'Campo: ' + key + ' | Valor: ' + JSON.stringify(val),
+                        type: 'MOJIBAKE'
+                    });
+                    break;
+                }
+            }
+        });
+
+        try {
+            const snapshots = await window.buildPublicationSnapshotPreview(wStart, hotelCtx);
+            const snapVal = await window.validatePublicationSnapshot(snapshots);
+            if (!snapVal.ok) {
+                snapVal.errors.forEach(err => health.CRITICAL.push({
+                    title: 'Bloqueo de Publicación', desc: err, type: 'SNAPSHOT'
+                }));
+            }
+        } catch (e) {
+            health.CRITICAL.push({ title: 'Error en Validador', desc: e.message, type: 'JS_ERROR' });
+        }
+
+        // Caso protegido: Dani ↔ Próximamente — 2026-10-21
+        if (wStart === '2026-10-19') {
+            const targetDate = '2026-10-21';
+            const resolveDay = window.resolveEmployeeDay;
+            const daniRes = resolveDay
+                ? resolveDay({ empleadoId: 'dani', fecha: targetDate, eventos: events, hotel: 'Sercotel Guadiana' })
+                : null;
+            const proxRes1 = resolveDay
+                ? resolveDay({ empleadoId: 'proximamente', fecha: targetDate, eventos: events, hotel: 'Sercotel Guadiana' })
+                : null;
+            const proxRes2 = resolveDay
+                ? resolveDay({ empleadoId: '¿?', fecha: targetDate, eventos: events, hotel: 'Sercotel Guadiana' })
+                : null;
+            const proxRes = (proxRes1 && proxRes1.cambio) ? proxRes1
+                : (proxRes2 && proxRes2.cambio ? proxRes2 : (proxRes1 || proxRes2));
+            const normShift = window.normalizeShiftValue;
+            const daniOk = daniRes
+                && (normShift ? normShift(daniRes.turno) === 'T' : daniRes.turno === 'T')
+                && daniRes.cambio;
+            const proxOk = proxRes
+                && (normShift ? normShift(proxRes.turno) === 'M' : proxRes.turno === 'M')
+                && proxRes.cambio;
+            if (!daniOk || !proxOk) {
+                health.CRITICAL.push({
+                    title: 'Intercambio no aplicado',
+                    desc: 'Intercambio Dani ↔ Próximamente no se refleja en la matriz del 2026-10-21.',
+                    type: 'INTERCAMBIO_FAIL'
+                });
+            }
+        }
+    } catch (e) {
+        health.CRITICAL.push({ title: 'Fallo General de Auditoría', desc: e.message, type: 'JS_ERROR' });
+    }
+    return health;
+};
+
+window.buildPublicationSnapshotPreview = async (weekStart, hotelName = 'all') => {
         const cache = window._lastRenderedPreviewSnapshotSource;
         const hotels = await window.TurnosDB.getHotels();
         const hotelsToProcess = hotelName === 'all' ? hotels : [hotelName];
@@ -5732,7 +5855,7 @@ window.validatePublishChanges = (changes) => {
                 if (found) hotelData = found.empleados;
             }
 
-            // Si no hay cache (o forzamos reconstrucciÃ³n), regenerar modelo fiel
+            // Si no hay cache (o forzamos reconstrucción), regenerar modelo fiel
             if (!hotelData) {
                 console.warn(`[SNAPSHOT] Regenerando datos para ${hName} (no cache found)`);
                 const profiles = await window.TurnosDB.getEmpleados();
@@ -5766,7 +5889,7 @@ window.validatePublishChanges = (changes) => {
                     dates.forEach(fecha => {
                         // REGLA DE ORO V12.1: Siempre resolver para el ID del ocupante de esta fila (emp.employee_id).
                         // El motor (getTurnoEmpleadoExtended) ya se encarga de heredar el turno del titular
-                        // si este empleado es un sustituto. Si resolvemos para el titular, obtendrÃ­amos
+                        // si este empleado es un sustituto. Si resolvemos para el titular, obtendríamos
                         // su incidencia (VAC/BAJA), lo cual es incorrecto para la fila operativa del sustituto.
                         const resolveId = emp.employee_id;
                                                 const resolved = previewModel.getTurnoEmpleado(resolveId, fecha);
@@ -5784,7 +5907,7 @@ window.validatePublishChanges = (changes) => {
 
                         const visual = window.TurnosRules ? window.TurnosRules.describeCell(resolved) : { label: resolved.turno, icons: resolved.icons || [] };
                         
-                        // B4 FIX: Garantizar cÃ³digos canÃ³nicos para ausencias.
+                        // B4 FIX: Garantizar códigos canónicos para ausencias.
                         const absCode = resolved.incidencia
                             ? (resolved.incidencia === 'PERMISO' ? 'PERM'
                                : resolved.incidencia === 'FORMACION' ? 'FORM'
@@ -5856,502 +5979,253 @@ window.validatePublishChanges = (changes) => {
      * Retorna { ok: boolean, errors: [] }
      */
     window.validatePublicationSnapshot = async (snapshots) => {
-        const errors = [];
-        const warnings = [];
-        const validCodes = new Set(['M', 'T', 'N', 'D', 'VAC', 'BAJA', 'PERM', 'FORM', 'CT', '\u2014', '']);
-        
-        for (const snap of snapshots) {
-            const hName = snap.hotel_nombre;
-            
-            // [J] No "TEST HOTEL"
-            if (hName.toLowerCase().includes('test')) {
-                errors.push(`[BLOQUEO] No se permite publicar hoteles de prueba: ${hName}`);
-            }
+    const errors = [];
+    const warnings = [];
 
-            snap.rows.forEach(row => {
-                const empName = row.nombreVisible;
-                
-                // [C] No missing IDs
-                if (!row.empleado_id || row.empleado_id === '?' || row.empleado_id.length < 2) {
-                    errors.push(`[BLOQUEO] Empleado sin ID vÃ¡lido: "${empName}" en ${hName}`);
-                }
+    for (const snap of snapshots) {
+        const hName = snap.hotel_nombre;
+        const wStart = snap.week_start || snap.semana_inicio || '';
+        const wEnd   = snap.week_end   || snap.semana_fin   || '';
+        const snapHotelId = snap.hotel_id || snap.hotel || snap.hotel_nombre || '';
 
-                // [I] No _DUP
-                if (empName.includes('_DUP')) {
-                    errors.push(`[BLOQUEO] Nombre contiene marcador de duplicado (_DUP): "${empName}"`);
-                }
+        const events = await window.TurnosDB.fetchEventos(wStart, wEnd);
+        const employees = (window.empleadosGlobales && window.empleadosGlobales.length)
+            ? window.empleadosGlobales
+            : (window._employeeLineModels || []);
 
-                // [K] ValidaciÃ³n de Extras Justificados
-                const isExtra = row.rowType === 'extra' || row.rowType === 'refuerzo' || row.origenOrden === 'auto_extra';
-                if (isExtra && !row.evento_id) {
-                    errors.push(`[BLOQUEO] Fila extra sin justificaciÃ³n explÃ­cita (sin evento): "${empName}" en ${hName}`);
-                }
+        // Build rowMap: normalizedKey -> row
+        const rowMap = new Map();
+        (snap.rows || []).forEach(row => {
+            const rawName = row.empleado || row.nombreVisible || row.nombre || row.employeeName || '';
+            const keyName = window.normalizePersonKey(rawName);
+            if (keyName && !rowMap.has(keyName)) rowMap.set(keyName, row);
+            const rawId = row.empleado_id || row.employee_id || '';
+            const keyId = window.normalizePersonKey(rawId);
+            if (keyId && keyId !== keyName && !rowMap.has(keyId)) rowMap.set(keyId, row);
+        });
 
-                // [L] EMP-XXXX Visibility Check
-                const isEMPId = (str) => /EMP-\d{4}/i.test(String(str || ''));
-                if (isEMPId(row.nombreVisible) || isEMPId(row.nombre)) {
-                    errors.push(`[BLOQUEO] ID interno visible en cabecera: "${row.nombreVisible || row.nombre}" en ${hName}`);
-                }
-
-                Object.entries(row.cells).forEach(([fecha, cell]) => {
-                    const code = String(cell.code || '').toUpperCase().trim();
-                    
-                    // [D] No illegal codes
-                    if (code && !validCodes.has(code) && !code.includes('\uFFFD')) {
-                        // Si es algo muy raro, bloqueamos
-                        if (code.length > 8) {
-                            errors.push(`[BLOQUEO] CÃ³digo de turno ilegal: "${code}" para ${empName} el ${fecha}`);
-                        }
-                    }
-
-                    // [L] EMP-XXXX Visibility Check in cell
-                    if (isEMPId(cell.label)) {
-                        errors.push(`[BLOQUEO] ID interno visible en celda: "${cell.label}" para ${empName} el ${fecha}`);
-                    }
-
-                    // [F] Critical coverage (Absence without substitute)
-                    if (cell.isAbsence && !cell.sustituto) {
-                        // REGLA: Las vacantes son avisos operativos, no bloqueos automÃ¡ticos
-                        warnings.push(`[AVISO] Ausencia sin sustituto: ${empName} (${cell.type}) el ${fecha}`);
-                    }
-                });
-                
-                // [N] ValidaciÃ³n de Filas VacÃ­as (Regla 6)
-                const cellsArray = Object.values(row.cells);
-                const hasAnyContent = cellsArray.some(c => {
-                    const code = (c.code || '').toUpperCase().trim();
-                    return code && code !== '\u2014' && code !== 'â€”' && code !== '';
-                });
-
-                if (row.rowType === 'operativo' && !hasAnyContent) {
-                    errors.push(`[BLOQUEO] Fila operativa sin turnos (vacÃ­a): "${empName}" en ${hName}`);
-                }
-                
-                if (row.rowType === 'ausencia_informativa') {
-                    const hasIncidence = cellsArray.some(c => c.isAbsence || ['VAC','BAJA','PERM','FORM','IT'].includes((c.type || '').toUpperCase()));
-                    if (!hasIncidence) {
-                        errors.push(`[BLOQUEO] Fila informativa de ausencia sin incidencias visibles: "${empName}" en ${hName}`);
-                    }
-                }
-
-                if (row.rowType === 'refuerzo' && !hasAnyContent) {
-                    errors.push(`[BLOQUEO] Fila de refuerzo sin turnos: "${empName}" en ${hName}`);
-                }
-            });
-
-            // [M] ValidaciÃ³n de Cobertura Obligatoria de Eventos (B2/B3 FIX)
-            // B2: snap usa week_start/week_end/hotel_id, NO semana_inicio/semana_fin/hotel
-            // B3: normalizar estado del evento con normalizeEstado(); comparar hotel con hotel_id
-            const events = window.eventosGlobales || [];
-            const wStart = snap.week_start || snap.semana_inicio || '';
-            const wEnd   = snap.week_end   || snap.semana_fin   || '';
-            const snapHotelId = snap.hotel_id || snap.hotel || snap.hotel_nombre || '';
-            const employees = (window.empleadosGlobales && window.empleadosGlobales.length) ? window.empleadosGlobales : (window._employeeLineModels || []);
-            const toSnapshotIdentity = (raw) => {
-                const canonical = window.resolveEmployeeCanonicalId ? window.resolveEmployeeCanonicalId(raw, employees) : raw;
-                return window.normalizeId(canonical);
-            };
-            const rowMatchesEmployee = (row, rawId) => {
-                const target = toSnapshotIdentity(rawId);
-                if (!target) return false;
-                const rowKeys = [row.empleado_id, row.employee_id, row.id, row.nombre, row.nombreVisible].map(toSnapshotIdentity).filter(Boolean);
-                return rowKeys.includes(target);
-            };
-            const findSnapshotRow = (rawId) => snap.rows.find(row => rowMatchesEmployee(row, rawId));
-
-            events.forEach(ev => {
+        // Enrich rowMap: alias placeholder row for operationally named destinations
+        const plazaRow = rowMap.get('¿?') || rowMap.get('') || null;
+        if (plazaRow) {
+            (events || []).forEach(ev => {
                 if (window.normalizeEstado(ev.estado) === 'anulado') return;
-                // Filtro de hotel: usar normalizeId + todos los campos posibles del evento
-                const evHotel = window.normalizeId(window.getEventoHotel ? window.getEventoHotel(ev) : (ev.hotel || ev.hotel_origen || ev.hotel_destino || ev.payload?.hotel_id || ''));
-                const snapHotelNorm = window.normalizeId(snapHotelId);
-                if (evHotel && snapHotelNorm && evHotel !== snapHotelNorm) return;
-
-                const tipoEv = window.normalizeTipo(ev.tipo);
-                if (!['VAC', 'BAJA', 'PERM', 'PERMISO'].includes(tipoEv)) return;
-
-                // IntersecciÃ³n con la semana
-                const evStart = window.normalizeDate ? window.normalizeDate(ev.fecha_inicio) : (ev.fecha_inicio || '');
-                const evEnd   = window.normalizeDate ? window.normalizeDate(ev.fecha_fin || ev.fecha_inicio) : (ev.fecha_fin || ev.fecha_inicio || '');
-                if (!evStart || !wStart || evStart > wEnd || evEnd < wStart) return;
-
-                const row = findSnapshotRow(ev.empleado_id);
-
-                if (!row) {
-                    errors.push(`[BLOQUEO] Evento ${tipoEv} de ${ev.empleado_id} no aparece en el snapshot de ${snapHotelId}`);
-                } else {
-                    // Verificar que cada dÃ­a de la ausencia tenga el cÃ³digo correcto en el snapshot
-                    const cellDates = Object.keys(row.cells).filter(d =>
-                        d >= evStart && d <= evEnd && d >= wStart && d <= wEnd
-                    );
-                    cellDates.forEach(d => {
-                        const cell = row.cells[d];
-                        if (!cell) {
-                            errors.push(`[BLOQUEO] Celda faltante para ${row.nombreVisible} el ${d} (evento ${tipoEv})`);
-                            return;
-                        }
-                        const code = String(cell.code || '').toUpperCase();
-                        const type = String(cell.type || '').toUpperCase();
-
-                        // CÃ³digos esperados: VACâ†’VAC, BAJAâ†’BAJA, PERMISO/PERMâ†’PERM
-                        const expectedCodes = { 'VAC': 'VAC', 'BAJA': 'BAJA', 'PERMISO': 'PERM', 'PERM': 'PERM' };
-                        const expected = expectedCodes[tipoEv];
-
-                        const isRendered = expected && (code === expected || code.startsWith(expected) || type === expected);
-                        if (!isRendered) {
-                            errors.push(`[BLOQUEO] Evento ${tipoEv} no renderizado para ${row.nombreVisible} el ${d} â€” snapshot tiene code="${code}" type="${type}"`);
-                        }
-                    });
-                }
-            });
-
-            // [O] ValidaciÃ³n de Consistencia de Cambios de Turno / Intercambios
-            events.forEach(ev => {
-                if (window.normalizeEstado(ev.estado) === 'anulado') return;
-                const tipoEv = window.normalizeTipo(ev.tipo);
-                if (tipoEv !== 'CAMBIO_TURNO' && tipoEv !== 'INTERCAMBIO_TURNO') return;
-
-                const evStart = window.normalizeDate ? window.normalizeDate(ev.fecha_inicio) : (ev.fecha_inicio || '');
-                if (!evStart || !wStart || evStart > wEnd || evStart < wStart) return;
-
-                const originRaw = window.getEventOriginRaw ? window.getEventOriginRaw(ev) : ev.empleado_id;
-                const destRaw = window.getEventDestinationRaw ? window.getEventDestinationRaw(ev) : (ev.empleado_destino_id || ev.sustituto_id);
-                const idOrig = toSnapshotIdentity(originRaw);
-                const idDest = toSnapshotIdentity(destRaw);
-                
-                const rowOrig = findSnapshotRow(originRaw);
-                const rowDest = destRaw ? findSnapshotRow(destRaw) : null;
-
-                const checkCell = (row, id, role) => {
-                    if (!row) return; 
-                    const cell = row.cells[evStart];
-                    if (!cell) return;
-                    const isChanged = !!cell.changed || !!cell.intercambio || (cell.origen && cell.origen.includes('CAMBIO'));
-                    const hasIcon = Array.isArray(cell.icons) && cell.icons.some(icon => String(icon) === '\u{1F504}' || String(icon).includes('ðŸ'));
-                    if (!isChanged && !hasIcon) {
-                        errors.push(`[BLOQUEO] El ${role} del cambio (${id}) no muestra el icono ðŸ”„ el ${evStart} en ${snapHotelId}`);
-                    }
-                };
-
-                checkCell(rowOrig, originRaw, 'Origen');
-                if (idDest) checkCell(rowDest, destRaw, 'Destino');
-
-                // [O.1] VerificaciÃ³n de Existencia de Sustituto en Cuadrante
-                if (idDest && !rowDest) {
-                    errors.push(`[BLOQUEO] El destino del cambio ${idDest} para ${idOrig} el ${evStart} no existe en las filas del snapshot.`);
+                const destRaw = ev.empleado_destino_id || ev.destino || ev.companero || '';
+                if (!destRaw) return;
+                const destKey = window.normalizePersonKey(destRaw);
+                if (destKey && destKey !== '¿?' && destKey !== '' && !rowMap.has(destKey)) {
+                    rowMap.set(destKey, plazaRow);
                 }
             });
         }
 
-        // [B] [E] Duplicados operativos y conflictos de localizaciÃ³n
-        const allEmps = {};
-        snapshots.forEach(snap => {
-            snap.rows.forEach(row => {
-                const id = window.normalizeId(row.empleado_id);
-                if (!allEmps[id]) allEmps[id] = [];
-                Object.entries(row.cells).forEach(([fecha, cell]) => {
-                    const code = String(cell.code || '').toUpperCase();
-                    if (['M', 'T', 'N'].includes(code)) {
-                        allEmps[id].push({ hotel: snap.hotel_nombre, fecha, code });
-                    }
-                });
-            });
-        });
-
-        Object.entries(allEmps).forEach(([id, shifts]) => {
-            const days = {};
-            shifts.forEach(s => {
-                if (!days[s.fecha]) days[s.fecha] = [];
-                days[s.fecha].push(s);
-            });
-            Object.entries(days).forEach(([fecha, entries]) => {
-                if (entries.length > 1) {
-                    const hotels = entries.map(e => e.hotel).join(' y ');
-                    errors.push(`[BLOQUEO] Duplicado operativo: ${id} tiene turnos en ${hotels} el ${fecha}`);
-                }
-            });
-        });
-
-        return {
-            ok: errors.length === 0,
-            errors,
-            warnings
+        const toSnapshotIdentity = (raw) => {
+            if (!raw || String(raw).trim() === '') return null;
+            const canonical = window.resolveEmployeeCanonicalId
+                ? window.resolveEmployeeCanonicalId(raw, employees)
+                : raw;
+            const keyCanonical = window.normalizePersonKey(canonical || raw);
+            if (keyCanonical && rowMap.has(keyCanonical)) return keyCanonical;
+            return window.normalizePersonKey(raw) || null;
         };
-    };
 
-window.publishToSupabase = async () => {
-    const btn = document.getElementById('btnConfirmPublish');
-    if (btn) {
-        btn.disabled = true;
-        btn.textContent = 'Validando...';
-        btn.style.opacity = '0.7';
-    }
+        const rowMatchesEmployee = (row, rawId) => {
+            const target = toSnapshotIdentity(rawId);
+            const targetByName = window.normalizePersonKey(rawId);
+            const rowId = toSnapshotIdentity(row.empleado_id || row.employee_id || row.id);
+            if (target && rowId && rowId === target) return true;
+            const rowName = window.normalizePersonKey(row.nombreVisible || row.nombre || '');
+            if (rowName && targetByName && rowName === targetByName) return true;
+            return false;
+        };
 
-    try {
-        const changes = window.getExcelDiff();
-        // Permitimos continuar si es una publicaciÃ³n manual (sin cambios de Excel)
-        // if (changes.length === 0) throw new Error('No hay cambios para publicar.');
+        const findSnapshotRow = (rawId) => {
+            const byKey = window.normalizePersonKey(rawId);
+            if (byKey && rowMap.has(byKey)) return rowMap.get(byKey);
+            return snap.rows.find(row => rowMatchesEmployee(row, rawId));
+        };
 
-        // --- 1. VALIDACIÃ“N PRE-PUBLICACIÃ“N Y CONFLICTOS ---
-        const validationErrors = window.validatePublishChanges ? window.validatePublishChanges(changes) : [];
-        
-        // DetecciÃ³n de conflictos operativos
-        const conflicts = (await window.detectarConflictosOperativos(window.isoDate(new Date()), 'TODOS')) || [];
-        const criticalConflicts = Array.isArray(conflicts) ? conflicts.filter(c => c.severity === 'CRITICAL') : [];
-        
-        if (validationErrors.length > 0 || criticalConflicts.length > 0) {
-            let msg = 'ï¿½aï¿½ï¸ AVISO DE INTEGRIDAD / CONFLICTOS:\n\n';
-            if (validationErrors.length > 0) msg += `- ERRORES Tï¿½0CNICOS: ${validationErrors.length} detectados.\n`;
-            if (criticalConflicts.length > 0) msg += `- CONFLICTOS OPERATIVOS: ${criticalConflicts.length} detectados.\n`;
-            
-            msg += '\nSe recomienda resolver estos puntos, pero puede continuar si es consciente de los riesgos.';
-            
-            if (!confirm(msg + '\n\nÂ¿DESEA PUBLICAR IGUALMENTE?')) {
-                throw new Error('PublicaciÃ³n cancelada por el usuario');
-            }
-        } else {
-            const confirmMsg = changes.length > 0 
-                ? `Â¿Confirmas la publicaciÃ³n de ${changes.length} cambios?`
-                : `Â¿Confirmas la publicaciÃ³n del snapshot para la semana actual?`;
-            if (!confirm(confirmMsg)) return;
-        }
+        // 1. Validación de Ausencias
+        events.forEach(ev => {
+            if (window.normalizeEstado(ev.estado) === 'anulado') return;
+            const evHotel = window.normalizeId(window.getEventoHotel
+                ? window.getEventoHotel(ev)
+                : (ev.hotel || ev.hotel_origen || ev.hotel_destino || (ev.payload && ev.payload.hotel_id) || ''));
+            const snapHotelNorm = window.normalizeId(snapHotelId);
+            if (evHotel && snapHotelNorm && evHotel !== snapHotelNorm) return;
 
-        if (btn) btn.textContent = 'Preparando trazabilidad...';
+            const tipoEv = window.normalizeTipo(ev.tipo);
+            if (!['VAC', 'BAJA', 'PERM', 'PERMISO'].includes(tipoEv)) return;
 
-        const flatData = [];
-        const traceabilityDetails = [];
-        const affectedEmps = new Set();
+            const evStart = window.normalizeDate
+                ? window.normalizeDate(ev.fecha_inicio)
+                : (ev.fecha_inicio || '');
+            const evEnd = window.normalizeDate
+                ? window.normalizeDate(ev.fecha_fin || ev.fecha_inicio)
+                : (ev.fecha_fin || ev.fecha_inicio || '');
+            if (!evStart || !wStart || evStart > wEnd || evEnd < wStart) return;
 
-        changes.forEach(c => {
-            affectedEmps.add(c.displayName);
-            const weekDates = window.getFechasSemana(c.weekStart);
-            
-            weekDates.forEach((fecha, idx) => {
-                const turnoNuevo = c.row.values[idx] || '';
-                const turnoAnterior = c.orig.values[idx] || '';
-
-                if (turnoNuevo !== turnoAnterior) {
-                    flatData.push({
-                        empleado_id: c.displayName,
-                        fecha: fecha,
-                        turno: turnoNuevo,
-                        tipo: 'NORMAL',
-                        hotel_id: c.hotel
-                    });
-
-                    traceabilityDetails.push({
-                        empleado_id: c.displayName,
-                        fecha: fecha,
-                        anterior: turnoAnterior,
-                        nuevo: turnoNuevo,
-                        hotel: c.hotel
-                    });
-                }
-            });
-        });
-
-        if (btn) btn.textContent = 'Publicando en Supabase...';
-
-        // --- 2. PUBLICAR CAMBIOS ---
-        await window.TurnosDB.bulkUpsert(flatData);
-
-        // --- 3. GENERAR LOG DE AUDITORÃA ---
-        await window.TurnosDB.insertLog({
-            cambios_totales: flatData.length,
-            resumen: {
-                accion: 'publicar_snapshot_cuadrante',
-                hoteles: Array.from(new Set(changes.map(c => c.hotel))),
-                rango: {
-                    inicio: changes.length > 0 ? changes[0].weekStart : (weeksAffected[0] || ''),
-                    fin: changes.length > 0 ? changes[changes.length - 1].weekStart : (weeksAffected[0] || '')
-                }
-            },
-            cambios_detalle_json: traceabilityDetails
-        });
-
-        // --- 4. GENERAR Y GUARDAR SNAPSHOTS FINALES (ARQUITECTURA FIJA v12.0) ---
-        // Admin resuelve la operativa completa y guarda el resultado horneado.
-        if (btn) btn.textContent = 'Horneando snapshots finales...';
-        
-        let weeksAffected = Array.from(new Set(changes.map(c => c.weekStart)));
-        let hotelsAffected = Array.from(new Set(changes.map(c => c.hotel)));
-
-        // Si es publicaciÃ³n forzada (sin cambios), usamos la semana visible
-        if (weeksAffected.length === 0) {
-            const rawDate = document.getElementById('datePicker')?.value;
-            if (rawDate) {
-                const base = new Date(rawDate + 'T12:00:00');
-                weeksAffected = [window.isoDate(window.getMonday(base))];
-            }
-        }
-        
-        // Si no hay hoteles afectados especÃ­ficos, publicamos todos los disponibles
-        if (hotelsAffected.length === 0) {
-            hotelsAffected = await window.TurnosDB.getHotels();
-        }
-        // V12.5 Safety Filter: No publicar nunca hoteles de test
-        hotelsAffected = hotelsAffected.filter(h => h && !h.toUpperCase().startsWith('TEST'));
-
-        const profiles = await window.TurnosDB.getEmpleados();
-        
-        // Intentar obtener los datos base del Excel (cachÃ© compartida o carga fresca)
-        let excelSource = window._sharedExcelSourceRows;
-        if (!excelSource) {
-            excelSource = await window.ExcelLoader.loadExcelSourceRows().catch(() => ({}));
-        }
-
-        for (const weekStart of weeksAffected) {
-            const weekEnd = window.addIsoDays(weekStart, 6);
-            const [eventos, turnosSemana] = await Promise.all([
-                window.TurnosDB.fetchEventos(weekStart, weekEnd),
-                window.TurnosDB.fetchRango(weekStart, weekEnd)
-            ]);
-
-            for (const hName of hotelsAffected) {
-                const dates = [0,1,2,3,4,5,6].map(i => window.addIsoDays(weekStart, i));
-                
-                // 1. TAREA CODEX: Priorizar el Cache de lo que el Admin estÃ¡ VIENDO en pantalla
-                let snapshotObj = null;
-                const cache = window._lastRenderedPreviewSnapshotSource;
-                
-                if (cache && cache.semana_inicio === weekStart) {
-                    const hotelCache = cache.hoteles.find(h => h.hotel === hName);
-                    if (hotelCache) {
-                        console.log(`[SNAPSHOT] Usando cache de Vista Previa para ${hName}`);
-                        snapshotObj = {
-                            semana_inicio: weekStart,
-                            semana_fin: weekEnd,
-                            hotel: hName,
-                            empleados: hotelCache.empleados
-                        };
+            const row = findSnapshotRow(ev.empleado_id);
+            if (!row) {
+                errors.push('[BLOQUEO] Evento ' + tipoEv + ' de ' + ev.empleado_id + ' no aparece en el snapshot de ' + snapHotelId);
+                } else {
+                const cellDates = Object.keys(row.cells).filter(d => d >= evStart && d <= evEnd && d >= wStart && d <= wEnd);
+                cellDates.forEach(d => {
+                    const cell = row.cells[d];
+                    if (!cell) return;
+                    const code = String(cell.code || '').toUpperCase();
+                    const type = String(cell.type || '').toUpperCase();
+                    const expectedCodes = { 'VAC': 'VAC', 'BAJA': 'BAJA', 'PERMISO': 'PERM', 'PERM': 'PERM' };
+                    const expected = expectedCodes[tipoEv];
+                    if (!(expected && (code === expected || code.startsWith(expected) || type === expected))) {
+                        errors.push('[BLOQUEO] Evento ' + tipoEv + ' no renderizado para ' + row.nombreVisible + ' el ' + d);
                     }
-                }
-
-                // 2. Si no hay cache, resolver (pero usando el modelo fiel)
-                if (!snapshotObj) {
-                    console.warn(`[SNAPSHOT] No hay cache para ${hName}. Re-resolviendo modelo...`);
-                    let weekExcelRows = (excelSource[hName] || []).filter(r => r.weekStart === weekStart);
-                    
-                    const previewModel = window.createPuestosPreviewModel({
-                        hotel: hName,
-                        dates: dates,
-                        sourceRows: weekExcelRows,
-                        rows: turnosSemana.filter(t => t.hotel_id === hName),
-                        eventos,
-                        employees: profiles
-                    });
-
-                    if (previewModel.puestos.length === 0) {
-                        console.warn(`[SNAPSHOT] Saltando ${hName} - No hay datos operativos.`);
-                        continue;
-                    }
-
-                    const emps = previewModel.getEmployees();
-                    const seen = new Set();
-                    const orderedEmps = emps.filter(e => {
-                        if (seen.has(e.employee_id)) return false;
-                        seen.add(e.employee_id);
-                        return true;
-                    });
-
-                    snapshotObj = {
-                        semana_inicio: weekStart,
-                        semana_fin: weekEnd,
-                        hotel: hName,
-                        empleados: orderedEmps.map((emp, idx) => {
-                            const daysMap = {};
-                            dates.forEach(fecha => {
-                                const resolved = previewModel.getTurnoEmpleado(emp.employee_id, fecha);
-                                const visual = window.TurnosRules ? window.TurnosRules.describeCell(resolved) : { label: resolved.turno, icons: resolved.icons || [] };
-                                // B4 FIX (publicar path): mismo que en buildPublicationSnapshotPreview
-                                const absCode = resolved.incidencia
-                                    ? (resolved.incidencia === 'PERMISO' ? 'PERM'
-                                       : resolved.incidencia === 'FORMACION' ? 'FORM'
-                                       : resolved.incidencia)
-                                    : null;
-                                daysMap[fecha] = {
-                                    label: visual.label || absCode || resolved.turno || '',
-                                    code: absCode || resolved.turno || '',
-                                    icons: [...new Set([...(visual.icon ? [visual.icon] : (resolved.icon ? [resolved.icon] : [])), ...((resolved.cambio || resolved.intercambio) ? ['ðŸ”„'] : [])])],
-                                    type: resolved.incidencia || 'NORMAL',
-                                    estado: (resolved.isAbsent || resolved.incidencia) ? 'ausente' : 'operativo',
-                                    origen: resolved.incidencia || resolved.origen || 'base',
-                                    changed: !!(resolved.cambio || resolved.intercambio),
-                                    icon: resolved.icon || null,
-                                    icons: resolved.icons || null,
-                                    titular_cubierto: resolved.titular || null,
-                                    sustituto: resolved.sustituidoPor || null
-                                };
-                            });
-                            const profile = profiles.find(p => window.normalizeId(p.id) === window.normalizeId(emp.employee_id) || window.normalizeId(p.nombre) === window.normalizeId(emp.employee_id));
-                            return {
-                                nombre: emp.nombre || emp.employee_id,
-                                nombreVisible: emp.nombreVisible || emp.displayName || emp.nombre || emp.employee_id,
-                                empleado_id: emp.employee_id,
-                                orden: idx + 1,
-                                dias: daysMap,
-                                // Enriquecimiento para detecciÃ³n visual en index
-                                tipo: profile?.tipo || null,
-                                puesto: profile?.puesto || null,
-                                categoria: profile?.categoria || null,
-                                notas: profile?.notas || null,
-                                tags: profile?.tags || null,
-                                tipo_personal: profile?.tipo_personal || null,
-                                excludeCounters: window.isEmpleadoOcasionalOApoyo && window.isEmpleadoOcasionalOApoyo(profile)
-                            };
-                        })
-                    };
-                }
-
-                // 3. Validar contenido final antes de enviar
-                // No podemos validar contra previewModel si usamos cache directo, 
-                // pero el cache ya se validÃ³ (o se generÃ³) durante el render.
-
-                // 4. Guardar snapshot
-                await window.TurnosDB.publishCuadranteSnapshot({
-                    semanaInicio: weekStart,
-                    semanaFin: weekEnd,
-                    hotel: hName,
-                    snapshot: snapshotObj,
-                    resumen: { emps: snapshotObj.empleados.length },
-                    usuario: 'ADMIN'
                 });
             }
-        }
+        });
 
-        // Actualizar base original local
-        window._adminExcelBaseOriginalRows = window.cloneExcelRows(window._adminExcelEditableRows);
-        window.addLog(`PublicaciÃ³n exitosa: ${flatData.length} turnos actualizados. Log guardado.`, 'ok');
-        
-        document.getElementById('publishPreviewModal')?.classList.remove('open');
-        alert(`PublicaciÃ³n completada con Ã©xito.\nSe han actualizado ${flatData.length} turnos.`);
+        // 2. Validación de Intercambios y Cambios de Turno
+        events.forEach(ev => {
+            // --- Helpers locales ---
+            const _estadoNorm = window.normalizeEstado(ev.estado || '');
+            const _isInactiveState = ['anulado','anulada','denegado','denegada',
+                'rechazado','rechazada','inactivo','reemplazado'].includes(_estadoNorm);
+            if (_isInactiveState) return; // Eventos inactivos nunca bloquean
 
-        window.renderExcelView();
-        window.renderPreview();
-        window.renderDashboard(); // Refrescar actividad
-        if (window.populateEmployees) window.populateEmployees();
+            const normEv = window.normalizeCambioEvento(ev);
+            if (!normEv || (normEv.tipo !== 'CAMBIO_TURNO' && normEv.tipo !== 'INTERCAMBIO_TURNO')) return;
 
-    } catch (error) {
-        if (error.message !== 'ValidaciÃ³n fallida') {
-            console.error('Error en publicaciÃ³n:', error);
-            alert('Error al publicar: ' + error.message);
-        }
-        if (btn) {
-            btn.disabled = false;
-            btn.textContent = 'Reintentar PublicaciÃ³n';
-            btn.style.opacity = '1';
-        }
+            const evStart = normEv.fecha;
+            if (!evStart || !wStart || evStart > wEnd || evStart < wStart) return;
+
+            const evHotel = window.normalizeId(normEv.hotel || ev.hotel_origen || ev.hotel_destino || (ev.payload && ev.payload.hotel_id) || '');
+            const snapHotelNorm = window.normalizeId(snapHotelId);
+            if (evHotel && snapHotelNorm && evHotel !== snapHotelNorm) return;
+
+            const idDest = toSnapshotIdentity(normEv.destino);
+
+            // [SNAPSHOT_DESTINO_CHECK_TARGET]
+            if (normEv.origen === 'Dani' || normEv.destino === 'Próximamente' || (ev.fecha_inicio && ev.fecha_inicio.startsWith('2026-10-21'))) {
+                console.log('[SNAPSHOT_DESTINO_CHECK_TARGET]', {
+                    eventoId: ev.id, fecha: evStart,
+                    normalizadoOrigen: normEv.origen,
+                    normalizadoDestino: normEv.destino,
+                    idDest: idDest,
+                    rowMapHasDest: idDest ? rowMap.has(idDest) : false
+                });
+            }
+
+            // --- Determinar si es un intercambio bilateral o cambio unilateral ---
+            const _tipoNorm = String(normEv.tipo || '').toUpperCase();
+            const _esIntercambio = _tipoNorm === 'INTERCAMBIO_TURNO'
+                || normEv.esIntercambio === true
+                || (ev.tipo && String(ev.tipo).toUpperCase().includes('INTERCAMBIO'));
+
+            // Placeholder destinations are valid operational destinations
+            const isPlaceholderDest = ['¿?', '?', 'proximamente'].includes(
+                window.normalizePersonKey(normEv.destino)
+            );
+            const destinoEsVacio = !normEv.destino
+                || String(normEv.destino).trim() === ''
+                || String(normEv.destino).toUpperCase() === 'NULL'
+                || String(normEv.destino).toUpperCase() === 'UNDEFINED';
+
+            // REGLA PROTEGIDA: Intercambio activo con destino vacío → BLOQUEO
+            // Cambio unilateral sin destino → AVISO (no bloqueo)
+            if (destinoEsVacio && !isPlaceholderDest) {
+                if (_esIntercambio) {
+                    errors.push('[BLOQUEO] Intercambio de ' + normEv.origen + ' el ' + evStart + ' tiene destino desconocido o vacío. Debe resolverse antes de publicar.');
+                } else {
+                    warnings.push('[AVISO] Cambio unilateral de ' + normEv.origen + ' el ' + evStart + ' sin compañero asignado.');
+                }
+                return;
+            }
+
+            const findOperationalRow = (rawId, date) => {
+                const directKey = window.normalizePersonKey(rawId);
+                if (directKey && rowMap.has(directKey)) return rowMap.get(directKey);
+                const target = toSnapshotIdentity(rawId);
+                if (target && target !== directKey && rowMap.has(target)) return rowMap.get(target);
+                // Fallback: look for ¿? row if the key is unknown
+                if (directKey && directKey !== '¿?' && !rowMap.has(directKey)) {
+                    const plazaRowFound = rowMap.get('¿?')
+                        || snap.rows.find(r => r.empleado_id === '¿?' || r.nombreVisible === '¿?');
+                    if (plazaRowFound) return plazaRowFound;
+                }
+                return snap.rows.find(row => {
+                    if (rowMatchesEmployee(row, rawId)) return true;
+                    const cell = row.cells[date];
+                    if (cell && cell.sustituyeA) {
+                        const sk = window.normalizePersonKey(cell.sustituyeA);
+                        if (sk && (sk === directKey || sk === target)) return true;
+                    }
+                    return false;
+                });
+            };
+
+            const rowOrig = findOperationalRow(normEv.origen, evStart);
+            const rowDest = findOperationalRow(normEv.destino, evStart);
+
+            if (!rowOrig) {
+                errors.push('[BLOQUEO] Origen de intercambio ' + normEv.origen + ' no aparece en el snapshot');
+            } else {
+                const cell = rowOrig.cells[evStart];
+                if (cell && !cell.code.includes('🔄')) {
+                    warnings.push('[AVISO] Intercambio sin marker para ' + rowOrig.nombreVisible + ' el ' + evStart);
+                }
+            }
+
+            if (!rowDest) {
+                errors.push('[BLOQUEO] Destino de intercambio ' + normEv.destino + ' no aparece en el snapshot');
+            } else {
+                const cell = rowDest.cells[evStart];
+                if (cell && !cell.code.includes('🔄')) {
+                    warnings.push('[AVISO] Intercambio sin marker para ' + rowDest.nombreVisible + ' el ' + evStart);
+                }
+            }
+        });
     }
+
+    // Cross-hotel duplicate check
+    const allEmps = {};
+    snapshots.forEach(s => s.rows.forEach(r => {
+        const id = r.empleado_id || r.nombreVisible;
+        if (!allEmps[id]) allEmps[id] = [];
+        Object.entries(r.cells).forEach(([fecha, c]) => {
+            if (c.code && c.code !== '—' && c.code !== '') {
+                allEmps[id].push({ fecha, hotel: s.hotel_nombre });
+            }
+        });
+    }));
+    Object.entries(allEmps).forEach(([id, shifts]) => {
+        const days = {};
+        shifts.forEach(s => {
+            if (!days[s.fecha]) days[s.fecha] = [];
+            days[s.fecha].push(s);
+        });
+        Object.entries(days).forEach(([fecha, entries]) => {
+            if (entries.length > 1) {
+                const hotels = entries.map(e => e.hotel).join(' y ');
+                errors.push('[BLOQUEO] Duplicado operativo: ' + id + ' tiene turnos en ' + hotels + ' el ' + fecha);
+            }
+        });
+    });
+
+    return { ok: errors.length === 0, errors, warnings };
 };
 
+// [REMOVED] Duplicate window.publishToSupabase was here.
+// The real implementation is at the function defined above (showPublishPreview flow).
+// This duplicate had a TDZ bug on `weeksAffected` and was overriding the correct function.
+
 window.revertirPublicacion = async (logId) => {
-    if (!confirm('Â¿EstÃ¡s seguro de revertir esta publicaciÃ³n? Se restaurarÃ¡n los turnos anteriores registrados en el log.')) return;
+    if (!confirm('Â¿Estás seguro de revertir esta publicación? Se restaurarán los turnos anteriores registrados en el log.')) return;
 
     try {
-        window.addLog(`Iniciando reversiÃ³n de publicaciÃ³n ${logId}...`, 'warn');
+        window.addLog(`Iniciando reversión de publicación ${logId}...`, 'warn');
         const log = await window.TurnosDB.getLog(logId);
         
         if (!log || !log.cambios_detalle_json || log.revertida) {
-            throw new Error('El log no es vÃ¡lido o ya ha sido revertido.');
+            throw new Error('El log no es válido o ya ha sido revertido.');
         }
 
         const revertData = log.cambios_detalle_json.map(d => ({
@@ -6366,8 +6240,8 @@ window.revertirPublicacion = async (logId) => {
         await window.TurnosDB.bulkUpsert(revertData);
         await window.TurnosDB.updateLog(logId, { revertida: true, estado: 'revertido' });
 
-        window.addLog(`ReversiÃ³n completada: ${revertData.length} turnos restaurados.`, 'ok');
-        alert('PublicaciÃ³n revertida con Ã©xito.');
+        window.addLog(`Reversión completada: ${revertData.length} turnos restaurados.`, 'ok');
+        alert('Publicación revertida con éxito.');
         
         window.renderDashboard();
         window.renderPreview();
@@ -6386,7 +6260,7 @@ window.renderDashboard = async () => {
         console.error('[ADMIN ERROR] DAO (TurnosDB) no inicializado. Revisa el orden de scripts y posibles errores de sintaxis.');
         return;
     }
-    // Evitar ejecuciones duplicadas en rÃ¡faga (debouncing preventivo)
+    // Evitar ejecuciones duplicadas en ráfaga (debouncing preventivo)
     const now = Date.now();
     if (window._lastDashboardRender && (now - window._lastDashboardRender < 500)) return;
     window._lastDashboardRender = now;
@@ -6446,7 +6320,7 @@ window.renderDashboard = async () => {
             ...conflicts.INFO.map(c => ({ ...c, severity: 'info' }))
         ];
 
-        // AuditorÃ­a de ID Interno (Fase 1)
+        // Auditoría de ID Interno (Fase 1)
         const empsSinIdInterno = (empleados || []).filter(e => (!e.id_interno || String(e.id_interno).trim() === '') && e.activo !== false && e.id !== 'Â¿?');
         if (empsSinIdInterno.length > 0) {
             allRisks.push({
@@ -6466,7 +6340,7 @@ window.renderDashboard = async () => {
                 type: 'PLAZA_PENDIENTE',
                 empId: 'Â¿?',
                 title: 'Plaza Pendiente de Definir',
-                desc: `Existe un registro provisional (${plazaPendiente.id}) para planificaciÃ³n de coberturas.`
+                desc: `Existe un registro provisional (${plazaPendiente.id}) para planificación de coberturas.`
             });
         }
 
@@ -6476,7 +6350,7 @@ window.renderDashboard = async () => {
                     <div class="alert-card severity-info" style="cursor: default; opacity: 0.8;">
                         <div class="alert-icon"><i class="fas fa-check-double"></i></div>
                         <div class="alert-content">
-                            <div class="alert-title">OperaciÃ³n Estable</div>
+                            <div class="alert-title">Operación Estable</div>
                             <div class="alert-desc">No se han detectado conflictos operativos ni riesgos en el sistema.</div>
                         </div>
                     </div>
@@ -6500,7 +6374,7 @@ window.renderDashboard = async () => {
         }
 
         // Badges y KPIs nuevos
-        if ($('#count-critical')) $('#count-critical').textContent = `${counts.critical} CrÃ­ticos`;
+        if ($('#count-critical')) $('#count-critical').textContent = `${counts.critical} Críticos`;
         if ($('#count-warning')) $('#count-warning').textContent = `${counts.warning} Avisos`;
         if ($('#count-info')) $('#count-info').textContent = `${counts.info} Info`;
 
@@ -6514,14 +6388,14 @@ window.renderDashboard = async () => {
             $('#stat-pending-requests').style.color = pendingReqs > 0 ? '#f59e0b' : 'inherit';
         }
 
-        // --- BLOQUE E: ACCIONES RÃPIDAS ---
+        // --- BLOQUE E: ACCIONES RÁPIDAS ---
         const quickActions = $('#dashboard-quick-actions');
         if (quickActions) {
             quickActions.innerHTML = `
                 <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap:15px;">
                     <button class="btn-premium" onclick="window.switchSection('excel')" style="height:100px; flex-direction:column; gap:8px; border-radius:16px;">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:28px; height:28px;"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="3" y1="9" x2="21" y2="9"></line><line x1="9" y1="21" x2="9" y2="9"></line></svg>
-                        <span style="font-size:0.8rem; font-weight:800;">GestiÃ³n Excel</span>
+                        <span style="font-size:0.8rem; font-weight:800;">Gestión Excel</span>
                     </button>
                     <button class="btn-premium" onclick="window.switchSection('preview')" style="height:100px; flex-direction:column; gap:8px; border-radius:16px;">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:28px; height:28px;"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
@@ -6533,13 +6407,13 @@ window.renderDashboard = async () => {
                     </button>
                     <button class="btn-premium" onclick="window.open('https://cumbriaspahotel.github.io/Turnos-new/', '_blank')" style="height:100px; flex-direction:column; gap:8px; background:var(--accent); color:white; border-radius:16px; border:none;">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="width:28px; height:28px;"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
-                        <span style="font-size:0.8rem; font-weight:800;">Vista PÃºblica</span>
+                        <span style="font-size:0.8rem; font-weight:800;">Vista Pública</span>
                     </button>
                 </div>
             `;
         }
 
-        // --- BLOQUE D: ACTIVIDAD / AUDITORÃA ---
+        // --- BLOQUE D: ACTIVIDAD / AUDITORÍA ---
         const timeline = $('#dashboard-timeline');
         if (timeline) {
             try {
@@ -6572,8 +6446,8 @@ window.renderDashboard = async () => {
                                     <i class="fas ${log.revertida ? 'fa-undo' : 'fa-check'}"></i>
                                 </div>
                                 <div>
-                                    <div style="font-weight: 800; color: #334155; font-size: 0.9rem;">${log.revertida ? 'PublicaciÃ³n Revertida' : 'SincronizaciÃ³n Cloud'}</div>
-                                    <div style="font-size: 0.75rem; color: #64748b;">${log.cambios_totales} turnos â€¢ por ${log.usuario || 'Admin'} â€¢ ID: ${log.id.slice(0,8)}</div>
+                                    <div style="font-weight: 800; color: #334155; font-size: 0.9rem;">${log.revertida ? 'Publicación Revertida' : 'Sincronización Cloud'}</div>
+                                    <div style="font-size: 0.75rem; color: #64748b;">${log.cambios_totales} turnos €¢ por ${log.usuario || 'Admin'} €¢ ID: ${log.id.slice(0,8)}</div>
                                 </div>
                             </div>
                             <div style="text-align: right;">
@@ -6585,11 +6459,11 @@ window.renderDashboard = async () => {
                 }
             } catch (err) {
                 console.error('[AUDITORIA ERROR]', err);
-                timeline.innerHTML = '<div style="padding:40px; text-align:center; color:var(--error); font-size:0.8rem;">AuditorÃ­a no disponible.</div>';
+                timeline.innerHTML = '<div style="padding:40px; text-align:center; color:var(--error); font-size:0.8rem;">Auditoría no disponible.</div>';
             }
         }
 
-        // --- 4. ESTADO DE SINCRONIZACIï¿½N ---
+        // --- 4. ESTADO DE SINCRONIZACIÓN ---
         const syncStatus = window.TurnosDB._channel?.status || (window.realtimeActivo ? 'ok' : 'connecting');
         if ($('#sync-cloud-status')) {
             $('#sync-cloud-status').textContent = (syncStatus === 'ok' || syncStatus === 'SUBSCRIBED') ? 'ACTIVO' : 'RECONECTANDO';
@@ -6597,9 +6471,22 @@ window.renderDashboard = async () => {
         }
         if ($('#sync-last-time')) $('#sync-last-time').textContent = new Date().toLocaleTimeString();
         if ($('#sync-pending-changes')) {
-            const diff = window.getExcelDiff ? window.getExcelDiff().length : 0;
-            $('#sync-pending-changes').textContent = diff;
-            $('#sync-pending-changes').style.color = diff > 0 ? '#ef4444' : 'inherit';
+            // Contar eventos activos de la semana del preview (no solo diff de Excel)
+            let _pendingCount = 0;
+            try {
+                const _rawDatePrev = window._previewDate
+                    || document.getElementById('prevDateInput')?.value
+                    || document.getElementById('datePicker')?.value;
+                if (_rawDatePrev && window.TurnosDB && window.TurnosDB.fetchEventos) {
+                    const _wS2 = window.isoDate ? window.isoDate(window.getMonday(new Date(_rawDatePrev + 'T12:00:00'))) : _rawDatePrev;
+                    const _wE2 = window.addIsoDays ? window.addIsoDays(_wS2, 6) : _wS2;
+                    const _evs2 = await window.TurnosDB.fetchEventos(_wS2, _wE2);
+                    const _ACT = ['activo','activa','aprobado','aprobada','pendiente'];
+                    _pendingCount = (_evs2 || []).filter(e => _ACT.includes(String(e.estado || '').toLowerCase())).length;
+                } else { _pendingCount = window.getExcelDiff ? window.getExcelDiff().length : 0; }
+            } catch (_ec) { _pendingCount = window.getExcelDiff ? window.getExcelDiff().length : 0; }
+            $('#sync-pending-changes').textContent = _pendingCount;
+            $('#sync-pending-changes').style.color = _pendingCount > 0 ? '#ef4444' : 'inherit';
         }
 
     } catch (err) {
@@ -6615,7 +6502,7 @@ window.renderDashboard = async () => {
 // --- REACTIVIDAD REAL-TIME ---
 window.aplicarCambioLocal = (payload) => {
     // console.log("Realtime Payload:", payload);
-    // Solo refrescar dashboard si estÃ¡ visible para no saturar
+    // Solo refrescar dashboard si está visible para no saturar
     if ($('#section-home').classList.contains('active')) {
         if (window._dashRefreshTimer) clearTimeout(window._dashRefreshTimer);
         window._dashRefreshTimer = setTimeout(window.renderDashboard, 1000);
@@ -6867,7 +6754,7 @@ window.employeeProfileActorLabel = (ev) => {
     const titular = ev?.empleado_id || ev?.payload?.empleado_id || '';
     const destino = ev?.empleado_destino_id || ev?.sustituto_id || ev?.sustituto || ev?.payload?.empleado_destino_id || ev?.payload?.sustituto_id || ev?.payload?.sustituto || '';
     const solicitante = ev?.payload?.solicitante || ev?.payload?.solicitado_por || ev?.payload?.creado_por || ev?.created_by || '';
-    const companero = ev?.payload?.companero || ev?.payload?.['compañero'] || ev?.payload?.['compaÃ±ero'] || ev?.payload?.destinatario || '';
+    const companero = ev?.payload?.companero || ev?.payload?.['compañero'] || ev?.payload?.['compañero'] || ev?.payload?.destinatario || '';
     if (/CAMBIO|INTERCAMBIO/i.test(String(ev?.tipo || ''))) {
         if (solicitante || companero) return `Solicita ${solicitante || titular || 'N/D'}${companero ? ` con ${companero}` : ''}`;
         if (titular && destino) return `${titular} â†” ${destino}`;
@@ -6882,19 +6769,19 @@ window.employeeProfileActorLabel = (ev) => {
 window.employeeProfileDateRangeLabel = (start, end) => {
     if (!start) return 'No informado';
     if (!end || end === start) return window.fmtDateLegacy(start);
-    return `${window.fmtDateLegacy(start)} â€” ${window.fmtDateLegacy(end)}`;
+    return `${window.fmtDateLegacy(start)} — ${window.fmtDateLegacy(end)}`;
 };
 
 window.employeeProfileShiftCodeMeta = (value) => {
     const raw = String(value || '').trim();
     const code = window.normalizePreviewTurno ? window.normalizePreviewTurno(raw) : raw.toUpperCase();
-    if (code === 'M') return { code: 'M', cls: 'm', label: 'MaÃ±ana' };
+    if (code === 'M') return { code: 'M', cls: 'm', label: 'Mañana' };
     if (code === 'T') return { code: 'T', cls: 't', label: 'Tarde' };
     if (code === 'N') return { code: 'N', cls: 'n', label: 'Noche' };
     if (code === 'D') return { code: 'D', cls: 'd', label: 'Descanso' };
     if (code.startsWith('VAC')) return { code: 'VAC', cls: 'v', label: 'Vacaciones' };
     if (code.startsWith('BAJA') || code.startsWith('IT') || code.startsWith('PERM')) return { code: 'BAJA', cls: 'b', label: 'Baja / Permiso' };
-    return { code: raw || 'â€”', cls: 'x', label: raw || 'â€”' };
+    return { code: raw || '—', cls: 'x', label: raw || '—' };
 };
 
 window.loadEmployeeProfileBaseRows = async (empId, refISO) => {
@@ -7165,7 +7052,7 @@ window.buildEmployeeProfileModel = (empId, refISO) => {
     const activeIncident = activeTodayEvents.find(ev => /VAC|BAJA|IT|PERM|REFUERZO|SUSTITUCION|COBERTURA|CAMBIO|INTERCAMBIO/i.test(String(ev.tipo || ''))) || null;
     const futureWorkingDays = monthDays.filter(day => day.fecha > todayISO && ['M', 'T', 'N'].includes(window.employeeProfileShiftCodeMeta(day.turno || day.detalle?.turno).code));
     const nextShiftDay = futureWorkingDays[0] || null;
-    const futureAssignedDays = monthDays.filter(day => day.fecha > todayISO && window.employeeProfileShiftCodeMeta(day.turnoBase || day.detalle?.turnoBase).code !== 'â€”');
+    const futureAssignedDays = monthDays.filter(day => day.fecha > todayISO && window.employeeProfileShiftCodeMeta(day.turnoBase || day.detalle?.turnoBase).code !== '—');
     const turnosBase = monthDays.filter(day => ['M', 'T', 'N', 'D'].includes(window.employeeProfileShiftCodeMeta(day.turnoBase || day.detalle?.turnoBase).code));
     const workedDays = monthDays.filter(day => ['M', 'T', 'N'].includes(window.employeeProfileShiftCodeMeta(day.turno || day.detalle?.turno).code));
     const morningDays = workedDays.filter(day => window.employeeProfileShiftCodeMeta(day.turno || day.detalle?.turno).code === 'M').length;
@@ -7178,7 +7065,7 @@ window.buildEmployeeProfileModel = (empId, refISO) => {
     const unresolvedBaseDays = monthDays.filter(day => {
         const baseCode = window.employeeProfileShiftCodeMeta(day.turnoBase || day.detalle?.turnoBase).code;
         const finalCode = window.employeeProfileShiftCodeMeta(day.turno || day.detalle?.turno).code;
-        return ['M', 'T', 'N', 'D'].includes(baseCode) && finalCode === 'â€”';
+        return ['M', 'T', 'N', 'D'].includes(baseCode) && finalCode === '—';
     }).length;
     const rawTypeField = profile.tipo_personal || profile.tipo || profile.contrato || profile.tipo_trabajador || '';
     const annualVacPlanned = yearGroupedVacs.reduce((acc, ev) => {
@@ -7215,7 +7102,7 @@ window.buildEmployeeProfileModel = (empId, refISO) => {
     if (!rawTypeField) alerts.push({ level: 'warn', text: 'Empleado sin tipo informado' });
     if (!profile.id_interno) alerts.push({ level: 'warn', text: 'Empleado sin ID interno' });
     if (laborStatus.cls === 'inactivo' && futureAssignedDays.length > 0) alerts.push({ level: 'danger', text: 'Empleado inactivo con turnos futuros' });
-    if (['apoyo', 'ocasional'].includes(structuralType) && /refuerzo/.test(window.employeeNorm(rawTypeField))) alerts.push({ level: 'warn', text: 'Apoyo/Ocasional marcado errÃ³neamente como refuerzo' });
+    if (['apoyo', 'ocasional'].includes(structuralType) && /refuerzo/.test(window.employeeNorm(rawTypeField))) alerts.push({ level: 'warn', text: 'Apoyo/Ocasional marcado erróneamente como refuerzo' });
     if (groupedEvents.some(ev => ['VAC', 'BAJA', 'IT', 'PERM', 'PERMISO', 'FORMACION'].includes(window.normalizeTipo ? window.normalizeTipo(ev.tipo) : String(ev.tipo || '').toUpperCase()) && !(ev.empleado_destino_id || ev.sustituto_id || ev.payload?.sustituto_id || ev.payload?.sustituto))) {
         alerts.push({ level: 'warn', text: 'Evento sin sustituto' });
     }
@@ -7485,8 +7372,8 @@ window.setEmployeeProfileYear = async (year) => {
 };
 
 window.openEmployeeDayDetail = (date) => {
-    console.log("Detalle del dÃ­a:", date);
-    // PodrÃ­amos abrir un mini-modal con los detalles tÃ©cnicos del turno resuelto
+    console.log("Detalle del día:", date);
+    // Podríamos abrir un mini-modal con los detalles técnicos del turno resuelto
 };
 
 window.toggleEmployeeSupportFields = (type) => {
@@ -7568,8 +7455,8 @@ window.renderEmployeeProfile = () => {
     const emp = model.emp;
     const refDate = new Date(`${refISO}T12:00:00`);
     const titlePeriod = refDate.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' });
-    const currentShiftLabel = model.hoy ? window.employeeShiftLabel(model.hoy).replace('&mdash;', 'â€”') : 'No informado';
-    const nextShiftLabel = model.proximoTurno ? `${window.employeeShiftLabel(model.proximoTurno).replace('&mdash;', 'â€”')} Â· ${window.fmtDateLegacy(model.proximoTurno.fecha)}` : 'Sin turno futuro';
+    const currentShiftLabel = model.hoy ? window.employeeShiftLabel(model.hoy).replace('&mdash;', '—') : 'No informado';
+    const nextShiftLabel = model.proximoTurno ? `${window.employeeShiftLabel(model.proximoTurno).replace('&mdash;', '—')} · ${window.fmtDateLegacy(model.proximoTurno.fecha)}` : 'Sin turno futuro';
     const incidenciaLabel = model.incidenciaActiva ? window.employeeProfileEventLabel(model.incidenciaActiva) : 'Sin incidencia';
     const assignedHotels = Array.isArray(emp.hoteles_asignados) ? emp.hoteles_asignados.filter(Boolean) : (typeof emp.hoteles_asignados === 'string' ? emp.hoteles_asignados.split(/[,;|]/).map(h => h.trim()).filter(Boolean) : []);
     const assignedHotelLabel = assignedHotels.length > 1 ? 'Ambos hoteles' : (assignedHotels[0] || emp.hotel || 'No informado');
@@ -7597,21 +7484,21 @@ window.renderEmployeeProfile = () => {
         `;
     }
     const monthRows = (model.calendario || []).filter(day => !day.outsideMonth);
-    const renderRowsTable = (rows, emptyText) => rows.length > 0 ? `<div style="display:grid; gap:10px;">${rows.map(row => `<div style="display:grid; grid-template-columns:92px 1fr 1fr 120px; gap:12px; align-items:center; padding:12px 14px; border:1px solid var(--border); border-radius:14px; background:white;"><strong style="font-size:0.78rem; color:var(--text);">${escapeHtml(row.fecha || 'â€”')}</strong><span style="font-size:0.78rem; color:var(--text);">${row.main}</span><span style="font-size:0.76rem; color:var(--text-dim);">${row.secondary || 'â€”'}</span><span style="font-size:0.74rem; color:var(--accent); font-weight:700; text-align:right;">${row.badge || 'â€”'}</span></div>`).join('')}</div>` : `<div style="padding:26px; text-align:center; opacity:0.45; font-size:0.82rem;">${emptyText}</div>`;
+    const renderRowsTable = (rows, emptyText) => rows.length > 0 ? `<div style="display:grid; gap:10px;">${rows.map(row => `<div style="display:grid; grid-template-columns:92px 1fr 1fr 120px; gap:12px; align-items:center; padding:12px 14px; border:1px solid var(--border); border-radius:14px; background:white;"><strong style="font-size:0.78rem; color:var(--text);">${escapeHtml(row.fecha || '—')}</strong><span style="font-size:0.78rem; color:var(--text);">${row.main}</span><span style="font-size:0.76rem; color:var(--text-dim);">${row.secondary || '—'}</span><span style="font-size:0.74rem; color:var(--accent); font-weight:700; text-align:right;">${row.badge || '—'}</span></div>`).join('')}</div>` : `<div style="padding:26px; text-align:center; opacity:0.45; font-size:0.82rem;">${emptyText}</div>`;
     const alertHTML = model.alerts.length > 0 ? `<section class="emp-card glass" style="padding:18px 20px; border-radius:18px; border:1px solid var(--border);"><h3 style="margin:0 0 12px; font-size:0.88rem; font-weight:800;">Alertas</h3><div style="display:grid; gap:10px;">${model.alerts.map(alert => `<div class="emp-alert-box" style="display:flex; align-items:flex-start; gap:10px; padding:11px 13px; border-radius:13px; border:1px solid ${alert.level === 'danger' ? 'rgba(239,68,68,0.25)' : 'rgba(245,158,11,0.25)'}; background:${alert.level === 'danger' ? 'rgba(239,68,68,0.06)' : 'rgba(245,158,11,0.06)'};"><i class="fas ${alert.level === 'danger' ? 'fa-triangle-exclamation' : 'fa-circle-info'}" style="color:${alert.level === 'danger' ? '#dc2626' : '#d97706'};"></i><span style="font-size:0.8rem; font-weight:600; color:var(--text);">${escapeHtml(alert.text)}</span></div>`).join('')}</div></section>` : '';
-    const headerHTML = `<div class="emp-premium-header"><div class="emp-header-info"><div class="emp-avatar" style="background:var(--accent); color:white; width:52px; height:52px; border-radius:15px; display:flex; align-items:center; justify-content:center; font-size:1.3rem; font-weight:800; box-shadow:0 8px 16px rgba(0,0,0,0.08);">${escapeHtml((emp.nombre || 'E').charAt(0))}</div><div class="emp-title-block"><h2 style="margin:0; font-size:1.2rem; font-weight:800; color:var(--text);">${escapeHtml(emp.nombre)}</h2><div style="margin-top:4px; font-size:0.74rem; color:#94a3b8; font-weight:600;">${escapeHtml(emp.id_interno || 'No informado')}</div><div style="display:flex; flex-wrap:wrap; gap:8px; margin-top:10px;"><span class="status-pill ${model.typeMeta.cls}">${escapeHtml(model.typeMeta.label)}</span><span class="status-pill ${model.laborStatus.cls}">${escapeHtml(model.laborStatus.label)}</span><span class="status-pill ${model.currentRoleMeta.cls}">${escapeHtml(model.currentRoleMeta.label)}</span><span class="status-pill activo">${escapeHtml(assignedHotelLabel)}</span></div></div></div><div class="emp-header-actions" style="display:grid; gap:4px; text-align:right; max-width:230px;"><div style="font-size:0.72rem; color:var(--text-dim); font-weight:700; text-transform:uppercase;">EdiciÃ³n</div><div style="font-size:0.82rem; color:var(--text); font-weight:700;">ID protegido</div><div style="font-size:0.72rem; color:var(--text-dim); line-height:1.35;">El ID interno no se edita. El resto de datos se gestiona desde la pesta&ntilde;a Ficha.</div></div></div>`;
-    const kpiHTML = `<div class="emp-kpi-grid" style="display:grid; grid-template-columns:repeat(6, minmax(120px, 1fr)); gap:12px; margin-bottom:18px;"><div class="emp-kpi-card glass" style="padding:14px; border-radius:16px; border:1px solid var(--border);"><label style="display:block; font-size:0.6rem; font-weight:800; color:var(--text-dim); text-transform:uppercase; margin-bottom:4px;">Rol actual</label><strong style="font-size:0.98rem; color:var(--text);">${escapeHtml(model.currentRoleMeta.label)}</strong></div><div class="emp-kpi-card glass" style="padding:14px; border-radius:16px; border:1px solid var(--border);"><label style="display:block; font-size:0.6rem; font-weight:800; color:var(--text-dim); text-transform:uppercase; margin-bottom:4px;">Estado operativo</label><strong style="font-size:0.98rem; color:var(--text);">${escapeHtml(currentShiftLabel)}</strong></div><div class="emp-kpi-card glass" style="padding:14px; border-radius:16px; border:1px solid var(--border);"><label style="display:block; font-size:0.6rem; font-weight:800; color:var(--text-dim); text-transform:uppercase; margin-bottom:4px;">PrÃ³ximo turno</label><strong style="font-size:0.9rem; color:var(--text);">${escapeHtml(nextShiftLabel)}</strong></div><div class="emp-kpi-card glass" style="padding:14px; border-radius:16px; border:1px solid var(--border);"><label style="display:block; font-size:0.6rem; font-weight:800; color:var(--text-dim); text-transform:uppercase; margin-bottom:4px;">Incidencia</label><strong style="font-size:0.9rem; color:var(--text);">${escapeHtml(incidenciaLabel)}</strong></div><div class="emp-kpi-card glass" style="padding:14px; border-radius:16px; border:1px solid var(--border);"><label style="display:block; font-size:0.6rem; font-weight:800; color:var(--text-dim); text-transform:uppercase; margin-bottom:4px;">Pendientes</label><strong style="font-size:0.98rem; color:var(--text);">${model.pendingPolicy.applies ? model.periodKpis.diasPendiente : 'No aplica'}</strong></div><div class="emp-kpi-card glass" style="padding:14px; border-radius:16px; border:1px solid var(--border);"><label style="display:block; font-size:0.6rem; font-weight:800; color:var(--text-dim); text-transform:uppercase; margin-bottom:4px;">Saldo vac.</label><strong style="font-size:0.98rem; color:#10b981;">${escapeHtml(vacationBalanceLabel)}</strong></div></div>`;
+    const headerHTML = `<div class="emp-premium-header"><div class="emp-header-info"><div class="emp-avatar" style="background:var(--accent); color:white; width:52px; height:52px; border-radius:15px; display:flex; align-items:center; justify-content:center; font-size:1.3rem; font-weight:800; box-shadow:0 8px 16px rgba(0,0,0,0.08);">${escapeHtml((emp.nombre || 'E').charAt(0))}</div><div class="emp-title-block"><h2 style="margin:0; font-size:1.2rem; font-weight:800; color:var(--text);">${escapeHtml(emp.nombre)}</h2><div style="margin-top:4px; font-size:0.74rem; color:#94a3b8; font-weight:600;">${escapeHtml(emp.id_interno || 'No informado')}</div><div style="display:flex; flex-wrap:wrap; gap:8px; margin-top:10px;"><span class="status-pill ${model.typeMeta.cls}">${escapeHtml(model.typeMeta.label)}</span><span class="status-pill ${model.laborStatus.cls}">${escapeHtml(model.laborStatus.label)}</span><span class="status-pill ${model.currentRoleMeta.cls}">${escapeHtml(model.currentRoleMeta.label)}</span><span class="status-pill activo">${escapeHtml(assignedHotelLabel)}</span></div></div></div><div class="emp-header-actions" style="display:grid; gap:4px; text-align:right; max-width:230px;"><div style="font-size:0.72rem; color:var(--text-dim); font-weight:700; text-transform:uppercase;">Edición</div><div style="font-size:0.82rem; color:var(--text); font-weight:700;">ID protegido</div><div style="font-size:0.72rem; color:var(--text-dim); line-height:1.35;">El ID interno no se edita. El resto de datos se gestiona desde la pesta&ntilde;a Ficha.</div></div></div>`;
+    const kpiHTML = `<div class="emp-kpi-grid" style="display:grid; grid-template-columns:repeat(6, minmax(120px, 1fr)); gap:12px; margin-bottom:18px;"><div class="emp-kpi-card glass" style="padding:14px; border-radius:16px; border:1px solid var(--border);"><label style="display:block; font-size:0.6rem; font-weight:800; color:var(--text-dim); text-transform:uppercase; margin-bottom:4px;">Rol actual</label><strong style="font-size:0.98rem; color:var(--text);">${escapeHtml(model.currentRoleMeta.label)}</strong></div><div class="emp-kpi-card glass" style="padding:14px; border-radius:16px; border:1px solid var(--border);"><label style="display:block; font-size:0.6rem; font-weight:800; color:var(--text-dim); text-transform:uppercase; margin-bottom:4px;">Estado operativo</label><strong style="font-size:0.98rem; color:var(--text);">${escapeHtml(currentShiftLabel)}</strong></div><div class="emp-kpi-card glass" style="padding:14px; border-radius:16px; border:1px solid var(--border);"><label style="display:block; font-size:0.6rem; font-weight:800; color:var(--text-dim); text-transform:uppercase; margin-bottom:4px;">Próximo turno</label><strong style="font-size:0.9rem; color:var(--text);">${escapeHtml(nextShiftLabel)}</strong></div><div class="emp-kpi-card glass" style="padding:14px; border-radius:16px; border:1px solid var(--border);"><label style="display:block; font-size:0.6rem; font-weight:800; color:var(--text-dim); text-transform:uppercase; margin-bottom:4px;">Incidencia</label><strong style="font-size:0.9rem; color:var(--text);">${escapeHtml(incidenciaLabel)}</strong></div><div class="emp-kpi-card glass" style="padding:14px; border-radius:16px; border:1px solid var(--border);"><label style="display:block; font-size:0.6rem; font-weight:800; color:var(--text-dim); text-transform:uppercase; margin-bottom:4px;">Pendientes</label><strong style="font-size:0.98rem; color:var(--text);">${model.pendingPolicy.applies ? model.periodKpis.diasPendiente : 'No aplica'}</strong></div><div class="emp-kpi-card glass" style="padding:14px; border-radius:16px; border:1px solid var(--border);"><label style="display:block; font-size:0.6rem; font-weight:800; color:var(--text-dim); text-transform:uppercase; margin-bottom:4px;">Saldo vac.</label><strong style="font-size:0.98rem; color:#10b981;">${escapeHtml(vacationBalanceLabel)}</strong></div></div>`;
     let tabContent = '';
     if (currentTab === 'summary') {
-        tabContent = `<div style="display:grid; gap:18px;"><div class="emp-grid" style="display:grid; grid-template-columns:1.1fr 1fr; gap:18px;"><section class="emp-card glass" style="padding:20px; border-radius:18px; border:1px solid var(--border);"><h3 style="margin:0 0 14px; font-size:0.9rem; font-weight:800;">Identidad y estado</h3><div style="display:grid; gap:10px;">${window.renderEmployeeProfileField(['Hotel principal', emp.hotel || 'No informado'])}${window.renderEmployeeProfileField(['Hoteles asignados', assignedHotelLabel])}${window.renderEmployeeProfileField(['Tipo de empleado', model.typeMeta.label])}${window.renderEmployeeProfileField(['Estado laboral', model.laborStatus.label])}${window.renderEmployeeProfileField(['Rol operativo actual', model.currentRoleMeta.label])}${window.renderEmployeeProfileField(['PrÃ³ximo turno', nextShiftLabel])}${window.renderEmployeeProfileField(['Incidencia activa', incidenciaLabel])}</div></section><section class="emp-card glass" style="padding:20px; border-radius:18px; border:1px solid var(--border);"><h3 style="margin:0 0 14px; font-size:0.9rem; font-weight:800;">KPIs del periodo</h3><div style="display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:10px;">${window.renderEmployeeProfileField(['Turnos base', model.periodKpis.turnosBase])}${window.renderEmployeeProfileField(['Turnos trabajados', model.periodKpis.turnosTrabajados])}${window.renderEmployeeProfileField(['MaÃ±anas', model.periodKpis.mananas])}${window.renderEmployeeProfileField(['Tardes', model.periodKpis.tardes])}${window.renderEmployeeProfileField(['Noches', model.periodKpis.noches])}${window.renderEmployeeProfileField(['Descansos', model.periodKpis.descansos])}${window.renderEmployeeProfileField(['Vacaciones', model.periodKpis.vacaciones])}${window.renderEmployeeProfileField(['Bajas / Permisos', model.periodKpis.bajasPermisos])}${window.renderEmployeeProfileField(['Cambios de turno', model.periodKpis.cambiosTurno])}${window.renderEmployeeProfileField(['Sustituciones realizadas', model.periodKpis.sustitucionesRealizadas])}${window.renderEmployeeProfileField(['Sustituciones recibidas', model.periodKpis.sustitucionesRecibidas])}${window.renderEmployeeProfileField(['Refuerzos explÃ­citos', model.periodKpis.refuerzosExplicitos])}</div></section></div><section class="emp-card glass" style="padding:20px; border-radius:18px; border:1px solid var(--border);"><h3 style="margin:0 0 14px; font-size:0.9rem; font-weight:800;">Vision anual ${refDate.getFullYear()}</h3><div style="display:grid; grid-template-columns:repeat(3, minmax(0, 1fr)); gap:10px;">${window.renderEmployeeProfileField(['Vacaciones previstas', model.vacaciones.applies ? `${model.annualKpis.vacacionesPlanificadas} dias` : 'No aplica'])}${window.renderEmployeeProfileField(['Bajas / Permisos', model.annualKpis.bajasPermisos])}${window.renderEmployeeProfileField(['Cambios de turno', model.annualKpis.cambiosTurno])}${window.renderEmployeeProfileField(['Sustituciones realizadas', model.annualKpis.sustitucionesRealizadas])}${window.renderEmployeeProfileField(['Sustituciones recibidas', model.annualKpis.sustitucionesRecibidas])}${window.renderEmployeeProfileField(['Refuerzos explÃ­citos', model.annualKpis.refuerzosExplicitos])}</div></section><section class="emp-card glass" style="padding:20px; border-radius:18px; border:1px solid var(--border);"><h3 style="margin:0 0 14px; font-size:0.9rem; font-weight:800;">Pendientes y balance</h3><div style="display:grid; grid-template-columns:repeat(4, minmax(0, 1fr)); gap:10px;">${window.renderEmployeeProfileField(['Cuenta para pendientes', model.pendingPolicy.applies ? 'SÃ­' : 'No'])}${window.renderEmployeeProfileField(['DÃ­as con pendiente', model.pendingPolicy.applies ? model.periodKpis.diasPendiente : 'No aplica'])}${window.renderEmployeeProfileField(['Descanso pendiente', model.pendingPolicy.applies ? model.resumenGlobal.descansoPendiente : 'No aplica'])}${window.renderEmployeeProfileField(['Saldo vacacional neto', vacationBalanceLabel])}</div></section>${alertHTML}</div>`;
+        tabContent = `<div style="display:grid; gap:18px;"><div class="emp-grid" style="display:grid; grid-template-columns:1.1fr 1fr; gap:18px;"><section class="emp-card glass" style="padding:20px; border-radius:18px; border:1px solid var(--border);"><h3 style="margin:0 0 14px; font-size:0.9rem; font-weight:800;">Identidad y estado</h3><div style="display:grid; gap:10px;">${window.renderEmployeeProfileField(['Hotel principal', emp.hotel || 'No informado'])}${window.renderEmployeeProfileField(['Hoteles asignados', assignedHotelLabel])}${window.renderEmployeeProfileField(['Tipo de empleado', model.typeMeta.label])}${window.renderEmployeeProfileField(['Estado laboral', model.laborStatus.label])}${window.renderEmployeeProfileField(['Rol operativo actual', model.currentRoleMeta.label])}${window.renderEmployeeProfileField(['Próximo turno', nextShiftLabel])}${window.renderEmployeeProfileField(['Incidencia activa', incidenciaLabel])}</div></section><section class="emp-card glass" style="padding:20px; border-radius:18px; border:1px solid var(--border);"><h3 style="margin:0 0 14px; font-size:0.9rem; font-weight:800;">KPIs del periodo</h3><div style="display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:10px;">${window.renderEmployeeProfileField(['Turnos base', model.periodKpis.turnosBase])}${window.renderEmployeeProfileField(['Turnos trabajados', model.periodKpis.turnosTrabajados])}${window.renderEmployeeProfileField(['Mañanas', model.periodKpis.mananas])}${window.renderEmployeeProfileField(['Tardes', model.periodKpis.tardes])}${window.renderEmployeeProfileField(['Noches', model.periodKpis.noches])}${window.renderEmployeeProfileField(['Descansos', model.periodKpis.descansos])}${window.renderEmployeeProfileField(['Vacaciones', model.periodKpis.vacaciones])}${window.renderEmployeeProfileField(['Bajas / Permisos', model.periodKpis.bajasPermisos])}${window.renderEmployeeProfileField(['Cambios de turno', model.periodKpis.cambiosTurno])}${window.renderEmployeeProfileField(['Sustituciones realizadas', model.periodKpis.sustitucionesRealizadas])}${window.renderEmployeeProfileField(['Sustituciones recibidas', model.periodKpis.sustitucionesRecibidas])}${window.renderEmployeeProfileField(['Refuerzos explícitos', model.periodKpis.refuerzosExplicitos])}</div></section></div><section class="emp-card glass" style="padding:20px; border-radius:18px; border:1px solid var(--border);"><h3 style="margin:0 0 14px; font-size:0.9rem; font-weight:800;">Vision anual ${refDate.getFullYear()}</h3><div style="display:grid; grid-template-columns:repeat(3, minmax(0, 1fr)); gap:10px;">${window.renderEmployeeProfileField(['Vacaciones previstas', model.vacaciones.applies ? `${model.annualKpis.vacacionesPlanificadas} dias` : 'No aplica'])}${window.renderEmployeeProfileField(['Bajas / Permisos', model.annualKpis.bajasPermisos])}${window.renderEmployeeProfileField(['Cambios de turno', model.annualKpis.cambiosTurno])}${window.renderEmployeeProfileField(['Sustituciones realizadas', model.annualKpis.sustitucionesRealizadas])}${window.renderEmployeeProfileField(['Sustituciones recibidas', model.annualKpis.sustitucionesRecibidas])}${window.renderEmployeeProfileField(['Refuerzos explícitos', model.annualKpis.refuerzosExplicitos])}</div></section><section class="emp-card glass" style="padding:20px; border-radius:18px; border:1px solid var(--border);"><h3 style="margin:0 0 14px; font-size:0.9rem; font-weight:800;">Pendientes y balance</h3><div style="display:grid; grid-template-columns:repeat(4, minmax(0, 1fr)); gap:10px;">${window.renderEmployeeProfileField(['Cuenta para pendientes', model.pendingPolicy.applies ? 'Sí' : 'No'])}${window.renderEmployeeProfileField(['Días con pendiente', model.pendingPolicy.applies ? model.periodKpis.diasPendiente : 'No aplica'])}${window.renderEmployeeProfileField(['Descanso pendiente', model.pendingPolicy.applies ? model.resumenGlobal.descansoPendiente : 'No aplica'])}${window.renderEmployeeProfileField(['Saldo vacacional neto', vacationBalanceLabel])}</div></section>${alertHTML}</div>`;
     } else if (currentTab === 'profile') {
         tabContent = window.renderEmployeeProfileEditForm(emp, model);
     } else if (currentTab === 'turns') {
-        const tableRows = monthRows.map(day => { const finalMeta = window.employeeProfileShiftCodeMeta(day.turno || day.detalle?.turno); const baseMeta = window.employeeProfileShiftCodeMeta(day.turnoBase || day.detalle?.turnoBase); return { fecha: day.fecha, main: `<strong>${escapeHtml(day.diaSemana || new Date(`${day.fecha}T12:00:00`).toLocaleDateString('es-ES', { weekday: 'short' }))}</strong> Â· ${escapeHtml(emp.hotel || model.hotelActual || 'No informado')}`, secondary: `Base: ${escapeHtml(baseMeta.code)} Â· Resuelto: ${escapeHtml(finalMeta.code)}${day.cambio ? ' ðŸ”„' : ''}${finalMeta.code === 'N' ? ' ðŸŒ™' : ''}${day.incidencia ? ` Â· ${escapeHtml(window.employeeProfileEventLabel(day.incidencia))}` : ''}`, badge: escapeHtml(day.detalle?.origen || day.incidencia?.tipo || 'base') }; });
+        const tableRows = monthRows.map(day => { const finalMeta = window.employeeProfileShiftCodeMeta(day.turno || day.detalle?.turno); const baseMeta = window.employeeProfileShiftCodeMeta(day.turnoBase || day.detalle?.turnoBase); return { fecha: day.fecha, main: `<strong>${escapeHtml(day.diaSemana || new Date(`${day.fecha}T12:00:00`).toLocaleDateString('es-ES', { weekday: 'short' }))}</strong> · ${escapeHtml(emp.hotel || model.hotelActual || 'No informado')}`, secondary: `Base: ${escapeHtml(baseMeta.code)} · Resuelto: ${escapeHtml(finalMeta.code)}${day.cambio ? ' ðŸ”„' : ''}${finalMeta.code === 'N' ? ' ðŸŒ™' : ''}${day.incidencia ? ` · ${escapeHtml(window.employeeProfileEventLabel(day.incidencia))}` : ''}`, badge: escapeHtml(day.detalle?.origen || day.incidencia?.tipo || 'base') }; });
         tabContent = `<div style="display:grid; grid-template-columns:1.2fr 0.9fr; gap:18px; align-items:start;"><section class="emp-card glass" style="padding:20px; border-radius:18px; border:1px solid var(--border);"><div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;"><div><h3 style="margin:0; font-size:0.9rem; font-weight:800;">Turnos del periodo</h3><div style="font-size:0.72rem; color:var(--text-dim); font-weight:700; margin-top:4px;">Navegacion mensual</div></div><div style="display:flex; gap:8px;"><button onclick="window.moveEmployeeProfilePeriod(-1)" class="btn-premium" aria-label="Mes anterior" title="Mes anterior" style="padding:8px 12px; min-width:118px; border-radius:12px; font-weight:800;"><i class="fas fa-chevron-left" style="margin-right:8px;"></i>Anterior</button><button onclick="window.moveEmployeeProfilePeriod(1)" class="btn-premium" aria-label="Mes siguiente" title="Mes siguiente" style="padding:8px 12px; min-width:118px; border-radius:12px; font-weight:800;">Siguiente<i class="fas fa-chevron-right" style="margin-left:8px;"></i></button></div></div><div style="margin-bottom:12px; font-size:0.8rem; color:var(--accent); font-weight:800; text-transform:capitalize;">${titlePeriod}</div>${renderRowsTable(tableRows, 'No hay turnos para este periodo.')}</section><section class="emp-card glass" style="padding:20px; border-radius:18px; border:1px solid var(--border);"><h3 style="margin:0 0 14px; font-size:0.9rem; font-weight:800;">Calendario</h3>${window.renderEmployeeProfileCalendar(model)}</section></div>`;
     } else if (currentTab === 'vacations') {
-        const vacRows = (model.yearGroupedVacs || []).sort((a, b) => String(a.fecha_inicio || '').localeCompare(String(b.fecha_inicio || ''))).map(ev => { const days = Math.max(1, Math.round((new Date(`${ev.fecha_fin || ev.fecha_inicio}T12:00:00`) - new Date(`${ev.fecha_inicio}T12:00:00`)) / 86400000) + 1); return { fecha: ev.fecha_inicio, main: `<strong>${escapeHtml(window.employeeProfileDateRangeLabel(ev.fecha_inicio, ev.fecha_fin || ev.fecha_inicio))}</strong>`, secondary: `${days} dÃ­as naturales${ev.isGroup ? ' Â· agrupado' : ''} Â· ${refDate.getFullYear()}`, badge: escapeHtml(ev.estado || 'activo') }; });
-        tabContent = `<div style="display:grid; grid-template-columns:1.1fr 0.9fr; gap:18px;"><section class="emp-card glass" style="padding:20px; border-radius:18px; border:1px solid var(--border);"><h3 style="margin:0 0 14px; font-size:0.9rem; font-weight:800;">Vacaciones ${refDate.getFullYear()}</h3>${renderRowsTable(vacRows, 'No hay vacaciones registradas en el aÃ±o en curso.')}</section><section class="emp-card glass" style="padding:20px; border-radius:18px; border:1px solid var(--border);"><h3 style="margin:0 0 14px; font-size:0.9rem; font-weight:800;">Saldo vacacional</h3><div style="display:grid; gap:10px;">${window.renderEmployeeProfileField(['Derecho anual', model.vacaciones.applies ? `${model.vacaciones.derechoAnual} dias` : 'No aplica'])}${window.renderEmployeeProfileField(['Consumidas', model.vacaciones.applies ? `${model.vacaciones.usadas} dias` : 'No aplica'])}${window.renderEmployeeProfileField(['Previstas aï¿½o', model.vacaciones.applies ? `${model.annualKpis.vacacionesPlanificadas} dias` : 'No aplica'])}${window.renderEmployeeProfileField(['Previstas futuras', model.vacaciones.applies ? `${model.vacaciones.previstas} dias` : 'No aplica'])}${window.renderEmployeeProfileField(['Ajustes', model.vacaciones.applies ? `${model.vacaciones.saldo >= 0 ? '+' : ''}${model.vacaciones.saldo} dias` : 'No aplica'])}${window.renderEmployeeProfileField(['Saldo neto', vacationBalanceLabel])}</div></section></div>`;
+        const vacRows = (model.yearGroupedVacs || []).sort((a, b) => String(a.fecha_inicio || '').localeCompare(String(b.fecha_inicio || ''))).map(ev => { const days = Math.max(1, Math.round((new Date(`${ev.fecha_fin || ev.fecha_inicio}T12:00:00`) - new Date(`${ev.fecha_inicio}T12:00:00`)) / 86400000) + 1); return { fecha: ev.fecha_inicio, main: `<strong>${escapeHtml(window.employeeProfileDateRangeLabel(ev.fecha_inicio, ev.fecha_fin || ev.fecha_inicio))}</strong>`, secondary: `${days} días naturales${ev.isGroup ? ' · agrupado' : ''} · ${refDate.getFullYear()}`, badge: escapeHtml(ev.estado || 'activo') }; });
+        tabContent = `<div style="display:grid; grid-template-columns:1.1fr 0.9fr; gap:18px;"><section class="emp-card glass" style="padding:20px; border-radius:18px; border:1px solid var(--border);"><h3 style="margin:0 0 14px; font-size:0.9rem; font-weight:800;">Vacaciones ${refDate.getFullYear()}</h3>${renderRowsTable(vacRows, 'No hay vacaciones registradas en el año en curso.')}</section><section class="emp-card glass" style="padding:20px; border-radius:18px; border:1px solid var(--border);"><h3 style="margin:0 0 14px; font-size:0.9rem; font-weight:800;">Saldo vacacional</h3><div style="display:grid; gap:10px;">${window.renderEmployeeProfileField(['Derecho anual', model.vacaciones.applies ? `${model.vacaciones.derechoAnual} dias` : 'No aplica'])}${window.renderEmployeeProfileField(['Consumidas', model.vacaciones.applies ? `${model.vacaciones.usadas} dias` : 'No aplica'])}${window.renderEmployeeProfileField(['Previstas aï¿½o', model.vacaciones.applies ? `${model.annualKpis.vacacionesPlanificadas} dias` : 'No aplica'])}${window.renderEmployeeProfileField(['Previstas futuras', model.vacaciones.applies ? `${model.vacaciones.previstas} dias` : 'No aplica'])}${window.renderEmployeeProfileField(['Ajustes', model.vacaciones.applies ? `${model.vacaciones.saldo >= 0 ? '+' : ''}${model.vacaciones.saldo} dias` : 'No aplica'])}${window.renderEmployeeProfileField(['Saldo neto', vacationBalanceLabel])}</div></section></div>`;
     } else if (currentTab === 'leaves') {
         const selectedYear = refDate.getFullYear();
         const yearStart = `${selectedYear}-01-01`;
@@ -7630,29 +7517,29 @@ window.renderEmployeeProfile = () => {
             const days = countNaturalDays(ev);
             return {
                 fecha: ev.fecha_inicio,
-                main: `<strong>${escapeHtml(window.employeeProfileEventLabel(ev))}</strong> Â· ${escapeHtml(window.employeeProfileDateRangeLabel(ev.fecha_inicio, ev.fecha_fin || ev.fecha_inicio))}`,
-                secondary: `${days} dia${days === 1 ? '' : 's'} naturales Â· ${escapeHtml(ev.observaciones || 'Sin observaciones')}`,
+                main: `<strong>${escapeHtml(window.employeeProfileEventLabel(ev))}</strong> · ${escapeHtml(window.employeeProfileDateRangeLabel(ev.fecha_inicio, ev.fecha_fin || ev.fecha_inicio))}`,
+                secondary: `${days} dia${days === 1 ? '' : 's'} naturales · ${escapeHtml(ev.observaciones || 'Sin observaciones')}`,
                 badge: escapeHtml(ev.estado || 'activo')
             };
         });
         const totalDays = leaveEventsYear.reduce((acc, ev) => acc + countNaturalDays(ev), 0);
         const yearTabs = `<div class="emp-year-tabs">${years.map(year => `<button type="button" class="emp-year-tab ${year === selectedYear ? 'active' : ''}" onclick="window.setEmployeeProfileYear(${year})">${year}</button>`).join('')}</div>`;
-        tabContent = `<section class="emp-card glass emp-year-card" style="padding:20px; border-radius:18px; border:1px solid var(--border);"><div class="emp-year-header"><div><h3 style="margin:0 0 6px; font-size:0.9rem; font-weight:800;">Bajas / Permisos ${selectedYear}</h3><div class="emp-year-subtitle">Mostrando todo el aÃ±o natural, del 01/01/${selectedYear} al 31/12/${selectedYear}.</div></div>${yearTabs}</div><div class="emp-leave-summary"><span><strong>${leaveEventsYear.length}</strong> registros</span><span><strong>${totalDays}</strong> dÃ­as naturales</span></div>${renderRowsTable(leaveRows, `No hay bajas ni permisos registrados en ${selectedYear}.`)}</section>`;
+        tabContent = `<section class="emp-card glass emp-year-card" style="padding:20px; border-radius:18px; border:1px solid var(--border);"><div class="emp-year-header"><div><h3 style="margin:0 0 6px; font-size:0.9rem; font-weight:800;">Bajas / Permisos ${selectedYear}</h3><div class="emp-year-subtitle">Mostrando todo el año natural, del 01/01/${selectedYear} al 31/12/${selectedYear}.</div></div>${yearTabs}</div><div class="emp-leave-summary"><span><strong>${leaveEventsYear.length}</strong> registros</span><span><strong>${totalDays}</strong> días naturales</span></div>${renderRowsTable(leaveRows, `No hay bajas ni permisos registrados en ${selectedYear}.`)}</section>`;
     } else if (currentTab === 'changes') {
-        const changeRows = model.cambioEvents.map(ev => ({ fecha: ev.fecha_inicio, main: `<strong>${escapeHtml(window.employeeProfileEventLabel(ev))}</strong> Â· ${escapeHtml(window.employeeProfileDateRangeLabel(ev.fecha_inicio, ev.fecha_fin || ev.fecha_inicio))}`, secondary: `${escapeHtml(ev.observaciones || 'Sin observaciones')} Â· origen ${escapeHtml(window.employeeProfileReadableSource(ev))}`, badge: `${escapeHtml(ev.estado || 'activo')} ðŸ”„` }));
+        const changeRows = model.cambioEvents.map(ev => ({ fecha: ev.fecha_inicio, main: `<strong>${escapeHtml(window.employeeProfileEventLabel(ev))}</strong> · ${escapeHtml(window.employeeProfileDateRangeLabel(ev.fecha_inicio, ev.fecha_fin || ev.fecha_inicio))}`, secondary: `${escapeHtml(ev.observaciones || 'Sin observaciones')} · origen ${escapeHtml(window.employeeProfileReadableSource(ev))}`, badge: `${escapeHtml(ev.estado || 'activo')} ðŸ”„` }));
         tabContent = `<section class="emp-card glass" style="padding:20px; border-radius:18px; border:1px solid var(--border);"><h3 style="margin:0 0 14px; font-size:0.9rem; font-weight:800;">Cambios de turno</h3>${renderRowsTable(changeRows, 'No hay cambios de turno en este periodo.')}</section>`;
     } else if (currentTab === 'substitutions') {
-        const doneRows = model.substitutionsDone.map(ev => ({ fecha: ev.fecha_inicio, main: `<strong>${escapeHtml(window.employeeProfileEventLabel(ev))}</strong> Â· cubre a ${escapeHtml(ev.empleado_id || 'No informado')}`, secondary: `${escapeHtml(window.employeeProfileDateRangeLabel(ev.fecha_inicio, ev.fecha_fin || ev.fecha_inicio))} Â· hotel ${escapeHtml(window.getEventoHotel ? window.getEventoHotel(ev) : (ev.hotel || ev.hotel_origen || ev.hotel_destino || emp.hotel || 'No informado'))}`, badge: escapeHtml(ev.id || ev.evento_id || 'sin id') }));
-        const receivedRows = model.substitutionsReceived.map(ev => ({ fecha: ev.fecha_inicio, main: `<strong>${escapeHtml(window.employeeProfileEventLabel(ev))}</strong> Â· sustituye ${escapeHtml(ev.empleado_destino_id || ev.sustituto_id || ev.payload?.sustituto || 'No informado')}`, secondary: `${escapeHtml(window.employeeProfileDateRangeLabel(ev.fecha_inicio, ev.fecha_fin || ev.fecha_inicio))} Â· motivo ${escapeHtml(ev.observaciones || 'Sin observaciones')}`, badge: escapeHtml(ev.id || ev.evento_id || 'sin id') }));
+        const doneRows = model.substitutionsDone.map(ev => ({ fecha: ev.fecha_inicio, main: `<strong>${escapeHtml(window.employeeProfileEventLabel(ev))}</strong> · cubre a ${escapeHtml(ev.empleado_id || 'No informado')}`, secondary: `${escapeHtml(window.employeeProfileDateRangeLabel(ev.fecha_inicio, ev.fecha_fin || ev.fecha_inicio))} · hotel ${escapeHtml(window.getEventoHotel ? window.getEventoHotel(ev) : (ev.hotel || ev.hotel_origen || ev.hotel_destino || emp.hotel || 'No informado'))}`, badge: escapeHtml(ev.id || ev.evento_id || 'sin id') }));
+        const receivedRows = model.substitutionsReceived.map(ev => ({ fecha: ev.fecha_inicio, main: `<strong>${escapeHtml(window.employeeProfileEventLabel(ev))}</strong> · sustituye ${escapeHtml(ev.empleado_destino_id || ev.sustituto_id || ev.payload?.sustituto || 'No informado')}`, secondary: `${escapeHtml(window.employeeProfileDateRangeLabel(ev.fecha_inicio, ev.fecha_fin || ev.fecha_inicio))} · motivo ${escapeHtml(ev.observaciones || 'Sin observaciones')}`, badge: escapeHtml(ev.id || ev.evento_id || 'sin id') }));
         tabContent = `<div style="display:grid; grid-template-columns:1fr 1fr; gap:18px;"><section class="emp-card glass" style="padding:20px; border-radius:18px; border:1px solid var(--border);"><h3 style="margin:0 0 14px; font-size:0.9rem; font-weight:800;">Sustituciones realizadas</h3>${renderRowsTable(doneRows, 'No ha realizado sustituciones en este periodo.')}</section><section class="emp-card glass" style="padding:20px; border-radius:18px; border:1px solid var(--border);"><h3 style="margin:0 0 14px; font-size:0.9rem; font-weight:800;">Sustituciones recibidas</h3>${renderRowsTable(receivedRows, 'No ha recibido sustituciones en este periodo.')}</section></div>`;
     } else if (currentTab === 'reinforcements') {
-        const refRows = model.explicitRefuerzoEvents.map(ev => ({ fecha: ev.fecha_inicio, main: `<strong>${escapeHtml(window.employeeProfileDateRangeLabel(ev.fecha_inicio, ev.fecha_fin || ev.fecha_inicio))}</strong> Â· ${escapeHtml(window.getEventoHotel ? window.getEventoHotel(ev) : (ev.hotel || ev.hotel_origen || ev.hotel_destino || emp.hotel || 'No informado'))}`, secondary: `Turno ${escapeHtml(ev.turno || ev.payload?.turno || 'No informado')} Â· origen ${escapeHtml(window.employeeProfileReadableSource(ev))}`, badge: escapeHtml(ev.id || ev.evento_id || 'sin id') }));
-        tabContent = `<section class="emp-card glass" style="padding:20px; border-radius:18px; border:1px solid var(--border);"><h3 style="margin:0 0 14px; font-size:0.9rem; font-weight:800;">Refuerzos explÃ­citos</h3>${renderRowsTable(refRows, 'No hay refuerzos explÃ­citos para este empleado en el periodo.')}</section>`;
+        const refRows = model.explicitRefuerzoEvents.map(ev => ({ fecha: ev.fecha_inicio, main: `<strong>${escapeHtml(window.employeeProfileDateRangeLabel(ev.fecha_inicio, ev.fecha_fin || ev.fecha_inicio))}</strong> · ${escapeHtml(window.getEventoHotel ? window.getEventoHotel(ev) : (ev.hotel || ev.hotel_origen || ev.hotel_destino || emp.hotel || 'No informado'))}`, secondary: `Turno ${escapeHtml(ev.turno || ev.payload?.turno || 'No informado')} · origen ${escapeHtml(window.employeeProfileReadableSource(ev))}`, badge: escapeHtml(ev.id || ev.evento_id || 'sin id') }));
+        tabContent = `<section class="emp-card glass" style="padding:20px; border-radius:18px; border:1px solid var(--border);"><h3 style="margin:0 0 14px; font-size:0.9rem; font-weight:800;">Refuerzos explícitos</h3>${renderRowsTable(refRows, 'No hay refuerzos explícitos para este empleado en el periodo.')}</section>`;
     } else if (currentTab === 'history') {
-        const historyRows = (model.yearGroupedEvents || model.groupedEvents || []).slice().sort((a, b) => String(b.fecha_inicio || '').localeCompare(String(a.fecha_inicio || ''))).map(ev => ({ fecha: ev.fecha_inicio, main: `<strong>${escapeHtml(window.employeeProfileEventLabel(ev))}</strong> Â· ${escapeHtml(window.employeeProfileDateRangeLabel(ev.fecha_inicio, ev.fecha_fin || ev.fecha_inicio))}`, secondary: `${escapeHtml(window.employeeProfileActorLabel(ev))} Â· ${escapeHtml(ev.observaciones || 'Sin observaciones')} Â· origen ${escapeHtml(window.employeeProfileReadableSource(ev))}`, badge: escapeHtml(ev.estado || 'activo') }));
-        tabContent = `<section class="emp-card glass" style="padding:20px; border-radius:18px; border:1px solid var(--border);"><h3 style="margin:0 0 14px; font-size:0.9rem; font-weight:800;">Historial</h3>${renderRowsTable(historyRows, 'No hay histÃ³rico de eventos para este empleado.')}</section>`;
+        const historyRows = (model.yearGroupedEvents || model.groupedEvents || []).slice().sort((a, b) => String(b.fecha_inicio || '').localeCompare(String(a.fecha_inicio || ''))).map(ev => ({ fecha: ev.fecha_inicio, main: `<strong>${escapeHtml(window.employeeProfileEventLabel(ev))}</strong> · ${escapeHtml(window.employeeProfileDateRangeLabel(ev.fecha_inicio, ev.fecha_fin || ev.fecha_inicio))}`, secondary: `${escapeHtml(window.employeeProfileActorLabel(ev))} · ${escapeHtml(ev.observaciones || 'Sin observaciones')} · origen ${escapeHtml(window.employeeProfileReadableSource(ev))}`, badge: escapeHtml(ev.estado || 'activo') }));
+        tabContent = `<section class="emp-card glass" style="padding:20px; border-radius:18px; border:1px solid var(--border);"><h3 style="margin:0 0 14px; font-size:0.9rem; font-weight:800;">Historial</h3>${renderRowsTable(historyRows, 'No hay histórico de eventos para este empleado.')}</section>`;
     }
-    body.innerHTML = `<div class="employee-profile-container" style="padding:10px;">${headerHTML}${kpiHTML}<div class="emp-content-area" style="min-height:400px;">${tabContent}</div><div style="margin-top:24px; padding-top:14px; border-top:1px solid var(--border); font-size:0.66rem; color:var(--text-dim); display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap;"><span>ID tÃ©cnico: ${escapeHtml(emp.id || 'N/A')}</span><span>UUID: ${escapeHtml(emp.uuid || 'N/A')}</span><span>Tipo estructural: ${escapeHtml(model.structuralType || 'fijo')}</span></div></div>`;
+    body.innerHTML = `<div class="employee-profile-container" style="padding:10px;">${headerHTML}${kpiHTML}<div class="emp-content-area" style="min-height:400px;">${tabContent}</div><div style="margin-top:24px; padding-top:14px; border-top:1px solid var(--border); font-size:0.66rem; color:var(--text-dim); display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap;"><span>ID técnico: ${escapeHtml(emp.id || 'N/A')}</span><span>UUID: ${escapeHtml(emp.uuid || 'N/A')}</span><span>Tipo estructural: ${escapeHtml(model.structuralType || 'fijo')}</span></div></div>`;
     } catch (e) {
         console.error('[EMP PROFILE RENDER ERROR]', e);
         body.innerHTML = `<div class="employee-profile-container" style="padding:24px;"><section class="emp-card glass" style="padding:20px; border-radius:18px; border:1px solid var(--border);"><h3 style="margin:0 0 8px; font-size:0.95rem; font-weight:900; color:#dc2626;">No se pudo cargar la ficha</h3><div style="font-size:0.8rem; color:var(--text-dim); font-weight:700;">${escapeHtml(e.message || String(e))}</div></section></div>`;
@@ -7722,7 +7609,7 @@ document.addEventListener('DOMContentLoaded', () => {
     setTimeout(window.renderDashboard, 1000);
     if (window.TurnosDB?.initRealtime) window.TurnosDB.initRealtime();
     
-    // Polling de badges cada 30s (mÃ¡s el tiempo real si estÃ¡ activo)
+    // Polling de badges cada 30s (más el tiempo real si está activo)
     window.updateSidebarBadges();
     setInterval(window.updateSidebarBadges, 30000);
 });
@@ -7730,7 +7617,7 @@ document.addEventListener('DOMContentLoaded', () => {
 // INTEGRITY CHECK
 console.log("[Admin] Validando carga v13.3...");
 ["isoDate", "switchSection", "loadAdminExcelSourceRows", "populateEmployees", "renderDashboard", "renderRequests"].forEach(fn => {
-    if (typeof window[fn] !== "function") console.error("[Admin ERROR] window." + fn + " no estÃ¡ definida.");
+    if (typeof window[fn] !== "function") console.error("[Admin ERROR] window." + fn + " no está definida.");
 });
 
 window.cancelVacationGroup = async (idx) => {
@@ -7739,7 +7626,7 @@ window.cancelVacationGroup = async (idx) => {
     
     const count = p.ids ? p.ids.length : 1;
     const msg = count > 1 
-        ? `Vas a anular ${p.days} dÃ­as de vacaciones de ${p.empId} del ${window.fmtDateLegacy(p.start)} al ${window.fmtDateLegacy(p.end)}. Â¿Continuar?`
+        ? `Vas a anular ${p.days} días de vacaciones de ${p.empId} del ${window.fmtDateLegacy(p.start)} al ${window.fmtDateLegacy(p.end)}. Â¿Continuar?`
         : `Â¿Anular las vacaciones de ${p.empId}?`;
         
     if (!confirm(msg)) return;
@@ -7755,8 +7642,8 @@ window.cancelVacationGroup = async (idx) => {
 
 window.manageBajaGroup = async (id, ids) => {
     if (ids && ids.length > 1) {
-        if (confirm(`Este periodo consta de ${ids.length} eventos diarios agrupados. Â¿Deseas gestionar el periodo completo?\n\n(Pulsa Cancelar si prefieres gestionar solo el dÃ­a inicial)`)) {
-            // Por ahora, como no hay ediciÃ³n masiva, abrimos el primero pero avisamos
+        if (confirm(`Este periodo consta de ${ids.length} eventos diarios agrupados. Â¿Deseas gestionar el periodo completo?\n\n(Pulsa Cancelar si prefieres gestionar solo el día inicial)`)) {
+            // Por ahora, como no hay edición masiva, abrimos el primero pero avisamos
             window._editingGroupIds = ids;
         }
     }

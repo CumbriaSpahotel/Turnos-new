@@ -20,6 +20,17 @@ console.log("[ShiftResolver] Iniciando carga v5.0...");
             .toLowerCase();
     };
 
+    window.normalizePersonKey = window.normalizePersonKey || ((nombre) => {
+        if (nombre === null || nombre === undefined) return '';
+        let s = String(nombre);
+        s = s.replace(/<[^>]*>/g, ' ');
+        s = s.replace(/[\u00A0\u202F]/g, ' ');
+        s = s.replace(/[\u200B-\u200D\uFEFF]/g, '');
+        s = s.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+        s = s.replace(/\s+/g, ' ').trim().toLowerCase();
+        return s;
+    });
+
     window.isPlaceholderId = (id) => {
         if (!id) return true;
         const norm = window.normalizeId(id);
@@ -140,7 +151,7 @@ console.log("[ShiftResolver] Iniciando carga v5.0...");
     window.normalizeEstado = (value) => {
         const v = String(value || '').trim().toLowerCase();
         if (!v) return 'activo';
-        if (['anulado', 'anulada', 'rechazado', 'rechazada', 'cancelado', 'cancelada'].includes(v)) return 'anulado';
+        if (['anulado', 'anulada', 'rechazado', 'rechazada', 'cancelado', 'cancelada', 'denegado', 'denegada'].includes(v)) return 'anulado';
         if (['finalizado', 'finalizada', 'completado', 'completada', 'ok', 'aprobado', 'aprobada', 'activo'].includes(v)) return 'activo';
         return 'activo';
     };
@@ -175,9 +186,9 @@ console.log("[ShiftResolver] Iniciando carga v5.0...");
         return [
             evento.empleado_id, evento.empleado_a_id, evento.origen_id,
             evento.empleado, evento.empleado_nombre, evento.nombre,
-            evento.titular, evento.titular_id, evento.id_empleado,
+            evento.titular, evento.titular_id, evento.id_empleado, evento.solicitante, evento.origen,
             evento.participante_a, p.empleado_id, p.solicitante,
-            p.solicitante_id, p.titular, p.titular_id
+            p.solicitante_id, p.titular, p.titular_id, p.origen
         ].filter(Boolean);
     };
 
@@ -187,17 +198,64 @@ console.log("[ShiftResolver] Iniciando carga v5.0...");
         const p = evento.payload || {};
         return [
             evento.empleado_destino_id, evento.empleado_b_id, evento.destino_id,
-            evento.sustituto_id, evento.empleado_destino, evento.empleado_destino_nombre,
+            evento.destino, evento.sustituto_id, evento.empleado_destino, evento.empleado_destino_nombre,
             evento.sustituto, evento.sustituto_nombre, evento.participante_b,
-            evento.companero, evento.destinatario, p.empleado_destino_id,
-            p.empleado_b_id, p.destino_id, p.sustituto_id, p.empleado_destino,
+            evento.companero, evento['compañero'], evento.participante_destino, evento.destinatario, p.empleado_destino_id,
+            p.empleado_b_id, p.destino_id, p.destino, p.sustituto_id, p.empleado_destino,
             p.empleado_destino_nombre, p.sustituto, p.sustituto_nombre,
-            p.participante_b, p.companero, p['compa\u00f1ero'],
+            p.participante_b, p.participante_destino, p.companero, p['compa\u00f1ero'],
             p.companero_id, p.destinatario, p.destinatario_id
         ].filter(Boolean);
     };
 
     window.getEventDestinationRaw = (evento = {}) => window.getEventDestinationCandidates(evento)[0] || '';
+
+    /**
+     * [NUEVO] Unificación de la normalización de eventos de cambio/intercambio.
+     * Asegura que siempre se obtenga un origen y destino coherente, priorizando nombres reales sobre '¿?'.
+     */
+    window.normalizeCambioEvento = (ev) => {
+        if (!ev) return null;
+        const originCandidates = window.getEventOriginCandidates ? window.getEventOriginCandidates(ev) : [ev.empleado_id];
+        const destinationCandidates = window.getEventDestinationCandidates ? window.getEventDestinationCandidates(ev) : [ev.empleado_destino_id];
+        
+        // Filtro para evitar placeholders como "¿?" si existe una alternativa real
+        const filterPlaceholder = (list) => list.find(c => c && !['¿?', '?', 'DESCONOCIDO', 'NULL', 'UNDEFINED'].includes(String(c).trim().toUpperCase()));
+        
+        const rawOrigin = filterPlaceholder(originCandidates) || originCandidates[0] || '';
+        const rawDestination = filterPlaceholder(destinationCandidates) || destinationCandidates[0] || '';
+
+        const normalized = {
+            id: ev.id,
+            fecha: window.normalizeDate ? window.normalizeDate(ev.fecha_inicio || ev.fecha) : (ev.fecha_inicio || ev.fecha || ''),
+            hotel: window.getEventoHotel ? window.getEventoHotel(ev) : (ev.hotel || ev.hotel_id || ''),
+            tipo: window.normalizeTipo ? window.normalizeTipo(ev.tipo) : String(ev.tipo || '').toUpperCase(),
+            estado: window.normalizeEstado ? window.normalizeEstado(ev.estado) : String(ev.estado || '').toLowerCase(),
+            origen: rawOrigin,
+            destino: rawDestination,
+            idOrig: window.normalizeId ? window.normalizeId(rawOrigin) : String(rawOrigin).toLowerCase().trim(),
+            idDest: window.normalizeId ? window.normalizeId(rawDestination) : String(rawDestination).toLowerCase().trim(),
+            turnoOrigen: (window.fixMojibake || (v=>v))(ev.turno_original || ev.turno_origen || ev.turno_solicitado || ev.payload?.turno_original || ev.payload?.turno_origen || ev.payload?.turno_solicitado || ev.payload?.origen),
+            turnoDestino: (window.fixMojibake || (v=>v))(ev.turno_nuevo || ev.turno_destino || ev.payload?.turno_nuevo || ev.payload?.turno_destino || ev.payload?.destino)
+        };
+
+        if (
+            normalized.fecha === '2026-10-21' &&
+            window.normalizePersonKey(normalized.hotel) === window.normalizePersonKey('Sercotel Guadiana') &&
+            window.normalizePersonKey(normalized.origen) === 'dani'
+        ) {
+            console.log(`[EVENTO_NORMALIZADO_TARGET]
+fecha=${normalized.fecha}
+hotel=${normalized.hotel}
+origen=${normalized.origen}
+destino=${normalized.destino}
+turnoOrigen=${normalized.turnoOrigen}
+turnoDestino=${normalized.turnoDestino}
+estado=${normalized.estado}
+tipo=${normalized.tipo}`);
+        }
+        return normalized;
+    };
 
     window.isTitularOfAbsence = (evento, empleadoId, context = {}) => {
         const target = window.normalizeId(empleadoId);
@@ -278,25 +336,35 @@ console.log("[ShiftResolver] Iniciando carga v5.0...");
         const baseIndex = context.baseIndex || context;
         const events = context.eventos || [];
         const empIdNorm = window.normalizeId(empleadoId);
-        const subEvent = events.find(ev => {
-            const fi = window.normalizeDate(ev.fecha_inicio || ev.desde || ev.fecha);
-            const ff = window.normalizeDate(ev.fecha_fin || ev.hasta || ev.fecha_inicio || ev.fecha);
-            if (fecha < fi || fecha > ff) return false;
-            const t = window.normalizeTipo(ev.tipo);
-            if (t !== 'SUSTITUCION' && t !== 'COBERTURA' && t !== 'VAC' && t !== 'BAJA' && t !== 'PERMISO') return false;
-            const destId = window.normalizeId(window.getEventDestinationRaw(ev));
-            const sustNombre = ev.sustituto ? window.normalizeId(ev.sustituto) : null;
-            return destId === empIdNorm || sustNombre === empIdNorm;
-        });
-        if (subEvent) {
-            const titularId = window.normalizeId(subEvent.empleado_id || subEvent.titular_id || subEvent.titular);
-            if (titularId) {
-                const titularTurno = window.getTurnoBaseDeEmpleado(titularId, fecha, baseIndex);
-                if (titularTurno) return titularTurno;
+        const date = window.normalizeDate(fecha);
+
+        // REGLA MAESTRA V12.8: Evitar recursividad infinita al resolver bases operativas
+        if (context._isResolvingRecursive) {
+            return window.getTurnoBaseDeEmpleado(empleadoId, fecha, baseIndex);
+        }
+
+        // Si el motor de resolución está disponible, lo usamos para obtener el estado "pre-cambio"
+        // Esto permite que los sustitutos de vacaciones/baja tengan un turno válido para intercambios
+        // incluso si el titular no está correctamente indexado en el Excel base.
+        if (window.resolveEmployeeDay) {
+            try {
+                const res = window.resolveEmployeeDay({
+                    empleadoId: empIdNorm,
+                    fecha: date,
+                    eventos: events,
+                    baseIndex: baseIndex,
+                    hotel: context.hotel || '',
+                    skipChanges: true, 
+                    _isResolvingRecursive: true
+                });
+                if (res && res.turno && res.turno !== '—') return res.turno;
+            } catch (e) {
+                if (window.DEBUG_MODE) console.warn('[ShiftResolver] Fallo en resolveEmployeeDay recursivo:', e);
             }
         }
-        const turno = window.getTurnoBaseDeEmpleado(empleadoId, fecha, baseIndex);
-        return (turno === null || turno === undefined || String(turno).trim() === '') ? null : turno;
+
+        const turno = window.getTurnoBaseDeEmpleado(empIdNorm, date, baseIndex);
+        return (turno === null || turno === undefined || String(turno).trim() === '' || turno === '—') ? null : turno;
     };
 
     window.getOperationalOccupant = (empId, date, events, hotel, context = {}) => {
@@ -328,8 +396,16 @@ console.log("[ShiftResolver] Iniciando carga v5.0...");
     };
 
     const PRIORITY_RANK = {
-        'BAJA': 1, 'VAC': 2, 'VACACIONES': 2, 'PERMISO': 3, 'PERM': 3, 'FORMACION': 4, 'FORM': 4,
-        'SUSTITUCION': 5, 'COBERTURA': 5, 'INTERCAMBIO_TURNO': 6, 'CT': 6, 'CAMBIO_TURNO': 6, 'BASE': 7, 'SIN_TURNO': 8
+        VAC: 1,
+        BAJA: 2,
+        PERMISO: 3,
+        PERM: 3,
+        FORMACION: 4,
+        SUSTITUCION: 5,
+        COBERTURA: 5,
+        INTERCAMBIO_TURNO: 6,
+        CAMBIO_TURNO: 7,
+        CT: 7
     };
 
     const canonicalShiftToken = (value) => {
@@ -359,10 +435,11 @@ console.log("[ShiftResolver] Iniciando carga v5.0...");
         return null;
     };
 
-    window.resolveEmployeeDay = ({ empleadoId, fecha, eventos = [], baseIndex = {}, hotel = '' }) => {
+    window.resolveEmployeeDay = ({ empleadoId, fecha, eventos = [], baseIndex = {}, hotel = '', skipChanges = false, _isResolvingRecursive = false }) => {
         const empId = window.normalizeId(empleadoId);
         const date = window.normalizeDate(fecha);
-        const context = { baseIndex, eventos, hotel };
+        const context = { baseIndex, eventos, hotel, _isResolvingRecursive };
+        const isDiagTarget = empId === 'proximamente' || empId === 'dani' || empId === '¿?' || empId === '?';
 
         const result = {
             empleadoId: empId,
@@ -380,7 +457,6 @@ console.log("[ShiftResolver] Iniciando carga v5.0...");
             icons: []
         };
 
-        const isDiagTarget = window.DEBUG_MODE && (window.DIAG_EMP === empId || !window.DIAG_EMP);
 
         const titularesSubstituidos = [];
         eventos.forEach(ev => {
@@ -393,13 +469,24 @@ console.log("[ShiftResolver] Iniciando carga v5.0...");
             }
         });
 
+        // PLACEHOLDER_ALIAS: La fila '¿?' es el ocupante operativo del slot 'Proximamente'
+        // Cuando el destino de un INTERCAMBIO es 'Proximamente' (u otro nombre no-placeholder),
+        // esa fila '¿?' DEBE recibir el intercambio como destino.
+        const isPlaceholderRow = empId === '¿?' || empId === '?';
         const eventosActivos = eventos.filter(ev => {
             if (window.normalizeEstado(ev.estado) === 'anulado') return false;
             if (!window.eventoAplicaEnFecha(ev, date)) return false;
             if (window.eventoPerteneceAEmpleado(ev, empId, { hotel })) return true;
             const tipo = window.normalizeTipo(ev.tipo);
             if (['INTERCAMBIO_TURNO', 'CAMBIO_TURNO', 'CT'].includes(tipo)) {
-                return titularesSubstituidos.some(tId => window.eventoPerteneceAEmpleado(ev, tId, { hotel }));
+                // Caso sustituto: el evento pertenece a un titular que esta cubierto por este empleado
+                if (titularesSubstituidos.some(tId => window.eventoPerteneceAEmpleado(ev, tId, { hotel }))) return true;
+                // Caso placeholder: la fila '¿?' recibe intercambios cuyo destino es un nombre no-placeholder
+                if (isPlaceholderRow) {
+                    const destCandidates = window.getEventDestinationCandidates(ev).map(window.normalizeId);
+                    const destHasNonPlaceholder = destCandidates.some(d => d && d !== '¿?' && d !== '?' && d !== '' && d !== 'null' && d !== 'undefined');
+                    if (destHasNonPlaceholder && window.eventoPerteneceAHotel(ev, hotel)) return true;
+                }
             }
             return false;
         });
@@ -408,6 +495,20 @@ console.log("[ShiftResolver] Iniciando carga v5.0...");
 
         for (const ev of eventosActivos) {
             const tipo = window.normalizeTipo(ev.tipo);
+            
+            if (isDiagTarget && (tipo === 'INTERCAMBIO_TURNO' || tipo === 'CAMBIO_TURNO')) {
+                console.log(`[DEBUG_INTERCAMBIO_EVENTO_RECIBIDO] emp=${empId} fecha=${date}`, {
+                    id: ev.id,
+                    tipo,
+                    estado: ev.estado,
+                    solicitante: ev.empleado_id,
+                    companero: ev.empleado_destino_id,
+                    turno_orig: ev.turno_original || ev.payload?.origen,
+                    turno_dest: ev.turno_nuevo || ev.payload?.destino,
+                    hotel_orig: ev.hotel_origen,
+                    hotel_dest: ev.hotel_destino
+                });
+            }
 
             if (['VAC', 'BAJA', 'PERMISO', 'PERM', 'FORMACION', 'FORM'].includes(tipo) && window.isTitularOfAbsence(ev, empId)) {
                 result.incidencia = tipo;
@@ -429,25 +530,52 @@ console.log("[ShiftResolver] Iniciando carga v5.0...");
                 result.origen = tipo;
                 result.turno = window.getTurnoBaseDeEmpleado(tId, date, baseIndex) || '—';
                 const coverShift = window.normalizeShiftValue(result.turno);
-                if (['BAJA', 'PERMISO', 'PERM'].includes(tipo) && coverShift && coverShift !== 'D') {
+                
+                // REGLA 📌 V12.8: Solo para Baja o Permiso. NO para Vacaciones.
+                const motivoReal = window.normalizeTipo(ev.payload?.incidencia_cubierta || ev.payload?.motivo || tipo);
+                const esBajaOPermiso = ['BAJA', 'PERM', 'IT'].includes(motivoReal);
+                const esTrabajo = coverShift && coverShift !== 'D' && coverShift !== 'VAC';
+
+                if (esBajaOPermiso && esTrabajo) {
                     result.icon = '\u{1F4CC}';
                     result.icons = [...new Set([...(result.icons || []), '\u{1F4CC}'])];
                 }
                 continue;
             }
 
+            if (skipChanges && ['INTERCAMBIO_TURNO', 'CAMBIO_TURNO', 'CT'].includes(tipo)) continue;
+
             if (['INTERCAMBIO_TURNO', 'CAMBIO_TURNO', 'CT'].includes(tipo)) {
-                const requestedA = window.normalizeId(window.getEventOriginRaw(ev));
-                const requestedB = window.normalizeId(window.getEventDestinationRaw(ev));
+                const normEv = window.normalizeCambioEvento(ev);
+                if (!normEv) continue;
+
+                const requestedA = normEv.idOrig;
+                const requestedB = normEv.idDest;
                 const resolvedA = window.getOperationalOccupant(requestedA, date, eventos, hotel, { baseIndex });
                 const resolvedB = window.getOperationalOccupant(requestedB, date, eventos, hotel, { baseIndex });
+                
+                // FIX V13.34: Si la resolución operativa colapsa a la misma persona (ej. titular ausente y sustituto involucrados),
+                // priorizamos las identidades solicitadas para que el marcador 🔄 se aplique a ambos correctamente.
+                const finalA = (resolvedA === resolvedB && requestedA !== requestedB) ? requestedA : resolvedA;
+                const finalB = (resolvedA === resolvedB && requestedA !== requestedB) ? requestedB : resolvedB;
+
                 const strippedEmpId = empId.replace(/^(vacante|placeholder)-?/, '');
-                const isOrigin = empId === resolvedA || strippedEmpId === resolvedA;
-                const isDestination = empId === resolvedB || strippedEmpId === resolvedB;
-                const tOrigRaw = ev.turno_original || ev.turno_origen || ev.payload?.turno_original || ev.payload?.turno_origen || ev.payload?.origen;
-                const tDestRaw = ev.turno_nuevo || ev.turno_destino || ev.payload?.turno_nuevo || ev.payload?.turno_destino || ev.payload?.destino;
+                const isOrigin = empId === finalA || strippedEmpId === finalA;
+                // Alias: la fila '¿?' actua como 'Proximamente' si ese es el destino del intercambio
+                const isPlaceholder = empId === '¿?' || empId === '?';
+                const isDestinationByAlias = isPlaceholder && finalB && !['¿?', '?', '', 'null', 'undefined'].includes(finalB);
+                const isDestination = empId === finalB || strippedEmpId === finalB || isDestinationByAlias;
+                const tOrigRaw = normEv.turnoOrigen;
+                const tDestRaw = normEv.turnoDestino;
                 const hasValidOriginShift = window.isValidShiftValue(tOrigRaw);
                 const hasValidDestinationShift = window.isValidShiftValue(tDestRaw);
+
+                if (isDiagTarget) {
+                    console.log(`[ShiftResolver_DEBUG] Intercambio ev=${ev.id} fecha=${date}`, {
+                        requestedA, requestedB, resolvedA, resolvedB, finalA, finalB,
+                        tOrigRaw, tDestRaw, hasValidOriginShift, hasValidDestinationShift
+                    });
+                }
 
                 if (tipo === 'INTERCAMBIO_TURNO' && !requestedB) continue;
                 if (tipo === 'CAMBIO_TURNO' && !requestedB && !hasValidDestinationShift) continue;
@@ -467,10 +595,14 @@ console.log("[ShiftResolver] Iniciando carga v5.0...");
                         continue;
                     }
 
-                    if (!requestedB || !hasValidOriginShift || !hasValidDestinationShift) continue;
+                    if (!requestedB || !hasValidOriginShift || !hasValidDestinationShift) {
+                        if (isDiagTarget) console.warn(`[ShiftResolver] ${tipo} descartado por falta de datos:`, { requestedB, hasValidOriginShift, hasValidDestinationShift });
+                        continue;
+                    }
+
                     const isLegacyCT = window.isInvalidLegacyChangeValue(tOrigRaw) || window.isInvalidLegacyChangeValue(tDestRaw);
-                    const tOpA = (isOrigin ? result.turno : window.getTurnoOperativoBase(requestedA, date, { baseIndex, eventos })) || '—';
-                    const tOpB = (isDestination ? result.turno : window.getTurnoOperativoBase(requestedB, date, { baseIndex, eventos })) || '—';
+                    const tOpA = (isOrigin ? result.turno : window.getTurnoOperativoBase(requestedA, date, { baseIndex, eventos, hotel })) || '—';
+                    const tOpB = (isDestination ? result.turno : window.getTurnoOperativoBase(requestedB, date, { baseIndex, eventos, hotel })) || '—';
                     
                     const eventOrigCode = window.normalizeShiftValue(tOrigRaw);
                     const eventDestCode = window.normalizeShiftValue(tDestRaw);
@@ -479,9 +611,10 @@ console.log("[ShiftResolver] Iniciando carga v5.0...");
                     const hasComparableEvent = Boolean(eventOrigCode && eventDestCode);
                     
                     // Coherence check: If base is empty, we don't treat it as incoherent if the event has a value
+                    // REGLA OPERATIVA: Los intercambios con sustitutos mandan sobre el Excel base
                     const isIncoherente = hasComparableEvent && (
-                        (baseOrigCode && eventOrigCode !== baseOrigCode) || 
-                        (baseDestCode && eventDestCode !== baseDestCode)
+                        (baseOrigCode && baseOrigCode !== '—' && eventOrigCode !== baseOrigCode) || 
+                        (baseDestCode && baseDestCode !== '—' && eventDestCode !== baseDestCode)
                     );
 
                     let finalTurnoOrigen = tDestRaw;
@@ -492,18 +625,33 @@ console.log("[ShiftResolver] Iniciando carga v5.0...");
                         finalTurnoDestino = tOpA;
                     }
 
-                    if (window.DEBUG_MODE) {
-                        console.log(`[ShiftResolver] Resolving ${tipo} for ${empId}:`, {
-                            isOrigin, isDestination, tOrigRaw, tDestRaw, tOpA, tOpB, finalTurnoOrigen, finalTurnoDestino
-                        });
+                    // SONNET_INTERCAMBIO_APLICADO_OCTUBRE log obligatorio
+                    if (isDiagTarget && date === '2026-10-21' && (window.normalizePersonKey(normEv.origen) === 'dani' || window.normalizePersonKey(normEv.destino) === 'proximamente')) {
+                        console.log('[SONNET_INTERCAMBIO_APLICADO_OCTUBRE]\nfecha=' + date + '\norigen=' + normEv.origen + '\ndestino=' + normEv.destino + '\nDani_antes=' + (isOrigin ? tOpA : (isDestination ? tOpB : 'N/A')) + '\nProximamente_antes=' + (isDestination ? tOpB : (isOrigin ? tOpA : 'N/A')) + '\nDani_despues=' + (isOrigin ? finalTurnoOrigen : 'N/A') + '\nProximamente_despues=' + (isDestination ? finalTurnoDestino : 'N/A'));
+                    }
+                    // === LOGS DE INTERCAMBIO OBLIGATORIOS ===
+                    if (isDiagTarget) {
+                        const _empName = isOrigin ? normEv.origen : (isDestination ? normEv.destino : empId);
+                        const _turnoAntes = isOrigin ? tOpA : tOpB;
+                        const _turnoDespues = isOrigin ? finalTurnoOrigen : finalTurnoDestino;
+                        const _role = isOrigin ? 'ORIGEN' : 'DESTINO';
+                        console.log('[INTERCAMBIO_BEFORE_TARGET]\nfecha=' + date + '\norigen=' + normEv.origen + '\ndestino=' + normEv.destino + '\norigenKey=' + requestedA + '\ndestinoKey=' + requestedB + '\nturnoOrigenAntes=' + tOpA + '\nturnoDestinoAntes=' + tOpB);
+                        if (isOrigin) console.log('[INTERCAMBIO_WRITE_ORIGEN_TARGET]\nempleado=' + normEv.origen + '\nvalorEscrito=' + finalTurnoOrigen + '\nintercambio=true\nmarker=\u{1F504}');
+                        if (isDestination) console.log('[INTERCAMBIO_WRITE_DESTINO_TARGET]\nempleado=' + normEv.destino + '\nempId=' + empId + '\nvalorEscrito=' + finalTurnoDestino + '\nintercambio=true\nmarker=\u{1F504}');
                     }
 
                     result.turno = isOrigin ? finalTurnoOrigen : finalTurnoDestino;
                     result.cambio = true;
                     result.intercambio = true;
                     result.icon = '\u{1F504}';
-                    result.icons = ['\u{1F504}'];
+                    result.icons = [...new Set([...(result.icons || []), '\u{1F504}'])];
                     result.origen = tipo;
+                    if (isDiagTarget) { console.log('[INTERCAMBIO_AFTER_TARGET]\\nfecha=' + date + '\\n' + (isOrigin ? normEv.origen : normEv.destino) + '=' + result.turno + ' \u{1F504}\\nempId=' + empId + '\\nrole=' + (isOrigin ? 'ORIGEN' : 'DESTINO')); }
+                    if ((window.normalizeDate(date) === '2026-10-21') && (window.normalizePersonKey(normEv.origen) === 'dani' || window.normalizePersonKey(normEv.destino) === 'proximamente')) {
+                        const htmlLabel = window.renderTurnoContent ? window.renderTurnoContent(result.turno, result) : String(result.turno || '');
+                        if (isOrigin) console.log(`[SONNET_RENDER_FINAL_OCTUBRE] Dani_2026_10_21=${result.turno} 🔄 htmlDani=${htmlLabel}`);
+                        if (isDestination) console.log(`[SONNET_RENDER_FINAL_OCTUBRE] Proximamente_2026_10_21=${result.turno} 🔄 htmlProximamente=${htmlLabel}`);
+                    }
                 }
             }
         }
@@ -567,12 +715,12 @@ console.log("[ShiftResolver] Iniciando carga v5.0...");
     window.getTurnoIcon = (turno, flags = {}) => {
         if (!turno) return '';
         const up = String(turno).toUpperCase().replace(/[^\x00-\x7F]/g, '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/\s+/g, '');
-        if (up.startsWith('VAC')) return '\uD83C\uDFD6\uFE0F';
-        if (up.startsWith('BAJ')) return '\uD83E\uDD12';
-        if (up.startsWith('PER')) return '\uD83D\uDDD3\uFE0F';
-        if (up.startsWith('FOR')) return '\uD83C\uDF93';
-        if (up === 'N' || up === 'NOCHE') return '\uD83C\uDF19';
-        if (flags.intercambio) return '\uD83D\uDD03';
+        if (up.startsWith('VAC')) return '🏖️';
+        if (up.startsWith('BAJ')) return '🩺';
+        if (up.startsWith('PER')) return '🗓️';
+        if (up.startsWith('FOR')) return '🎓';
+        if (up === 'N' || up === 'NOCHE') return '🌙';
+        if (flags.intercambio) return '🔄';
         return '';
     };
 
@@ -596,6 +744,3 @@ console.log("[ShiftResolver] Iniciando carga v5.0...");
 
     console.log("[ShiftResolver] Carga finalizada v5.0.");
 })();
-
-
-

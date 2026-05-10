@@ -1,4 +1,4 @@
-/* supabase-dao.js 
+﻿/* supabase-dao.js 
    MOTOR DE DATOS TURNOSWEB V8.1
    REGLAS DE ORO:
    - window.supabase como único cliente.
@@ -104,6 +104,20 @@ window.TurnosDB = {
         const client = window.supabase;
         const i = this.normalizeDate(inicio);
         const f = this.normalizeDate(fin);
+
+        // [PROTECCIÓN V8.2] Validar rango antes de llamar a Supabase
+        if (!i || !f || i === 'null' || f === 'null') {
+            const errorMsg = `[fetchRango] Rango inválido detectado: inicio=${i}, fin=${f}`;
+            console.error("[DAO ERROR]", errorMsg);
+            throw new Error(errorMsg);
+        }
+        
+        if (f < i) {
+            const errorMsg = `[fetchRango] Fecha fin (${f}) anterior a inicio (${i})`;
+            console.warn("[DAO WARN]", errorMsg);
+            throw new Error(errorMsg);
+        }
+
         const cacheKey = `turnos_${i}_${f}`;
 
         try {
@@ -166,17 +180,25 @@ window.TurnosDB = {
         }
     },
 
-    async fetchEventos(inicio = null, fin = null) {
+    async fetchEventos(inicio = null, fin = null, includeAnulados = false) {
         const client = window.supabase;
         const i = this.normalizeDate(inicio);
         const f = this.normalizeDate(fin);
+
+        // [PROTECCIÓN V8.2] Si se pasan fechas, deben ser válidas
+        if (inicio !== null && !i) throw new Error(`[fetchEventos] Inicio inválido: ${inicio}`);
+        if (fin !== null && !f) throw new Error(`[fetchEventos] Fin inválido: ${fin}`);
+        if (i && f && f < i) throw new Error(`[fetchEventos] Rango invertido: ${i} a ${f}`);
 
         try {
             const data = await this.fetchAll(() => {
                 let q = client
                     .from('eventos_cuadrante')
-                    .select('*')
-                    .or('estado.is.null,estado.neq.anulado');
+                    .select('*');
+                
+                if (!includeAnulados) {
+                    q = q.or('estado.is.null,estado.neq.anulado');
+                }
 
                 if (i && f) {
                     q = q.lte('fecha_inicio', f).or(`fecha_fin.is.null,fecha_fin.gte.${i}`);
@@ -187,6 +209,34 @@ window.TurnosDB = {
                 }
 
                 return q.order('fecha_inicio', { ascending: true });
+            });
+            (data || []).forEach(ev => {
+                const fecha = this.normalizeDate(ev.fecha_inicio || ev.fecha);
+                const hotel = String(ev.hotel || ev.hotel_id || ev.hotel_origen || ev.hotel_destino || ev.payload?.hotel || ev.payload?.hotel_id || '').trim();
+                const origen = String(ev.empleado_id || ev.empleado_nombre || ev.solicitante || ev.origen || ev.payload?.empleado_id || ev.payload?.solicitante || ev.payload?.origen || '').trim();
+                const destino = String(ev.empleado_destino_id || ev.empleado_destino_nombre || ev.destino || ev.companero || ev['compañero'] || ev.participante_destino || ev.payload?.empleado_destino_id || ev.payload?.empleado_destino_nombre || ev.payload?.destino || ev.payload?.companero || ev.payload?.['compañero'] || '').trim();
+                const tipo = String(ev.tipo || '').toUpperCase();
+                const estado = String(ev.estado || 'activo').toLowerCase();
+                if (fecha === '2026-10-21' && hotel === 'Sercotel Guadiana' && origen.toLowerCase() === 'dani' && estado !== 'anulado' && (tipo.includes('INTERCAMBIO') || tipo.includes('CAMBIO'))) {
+                    console.log('[SONNET_EVENTO_RAW_OCTUBRE]', {
+                        id: ev.id,
+                        fecha,
+                        hotel,
+                        tipo: ev.tipo,
+                        estado: ev.estado,
+                        empleado_id: ev.empleado_id,
+                        empleado_destino_id: ev.empleado_destino_id,
+                        solicitante: ev.solicitante,
+                        companero: ev.companero,
+                        'compañero': ev['compañero'],
+                        destino: ev.destino,
+                        payload: ev.payload,
+                        turno_original: ev.turno_original,
+                        turno_nuevo: ev.turno_nuevo,
+                        turno_solicitado: ev.turno_solicitado,
+                        observacion: ev.observacion
+                    });
+                }
             });
             return data || [];
         } catch (err) {
@@ -220,13 +270,13 @@ window.TurnosDB = {
                 .single();
 
             if (error) throw error;
+            console.log("[ADMIN] DAO upsertEvento EXITOSO:", data);
             if (window.localforage) await window.localforage.clear();
             this.updateUISyncStatus('ok');
             return data;
         } catch (err) {
-            console.error("[ADMIN ERROR] DAO upsertEvento", {
+            console.error("[ADMIN ERROR] DAO upsertEvento FALLIDO", {
                 message: err.message,
-                stack: err.stack,
                 evento: evento
             });
             this.updateUISyncStatus('error');
@@ -464,22 +514,7 @@ window.TurnosDB = {
         }
     },
 
-    async anularEvento(id) {
-        const client = window.supabase;
-        try {
-            const { error } = await client
-                .from('eventos_cuadrante')
-                .update({ estado: 'anulado', updated_at: new Date().toISOString() })
-                .eq('id', id);
-            if (error) throw error;
-            if (window.localforage) await window.localforage.clear();
-            this.updateUISyncStatus('ok');
-        } catch (err) {
-            console.error("DAO Error (anularEvento):", err);
-            this.updateUISyncStatus('error');
-            throw err;
-        }
-    },
+
 
     // ──────────────────────────────────────────────────────────────────────
     // fetchRangoCalculado — FASE 3 — NUEVA FIRMA
@@ -1358,6 +1393,35 @@ window.TurnosDB = {
         } catch (err) {
             console.error("DAO Error (loadPublishedSchedule):", err);
             return { ok: false, reason: "ERROR", message: err.message };
+        }
+    }
+    ,
+
+    async getPublishedCoverage(hotel = 'all') {
+        const client = window.supabase;
+        try {
+            let q = client
+                .from('publicaciones_cuadrante')
+                .select('hotel, semana_fin, estado, created_at')
+                .eq('estado', 'activo');
+
+            if (hotel && hotel !== 'all') q = q.eq('hotel', hotel);
+
+            const { data, error } = await q.order('semana_fin', { ascending: false }).limit(200);
+            if (error) throw error;
+
+            const rows = data || [];
+            if (rows.length === 0) return { ok: true, lastDate: null, hotel };
+
+            const lastDate = rows
+                .map(r => this.normalizeDate(r.semana_fin))
+                .filter(Boolean)
+                .sort((a, b) => b.localeCompare(a))[0] || null;
+
+            return { ok: true, lastDate, hotel };
+        } catch (err) {
+            console.error("DAO Error (getPublishedCoverage):", err);
+            return { ok: false, lastDate: null, hotel, error: err.message };
         }
     }
 };

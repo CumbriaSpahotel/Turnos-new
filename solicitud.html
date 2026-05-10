@@ -517,9 +517,9 @@
         let _autoFillPending = false;
         let _excelFallbackDisabled = false;
 
-        // InicializaciÃ³n
+        // Inicialización
         document.addEventListener('DOMContentLoaded', async () => {
-            // Esperar a que Supabase estÃ© listo (supabase-config.js lo inicializa)
+            // Esperar a que Supabase esté listo (supabase-config.js lo inicializa)
             let retry = 0;
             while(!window.supabase && retry < 20) {
                 await new Promise(r => setTimeout(r, 100));
@@ -1039,7 +1039,7 @@
                     solLabelEl.textContent = solResolved.cleanShift;
                     solLabelEl.dataset.val = solResolved.rawShift;
 
-                    // 2. Resolve CompaÃ±ero
+                    // 2. Resolve Compañero
                     const compBox = row.querySelector(`#cur-comp-${id}`);
                     if (compId) {
                         compBox.style.display = "block";
@@ -1075,7 +1075,7 @@
                             });
                         }
 
-                        // AUTO-FILL DESTINO: Si no se ha tocado manualmente, ponemos el del compaÃ±ero
+                        // AUTO-FILL DESTINO: Si no se ha tocado manualmente, ponemos el del compañero
                         const destinoSelect = row.querySelector(".row-destino");
                         if (destinoSelect) {
                             destinoSelect.disabled = blockedCompanion;
@@ -1088,7 +1088,7 @@
                             }
                         }
                         if (destinoSelect && !destinoSelect.dataset.manual && compResolved.cleanShift !== '—') {
-                            // Buscar la opciÃ³n que coincida con cleanComp
+                            // Buscar la opción que coincida con cleanComp
                             for (let opt of destinoSelect.options) {
                                 if (opt.value === compResolved.cleanShift) {
                                     destinoSelect.value = opt.value;
@@ -1187,7 +1187,7 @@
                 const savedRequest = await window.TurnosDB.savePeticionCambio(payload);
                 const requestId = savedRequest?.id || 'ID_N/A';
 
-                // --- NOTIFICACIÃ“N AUTOMÃTICA EN BANDEJA ---
+                // --- NOTIFICACIÃ“N AUTOMÁTICA EN BANDEJA ---
                 try {
                     await window.TurnosDB.saveMensaje({
                         emisor: solName,
@@ -1197,10 +1197,10 @@
                         hotel_id: hotel
                     });
                 } catch (msgErr) {
-                    console.warn("No se pudo enviar la notificaciÃ³n de mensaje interna.", msgErr);
+                    console.warn("No se pudo enviar la notificación de mensaje interna.", msgErr);
                 }
 
-                // --- ENVÃO A FORMSPREE (EMAIL) ---
+                // --- ENVÍO A FORMSPREE (EMAIL) ---
                 let emailSent = true;
                 try {
                     const FORMSPREE_ENDPOINT = "https://formspree.io/f/xvgawqya";

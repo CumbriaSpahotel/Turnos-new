@@ -1,4 +1,4 @@
-﻿(function () {
+(function () {
     const normalizeText = (value) => String(value || '')
         .toLowerCase()
         .normalize('NFD')
@@ -82,18 +82,18 @@
             adminStyle: 'background:#e3f2fd; color:#0277bd; border:1px solid #b3e5fc;'
         },
         b: {
-            label: 'Baja',
-            icon: '\u{1F3E5}',
+            label: 'Baja 🩺',
+            icon: '',
             publicClass: 'v-baja',
             mobileClass: 'b',
-            adminStyle: 'background:#fff5f5; color:#c92a2a; border:1px dashed #ffa8a8;'
+            adminStyle: 'background:#f3e8ff; color:#581c87; border:1px solid #d8b4fe;'
         },
         p: {
-            label: 'Permiso',
-            icon: '\u{1F4CB}',
+            label: 'Permiso 🗓️',
+            icon: '',
             publicClass: 'v-perm',
             mobileClass: 'p',
-            adminStyle: 'background:#f3f0ff; color:#7048e8; border:1px solid #d0bfff;'
+            adminStyle: 'background:#f3e8ff; color:#581c87; border:1px solid #d8b4fe;'
         },
         ct: {
             label: 'Cambio',
@@ -334,8 +334,7 @@
 
         if (isNoche) icons.add('\u{1F319}');
         if (isVac)   icons.add('\u{1F3D6}\u{FE0F}');
-        if (isBaja)  icons.add('\u{1F3E5}');
-        if (isPerm)  icons.add('\u{1F4CB}');
+        // Baja y Permiso ya llevan el emoji en el label (Baja 🩺, Permiso 🗓️), no añadir más aquí
         if (isForm)  icons.add('\u{1F313}');
         if (isChanged && !isVac && !isBaja && !isPerm && !isForm) icons.add('\u{1F504}');
         

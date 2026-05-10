@@ -328,8 +328,8 @@
           color: #0072a7;
           border-color: #aee6ff;
       }
-      .v-baja { background: #fde7d5; color: #a24b14; border-color: #f5cfaf; }
-      .v-p, .v-permiso { background: #ece6ff; color: #5c3bc4; border-color: #dcd0ff; }
+      .v-baja { background: #f3e8ff !important; color: #581c87 !important; border-color: #d8b4fe !important; }
+      .v-p, .v-perm, .v-permiso { background: #f3e8ff !important; color: #581c87 !important; border-color: #d8b4fe !important; }
 
       .icon-sync { font-size: 0.7rem; color: inherit; opacity: 0.85; }
       .icon-moon { font-size: 0.78rem; color: #d48a00; }
@@ -780,20 +780,26 @@
             const pill = document.createElement('div');
             pill.className = `turno-pill v-${cls}`;
             pill.textContent = display.label;
-            if (cls === 'v' || cls === 'vac') {
-                pill.innerHTML += ' <span class="icon-vac">\u{1F3D6}\u{FE0F}</span>';
-            }
             
-            if (cls === 'n' || cls === 'noche') {
-                pill.innerHTML += ' <span class="icon-moon">\u{1F319}</span>';
-            }
+            // Los iconos ya vienen procesados en display.icons via TurnosRules.getPublicCellDisplay
+            // pero si queremos forzar que NO se dupliquen, usamos solo display.text si no es compacto
+            // o añadimos los iconos filtrando duplicados
             
             if (display.icons) {
+                const currentText = pill.textContent;
                 display.icons.forEach(icon => {
+                    if (currentText.includes(icon)) return; // Evitar duplicado si ya está en el label
+                    
                     if (icon === '\u{1F504}' || icon === '🔄') {
                         pill.innerHTML += ' <span class="icon-sync">\u{1F504}</span>';
                     } else if (icon === '\u{1F4CC}' || icon === '📌') {
                         pill.innerHTML += ' <span class="icon-pin">\u{1F4CC}</span>';
+                    } else if (icon === '\u{1F3D6}\u{FE0F}' || icon === '🏖️') {
+                        pill.innerHTML += ' <span class="icon-vac">\u{1F3D6}\u{FE0F}</span>';
+                    } else if (icon === '\u{1F319}' || icon === '🌙') {
+                        pill.innerHTML += ' <span class="icon-moon">\u{1F319}</span>';
+                    } else {
+                        pill.innerHTML += ` <span>${icon}</span>`;
                     }
                 });
             }

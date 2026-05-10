@@ -343,7 +343,10 @@
       sourceReason.includes("OVERRIDE")
     );
 
-    const shortByClass = { m: "M", t: "T", n: "N", d: "D", b: "B", p: "P" };
+    const shortByClass = { m: "M", t: "T", n: "N", d: "D" };
+
+    if (visualClass === "b") return "Baja 🩺";
+    if (visualClass === "p") return "Permiso 🗓️";
 
     if (shortByClass[visualClass]) {
       const changeHtml = hasChange ? '<span class="change-indicator-bottom" aria-label="Cambio de turno">↺</span>' : '';
