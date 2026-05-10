@@ -156,22 +156,36 @@ class VirtualTable {
         
         // Calcular estadísticas de la fila (noches y descansos)
         let nights = 0, rests = 0;
-        rowData.cells.forEach(c => {
-            const t = String(c.turno || '').toLowerCase();
-            const tp = String(c.tipo || '').toLowerCase();
-            if (t.includes('noche') || t === 'n') nights++;
-            if (t.includes('descanso') || t === 'd') rests++;
-        });
+        const empNameLower = String(rowData.empName || '').toLowerCase();
+        const skipCounters = !!(
+            rowData.excludeCounters === true ||
+            empNameLower.includes('vacante') ||
+            empNameLower.includes('?') ||
+            String(rowData.tipo || '').toLowerCase().includes('apoyo') ||
+            String(rowData.tipo || '').toLowerCase().includes('ocasional')
+        );
+
+        if (!skipCounters) {
+            rowData.cells.forEach(c => {
+                const t = String(c.turno || '').toLowerCase();
+                if (t.includes('noche') || t === 'n') nights++;
+                if (t.includes('descanso') || t === 'd') rests++;
+            });
+        }
+
+        const badgesHtml = skipCounters ? '' : `
+            <div class="emp-badges" style="display:flex; gap:4px;">
+                <span class="emp-badge" style="font-size:0.7rem; font-weight:800; padding:2px 6px; border-radius:4px; background:#f8fafc; color:#64748b; border:1px solid #e2e8f0;">N${nights}</span>
+                <span class="emp-badge" style="font-size:0.7rem; font-weight:800; padding:2px 6px; border-radius:4px; background:#f8fafc; color:#0d6efd; border:1px solid #e2e8f0;">D${rests}</span>
+            </div>
+        `;
 
         tds[0].innerHTML = `
             <div style="display:flex; align-items:center; justify-content:space-between; width:100%;">
                 <div style="display:flex; flex-direction:column;">
                     <span style="font-weight:700; color:var(--accent); font-size:0.9rem;">${rowData.empName}</span>
                 </div>
-                <div class="emp-badges" style="display:flex; gap:4px;">
-                    <span class="emp-badge" style="font-size:0.7rem; font-weight:800; padding:2px 6px; border-radius:4px; background:#f8fafc; color:#64748b; border:1px solid #e2e8f0;">N${nights}</span>
-                    <span class="emp-badge" style="font-size:0.7rem; font-weight:800; padding:2px 6px; border-radius:4px; background:#f8fafc; color:#0d6efd; border:1px solid #e2e8f0;">D${rests}</span>
-                </div>
+                ${badgesHtml}
             </div>
         `;
 
@@ -233,16 +247,18 @@ class VirtualTable {
             cleanLabel = 'Descanso';
         }
 
-        if (cellData.sustituto || cellData.isSub) {
+        const isInterchange = !!(cellData.cambio || cellData.intercambio || (cellData.origen && (cellData.origen.includes('CAMBIO') || cellData.origen.includes('INTERCAMBIO'))));
+        const shouldPin = window.TurnosRules ? window.TurnosRules.shouldShowPinSustitucion(cellData) : false;
+
+        if (shouldPin) {
+            cleanIcon = '\u{1F4CC}'; // 📌
+            cell.title = `Sustituyendo a ${cellData.titular_cubierto || cellData.subFor || 'Titular'}`;
+        } else if (isInterchange) {
+            cleanIcon = '\u{1F504}'; // 🔄
+            cell.title = 'Intercambio / Cambio manual';
+        } else if (cellData.sustituto || cellData.isSub) {
+             // Fallback legacy (si por alguna razón hay flag pero no cumple regla PIN)
             cleanIcon = '\u{1F504}';
-            if (cellData.sustituto) {
-                cell.title = `Sustituido por: ${cellData.sustituto}`;
-                cleanLabel += ` (${cellData.sustituto.charAt(0).toUpperCase()})`;
-            }
-            if (cellData.isSub) {
-                cell.title = `Sustituyendo a ${cellData.subFor}`;
-                cleanLabel += ` (C)`;
-            }
         } else {
             cell.title = '';
         }

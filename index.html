@@ -850,12 +850,25 @@
             });
         };
 
-        const filteredRows = rows.filter(r => !String(r.nombreVisible || r.nombre || "").includes("_DUP_") && !String(r.empleado_id || "").includes("_DUP_"));
+        const filteredRows = rows.filter(r => {
+            const isVisible = window.TurnosRules.isPublicEmployeeVisible(r);
+            if (!isVisible && window.DEBUG_MODE) {
+                console.log('[PUBLIC_ROW_FILTER]', {
+                    vista: 'index',
+                    empleado: r.nombre || r.nombreVisible,
+                    empleadoId: r.empleado_id || r.id,
+                    renderPublic: false,
+                    reason: 'internal_placeholder'
+                });
+            }
+            return isVisible;
+        });
         const sorted = window.TurnosRules.sortEmployees(filteredRows);
 
         sorted.forEach(rowData => {
             const skipCounters = !!(
                 rowData.excludeCounters === true ||
+                rowData.hasVacationInVisibleRange === true ||
                 String(rowData.tipoPersonal || rowData.tipo_personal || rowData.tipo || '').toLowerCase().includes('apoyo') ||
                 String(rowData.tipoPersonal || rowData.tipo_personal || rowData.tipo || '').toLowerCase().includes('ocasional')
             );

@@ -160,7 +160,7 @@
                 label = def.label || fs.turnoFinal || label;
             }
 
-            const showPin = shouldShowPin(fs);
+            const showPin = shouldShowPinSustitucion(fs);
 
             if (showPin) {
                 icon = '\u{1F4CC}';
@@ -489,6 +489,38 @@
         return options;
     };
 
+    const isPublicEmployeeVisible = (employee) => {
+        if (!employee) return false;
+        const name = String(employee.nombre || employee.nombreVisible || employee.name || employee.empleado || '').trim().toLowerCase();
+        const id = String(employee.empleado_id || employee.id || '').trim().toLowerCase();
+        const type = String(employee.tipo || employee.tipo_personal || employee.tipoPersonal || '').trim().toLowerCase();
+
+        const blocked = [
+            'vacante',
+            'âš\u00a0 vacante',
+            'sin asignar',
+            'sinasignar',
+            '?',
+            '¿?',
+            'placeholder',
+            'técnica',
+            'tecnica',
+            'control'
+        ];
+
+        // Check if name or ID matches blocked patterns
+        const isBlocked = blocked.some(b => name.includes(b) || id.includes(b) || type.includes(b));
+        if (isBlocked) return false;
+
+        // Check explicit flags
+        if (employee.esPlaceholder === true) return false;
+        if (employee.interno === true) return false;
+        if (employee.publicVisible === false) return false;
+        if (employee.rowType === 'tecnica' || employee.rowType === 'control') return false;
+
+        return true;
+    };
+
     window.TurnosRules = {
         normalizeText,
         shiftKey,
@@ -497,6 +529,7 @@
         isEmptyShift,
         describeCell,
         shouldShowPinSustitucion,
+        isPublicEmployeeVisible,
         shouldShowPin: shouldShowPinSustitucion, // Alias for backward compatibility
         sortEmployees,
         normalizeHotelName,

@@ -4098,11 +4098,24 @@ window.renderEmpleadoRowHeader = (employee, { showVacationIcon = false, isCompac
     }
 
     const isExplicitRefuerzo = Boolean(employee?.isRefuerzo === true || employee?.origen === 'refuerzo' || employee?.payload?.tipo_modulo === 'refuerzo');
+    const isSupport = employee?.excludeCounters === true || ['apoyo', 'ocasional'].includes(String(employee?.tipo || employee?.tipo_personal || '').toLowerCase());
+    
+    // REGLA OBLIGATORIA: Si está de vacaciones en el rango visible, ocultamos contadores estructurales
+    const hasVacation = !!employee?.hasVacationInVisibleRange;
+    const skipCounters = isSupport || hasVacation;
+
     const supportBadge = isExplicitRefuerzo ? `<span style="display:inline-block;padding:2px 7px;border-radius:6px;background:#dbeafe;color:#2563eb;font-size:0.55rem;font-weight:700;margin-left:6px;">REFUERZO</span>` : '';
+    const counterControls = skipCounters ? '' : `
+        <div class="row-controls" style="display:flex; gap:6px; margin-top:4px;">
+            <span class="control-chip" style="font-size:0.65rem; padding:1px 6px; border-radius:4px; background:#f1f5f9; color:#64748b; border:1px solid #e2e8f0;">🌙 0</span>
+            <span class="control-chip" style="font-size:0.65rem; padding:1px 6px; border-radius:4px; background:#f1f5f9; color:#64748b; border:1px solid #e2e8f0;">D 0</span>
+        </div>
+    `;
 
     return `
     <div style="display:flex; flex-direction:column; gap:2px;">
         <span style="font-weight:700; color:#0f172a; font-size:0.82rem; line-height:1.3;">${name}${vacIcon}${supportBadge}</span>
+        ${counterControls}
     </div>`;
 };
 
@@ -4498,6 +4511,13 @@ window.renderPreview = async () => {
                         empleado_id: employee.employee_id,
                         // ORDEN: usar puestoOrden del modelo (Excel map), nunca idx secuencial
                         orden: employee.puestoOrden || (idx + 1),
+                        tipo: employee.tipoPersonal || employee.tipo || 'fijo',
+                        tipo_personal: employee.tipoPersonal || employee.tipo || 'fijo',
+                        excludeCounters: (
+                            String(employee.tipoPersonal || employee.tipo || '').toLowerCase().includes('apoyo') ||
+                            String(employee.tipoPersonal || employee.tipo || '').toLowerCase().includes('ocasional')
+                        ),
+                        hasVacationInVisibleRange: Object.values(daysMap).some(d => d.code === 'VAC' || d.origen === 'VAC'),
                         dias: daysMap
                     };
                 })
@@ -6743,7 +6763,7 @@ window.renderDashboard = async () => {
             const msg = `Snapshot desactualizado: ${os.hotel} semana ${os.weekStart} — publicado ${snapDate} pero hay ${os.pendingCount} evento(s) activo(s) posteriores. Debe republicarse.`;
             allRisks.push({ severity: 'critical', type: 'SNAPSHOT_OUTDATED', title: 'Snapshot Desactualizado',
                 desc: msg,
-                action: { fn: `window.switchSection('preview')`, label: 'Ir a Vista Previa' }
+                action: { fn: `window.goToRiskPreview('${os.hotel}', '${os.weekStart}')`, label: 'Ir a Vista Previa' }
             });
             counts.critical++;
         });
@@ -6751,7 +6771,7 @@ window.renderDashboard = async () => {
         (globalStatus.byHotelWeek || []).filter(b => !b.snapshotExists).forEach(b => {
             allRisks.push({ severity: 'warning', type: 'NO_SNAPSHOT', title: 'Sin Snapshot Publicado',
                 desc: `${b.hotel} semana ${b.weekStart} tiene ${b.pendingCount} evento(s) activo(s) sin snapshot publicado.`,
-                action: { fn: `window.switchSection('preview')`, label: 'Ir a Vista Previa' }
+                action: { fn: `window.goToRiskPreview('${b.hotel}', '${b.weekStart}')`, label: 'Ir a Vista Previa' }
             });
             counts.warning++;
         });
@@ -6808,6 +6828,12 @@ window.renderDashboard = async () => {
         if ($('#count-critical')) $('#count-critical').textContent = `${counts.critical} Críticos`;
         if ($('#count-warning')) $('#count-warning').textContent = `${counts.warning} Avisos`;
         if ($('#count-info')) $('#count-info').textContent = `${counts.info} Info`;
+
+        if ($('#stat-pending-publish')) {
+            const _finalCount = (window.__lastGlobalStatus) ? window.__lastGlobalStatus.totalPendingChanges : 0;
+            $('#stat-pending-publish').textContent = _finalCount;
+            $('#stat-pending-publish').style.color = _finalCount > 0 ? '#ef4444' : 'inherit';
+        }
 
         if ($('#stat-critical-count')) {
             $('#stat-critical-count').textContent = counts.critical;

@@ -452,7 +452,21 @@
                         }
                     });
 
-                    return window.TurnosRules.sortEmployees(Array.from(uniqueEmpsMap.values()));
+                    const allRows = Array.from(uniqueEmpsMap.values());
+                    const filtered = allRows.filter(r => {
+                        const isVisible = window.TurnosRules.isPublicEmployeeVisible(r);
+                        if (!isVisible) {
+                            console.log('[PUBLIC_ROW_FILTER]', {
+                                vista: 'mobile',
+                                empleado: r.nombre || r.nombreVisible,
+                                empleadoId: r.empleado_id || r.id,
+                                renderPublic: false,
+                                reason: 'internal_placeholder'
+                            });
+                        }
+                        return isVisible;
+                    });
+                    return window.TurnosRules.sortEmployees(filtered);
                 })().map(emp => {
                     let empName = (
                       emp.nombreVisible ||
