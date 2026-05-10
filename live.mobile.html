@@ -1,4 +1,4 @@
-﻿<!doctype html>
+<!doctype html>
 <html lang="es">
 <head>
   <meta charset="utf-8">
@@ -322,10 +322,11 @@
     .m { background: #3b82f6 !important; color: #ffffff !important; } /* Mañana */
     .t { background: #f97316 !important; color: #ffffff !important; } /* Tarde */
     .n { background: #1e1b4b !important; color: #ffffff !important; } /* Noche */
-    .d { background: #f1f5f9 !important; color: #94a3b8 !important; box-shadow: none !important; } /* Descanso */
+    .d { background: #fee2e2 !important; color: #991b1b !important; border: 1px solid #fca5a5 !important; box-shadow: none !important; } /* Descanso - rojo suave */
     
     .v { background: #10b981 !important; color: #ffffff !important; } /* Vacaciones */
     .b { background: #ef4444 !important; color: #ffffff !important; border: 1px dashed rgba(255,255,255,0.4) !important; } /* Baja */
+    .p { background: #8b5cf6 !important; color: #ffffff !important; } /* Permiso */
 
     /* NAVEGACIÓN INFERIOR */
     .bottom-nav {
@@ -1522,14 +1523,14 @@
   <script src="supabase.js"></script>
   <script src="localforage.js"></script>
   <script src="xlsx.full.min.js"></script>
-  <script src="supabase-config.js?v=9.8"></script>
-  <script src="supabase-dao.js?v=10.0"></script>
-  <script src="turnos-rules.js?v=4.2"></script>
-  <script src="shift-resolver.js?v=4.1"></script>
-  <script src="turnos-engine.js?v=4.1"></script>
-  <script src="excel-loader.js?v=1.0"></script>
-  <script src="plantilla_mobile_adapter.js?v=10.2"></script>
-  <script src="mobile.app.js?v=10.1"></script>
+  <script src="supabase-config.js?v=13.30"></script>
+  <script src="supabase-dao.js?v=13.30"></script>
+  <script src="turnos-rules.js?v=13.30"></script>
+  <script src="shift-resolver.js?v=13.30"></script>
+  <script src="turnos-engine.js?v=13.30"></script>
+  <script src="excel-loader.js?v=13.30"></script>
+  <script src="plantilla_mobile_adapter.js?v=13.30"></script>
+  <script src="mobile.app.js?v=13.30"></script>
 
   <script>
     if (window.location.protocol === 'file:') {
@@ -1562,7 +1563,7 @@
     });
 
     if ('serviceWorker' in navigator && window.location.protocol !== 'file:') {
-      navigator.serviceWorker.register('sw.js?v=2026-04-28b').catch(err => console.log("SW Error:", err));
+      navigator.serviceWorker.register('sw.js?v=13.30').catch(err => console.log("SW Error:", err));
     }
   </script>
 </body>

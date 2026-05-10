@@ -5512,6 +5512,86 @@ window.getExcelDiff = () => {
     return changes;
 };
 
+// hasPendingPublicationChanges: compara eventos activos vs ultimo snapshot publicado.
+// Devuelve {hasChanges, count, reason, lastSnapshotDate} por hotel/semana.
+window.hasPendingPublicationChanges = async function({ weekStart, weekEnd, hotels }) {
+    const result = { hasChanges: false, count: 0, events: [], reason: '', details: [] };
+    try {
+        const ACTIVE_STATES = ['activo','activa','aprobado','aprobada','pendiente'];
+        const allEvents = await window.TurnosDB.fetchEventos(weekStart, weekEnd);
+        const activeEvents = (allEvents || []).filter(e =>
+            ACTIVE_STATES.includes(String(e.estado || '').toLowerCase())
+        );
+        const hotelsToCheck = Array.isArray(hotels) ? hotels : (hotels ? [hotels] : []);
+        for (const hotel of hotelsToCheck) {
+            // Buscar ultimo snapshot publicado para este hotel/semana
+            const snapRes = await window.TurnosDB.client
+                .from('publicaciones_cuadrante')
+                .select('id, semana_inicio, hotel, created_at, version, estado')
+                .eq('estado', 'activo')
+                .eq('hotel', hotel)
+                .eq('semana_inicio', weekStart)
+                .order('version', { ascending: false })
+                .limit(1);
+            const lastSnap = snapRes.data?.[0];
+            const lastPubDate = lastSnap?.created_at ? new Date(lastSnap.created_at) : null;
+            // Eventos activos de este hotel o sin hotel especifico
+            const hotelEvents = activeEvents.filter(e => {
+                const evHotel = String(e.hotel_origen || e.hotel_id || '').trim();
+                return !evHotel || evHotel === hotel;
+            });
+            // Eventos posteriores al ultimo snapshot
+            let pendingEvents = hotelEvents;
+            if (lastPubDate) {
+                pendingEvents = hotelEvents.filter(e => {
+                    const evDate = e.updated_at || e.created_at;
+                    return evDate && new Date(evDate) > lastPubDate;
+                });
+            }
+            // Tambien contar si hay diff de Excel
+            const excelDiff = window.getExcelDiff ? window.getExcelDiff().length : 0;
+            const hotelPending = pendingEvents.length + excelDiff;
+            result.details.push({
+                hotel,
+                lastSnapshotId: lastSnap?.id || null,
+                lastSnapshotDate: lastSnap?.created_at || null,
+                lastSnapshotVersion: lastSnap?.version || null,
+                activeEventsTotal: hotelEvents.length,
+                pendingAfterSnapshot: pendingEvents.length,
+                excelDiff,
+                hasPending: hotelPending > 0
+            });
+            if (hotelPending > 0) {
+                result.hasChanges = true;
+                result.count += hotelPending;
+                result.events.push(...pendingEvents);
+            }
+        }
+        // Si no se especificaron hoteles, contar todos los eventos activos sin filtro
+        if (hotelsToCheck.length === 0) {
+            result.hasChanges = activeEvents.length > 0;
+            result.count = activeEvents.length;
+            result.events = activeEvents;
+        }
+        result.reason = result.hasChanges
+            ? `${result.count} cambio(s) pendiente(s) de publicar`
+            : 'No hay cambios pendientes de publicacion';
+        console.log('[PUBLISH_PENDING_CHECK]', {
+            weekStart, weekEnd,
+            hotels: hotelsToCheck,
+            hasChanges: result.hasChanges,
+            count: result.count,
+            details: result.details
+        });
+    } catch (err) {
+        console.error('[PUBLISH_PENDING_CHECK] Error:', err);
+        // En caso de error, permitir publicar (fail-open para no bloquear al admin)
+        result.hasChanges = true;
+        result.reason = 'No se pudo verificar cambios pendientes (permitiendo publicar)';
+    }
+    return result;
+};
+
 window.showPublishPreview = async () => {
     // 1. Identificar rango y hotel
     const hotelSel = $('#prevHotel')?.value || 'all';
@@ -5537,6 +5617,13 @@ window.showPublishPreview = async () => {
         alert('No hay datos operativos para publicar en esta selección.');
         return;
     }
+
+    // 2.5. Verificar cambios pendientes de publicacion
+    const hotelsInPreview = snapshots.map(s => s.hotel_nombre || s.hotel_id);
+    const pendingResult = await window.hasPendingPublicationChanges({
+        weekStart, weekEnd,
+        hotels: hotelsInPreview
+    });
 
     // 3. Validar Snapshot (Bloqueante)
     const validation = await window.validatePublicationSnapshot(snapshots);
@@ -5602,6 +5689,21 @@ window.showPublishPreview = async () => {
             <div style="padding: 32px; overflow-y: auto; max-height: 65vh;">
                 ${validationHtml}
                 ${warningsHtml}
+                ${!pendingResult.hasChanges ? `
+                <div style="background: #f0f9ff; border: 1px solid #bae6fd; color: #0369a1; padding: 16px; border-radius: 12px; margin-bottom: 24px; display: flex; align-items: center; gap: 12px;">
+                    <i class="fas fa-info-circle" style="font-size: 1.2rem;"></i>
+                    <div>
+                        <strong style="display: block;">Sin cambios pendientes de publicaci\u00f3n</strong>
+                        <span style="font-size: 0.85rem;">La semana seleccionada ya est\u00e1 publicada y no existen cambios activos nuevos.</span>
+                    </div>
+                </div>` : (pendingResult.count > 0 ? `
+                <div style="background: #f0fdf4; border: 1px solid #bbf7d0; color: #166534; padding: 16px; border-radius: 12px; margin-bottom: 24px; display: flex; align-items: center; gap: 12px;">
+                    <i class="fas fa-sync-alt" style="font-size: 1.1rem;"></i>
+                    <div>
+                        <strong style="display: block;">Cambios pendientes: ${pendingResult.count}</strong>
+                        <span style="font-size: 0.85rem;">${pendingResult.reason}</span>
+                    </div>
+                </div>` : '')}
 
                 <section style="margin-bottom: 24px;">
                     <h3 style="font-size: 0.85rem; font-weight: 800; color: #64748b; text-transform: uppercase; margin-bottom: 12px; letter-spacing: 0.05em;">Hoteles Incluidos</h3>
@@ -5617,9 +5719,9 @@ window.showPublishPreview = async () => {
                 <button onclick="document.getElementById('${modalId}').classList.remove('open')" style="padding: 12px 24px; border: 1px solid #e2e8f0; border-radius: 12px; background: white; font-weight: 700; cursor: pointer; color: #64748b;">Cancelar</button>
                 <button id="btnConfirmPublish" 
                         onclick="window.publishToSupabase()" 
-                        ${!validation.ok ? 'disabled style="opacity: 0.5; cursor: not-allowed;"' : ''}
+                        ${(!validation.ok || !pendingResult.hasChanges) ? 'disabled style="opacity: 0.5; cursor: not-allowed;"' : ''}
                         style="padding: 12px 32px; border: none; border-radius: 12px; background: #3b82f6; color: white; font-weight: 800; cursor: pointer; box-shadow: 0 4px 10px rgba(59, 130, 246, 0.3);">
-                    Confirmar y Publicar
+                    ${pendingResult.hasChanges ? "Confirmar y Publicar" : "Sin cambios pendientes"}
                 </button>
             </footer>
         </div>
@@ -6255,6 +6357,133 @@ window.revertirPublicacion = async (logId) => {
 // 13. REAL-TIME OPERATIONAL DASHBOARD (V2 - ACTIVE CONTROL)
 // ==========================================
 
+// ─── Global Error Capture ───────────────────────────────────────────────────
+window.__APP_ERRORS__ = window.__APP_ERRORS__ || [];
+window.addEventListener('error', (evt) => {
+    window.__APP_ERRORS__.push({ ts: Date.now(), type: 'error', msg: evt.message, file: evt.filename, line: evt.lineno });
+    if (window.__APP_ERRORS__.length > 50) window.__APP_ERRORS__.shift();
+});
+window.addEventListener('unhandledrejection', (evt) => {
+    const msg = evt.reason?.message || String(evt.reason || 'Unknown rejection');
+    window.__APP_ERRORS__.push({ ts: Date.now(), type: 'rejection', msg });
+    if (window.__APP_ERRORS__.length > 50) window.__APP_ERRORS__.shift();
+});
+
+// ─── Visual Rules Health Check ──────────────────────────────────────────────
+window.checkVisualRulesHealth = function() {
+    const results = { ok: true, issues: [] };
+    if (!window.TurnosRules) {
+        results.ok = false;
+        results.issues.push('TurnosRules no cargado');
+        return results;
+    }
+    const TR = window.TurnosRules;
+    const tests = [
+        { input: { code: 'BAJA', type: 'BAJA' }, expect: /Baja.*\u{1FA7A}/u, name: 'Baja 🩺' },
+        { input: { code: 'PERM', type: 'PERM' }, expect: /Permiso.*\u{1F5D3}/u, name: 'Permiso 🗓️' },
+        { input: { code: 'N', type: 'NORMAL' }, expect: /Noche/i, name: 'Noche label' },
+        { input: { code: 'D', type: 'NORMAL' }, expect: /Descanso/i, name: 'Descanso label' },
+        { input: { code: 'VAC', type: 'VAC' }, expect: /Vacaciones/i, name: 'Vacaciones label' },
+    ];
+    tests.forEach(t => {
+        try {
+            const d = TR.getPublicCellDisplay(t.input, { compact: false });
+            if (!t.expect.test(d.text || d.label || '')) {
+                results.ok = false;
+                results.issues.push('Regla visual rota: ' + t.name + ' => got "' + (d.label || '') + '"');
+            }
+        } catch(e) {
+            results.ok = false;
+            results.issues.push('Error en test ' + t.name + ': ' + e.message);
+        }
+    });
+    // Descanso class check
+    try {
+        const dk = TR.shiftKey('D', 'NORMAL');
+        if (dk !== 'd') {
+            results.ok = false;
+            results.issues.push('Descanso shiftKey devuelve "' + dk + '" en vez de "d"');
+        }
+    } catch(e) {}
+    console.log('[VISUAL_RULES_HEALTH]', results);
+    return results;
+};
+
+// ─── validateSystemHealth ───────────────────────────────────────────────────
+window.validateSystemHealth = async function(weekStart, weekEnd) {
+    const health = {
+        ok: true,
+        criticals: [],
+        warnings: [],
+        info: [],
+        pendingChanges: 0,
+        auditContext: { weekStart, weekEnd, source: 'dashboard', ts: new Date().toISOString() }
+    };
+    try {
+        // 1. Pending changes
+        if (window.hasPendingPublicationChanges) {
+            const hotels = ['Sercotel Guadiana', 'Cumbria Spa&Hotel'];
+            const pend = await window.hasPendingPublicationChanges({ weekStart, weekEnd, hotels });
+            health.pendingChanges = pend.count;
+            if (pend.count > 0) {
+                health.ok = false;
+                health.warnings.push(pend.count + ' cambio(s) pendiente(s) de publicar');
+            }
+            health.auditContext.pendingDetails = pend.details;
+        }
+
+        // 2. JS errors
+        const recentErrors = (window.__APP_ERRORS__ || []).filter(e => Date.now() - e.ts < 300000);
+        if (recentErrors.length > 0) {
+            health.ok = false;
+            const criticalPatterns = ['is not a function', 'ReferenceError', 'SyntaxError', 'Cannot access', 'fecha=lte.null'];
+            recentErrors.forEach(err => {
+                const isCritical = criticalPatterns.some(p => (err.msg || '').includes(p));
+                if (isCritical) {
+                    health.criticals.push('Error JS: ' + (err.msg || '').substring(0, 80));
+                } else {
+                    health.warnings.push('Error JS: ' + (err.msg || '').substring(0, 80));
+                }
+            });
+        }
+
+        // 3. Visual rules
+        const vr = window.checkVisualRulesHealth();
+        if (!vr.ok) {
+            health.ok = false;
+            vr.issues.forEach(issue => health.criticals.push(issue));
+        }
+
+        // 4. Required functions
+        const requiredFns = ['cloneExcelRows', 'publishToSupabase', 'validatePublicationSnapshot',
+            'buildPublicationSnapshotPreview', 'showPublishPreview'];
+        requiredFns.forEach(fn => {
+            if (typeof window[fn] !== 'function') {
+                health.ok = false;
+                health.criticals.push('Funcion obligatoria inexistente: ' + fn);
+            }
+        });
+
+        // 5. TurnosRules loaded
+        if (!window.TurnosRules) {
+            health.ok = false;
+            health.criticals.push('TurnosRules no cargado');
+        }
+
+        // 6. Supabase connection
+        if (!window.TurnosDB) {
+            health.ok = false;
+            health.criticals.push('TurnosDB no inicializado');
+        }
+
+        console.log('[HEALTH_CONTEXT]', health.auditContext);
+    } catch (err) {
+        health.ok = false;
+        health.criticals.push('Error en validateSystemHealth: ' + err.message);
+    }
+    return health;
+};
+
 window.renderDashboard = async () => {
     if (!window.TurnosDB) {
         console.error('[ADMIN ERROR] DAO (TurnosDB) no inicializado. Revisa el orden de scripts y posibles errores de sintaxis.');
@@ -6343,6 +6572,24 @@ window.renderDashboard = async () => {
                 desc: `Existe un registro provisional (${plazaPendiente.id}) para planificación de coberturas.`
             });
         }
+
+
+        // --- HEALTH CHECK: validateSystemHealth + pending changes ---
+        const _healthWeekStart = window._previewDate
+            ? (window.isoDate ? window.isoDate(window.getMonday(new Date(window._previewDate + 'T12:00:00'))) : window._previewDate)
+            : today;
+        const _healthWeekEnd = window.addIsoDays ? window.addIsoDays(_healthWeekStart, 6) : _healthWeekStart;
+        const systemHealth = await window.validateSystemHealth(_healthWeekStart, _healthWeekEnd);
+
+        // Merge health criticals/warnings into allRisks
+        systemHealth.criticals.forEach(msg => {
+            allRisks.push({ severity: 'critical', type: 'SYSTEM_HEALTH', title: 'Problema del Sistema', desc: msg });
+            counts.critical++;
+        });
+        systemHealth.warnings.forEach(msg => {
+            allRisks.push({ severity: 'warning', type: 'SYSTEM_HEALTH', title: 'Aviso del Sistema', desc: msg });
+            counts.warning++;
+        });
 
         if (riskContainer) {
             if (allRisks.length === 0) {
@@ -6471,18 +6718,19 @@ window.renderDashboard = async () => {
         }
         if ($('#sync-last-time')) $('#sync-last-time').textContent = new Date().toLocaleTimeString();
         if ($('#sync-pending-changes')) {
-            // Contar eventos activos de la semana del preview (no solo diff de Excel)
+            // Usar hasPendingPublicationChanges para unificar fuente con el modal
             let _pendingCount = 0;
             try {
                 const _rawDatePrev = window._previewDate
                     || document.getElementById('prevDateInput')?.value
                     || document.getElementById('datePicker')?.value;
-                if (_rawDatePrev && window.TurnosDB && window.TurnosDB.fetchEventos) {
+                if (_rawDatePrev && window.hasPendingPublicationChanges) {
                     const _wS2 = window.isoDate ? window.isoDate(window.getMonday(new Date(_rawDatePrev + 'T12:00:00'))) : _rawDatePrev;
                     const _wE2 = window.addIsoDays ? window.addIsoDays(_wS2, 6) : _wS2;
-                    const _evs2 = await window.TurnosDB.fetchEventos(_wS2, _wE2);
-                    const _ACT = ['activo','activa','aprobado','aprobada','pendiente'];
-                    _pendingCount = (_evs2 || []).filter(e => _ACT.includes(String(e.estado || '').toLowerCase())).length;
+                    const _hotels = ['Sercotel Guadiana', 'Cumbria Spa&Hotel'];
+                    const _pendRes = await window.hasPendingPublicationChanges({ weekStart: _wS2, weekEnd: _wE2, hotels: _hotels });
+                    _pendingCount = _pendRes.count;
+                    console.log('[DASHBOARD_PENDING_CHANGES]', { weekStart: _wS2, weekEnd: _wE2, hoteles: _hotels, count: _pendingCount, source: 'hasPendingPublicationChanges' });
                 } else { _pendingCount = window.getExcelDiff ? window.getExcelDiff().length : 0; }
             } catch (_ec) { _pendingCount = window.getExcelDiff ? window.getExcelDiff().length : 0; }
             $('#sync-pending-changes').textContent = _pendingCount;
