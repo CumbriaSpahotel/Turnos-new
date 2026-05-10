@@ -4498,9 +4498,8 @@ window.renderPreview = async () => {
                             icons: icons,
                             estado: (resolved.isAbsent || resolved.incidencia) ? 'ausente' : 'operativo',
                             origen: resolved.incidencia || resolved.origen || 'base',
-                            titular_cubierto: resolved.coversEmployeeId || resolved.sustituyeA || resolved.titular || null,
-                            incidenciaCubierta: resolved.coveredType || resolved.incidenciaCubierta || null,
-                            sustituto: resolved.coveredByEmployeeId || resolved.sustituidoPor || null,
+                            titular_cubierto: resolved.titular || null,
+                            sustituto: resolved.sustituidoPor || null,
                             changed: !!resolved.cambio
                         };
                     });

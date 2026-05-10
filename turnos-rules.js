@@ -358,11 +358,13 @@
         if (isForm)  icons.add('\u{1F313}');
         if (isChanged && !isVac && !isBaja && !isPerm && !isForm) icons.add('\u{1F504}');
         
-        // REGLA MAESTRA 📌: Solo si shouldShowPinSustitucion es true
-        if (shouldShowPinSustitucion(cell, employee, context)) {
+                // REGLA MAESTRA 📌: Solo si shouldShowPinSustitucion es true 
+        // O si ya venía en los iconos explícitos del snapshot (confianza en la persistencia)
+        const hasPinInSnapshot = (Array.isArray(cell?.icons) && (cell.icons.includes('\u{1F4CC}') || cell.icons.includes('📌')));
+        if (shouldShowPinSustitucion(cell, employee, context) || hasPinInSnapshot) {
             icons.add('\u{1F4CC}');
         } else {
-            // Saneamiento de seguridad: si se coló un 📌 por error, lo quitamos
+            // Saneamiento de seguridad: si se coló un 📌 por error y NO estaba en el snapshot, lo quitamos
             icons.delete('\u{1F4CC}');
             icons.delete('📌');
         }
@@ -508,32 +510,31 @@
         return options;
     };
 
-    const isPublicEmployeeVisible = (employee) => {
+        const isPublicEmployeeVisible = (employee) => {
         if (!employee) return false;
         
         const name = String(employee.nombre || employee.nombreVisible || employee.name || employee.empleado || '').trim().toLowerCase();
         const id = String(employee.empleado_id || employee.id || '').trim().toLowerCase();
         const type = String(employee.tipo || employee.tipo_personal || employee.tipoPersonal || '').trim().toLowerCase();
 
-        // 1. REGLA OBLIGATORIA: VACANTE siempre oculto
-        if (name === 'vacante' || name.includes('vacante') || id === 'vacante') return false;
-        if (name === '¿?' || id === '¿?') return false;
-
-        // 2. Determinar si tiene turnos operativos reales en este snapshot
+        // 1. REGLA MAESTRA: Determinar si tiene turnos operativos reales
         const daysMap = employee.turnosOperativos || employee.cells || employee.dias || {};
         const turns = Object.values(daysMap);
         const hasOperationalTurns = turns.some(t => {
             const code = String(t.code || t.turno || t.turnoFinal || '').toUpperCase();
-            // Si tiene un turno que no sea vacío/dash, es operativo
             return code && code !== '—' && code !== '' && code !== 'SIN_TURNO';
         });
 
-        // 3. REGLA OBLIGATORIA: Próximamente es visible si es operativo
-        const isProximamente = name.includes('proximamente') || name.includes('proximamente') || name.includes('próximamente');
+        // 2. REGLA OBLIGATORIA: Próximamente es visible si es operativo (incluso con ID ¿?)
+        const isProximamente = name.includes('proximamente') || name.includes('próximamente');
         if (isProximamente && hasOperationalTurns) {
             if (window.DEBUG_MODE) console.log('[PUBLIC_ROW_FILTER] Permitiendo Próximamente operativo', { name, id });
             return true;
         }
+
+        // 3. Bloqueos de placeholders técnicos puros
+        if (name === 'vacante' || name.includes('vacante') || id === 'vacante') return false;
+        if ((name === '¿?' || id === '¿?') && !isProximamente) return false;
 
         // 4. Si es un sustituto operativo con turnos reales, es visible
         const isOperationalSub = !!(
@@ -549,22 +550,19 @@
             return true;
         }
 
-        // 5. Filtros restrictivos para placeholders técnicos puros
+        // 5. Filtros restrictivos para otros placeholders
         const blockedPatterns = ['sin asignar', 'sinasignar', 'placeholder', 'técnica', 'tecnica', 'control'];
         const matchesBlocked = blockedPatterns.some(p => name.includes(p) || id.includes(p));
-        
-        // Si es un placeholder bloqueado y NO tiene turnos reales, se oculta
         if (matchesBlocked && !hasOperationalTurns) return false;
 
-        // 6. Respetar flags explícitos de base de datos
+        // 6. Respetar flags explícitos
         if (employee.internalOnly === true && !hasOperationalTurns) return false;
         if (employee.publicVisible === false && !hasOperationalTurns) return false;
 
         // Caso por defecto: se muestra
         return true;
     };
-
-        const shouldShowNightRestControls = (employee, context) => {
+    const shouldShowNightRestControls = (employee, context) => {
         if (!employee) return false;
         
         // REGLA MAESTRA: Admin Preview NUNCA muestra controles
@@ -591,70 +589,67 @@
             }
         };
 
-        // 1. Exclusiones por Nombre/ID (Placeholders)
-        if (name === 'vacante' || name.includes('vacante') || name === '¿?' || name.includes('sin asignar')) {
+        // 1. Exclusiones permanentes (Apoyo, Ocasional, Dirección, VACANTE)
+        if (name.includes('vacante') || name === '¿?' || name.includes('sin asignar')) {
             logVisibility(false, 'excluded_placeholder');
             return false;
         }
-
-        // 2. Exclusiones por Tipo (Apoyo, Ocasional)
         if (type.includes('apoyo') || type.includes('ocasional')) {
             logVisibility(false, 'excluded_tipo_apoyo_ocasional');
             return false;
         }
-
-        // 3. Exclusiones por Rol/Puesto (Dirección, Jefatura, No Sujetos)
         const excludedRoles = ['direccion', 'jefatura', 'gerencia', 'mantenimiento_externo', 'limpieza_externa'];
         if (excludedRoles.some(r => role.includes(r) || puesto.includes(r))) {
             logVisibility(false, 'excluded_rol_puesto_direccion_jefatura');
             return false;
         }
 
-        // 4. DETECCIÓN DINÁMICA DE AUSENCIAS EN EL RANGO VISIBLE
+        // 2. DETECCIÓN DINÁMICA DE AUSENCIAS (FULL WEEK RULE)
         const daysMap = employee.turnosOperativos || employee.cells || employee.dias || {};
         const turns = Object.values(daysMap);
+        const dayCount = turns.length;
         
-        const hasVacation = turns.some(t => {
-            const c = String(t.code || t.turno || t.turnoFinal || t.label || '').toUpperCase();
-            return c === 'VAC' || c.includes('VACACIONES') || (t.type && String(t.type).startsWith('VAC'));
+        const hasOperationalTurns = turns.some(t => {
+            const code = String(t.code || t.turno || t.turnoFinal || '').toUpperCase();
+            return code && code !== '—' && code !== '' && code !== 'SIN_TURNO' && code !== 'VAC' && !code.includes('BAJA') && !code.includes('PERM');
         });
-        if (hasVacation || employee.hasVacationInVisibleRange) {
-            logVisibility(false, 'excluded_vacaciones_visible_range');
-            return false;
-        }
 
-        const hasBaja = turns.some(t => {
+        // Vacaciones toda la semana
+        const isAllVacation = dayCount >= 7 && turns.every(t => {
             const c = String(t.code || t.turno || t.turnoFinal || t.label || '').toUpperCase();
-            return c === 'BAJA' || c.includes('BAJA') || c === 'IT' || c === 'BM' || (t.type && String(t.type).startsWith('BAJA'));
+            return c === 'VAC' || c.includes('VACACIONES');
         });
-        if (hasBaja || employee.hasBajaInVisibleRange) {
-            logVisibility(false, 'excluded_baja_visible_range');
+        if (isAllVacation) {
+            logVisibility(false, 'excluded_vacaciones_total_week');
             return false;
         }
 
-        const hasPermiso = turns.some(t => {
+        // Baja toda la semana
+        const isAllBaja = dayCount >= 7 && turns.every(t => {
             const c = String(t.code || t.turno || t.turnoFinal || t.label || '').toUpperCase();
-            return c === 'PERM' || c.includes('PERMISO') || (t.type && String(t.type).startsWith('PERM'));
+            return c === 'BAJA' || c.includes('BAJA') || c === 'IT' || c === 'BM';
         });
-        if (hasPermiso || employee.hasPermisoInVisibleRange) {
-            logVisibility(false, 'excluded_permiso_visible_range');
+        if (isAllBaja) {
+            logVisibility(false, 'excluded_baja_total_week');
             return false;
         }
 
-        // 5. REGLA ESTRICTA: Solo para empleados ordinarios activos o si se especifica control
-        const isOrdinario = type === 'ordinario' || type === 'fijo' || type === 'fijo_discontinuo' || role === 'titular';
-        if (!isOrdinario && type !== '') {
-            logVisibility(false, 'excluded_non_ordinary_type');
+        // Permiso toda la semana
+        const isAllPermiso = dayCount >= 7 && turns.every(t => {
+            const c = String(t.code || t.turno || t.turnoFinal || t.label || '').toUpperCase();
+            return c === 'PERM' || c.includes('PERMISO');
+        });
+        if (isAllPermiso) {
+            logVisibility(false, 'excluded_permiso_total_week');
             return false;
         }
 
-        // Fallback final: Solo si es una vista pública y no hay motivos de exclusión
-        if (context?.view === 'index' || context?.view === 'mobile') {
-            logVisibility(true, 'ordinary_active_employee');
+        // 3. REGLA DE BAJA PARCIAL: Si tiene turnos operativos y no es ausencia TOTAL, muestra controles
+        if (hasOperationalTurns) {
+            logVisibility(true, 'ordinary_employee_with_partial_absence');
             return true;
         }
-
-        logVisibility(false, 'strict_fallback_false');
+        logVisibility(false, 'no_operational_turns_or_total_absence');
         return false;
     };
 
