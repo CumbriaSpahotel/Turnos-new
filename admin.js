@@ -2028,13 +2028,22 @@ window.getOperativeStaffForDateHotel = async (date, hotel) => {
         const options = [];
         roster.forEach(entry => {
             const value = String(entry?.displayAs || entry?.displayName || entry?.id || '').trim();
-            if (!value || value === '??' || value === '?' || /\bVACANTE\b/i.test(value)) return;
+            if (!value || value === '?' || /\bVACANTE\b/i.test(value)) return;
+            
+            const isPlaceholder = window.isPlaceholderId?.(value) || window.isPlaceholderId?.(entry?.id);
             const key = norm(value);
-            if (!key || seen.has(key)) return;
+            
+            // Allow if it's a placeholder OR if it has a profile that is fixed/support
             const profile = profileByNorm.get(key) || profileByNorm.get(norm(entry?.id)) || null;
-            if (!profile || !isFixedOrSupport(profile)) return;
+            if (!isPlaceholder && profile && !isFixedOrSupport(profile)) return;
+            // If no profile, we still allow it if it has an operational shift (e.g. newly named in Excel)
+            
             if (!hasOperationalShift(entry)) return;
-            seen.add(key);
+            
+            // We only deduplicate if NOT a placeholder (placeholders can be multiple)
+            if (!isPlaceholder && seen.has(key)) return;
+            if (!isPlaceholder) seen.add(key);
+            
             options.push(value);
         });
         const sorted = options.sort((a, b) => a.localeCompare(b, 'es', { sensitivity: 'base' }));
@@ -2052,15 +2061,23 @@ window.refreshChangeEditOperativeSelects = async () => {
     if (!empSelect || !targetSelect) return;
     const currentEmp = String(empSelect.value || '').trim();
     const currentTargetRaw = String(targetSelect.value || '').trim();
-    const currentTarget = /^(sin\\s+asignar|no\\s+asignado|unassigned)$/i.test(currentTargetRaw) ? '??' : currentTargetRaw;
+    const currentTarget = window.isPlaceholderId?.(currentTargetRaw) ? '??' : currentTargetRaw;
     const fallbackEmp = String(window._editingChangeEvent?.empleado_id || '').trim();
     const rawFallbackTarget = String(window._editingChangeEvent?.empleado_destino_id || window._editingChangeEvent?.payload?.companero || window._editingChangeEvent?.payload?.['compa\u00f1ero'] || '').trim();
-    const fallbackTarget = /^(sin\s+asignar|no\s+asignado|unassigned)$/i.test(rawFallbackTarget) ? '??' : rawFallbackTarget;
+    const fallbackTarget = window.isPlaceholderId?.(rawFallbackTarget) ? '??' : rawFallbackTarget;
     const options = await window.getOperativeStaffForDateHotel(date, hotel);
     const withCurrent = [...new Set([currentEmp, currentTarget, fallbackEmp, fallbackTarget, '??', ...options].filter(Boolean))];
     const render = (selectEl, selected, placeholder) => {
-        const labelFor = (name) => name === '??' ? 'sin asignar' : name;
-        selectEl.innerHTML = `<option value="">${placeholder}</option>${withCurrent.map(name => `<option value=\"${escapeHtml(name)}\">${escapeHtml(labelFor(name))}</option>`).join('')}`;
+        const labelFor = (name) => {
+            if (name === '??' || window.isPlaceholderId?.(name)) return 'sin asignar';
+            return name;
+        };
+        selectEl.innerHTML = `<option value="">${placeholder}</option>${withCurrent.map((name, idx) => {
+            const isPh = name === '??' || window.isPlaceholderId?.(name);
+            // If it's a placeholder, we might want to make the value unique to allow multiple, 
+            // but for now let's just keep the name and let the user select any 'sin asignar'
+            return `<option value="${escapeHtml(name)}">${escapeHtml(labelFor(name))}</option>`;
+        }).join('')}`;
         const desired = selected || '';
         selectEl.value = withCurrent.includes(desired) ? desired : '';
     };
@@ -3192,6 +3209,7 @@ window.createPuestosPreviewModel = ({
     const idMap = new Map(); // Normalized ID -> Canonical UUID
     const nameToIds = new Map(); // Normalized Name -> Set of Canonical UUIDs
     employees.forEach(e => {
+        if (window.isPlaceholderId?.(e.id) || window.isPlaceholderId?.(e.nombre)) return;
         const canonicalId = e.id;
         const normId = window.normalizeId(e.id);
         const normName = window.normalizeId(e.nombre);
@@ -3218,9 +3236,7 @@ window.createPuestosPreviewModel = ({
             profile?.display_name ||
             profile?.nombre ||
             profile?.name ||
-            rowRaw?.displayName ||
-            rowRaw?.nombre ||
-            (id && !String(id).includes('-') ? id : (rowRaw?.empleadoId || id))
+            (window.isPlaceholderId?.(id) ? id : (rowRaw?.displayName || rowRaw?.nombreVisible || rowRaw?.nombre || id || '—'))
         );
     };
 
@@ -3508,7 +3524,8 @@ window.createPuestosPreviewModel = ({
 
                 if (isSubbingInThisHotel) return;
 
-                if (!assignedNorms.has(normTitular)) {
+                const isPlaceholder = window.isPlaceholderId?.(r.empleadoId);
+                if (!assignedNorms.has(normTitular) || isPlaceholder) {
                     const titularName = getDisplayName(r.empleadoId, r);
                     operationalRows.push({
                         ...r,
@@ -3522,7 +3539,7 @@ window.createPuestosPreviewModel = ({
                         rowType: 'operativo',
                         titularOriginal: titularName
                     });
-                    assignedNorms.add(normTitular);
+                    if (!isPlaceholder) assignedNorms.add(normTitular);
                 }
             }
         });
@@ -4226,7 +4243,8 @@ window.renderPreview = async () => {
                 const name = String(e.nombre || '').toUpperCase();
                 const type = String(e.tipoPersonal || e.tipo || '').toUpperCase();
                 const isDup = id.includes('_DUP') || name.includes('_DUP');
-                const isVacant = id.includes('VACANTE') || name.includes('VACANTE') || type.includes('VACANTE') || id.includes('PLACEHOLDER');
+                const isPlaceholder = window.isPlaceholderId?.(id) || window.isPlaceholderId?.(name);
+                const isVacant = !isPlaceholder && (id.includes('VACANTE') || name.includes('VACANTE') || type.includes('VACANTE') || id.includes('PLACEHOLDER'));
                 return !isDup && !isVacant;
             });
 
@@ -4236,8 +4254,9 @@ window.renderPreview = async () => {
 
             rawEmployees.forEach(emp => {
                 const key = emp.employee_id;
-                if (!seenEmps.has(key)) {
-                    seenEmps.add(key);
+                const isPlaceholder = window.isPlaceholderId?.(key) || window.isPlaceholderId?.(emp.nombre);
+                if (!seenEmps.has(key) || isPlaceholder) {
+                    if (!isPlaceholder) seenEmps.add(key);
                     const empId = String(emp.employee_id || emp.nombre || '').trim();
                     const profile = profilesForSync.find(p => String(p.id || '').trim() === empId || String(p.nombre || '').trim() === empId);
                     if (profile) {

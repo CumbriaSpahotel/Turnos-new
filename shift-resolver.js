@@ -20,11 +20,21 @@ console.log("[ShiftResolver] Iniciando carga v5.0...");
             .toLowerCase();
     };
 
+    window.isPlaceholderId = (id) => {
+        if (!id) return true;
+        const norm = window.normalizeId(id);
+        return norm.includes('vacante') || 
+               norm.includes('placeholder') || 
+               norm.includes('sin asignar') || 
+               norm.includes('---') ||
+               norm.includes('___');
+    };
+
     window.getEmployeeStructuralType = (emp) => {
         if (!emp) return 'fijo';
 
         const idNorm = window.normalizeId(emp.id || emp.nombre || '');
-        if (!idNorm || idNorm.includes('vacante') || idNorm.includes('placeholder') || emp.isVacante === true || emp.placeholder === true) return 'placeholder';
+        if (!idNorm || idNorm.includes('vacante') || idNorm.includes('placeholder') || idNorm.includes('sin asignar') || idNorm.includes('---') || emp.isVacante === true || emp.placeholder === true) return 'placeholder';
         if (emp.activo === false || window.normalizeId(emp.estado_empresa || emp.estado || '').includes('baja')) return 'baja_empresa';
 
         if (emp.tipo_trabajador === 'apoyo' || emp.es_apoyo === true || emp.apoyo === true) return 'apoyo';
