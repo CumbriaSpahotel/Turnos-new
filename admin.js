@@ -5865,80 +5865,11 @@ window.validatePublishChanges = (changes) => {
     return errors;
 };
 
-window.validateSystemHealth = async (weekStartOrContext) => {
-    const health = { OK: true, CRITICAL: [], WARNING: [], INFO: [] };
-    try {
-        const wStart = typeof weekStartOrContext === 'string'
-            ? weekStartOrContext
-            : (weekStartOrContext.weekStart || '');
-        const hotelCtx = typeof weekStartOrContext === 'object'
-            ? weekStartOrContext.hotel
-            : '';
-        const events = await window.TurnosDB.fetchEventos(wStart);
+// [REPLACED] Old validateSystemHealth (V1, schema: OK/CRITICAL/WARNING) removed.
+// The authoritative definition is window.validateSystemHealth (schema: ok/criticals/warnings)
+// defined in the DASHBOARD section below. JS last-write wins, but having two definitions
+// is confusing — the V1 below is superseded by the V2 in the dashboard block.
 
-        // Detector de mojibake en eventos
-        const MOJIBAKE_RE = /\u00c3[\u00c2\u0192\u00b1\u00a9\u00b3\u00a1]|\u00c2[\u00b0\u00b7\u00aa\u00ba]|\uFFFD/;
-        events.forEach(ev => {
-            for (const [key, val] of Object.entries(ev)) {
-                if (typeof val !== 'string' || !val) continue;
-                if (MOJIBAKE_RE.test(val)) {
-                    health.WARNING.push({
-                        title: 'Mojibake Detectado',
-                        desc: 'Campo: ' + key + ' | Valor: ' + JSON.stringify(val),
-                        type: 'MOJIBAKE'
-                    });
-                    break;
-                }
-            }
-        });
-
-        try {
-            const snapshots = await window.buildPublicationSnapshotPreview(wStart, hotelCtx);
-            const snapVal = await window.validatePublicationSnapshot(snapshots);
-            if (!snapVal.ok) {
-                snapVal.errors.forEach(err => health.CRITICAL.push({
-                    title: 'Bloqueo de Publicación', desc: err, type: 'SNAPSHOT'
-                }));
-            }
-        } catch (e) {
-            health.CRITICAL.push({ title: 'Error en Validador', desc: e.message, type: 'JS_ERROR' });
-        }
-
-        // Caso protegido: Dani ↔ Próximamente — 2026-10-21
-        if (wStart === '2026-10-19') {
-            const targetDate = '2026-10-21';
-            const resolveDay = window.resolveEmployeeDay;
-            const daniRes = resolveDay
-                ? resolveDay({ empleadoId: 'dani', fecha: targetDate, eventos: events, hotel: 'Sercotel Guadiana' })
-                : null;
-            const proxRes1 = resolveDay
-                ? resolveDay({ empleadoId: 'proximamente', fecha: targetDate, eventos: events, hotel: 'Sercotel Guadiana' })
-                : null;
-            const proxRes2 = resolveDay
-                ? resolveDay({ empleadoId: '¿?', fecha: targetDate, eventos: events, hotel: 'Sercotel Guadiana' })
-                : null;
-            const proxRes = (proxRes1 && proxRes1.cambio) ? proxRes1
-                : (proxRes2 && proxRes2.cambio ? proxRes2 : (proxRes1 || proxRes2));
-            const normShift = window.normalizeShiftValue;
-            const daniOk = daniRes
-                && (normShift ? normShift(daniRes.turno) === 'T' : daniRes.turno === 'T')
-                && daniRes.cambio;
-            const proxOk = proxRes
-                && (normShift ? normShift(proxRes.turno) === 'M' : proxRes.turno === 'M')
-                && proxRes.cambio;
-            if (!daniOk || !proxOk) {
-                health.CRITICAL.push({
-                    title: 'Intercambio no aplicado',
-                    desc: 'Intercambio Dani ↔ Próximamente no se refleja en la matriz del 2026-10-21.',
-                    type: 'INTERCAMBIO_FAIL'
-                });
-            }
-        }
-    } catch (e) {
-        health.CRITICAL.push({ title: 'Fallo General de Auditoría', desc: e.message, type: 'JS_ERROR' });
-    }
-    return health;
-};
 
 window.buildPublicationSnapshotPreview = async (weekStart, hotelName = 'all') => {
         const cache = window._lastRenderedPreviewSnapshotSource;
@@ -6264,6 +6195,18 @@ window.buildPublicationSnapshotPreview = async (weekStart, hotelName = 'all') =>
                 });
             };
 
+            // Helper: check all valid marker fields — 🔄 lives in icons[], not cell.code
+            const hasCambioMarker = (cell) => {
+                if (!cell) return false;
+                const iconsArr = Array.isArray(cell.icons) ? cell.icons : [];
+                if (iconsArr.some(ic => String(ic).includes('\u{1F504}') || String(ic).includes('🔄') || String(ic).includes('\u21BA'))) return true;
+                if (cell.changed || cell.isModified) return true;
+                if (String(cell.code || '').includes('🔄') || String(cell.label || '').includes('🔄')) return true;
+                if (cell._finalState && (cell._finalState.sourceReason || '').toUpperCase().includes('CAMBIO')) return true;
+                if ((cell.origen || '').toUpperCase().includes('INTERCAMBIO') || (cell.origen || '').toUpperCase().includes('CAMBIO')) return true;
+                return false;
+            };
+
             const rowOrig = findOperationalRow(normEv.origen, evStart);
             const rowDest = findOperationalRow(normEv.destino, evStart);
 
@@ -6271,8 +6214,16 @@ window.buildPublicationSnapshotPreview = async (weekStart, hotelName = 'all') =>
                 errors.push('[BLOQUEO] Origen de intercambio ' + normEv.origen + ' no aparece en el snapshot');
             } else {
                 const cell = rowOrig.cells[evStart];
-                if (cell && !cell.code.includes('🔄')) {
-                    warnings.push('[AVISO] Intercambio sin marker para ' + rowOrig.nombreVisible + ' el ' + evStart);
+                const hasMarker = hasCambioMarker(cell);
+                console.log('[OCT_SNAPSHOT_BUILD_FINAL] origen=' + normEv.origen + ' fecha=' + evStart, {
+                    turno: cell ? cell.code : 'NO CELL',
+                    icons: cell ? cell.icons : [],
+                    changed: cell ? cell.changed : false,
+                    hasMarker
+                });
+                if (cell && !hasMarker) {
+                    // Only warn — not block — when marker is truly absent
+                    warnings.push('[AVISO] Intercambio sin marker para ' + rowOrig.nombreVisible + ' el ' + evStart + ' (icons=' + JSON.stringify(cell.icons) + ')');
                 }
             }
 
@@ -6280,8 +6231,15 @@ window.buildPublicationSnapshotPreview = async (weekStart, hotelName = 'all') =>
                 errors.push('[BLOQUEO] Destino de intercambio ' + normEv.destino + ' no aparece en el snapshot');
             } else {
                 const cell = rowDest.cells[evStart];
-                if (cell && !cell.code.includes('🔄')) {
-                    warnings.push('[AVISO] Intercambio sin marker para ' + rowDest.nombreVisible + ' el ' + evStart);
+                const hasMarker = hasCambioMarker(cell);
+                console.log('[OCT_SNAPSHOT_BUILD_FINAL] destino=' + normEv.destino + ' fecha=' + evStart, {
+                    turno: cell ? cell.code : 'NO CELL',
+                    icons: cell ? cell.icons : [],
+                    changed: cell ? cell.changed : false,
+                    hasMarker
+                });
+                if (cell && !hasMarker) {
+                    warnings.push('[AVISO] Intercambio sin marker para ' + rowDest.nombreVisible + ' el ' + evStart + ' (icons=' + JSON.stringify(cell.icons) + ')');
                 }
             }
         });
@@ -6356,6 +6314,129 @@ window.revertirPublicacion = async (logId) => {
 // ==========================================
 // 13. REAL-TIME OPERATIONAL DASHBOARD (V2 - ACTIVE CONTROL)
 // ==========================================
+
+// ─── getGlobalPendingPublicationStatus ─────────────────────────────────────
+// Queries Supabase directly for ALL hotels/weeks with active events newer
+// than their published snapshot. Independent of any UI state / _previewDate.
+window.getGlobalPendingPublicationStatus = async function() {
+    const result = {
+        totalPendingChanges: 0,
+        totalOutdatedSnapshots: 0,
+        pendingEvents: [],
+        outdatedSnapshots: [],
+        byHotelWeek: []
+    };
+    try {
+        const today = window.isoDate ? window.isoDate(new Date()) : new Date().toISOString().split('T')[0];
+        const rangeStart = window.addIsoDays ? window.addIsoDays(today, -14) : today;
+        const rangeEnd   = window.addIsoDays ? window.addIsoDays(today, 180) : today;
+
+        // 1. Fetch all active events in the broad range
+        const ACTIVE_STATES = ['activo','activa','aprobado','aprobada','pendiente'];
+        const evtsAll = await window.TurnosDB.fetchEventos(rangeStart, rangeEnd);
+        const activeEvts = (evtsAll || []).filter(e => ACTIVE_STATES.includes((e.estado||'').toLowerCase()));
+
+        // 2. Fetch all active snapshots in the same range
+        let snapshotsAll = [];
+        try {
+            if (window.TurnosDB && window.TurnosDB.client) {
+                const snapRes = await window.TurnosDB.client
+                    .from('publicaciones_cuadrante')
+                    .select('id,hotel,semana_inicio,semana_fin,created_at,version,estado')
+                    .eq('estado', 'activo')
+                    .gte('semana_fin', rangeStart)
+                    .lte('semana_inicio', rangeEnd)
+                    .order('version', { ascending: false });
+                snapshotsAll = snapRes.data || [];
+            }
+        } catch(se) { console.warn('[GLOBAL_STATUS] snapshot fetch error:', se.message); }
+
+        // Build map: hotel::semanaInicio → latest snapshot
+        const snapMap = new Map();
+        snapshotsAll.forEach(s => {
+            const key = s.hotel + '::' + s.semana_inicio;
+            if (!snapMap.has(key)) snapMap.set(key, s); // already sorted desc
+        });
+
+        // Helper: get Monday for a date
+        const getMonday = (dateStr) => {
+            if (window.getMonday) {
+                const d = new Date(dateStr + 'T12:00:00');
+                return window.isoDate(window.getMonday(d));
+            }
+            const d = new Date(dateStr + 'T12:00:00');
+            const day = d.getDay();
+            const diff = (day === 0 ? -6 : 1 - day);
+            d.setDate(d.getDate() + diff);
+            return d.toISOString().split('T')[0];
+        };
+
+        // 3. Group events by hotel+week and check against snapshot
+        const grouped = new Map();
+        activeEvts.forEach(e => {
+            const evtDate = e.fecha_inicio || e.fecha || today;
+            const hotel = e.hotel_origen || e.hotel_id || e.hotel || 'UNKNOWN';
+            const weekStart = getMonday(evtDate);
+            const key = hotel + '::' + weekStart;
+            if (!grouped.has(key)) grouped.set(key, { hotel, weekStart, events: [] });
+            grouped.get(key).events.push(e);
+        });
+
+        for (const [key, group] of grouped) {
+            const snap = snapMap.get(key);
+            if (!snap) {
+                // No snapshot at all for this hotel+week
+                result.totalPendingChanges += group.events.length;
+                result.pendingEvents.push(...group.events);
+                result.byHotelWeek.push({
+                    hotel: group.hotel, weekStart: group.weekStart,
+                    snapshotExists: false, pendingCount: group.events.length,
+                    isOutdated: false
+                });
+                continue;
+            }
+            const snapDate = new Date(snap.created_at);
+            const newerEvts = group.events.filter(e => {
+                const d = e.updated_at || e.created_at;
+                return d && new Date(d) > snapDate;
+            });
+            if (newerEvts.length > 0) {
+                result.totalPendingChanges += newerEvts.length;
+                result.totalOutdatedSnapshots++;
+                result.pendingEvents.push(...newerEvts);
+                result.outdatedSnapshots.push({
+                    hotel: group.hotel, weekStart: group.weekStart,
+                    snapshotId: snap.id, snapshotDate: snap.created_at,
+                    pendingCount: newerEvts.length
+                });
+                result.byHotelWeek.push({
+                    hotel: group.hotel, weekStart: group.weekStart,
+                    snapshotExists: true, snapshotDate: snap.created_at,
+                    pendingCount: newerEvts.length, isOutdated: true
+                });
+            }
+        }
+
+        console.log('[GLOBAL_PENDING_PUBLICATION_STATUS]', {
+            totalPendingChanges: result.totalPendingChanges,
+            totalOutdatedSnapshots: result.totalOutdatedSnapshots,
+            byHotelWeek: result.byHotelWeek,
+            pendingEvents: result.pendingEvents.length
+        });
+        console.log('[PANEL_BOOT_GLOBAL_AUDIT]', {
+            loadedFromPanel: true,
+            usedPreviewCache: false,
+            queriedSupabase: true,
+            eventsLoaded: activeEvts.length,
+            snapshotsLoaded: snapshotsAll.length,
+            pendingChanges: result.totalPendingChanges,
+            outdatedSnapshots: result.totalOutdatedSnapshots
+        });
+    } catch(err) {
+        console.error('[GLOBAL_STATUS] Error:', err.message);
+    }
+    return result;
+};
 
 // ─── Global Error Capture ───────────────────────────────────────────────────
 window.__APP_ERRORS__ = window.__APP_ERRORS__ || [];
@@ -6476,6 +6557,55 @@ window.validateSystemHealth = async function(weekStart, weekEnd) {
             health.criticals.push('TurnosDB no inicializado');
         }
 
+        // 7. Stale snapshot check — detect when published snapshot predates active events
+        try {
+            if (window.TurnosDB && window.TurnosDB.client) {
+                const hotelsToAudit = ['Sercotel Guadiana', 'Cumbria Spa&Hotel'];
+                for (const hotel of hotelsToAudit) {
+                    const snapRes = await window.TurnosDB.client
+                        .from('publicaciones_cuadrante')
+                        .select('id,hotel,semana_inicio,created_at,version,estado')
+                        .eq('estado', 'activo')
+                        .eq('hotel', hotel)
+                        .eq('semana_inicio', weekStart)
+                        .order('version', { ascending: false })
+                        .limit(1);
+                    const lastSnap = snapRes.data?.[0];
+                    if (lastSnap) {
+                        const lastPubDate = new Date(lastSnap.created_at);
+                        // Check for active events AFTER this snapshot
+                        const evtsRes = await window.TurnosDB.fetchEventos(weekStart, weekEnd);
+                        const ACTIVE = ['activo','activa','aprobado','aprobada','pendiente'];
+                        const newerActive = (evtsRes || []).filter(e => {
+                            if (!ACTIVE.includes((e.estado||'').toLowerCase())) return false;
+                            const d = e.updated_at || e.created_at;
+                            return d && new Date(d) > lastPubDate;
+                        });
+                        if (newerActive.length > 0) {
+                            health.ok = false;
+                            health.criticals.push(
+                                `Snapshot desactualizado: ${hotel} semana ${weekStart} — ` +
+                                `publicado ${lastPubDate.toLocaleDateString()} pero hay ${newerActive.length} evento(s) activo(s) posteriores. ` +
+                                `Debe republicarse.`
+                            );
+                            console.log('[PANEL_SYNC_HEALTH_OCT_TARGET]', {
+                                weekStart, hotel,
+                                snapshotId: lastSnap.id,
+                                snapshotDate: lastSnap.created_at,
+                                activeEventsAfterSnapshot: newerActive.length,
+                                indexMatchesSnapshot: false,
+                                mobileMatchesSnapshot: false,
+                                panelShouldBeStable: false,
+                                criticalIfMismatch: true
+                            });
+                        }
+                    }
+                }
+            }
+        } catch (snapCheckErr) {
+            health.warnings.push('No se pudo verificar estado de snapshot: ' + snapCheckErr.message);
+        }
+
         console.log('[HEALTH_CONTEXT]', health.auditContext);
     } catch (err) {
         health.ok = false;
@@ -6574,22 +6704,48 @@ window.renderDashboard = async () => {
         }
 
 
-        // --- HEALTH CHECK: validateSystemHealth + pending changes ---
+        // --- HEALTH CHECK GLOBAL: autonomous, no dependency on _previewDate ---
+        const globalStatus = await window.getGlobalPendingPublicationStatus();
+        // Store on window so KPI counter can use the same result
+        window.__lastGlobalStatus = globalStatus;
+
+        // Merge outdated snapshots as CRITICAL risks
+        (globalStatus.outdatedSnapshots || []).forEach(os => {
+            const snapDate = os.snapshotDate ? new Date(os.snapshotDate).toLocaleDateString() : '?';
+            const msg = `Snapshot desactualizado: ${os.hotel} semana ${os.weekStart} — publicado ${snapDate} pero hay ${os.pendingCount} evento(s) activo(s) posteriores. Debe republicarse.`;
+            allRisks.push({ severity: 'critical', type: 'SNAPSHOT_OUTDATED', title: 'Snapshot Desactualizado',
+                desc: msg,
+                action: { fn: `window.switchSection('preview')`, label: 'Ir a Vista Previa' }
+            });
+            counts.critical++;
+        });
+        // Weeks with events but NO snapshot at all
+        (globalStatus.byHotelWeek || []).filter(b => !b.snapshotExists).forEach(b => {
+            allRisks.push({ severity: 'warning', type: 'NO_SNAPSHOT', title: 'Sin Snapshot Publicado',
+                desc: `${b.hotel} semana ${b.weekStart} tiene ${b.pendingCount} evento(s) activo(s) sin snapshot publicado.`,
+                action: { fn: `window.switchSection('preview')`, label: 'Ir a Vista Previa' }
+            });
+            counts.warning++;
+        });
+
+        // Also run validateSystemHealth for visual rules, JS errors, required functions
+        // Use _previewDate if available for stale-snapshot check; global covers pending changes
         const _healthWeekStart = window._previewDate
             ? (window.isoDate ? window.isoDate(window.getMonday(new Date(window._previewDate + 'T12:00:00'))) : window._previewDate)
             : today;
         const _healthWeekEnd = window.addIsoDays ? window.addIsoDays(_healthWeekStart, 6) : _healthWeekStart;
         const systemHealth = await window.validateSystemHealth(_healthWeekStart, _healthWeekEnd);
-
-        // Merge health criticals/warnings into allRisks
-        systemHealth.criticals.forEach(msg => {
+        // Only carry through non-pending-change criticals/warnings (global status already covers those)
+        systemHealth.criticals.filter(m => !m.includes('Snapshot desactualizado') && !m.includes('cambio(s) pendiente')).forEach(msg => {
             allRisks.push({ severity: 'critical', type: 'SYSTEM_HEALTH', title: 'Problema del Sistema', desc: msg });
             counts.critical++;
         });
-        systemHealth.warnings.forEach(msg => {
+        systemHealth.warnings.filter(m => !m.includes('Snapshot desactualizado') && !m.includes('cambio(s) pendiente')).forEach(msg => {
             allRisks.push({ severity: 'warning', type: 'SYSTEM_HEALTH', title: 'Aviso del Sistema', desc: msg });
             counts.warning++;
         });
+        console.log('[DASHBOARD_RISK_PENDING]', { criticalCount: counts.critical, warningCount: counts.warning,
+            outdatedSnapshots: globalStatus.totalOutdatedSnapshots, pendingChanges: globalStatus.totalPendingChanges });
 
         if (riskContainer) {
             if (allRisks.length === 0) {
@@ -6718,23 +6874,17 @@ window.renderDashboard = async () => {
         }
         if ($('#sync-last-time')) $('#sync-last-time').textContent = new Date().toLocaleTimeString();
         if ($('#sync-pending-changes')) {
-            // Usar hasPendingPublicationChanges para unificar fuente con el modal
-            let _pendingCount = 0;
-            try {
-                const _rawDatePrev = window._previewDate
-                    || document.getElementById('prevDateInput')?.value
-                    || document.getElementById('datePicker')?.value;
-                if (_rawDatePrev && window.hasPendingPublicationChanges) {
-                    const _wS2 = window.isoDate ? window.isoDate(window.getMonday(new Date(_rawDatePrev + 'T12:00:00'))) : _rawDatePrev;
-                    const _wE2 = window.addIsoDays ? window.addIsoDays(_wS2, 6) : _wS2;
-                    const _hotels = ['Sercotel Guadiana', 'Cumbria Spa&Hotel'];
-                    const _pendRes = await window.hasPendingPublicationChanges({ weekStart: _wS2, weekEnd: _wE2, hotels: _hotels });
-                    _pendingCount = _pendRes.count;
-                    console.log('[DASHBOARD_PENDING_CHANGES]', { weekStart: _wS2, weekEnd: _wE2, hoteles: _hotels, count: _pendingCount, source: 'hasPendingPublicationChanges' });
-                } else { _pendingCount = window.getExcelDiff ? window.getExcelDiff().length : 0; }
-            } catch (_ec) { _pendingCount = window.getExcelDiff ? window.getExcelDiff().length : 0; }
+            // Use global status (same source as risk block) — no dependency on _previewDate
+            const _pendingCount = window.__lastGlobalStatus
+                ? window.__lastGlobalStatus.totalPendingChanges
+                : 0;
             $('#sync-pending-changes').textContent = _pendingCount;
             $('#sync-pending-changes').style.color = _pendingCount > 0 ? '#ef4444' : 'inherit';
+            console.log('[DASHBOARD_KPI_PENDING]', {
+                value: _pendingCount,
+                source: 'getGlobalPendingPublicationStatus',
+                scope: 'global'
+            });
         }
 
     } catch (err) {
