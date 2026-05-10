@@ -306,25 +306,33 @@
 
         <!-- CAMBIOS DE TURNO -->
         <section id="section-changes" class="section">
-            <header class="page-header">
-                <div>
-                    <h1 class="page-title">Panel Operativo de Cambios</h1>
-                    <p class="page-subtitle">Sincronización de intercambios aprobados</p>
+            <header class="page-header" style="margin-bottom: 20px; padding: 20px 30px; align-items: center; border-bottom: 1px solid var(--border); background: rgba(255,255,255,0.01);">
+                <div style="flex: 1;">
+                    <h1 class="page-title" style="font-size: 1.25rem; margin:0; font-weight: 800; letter-spacing: -0.02em;">Panel Operativo de Cambios</h1>
+                    <p class="page-subtitle" style="font-size: 0.7rem; margin:0; color: var(--text-dim); font-weight: 500;">Gestión y sincronización de intercambios operativos</p>
                 </div>
-                <div class="header-controls" style="display:flex; gap:10px; margin-left:auto; align-items:center;">
-                    <input type="text" id="chSearch" class="btn-premium" placeholder="🔍 Buscar..." oninput="window.renderChanges()">
-                    <input type="text" id="chRange" class="btn-premium" placeholder="📅 Rango fechas..." style="width:200px;">
-                    <select id="chStatus" class="btn-premium" onchange="window.renderChanges()">
-                        <option value="activo">Pendientes / Activos</option>
-                        <option value="all">Ver Todos</option>
-                        <option value="anulado">Anulados</option>
-                    </select>
-                    <button class="btn-publish-premium" onclick="window.openNewChangeModal()" style="margin:0; background:linear-gradient(135deg,#6366f1,#4f46e5); border:none;">
-                        <i class="fas fa-plus"></i> Añadir Cambio Manual
-                    </button>
-                    <button id="btnSyncChanges" class="btn-publish-premium" onclick="window.syncGapsFromExcel('btnSyncChanges')" style="margin:0; background:linear-gradient(135deg,#34d399,#10b981); border:none;">
-                        <i class="fas fa-magic"></i> Completar Supabase
-                    </button>
+                <div class="header-controls" style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap; justify-content: flex-end;">
+                    <!-- Filter Group: Segmented look -->
+                    <div class="glass-panel" style="display: flex; gap: 0; padding: 0; border-radius: 12px; border: 1px solid var(--border); overflow: hidden; background: var(--bg3); height: 38px; box-shadow: var(--shadow-sm);">
+                        <input type="text" id="chSearch" class="btn-premium" placeholder="🔍 Buscar..." oninput="window.renderChanges()" style="width: 130px; border: none; background: transparent; padding: 0 12px; font-size: 0.75rem; margin:0; height: 100%; font-weight: 600;">
+                        <div style="width:1px; height:100%; background:var(--border);"></div>
+                        <input type="text" id="chRange" class="btn-premium" placeholder="📅 Periodo..." style="width: 150px; border: none; background: transparent; padding: 0 12px; font-size: 0.75rem; margin:0; height: 100%; font-weight: 600;">
+                        <div style="width:1px; height:100%; background:var(--border);"></div>
+                        <select id="chStatus" class="btn-premium" onchange="window.renderChanges()" style="border: none; background: transparent; padding: 0 12px; font-size: 0.75rem; margin:0; height: 100%; cursor:pointer; font-weight: 600; min-width: 120px;">
+                            <option value="activo">Pendientes</option>
+                            <option value="all">Ver Todos</option>
+                            <option value="anulado">Anulados</option>
+                        </select>
+                    </div>
+                    <!-- Action Group -->
+                    <div style="display: flex; gap: 8px;">
+                        <button class="btn-publish-premium" onclick="window.openNewChangeModal()" style="margin:0; padding: 0 16px; font-size: 0.72rem; font-weight: 800; border-radius: 12px; background: linear-gradient(135deg,#6366f1,#4f46e5); border:none; height: 38px; display: flex; align-items: center; gap: 8px; box-shadow: 0 4px 12px rgba(99, 102, 241, 0.25); color: white; cursor: pointer; transition: transform 0.2s;">
+                            <i class="fas fa-plus" style="font-size: 0.8rem;"></i> <span>MANUAL</span>
+                        </button>
+                        <button id="btnSyncChanges" class="btn-publish-premium" onclick="window.syncGapsFromExcel('btnSyncChanges')" style="margin:0; padding: 0 16px; font-size: 0.72rem; font-weight: 800; border-radius: 12px; background: linear-gradient(135deg,#10b981,#059669); border:none; height: 38px; display: flex; align-items: center; gap: 8px; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.25); color: white; cursor: pointer; transition: transform 0.2s;">
+                            <i class="fas fa-sync-alt" style="font-size: 0.8rem;"></i> <span>SYNC EXCEL</span>
+                        </button>
+                    </div>
                 </div>
             </header>
             <div style="display:grid; grid-template-columns: 1fr 300px; gap:25px; padding:0 30px 30px;">
