@@ -240,14 +240,9 @@
         };
     };
 
-    const shouldShowPinSustitucion = (cell) => {
+    const shouldShowPinSustitucion = (cell, employee, context) => {
         if (!cell) return false;
         
-        // 1. Determinar el tipo de ausencia que se está cubriendo
-        const rawAbs = (
-            cell.absenceType || cell.tipoAbsence || cell.tipoAusencia || cell.incidencia || cell.incidenciaCubierta ||
-            (cell.origen && cell.origen.startsWith('SUSTITUCION_') ? cell.origen.replace('SUSTITUCION_', '') : null) ||
-            cell.sourceType || cell.reason || cell.source || cell.sourceReason || ''
         );
         const upAbs = String(rawAbs).toUpperCase();
         
@@ -525,7 +520,11 @@
         const view = context?.view || context?.vista || 'unknown';
         const name = employee?.nombre || employee?.nombreVisible || employee?.empName || 'Empleado';
         const type = String(employee?.tipo || employee?.tipo_personal || employee?.tipoPersonal || '').toLowerCase();
+        
+        // REGLA OBLIGATORIA: Ausencias en el rango visible excluyen control
         const hasVacation = !!employee?.hasVacationInVisibleRange;
+        const hasBaja = !!employee?.hasBajaInVisibleRange;
+        const hasPermiso = !!employee?.hasPermisoInVisibleRange;
         const isInternal = !isPublicEmployeeVisible(employee);
 
         // 1. REGLA MAESTRA: En Admin Preview NUNCA se muestran chips de noches/descansos
@@ -546,7 +545,7 @@
 
             if (isInternal) {
                 showControls = false;
-                reason = 'excluded_internal_vacante';
+                reason = 'internal_vacante';
             } else if (type.includes('apoyo')) {
                 showControls = false;
                 reason = 'excluded_tipo_apoyo';
@@ -555,15 +554,23 @@
                 reason = 'excluded_tipo_ocasional';
             } else if (hasVacation) {
                 showControls = false;
-                reason = 'excluded_vacation_in_range';
+                reason = 'excluded_vacaciones_visible_range';
+            } else if (hasBaja) {
+                showControls = false;
+                reason = 'excluded_baja_visible_range';
+            } else if (hasPermiso) {
+                showControls = false;
+                reason = 'excluded_permiso_visible_range';
             }
 
-            if (window.DEBUG_MODE || true) { // Log is mandatory per user request
-                console.log('[NIGHT_REST_CONTROL_VISIBILITY]', {
-                    view, empleado: name, tipo: type, hasVacationInVisibleRange: hasVacation,
-                    isInternal, showControls, reason
-                });
-            }
+            console.log('[NIGHT_REST_CONTROL_VISIBILITY]', {
+                view, empleado: name, tipo: type, 
+                hasBajaInVisibleRange: hasBaja,
+                hasPermisoInVisibleRange: hasPermiso,
+                hasVacationInVisibleRange: hasVacation,
+                isInternal, showControls, reason
+            });
+
             return showControls;
         }
 
