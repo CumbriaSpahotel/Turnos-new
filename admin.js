@@ -5881,7 +5881,7 @@ window.publishToSupabase = async () => {
             }
         }
 
-        // 3. Guardar Snapshots en publicaciones_cuadrante (FASE A CrÃƒÂ­tica / FASE B Best-Effort)
+        // 3. Guardar Snapshots en publicaciones_cuadrante (FASE A Crítica / FASE B Best-Effort)
         console.log("[PUBLISH_EXECUTE] saving snapshots", snapshots.length);
         let globalNeedsCleanup = false;
         
@@ -5965,22 +5965,25 @@ window.validatePublishChanges = (changes) => {
     changes.forEach(c => {
         // 1. Empleados sin ID
         if (!c.displayName || c.displayName === '?' || c.displayName.length < 2) {
-            errors.push(`Empleado con nombre inv—${c.weekStart}: "${c.displayName}"`);
+            errors.push(`Empleado con nombre inválido ${c.weekStart}: "${c.displayName}"`);
         }
 
-        // 2. Fechas inconsistentes (ya se filtran en ExcelLoader pero re-verificamos)
+        // 2. Fechas inconsistentes
         if (!c.weekStart || isNaN(new Date(c.weekStart).getTime())) {
-            errors.push(`Fecha de semana inv—${c.displayName}: ${c.weekStart}`);
+            errors.push(`Fecha de semana inválida ${c.displayName}: ${c.weekStart}`);
         }
 
-        // 3. Turnos inv—.row.values.forEach((v, idx) => {
-            const vNorm = String(v || '').toUpperCase().trim();
-            if (vNorm && !validShifts.has(vNorm) && !vNorm.includes('x ÃƒÂÃ‚Â¯ÃƒÆ’Ã†â€™—†â€™—†â€™—')) {
-                // Permitimos valores que no estÃƒÂ©n en el set si son descriptivos,
-                // pero alertamos si parecen basura
-                if (vNorm.length > 10) errors.push(`Turno sospechoso en ${c.weekStart} (${c.displayName}): ${vNorm}`);
-            }
-        });
+        // 3. Turnos inválidos
+        if (c.row && c.row.values) {
+            c.row.values.forEach((v, idx) => {
+                const vNorm = String(v || '').toUpperCase().trim();
+                if (vNorm && !validShifts.has(vNorm)) {
+                    if (vNorm.length > 10) {
+                        errors.push(`Turno sospechoso en ${c.weekStart} (${c.displayName}): ${vNorm}`);
+                    }
+                }
+            });
+        }
     });
 
     return errors;
@@ -5993,7 +5996,7 @@ window.validatePublishChanges = (changes) => {
     window.buildPublicationSnapshotPreview = async (weekStart, hotelName = 'all') => {
         // ValidaciÃƒÂ³n de fecha
         if (!weekStart || isNaN(new Date(weekStart).getTime())) {
-            throw new Error(`Fecha de semana inv—: ${weekStart}`);
+            throw new Error(`Fecha de semana inválido: ${weekStart}`);
         }
 
         const cache = window._lastRenderedPreviewSnapshotSource;
