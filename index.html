@@ -809,12 +809,8 @@
         table.renderRow = function(tr, rowData) {
             const tds = tr.children;
             const daysMap = rowData.turnosOperativos || rowData.cells || rowData.dias || {};
-            // Bug-fix: apoyo/ocasional employees must not show structural counters
-            const skipCounters = !!(
-                rowData.excludeCounters === true ||
-                String(rowData.tipoPersonal || rowData.tipo_personal || rowData.tipo || '').toLowerCase().includes('apoyo') ||
-                String(rowData.tipoPersonal || rowData.tipo_personal || rowData.tipo || '').toLowerCase().includes('ocasional')
-            );
+            const showCounters = window.TurnosRules ? window.TurnosRules.shouldShowNightRestControls(rowData, { view: 'index' }) : true;
+            const skipCounters = !showCounters;
             let nights = 0, rests = 0;
             if (!skipCounters) {
                 dates.forEach(f => {
@@ -866,13 +862,8 @@
         const sorted = window.TurnosRules.sortEmployees(filteredRows);
 
         sorted.forEach(rowData => {
-            const skipCounters = !!(
-                rowData.excludeCounters === true ||
-                rowData.hasVacationInVisibleRange === true ||
-                String(rowData.tipoPersonal || rowData.tipo_personal || rowData.tipo || '').toLowerCase().includes('apoyo') ||
-                String(rowData.tipoPersonal || rowData.tipo_personal || rowData.tipo || '').toLowerCase().includes('ocasional')
-            );
-            if (skipCounters) return;
+            const showCounters = window.TurnosRules ? window.TurnosRules.shouldShowNightRestControls(rowData, { view: 'index' }) : true;
+            if (!showCounters) return;
             const daysMap = rowData.dias || rowData.cells || {};
             dates.forEach(f => {
                 const dayData = daysMap[f] || {};

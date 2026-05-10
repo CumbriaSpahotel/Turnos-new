@@ -156,16 +156,9 @@ class VirtualTable {
         
         // Calcular estadísticas de la fila (noches y descansos)
         let nights = 0, rests = 0;
-        const empNameLower = String(rowData.empName || '').toLowerCase();
-        const skipCounters = !!(
-            rowData.excludeCounters === true ||
-            empNameLower.includes('vacante') ||
-            empNameLower.includes('?') ||
-            String(rowData.tipo || '').toLowerCase().includes('apoyo') ||
-            String(rowData.tipo || '').toLowerCase().includes('ocasional')
-        );
+        const showControls = window.TurnosRules ? window.TurnosRules.shouldShowNightRestControls(rowData, { view: 'admin-preview' }) : false;
 
-        if (!skipCounters) {
+        if (showControls) {
             rowData.cells.forEach(c => {
                 const t = String(c.turno || '').toLowerCase();
                 if (t.includes('noche') || t === 'n') nights++;
@@ -173,12 +166,12 @@ class VirtualTable {
             });
         }
 
-        const badgesHtml = skipCounters ? '' : `
+        const badgesHtml = showControls ? `
             <div class="emp-badges" style="display:flex; gap:4px;">
                 <span class="emp-badge" style="font-size:0.7rem; font-weight:800; padding:2px 6px; border-radius:4px; background:#f8fafc; color:#64748b; border:1px solid #e2e8f0;">N${nights}</span>
                 <span class="emp-badge" style="font-size:0.7rem; font-weight:800; padding:2px 6px; border-radius:4px; background:#f8fafc; color:#0d6efd; border:1px solid #e2e8f0;">D${rests}</span>
             </div>
-        `;
+        ` : '';
 
         tds[0].innerHTML = `
             <div style="display:flex; align-items:center; justify-content:space-between; width:100%;">

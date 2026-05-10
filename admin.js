@@ -4098,19 +4098,17 @@ window.renderEmpleadoRowHeader = (employee, { showVacationIcon = false, isCompac
     }
 
     const isExplicitRefuerzo = Boolean(employee?.isRefuerzo === true || employee?.origen === 'refuerzo' || employee?.payload?.tipo_modulo === 'refuerzo');
-    const isSupport = employee?.excludeCounters === true || ['apoyo', 'ocasional'].includes(String(employee?.tipo || employee?.tipo_personal || '').toLowerCase());
     
-    // REGLA OBLIGATORIA: Si está de vacaciones en el rango visible, ocultamos contadores estructurales
-    const hasVacation = !!employee?.hasVacationInVisibleRange;
-    const skipCounters = isSupport || hasVacation;
+    // REGLA OBLIGATORIA: En Admin Preview NUNCA se muestran chips de noches/descansos.
+    const showCounters = window.TurnosRules ? window.TurnosRules.shouldShowNightRestControls(employee, { view: 'admin-preview' }) : false;
 
     const supportBadge = isExplicitRefuerzo ? `<span style="display:inline-block;padding:2px 7px;border-radius:6px;background:#dbeafe;color:#2563eb;font-size:0.55rem;font-weight:700;margin-left:6px;">REFUERZO</span>` : '';
-    const counterControls = skipCounters ? '' : `
+    const counterControls = showCounters ? `
         <div class="row-controls" style="display:flex; gap:6px; margin-top:4px;">
             <span class="control-chip" style="font-size:0.65rem; padding:1px 6px; border-radius:4px; background:#f1f5f9; color:#64748b; border:1px solid #e2e8f0;">🌙 0</span>
             <span class="control-chip" style="font-size:0.65rem; padding:1px 6px; border-radius:4px; background:#f1f5f9; color:#64748b; border:1px solid #e2e8f0;">D 0</span>
         </div>
-    `;
+    ` : '';
 
     return `
     <div style="display:flex; flex-direction:column; gap:2px;">

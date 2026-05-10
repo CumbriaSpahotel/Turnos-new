@@ -521,6 +521,55 @@
         return true;
     };
 
+    const shouldShowNightRestControls = (employee, context) => {
+        const view = context?.view || context?.vista || 'unknown';
+        const name = employee?.nombre || employee?.nombreVisible || employee?.empName || 'Empleado';
+        const type = String(employee?.tipo || employee?.tipo_personal || employee?.tipoPersonal || '').toLowerCase();
+        const hasVacation = !!employee?.hasVacationInVisibleRange;
+        const isInternal = !isPublicEmployeeVisible(employee);
+
+        // 1. REGLA MAESTRA: En Admin Preview NUNCA se muestran chips de noches/descansos
+        if (view === 'admin-preview' || view === 'admin') {
+            if (window.DEBUG_MODE) {
+                console.log('[NIGHT_REST_CONTROL_VISIBILITY]', {
+                    view, empleado: name, showControls: false, reason: 'admin_preview_no_controls'
+                });
+            }
+            return false;
+        }
+
+        // 2. REGLA MAESTRA: En Index/Mobile solo para empleados públicos ordinarios activos
+        const isPublicView = (view === 'index' || view === 'public' || view === 'mobile');
+        if (isPublicView) {
+            let showControls = true;
+            let reason = 'public_ordinary_employee';
+
+            if (isInternal) {
+                showControls = false;
+                reason = 'excluded_internal_vacante';
+            } else if (type.includes('apoyo')) {
+                showControls = false;
+                reason = 'excluded_tipo_apoyo';
+            } else if (type.includes('ocasional')) {
+                showControls = false;
+                reason = 'excluded_tipo_ocasional';
+            } else if (hasVacation) {
+                showControls = false;
+                reason = 'excluded_vacation_in_range';
+            }
+
+            if (window.DEBUG_MODE || true) { // Log is mandatory per user request
+                console.log('[NIGHT_REST_CONTROL_VISIBILITY]', {
+                    view, empleado: name, tipo: type, hasVacationInVisibleRange: hasVacation,
+                    isInternal, showControls, reason
+                });
+            }
+            return showControls;
+        }
+
+        return false;
+    };
+
     window.TurnosRules = {
         normalizeText,
         shiftKey,
@@ -530,6 +579,7 @@
         describeCell,
         shouldShowPinSustitucion,
         isPublicEmployeeVisible,
+        shouldShowNightRestControls,
         shouldShowPin: shouldShowPinSustitucion, // Alias for backward compatibility
         sortEmployees,
         normalizeHotelName,
