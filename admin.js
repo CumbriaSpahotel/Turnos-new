@@ -7872,10 +7872,10 @@ window.renderEmployeeProfileEditForm = (emp, model) => {
     const warnsHTML = warns.length ? `<div style="display:grid;gap:6px;margin-bottom:10px;">${warns.map(w=>`<div style="padding:7px 10px;border-radius:10px;border:1px solid rgba(245,158,11,0.3);background:rgba(245,158,11,0.05);font-size:0.74rem;font-weight:600;color:var(--text);">[!] ${escapeHtml(w)}</div>`).join('')}</div>` : '';
 
     const card = (val, label, icon, active, name) =>
-        `<label style="display:flex;align-items:center;padding:3px 8px;border:2px solid ${active?'#6366f1':'var(--border)'};border-radius:8px;cursor:pointer;gap:6px;user-select:none;min-height:26px;background:${active?'rgba(99,102,241,0.05)':'white'};" class="smart-choice">
+        `<label style="display:flex;align-items:center;padding:2px 8px;border:1.5px solid ${active?'#6366f1':'var(--border)'};border-radius:6px;cursor:pointer;gap:6px;user-select:none;min-height:24px;background:${active?'rgba(99,102,241,0.06)':'white'};transition:all 0.15s ease;" class="smart-choice">
             <input type="radio" name="${name}" value="${val}" style="display:none;" ${active?'checked':''} onchange="window.updateSmartProfileExplainer?.()">
-            <span style="font-size:0.72rem;opacity:0.8;">${icon}</span>
-            <strong style="font-size:0.68rem;white-space:nowrap;">${label}</strong>
+            <span style="font-size:0.65rem;opacity:0.75;">${icon}</span>
+            <strong style="font-size:0.64rem;white-space:nowrap;letter-spacing:-0.01em;">${label}</strong>
         </label>`;
 
     return `
@@ -7885,17 +7885,17 @@ window.renderEmployeeProfileEditForm = (emp, model) => {
                 <div class="emp-behavior-title">Operativa</div>
                 <div id="empBehaviorText" style="font-weight:600;font-size:0.72rem;">${explText}</div>
             </div>
-            <form class="emp-edit-form" onsubmit="window.saveEmployeeProfileV2(event)" style="display:grid;grid-template-columns:repeat(auto-fill, minmax(200px, 1fr));gap:8px;">
-                <label style="padding:6px 10px;"><span>ID técnico</span><input type="text" value="${escapeHtml(emp.id||'')}" disabled style="height:28px;font-size:0.74rem;background:#f8fafc;"><small>No editable</small></label>
-                <label style="padding:6px 10px;"><span>ID interno</span><input type="text" value="${escapeHtml(emp.id_interno||'')}" disabled style="height:28px;font-size:0.74rem;background:#f8fafc;"><small>No editable</small></label>
-                <label style="padding:6px 10px;"><span>Nombre</span><input id="edit-emp-nombre" type="text" value="${escapeHtml(emp.nombre||'')}" oninput="window.updateSmartProfileExplainer?.()" style="height:30px;font-size:0.78rem;"></label>
-                <label style="padding:6px 10px;"><span>Puesto</span><input id="edit-emp-puesto" type="text" value="${escapeHtml(emp.puesto||emp.categoria||'')}" style="height:30px;font-size:0.78rem;"></label>
-                <label style="padding:6px 10px;"><span>Email</span><input id="edit-emp-email" type="email" value="${escapeHtml(emp.email||'')}" style="height:30px;font-size:0.78rem;"></label>
-                <label style="padding:6px 10px;"><span>Teléfono</span><input id="edit-emp-telefono" type="text" value="${escapeHtml(emp.telefono||'')}" style="height:30px;font-size:0.78rem;"></label>
+            <form class="emp-edit-form" onsubmit="window.saveEmployeeProfileV2(event)" style="display:flex; flex-wrap:wrap; gap:8px;">
+                <label style="flex: 1 1 140px; padding:4px 10px;"><span>ID técnico</span><input type="text" value="${escapeHtml(emp.id||'')}" disabled style="height:26px;font-size:0.72rem;background:#f8fafc;"><small>No editable</small></label>
+                <label style="flex: 1 1 140px; padding:4px 10px;"><span>ID interno</span><input type="text" value="${escapeHtml(emp.id_interno||'')}" disabled style="height:26px;font-size:0.72rem;background:#f8fafc;"><small>No editable</small></label>
+                <label style="flex: 2 1 200px; padding:4px 10px;"><span>Nombre</span><input id="edit-emp-nombre" type="text" value="${escapeHtml(emp.nombre||'')}" oninput="window.updateSmartProfileExplainer?.()" style="height:28px;font-size:0.76rem;"></label>
+                <label style="flex: 1.5 1 180px; padding:4px 10px;"><span>Puesto</span><input id="edit-emp-puesto" type="text" value="${escapeHtml(emp.puesto||emp.categoria||'')}" style="height:28px;font-size:0.76rem;"></label>
+                <label style="flex: 1.5 1 180px; padding:4px 10px;"><span>Email</span><input id="edit-emp-email" type="email" value="${escapeHtml(emp.email||'')}" style="height:28px;font-size:0.76rem;"></label>
+                <label style="flex: 1 1 140px; padding:4px 10px;"><span>Teléfono</span><input id="edit-emp-telefono" type="text" value="${escapeHtml(emp.telefono||'')}" style="height:28px;font-size:0.76rem;"></label>
 
-                <div class="span-2" style="border:1px solid var(--border);border-radius:10px;padding:8px 10px;background:rgba(255,255,255,0.5);">
-                    <span style="font-size:0.62rem;font-weight:900;text-transform:uppercase;color:var(--text-dim);display:block;margin-bottom:6px;">Tipo, Función y Hotel</span>
-                    <div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center;">
+                <div style="flex: 1 1 100%; border:1px solid var(--border);border-radius:10px;padding:8px 10px;background:rgba(255,255,255,0.4); backdrop-filter:blur(4px);">
+                    <span style="font-size:0.6rem;font-weight:900;text-transform:uppercase;color:var(--text-dim);display:block;margin-bottom:6px; opacity:0.8;">Tipo, Función y Hotel</span>
+                    <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;">
                         <div style="display:flex;gap:4px;padding-right:8px;border-right:1px solid var(--border);">
                             ${card('fijo','Fijo','<i class="fas fa-user-tie"></i>',smartTipoSel==='fijo','smart-tipo')}
                             ${card('ocasional','Ocasional','<i class="fas fa-user-clock"></i>',smartTipoSel==='ocasional','smart-tipo')}
@@ -7919,17 +7919,17 @@ window.renderEmployeeProfileEditForm = (emp, model) => {
                     <input type="hidden" id="edit-emp-hoteles-hidden" value="${escapeHtml([...assignedHotels].join(','))}">
                 </div>
 
-                <label style="padding:6px 10px;">
+                <label style="flex: 1 1 140px; padding:4px 10px;">
                     <span>Estado laboral</span>
-                    <select id="edit-emp-estado-select" onchange="window.updateSmartProfileExplainer?.()" style="height:30px;font-size:0.78rem;padding:0 8px;">
+                    <select id="edit-emp-estado-select" onchange="window.updateSmartProfileExplainer?.()" style="height:28px;font-size:0.76rem;padding:0 8px; border:1px solid var(--border); border-radius:6px;">
                         ${['Activo','Pendiente','Inactivo','Baja','Excedencia'].map(e=>`<option value="${e}" ${rawEstado===e?'selected':''}>${e}</option>`).join('')}
                     </select>
                 </label>
-                <label style="padding:6px 10px;">
+                <label style="flex: 1 1 140px; padding:4px 10px;">
                     <span>Vacaciones/año</span>
-                    <input id="edit-emp-vac-anuales" type="number" min="0" step="1" value="${escapeHtml(emp.vacaciones_anuales||model?.vacaciones?.derechoAnual||44)}" style="height:30px;font-size:0.78rem;">
+                    <input id="edit-emp-vac-anuales" type="number" min="0" step="1" value="${escapeHtml(emp.vacaciones_anuales||model?.vacaciones?.derechoAnual||44)}" style="height:28px;font-size:0.76rem;">
                 </label>
-                <label class="span-2" style="padding:6px 10px;"><span>Observaciones</span><textarea id="edit-emp-observaciones" rows="2" style="min-height:36px;font-size:0.78rem;padding:6px 10px;">${escapeHtml(emp.observaciones||emp.notas||'')}</textarea></label>
+                <label style="flex: 1 1 100%; padding:4px 10px;"><span>Observaciones</span><textarea id="edit-emp-observaciones" rows="2" style="min-height:32px;font-size:0.76rem;padding:6px 10px; width:100%; box-sizing:border-box;">${escapeHtml(emp.observaciones||emp.notas||'')}</textarea></label>
             </form>
         </section>
     `;
@@ -8332,7 +8332,11 @@ window.updateSmartProfileExplainer = () => {
 
     document.querySelectorAll('.smart-choice').forEach(el => {
         const r = el.querySelector('input[type=radio]');
-        if (r) el.style.borderColor = r.checked ? '#6366f1' : 'var(--border)';
+        if (r) {
+            const isChecked = r.checked;
+            el.style.borderColor = isChecked ? '#6366f1' : 'var(--border)';
+            el.style.background = isChecked ? 'rgba(99,102,241,0.08)' : 'white';
+        }
     });
 };
 

@@ -1527,19 +1527,20 @@ input, select, textarea { color: var(--text); }
 }
 
 .emp-edit-form {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 14px 16px;
-  align-items: start;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: flex-start;
 }
 
 .emp-edit-form label {
-  display: grid;
-  gap: 6px;
-  min-width: 0;
-  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 140px;
+  padding: 8px 10px;
   border: 1px solid rgba(217, 226, 236, 0.7);
-  border-radius: 14px;
+  border-radius: 12px;
   background: rgba(255, 255, 255, 0.72);
 }
 
@@ -1684,7 +1685,7 @@ input, select, textarea { color: var(--text); }
 
 .emp-edit-form .span-2,
 .emp-edit-actions.span-2 {
-  grid-column: 1 / -1;
+  flex: 1 1 100%;
 }
 
 .emp-edit-actions {
@@ -3944,13 +3945,14 @@ input, select, textarea { color: var(--text); }
   border-radius: 12px !important;
 }
 #empDrawer .emp-edit-form {
-  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-  gap: 4px 6px !important;
+  display: flex !important;
+  flex-wrap: wrap !important;
+  gap: 6px 8px !important;
 }
 #empDrawer .emp-edit-form label {
-  padding: 3px 5px !important;
-  border-radius: 9px !important;
-  min-width: 0 !important;
+  padding: 4px 6px !important;
+  border-radius: 8px !important;
+  min-width: 120px !important;
 }
 #empDrawer .emp-edit-form label > span {
   font-size: 0.55rem !important;
@@ -3977,7 +3979,7 @@ input, select, textarea { color: var(--text); }
   font-size: 0.68rem !important;
 }
 #empDrawer .emp-edit-form .span-2 {
-  grid-column: 1 / -1 !important;
+  flex: 1 1 100% !important;
 }
 #empDrawer .emp-edit-form .span-2 > div[style*='repeat(3'] {
   grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
@@ -4009,7 +4011,7 @@ input, select, textarea { color: var(--text); }
 
 @media (max-width: 1100px) {
   #empDrawer .emp-edit-form {
-    grid-template-columns: 1fr !important;
+    flex-direction: column !important;
   }
   #empDrawer .emp-edit-form .span-2 > div[style*='repeat(3'] {
     grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
