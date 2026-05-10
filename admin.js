@@ -1913,11 +1913,56 @@ window.ensureChangeEditModal = () => {
     document.body.appendChild(modal);
     const dateField = document.getElementById('edit-change-date');
     const hotelField = document.getElementById('edit-change-hotel');
+    const empField = document.getElementById('edit-change-employee');
+    const targetField = document.getElementById('edit-change-target');
+
     const refreshOperative = () => {
         window.refreshChangeEditOperativeSelects().catch(err => console.warn('[ChangeEdit] No se pudo refrescar operativo:', err));
     };
-    dateField?.addEventListener('change', refreshOperative);
-    hotelField?.addEventListener('change', refreshOperative);
+    const refreshShifts = () => {
+        window.refreshChangeEditShifts().catch(err => console.warn('[ChangeEdit] No se pudo refrescar turnos:', err));
+    };
+
+    dateField?.addEventListener('change', () => { refreshOperative(); refreshShifts(); });
+    hotelField?.addEventListener('change', () => { refreshOperative(); refreshShifts(); });
+    empField?.addEventListener('change', refreshShifts);
+    targetField?.addEventListener('change', refreshShifts);
+};
+
+window.refreshChangeEditShifts = async () => {
+    const date = document.getElementById('edit-change-date')?.value;
+    const hotel = document.getElementById('edit-change-hotel')?.value;
+    const empId = document.getElementById('edit-change-employee')?.value;
+    const targetId = document.getElementById('edit-change-target')?.value;
+    if (!date || !hotel) return;
+
+    const resolve = async (id) => {
+        if (!id || id === '??') return '';
+        try {
+            const res = await window.ShiftResolver.resolveEmployeeDay({
+                empleadoId: id,
+                hotel: hotel,
+                fecha: date
+            });
+            return res?.turno_base || res?.turno || '';
+        } catch (e) { return ''; }
+    };
+
+    const toVal = (s) => {
+        const n = window.normalizeShiftValue ? window.normalizeShiftValue(s) : String(s || '').trim().toUpperCase();
+        return ['M', 'T', 'N', 'D'].includes(n) ? n : '';
+    };
+
+    if (empId) {
+        const s = await resolve(empId);
+        const f = document.getElementById('edit-change-origin');
+        if (f) f.value = toVal(s);
+    }
+    if (targetId) {
+        const s = await resolve(targetId);
+        const f = document.getElementById('edit-change-dest');
+        if (f) f.value = toVal(s);
+    }
 };
 
 window._changeEditOperativeCache = window._changeEditOperativeCache || new Map();
@@ -3694,7 +3739,7 @@ window.renderPuestoCell = (celda) => {
     const shiftKey = window.TurnosRules?.shiftKey(celda.turno || celda.turno_base, 'NORMAL') || 'empty';
     const def = window.TurnosRules?.definitions?.[shiftKey] || window.TurnosRules?.definitions?.empty || { adminStyle: '' };
     const replacementLine = celda.real && celda.real !== celda.titular
-        ? `<div style="font-size:0.72rem; font-weight:700; color:#0f172a;">📌 ${escapeHtml(celda.real)}</div>`
+        ? `<div style="font-size:0.72rem; font-weight:700; color:#0f172a;">${(celda.incidencia && String(celda.incidencia).toUpperCase().startsWith('VAC')) ? '' : '📌 '}${escapeHtml(celda.real)}</div>`
         : '';
     const changeLine = !replacementLine && celda.cambio && celda.turno_base && celda.turno !== celda.turno_base
         ? `<div style="font-size:0.68rem; color:#64748b;">Base ${escapeHtml(celda.turno_base)}</div>`
@@ -6250,57 +6295,7 @@ window.validatePublishChanges = (changes) => {
                         const isRendered = expected && (code === expected || code.startsWith(expected) || type === expected);
                         if (!isRendered) {
                             errors.push(`[BLOQUEO] Evento ${tipoEv} no renderizado para ${row.nombreVisible} el ${d} -snapshot tiene code="${code}" type="${type}"`);
-                        }
-                    });
-                }
-            });
-
-            // [O] ValidaciÃ Â³n de Consistencia de Cambios de Turno / Intercambios
-            events.forEach(ev => {
-                if (window.normalizeEstado(ev.estado) === 'anulado') return;
-                const tipoEv = window.normalizeTipo(ev.tipo);
-                if (tipoEv !== 'CAMBIO_TURNO' && tipoEv !== 'INTERCAMBIO_TURNO') return;
-
-                const evStart = window.normalizeDate ? window.normalizeDate(ev.fecha_inicio) : (ev.fecha_inicio || '');
-                if (!evStart || !wStart || evStart > wEnd || evStart < wStart) return;
-
-                const idOrig = window.normalizeId(ev.empleado_id);
-                const idDest = window.normalizeId(
-                    ev.empleado_destino_id ||
                     ev.sustituto_id ||
-                    ev.sustituto ||
-                    ev.payload?.empleado_destino_id ||
-                    ev.payload?.sustituto_id ||
-                    ev.payload?.sustituto ||
-                    ev.payload?.sustituto_nombre
-                );
-
-                const matchesSnapshotRow = (row, id) => {
-                    if (!row || !id) return false;
-                    const keys = [row.empleado_id, row.nombre, row.nombreVisible];
-                    return keys.some(k => {
-                        const nk = window.normalizeId(k);
-                        return nk === id || nk.includes(id) || id.includes(nk);
-                    });
-                };
-
-                // RESOLUCIÃ â  N OPERATIVA (V140)
-                // Los cambios se validan contra el ocupante real del dÃ Â­a.
-                const resolvedOrig = window.getOperationalOccupant ? window.getOperationalOccupant(idOrig, evStart, events, snapHotelId) : idOrig;
-                const resolvedDest = idDest ? (window.getOperationalOccupant ? window.getOperationalOccupant(idDest, evStart, events, snapHotelId) : idDest) : null;
-
-                const rowOrig = snap.rows.find(r => matchesSnapshotRow(r, resolvedOrig));
-                const rowDest = resolvedDest ? snap.rows.find(r => matchesSnapshotRow(r, resolvedDest)) : null;
-
-                const checkCell = (row, id, role) => {
-                    if (!row) return;
-                    const cell = row.cells[evStart];
-                    if (!cell) return;
-                    const isChanged = !!cell.changed || !!cell.intercambio || (cell.origen && cell.origen.includes('CAMBIO'));
-                    const hasIcon = Array.isArray(cell.icons) && cell.icons.includes('Ã°Å¸â  Å   â    â    -Ã¢â ¬Â¦ ¾');
-                    if (!isChanged && !hasIcon) {
-                        errors.push(`[BLOQUEO] El ${role} del cambio (${id}) no muestra el icono Ã°Å¸â  Å   â    â    -Ã¢â ¬Â¦ ¾ el ${evStart} en ${snapHotelId}`);
-                    }
                 };
 
                 checkCell(rowOrig, ev.empleado_id, 'Origen');

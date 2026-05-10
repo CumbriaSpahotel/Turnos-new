@@ -390,16 +390,18 @@
 
         <!-- BAJAS -->
         <section id="section-bajas" class="section">
-            <header class="page-header">
-                <div>
-                    <h1 class="page-title">Bajas y Permisos</h1>
-                    <p class="page-subtitle">Gestión de ausencias temporales, permisos e IT</p>
+            <header class="page-header" style="margin-bottom: 20px; padding: 20px 30px; align-items: center; border-bottom: 1px solid var(--border); background: rgba(255,255,255,0.01);">
+                <div style="flex: 1;">
+                    <h1 class="page-title" style="font-size: 1.25rem; margin:0; font-weight: 800; letter-spacing: -0.02em;">Bajas y Permisos</h1>
+                    <p class="page-subtitle" style="font-size: 0.7rem; margin:0; color: var(--text-dim); font-weight: 500;">Gestión de ausencias temporales, permisos e IT</p>
                 </div>
-                <div class="header-controls" style="display:flex; gap:10px; margin-left:auto; align-items:center;">
-                    <button id="btnSyncBajas" class="btn-publish-premium" onclick="window.syncGapsFromExcel('btnSyncBajas')" style="margin:0; background:linear-gradient(135deg,#34d399,#10b981); border:none;">
-                        <i class="fas fa-magic"></i> Completar Supabase
+                <div class="header-controls" style="display: flex; gap: 8px; align-items: center; justify-content: flex-end;">
+                    <button id="btnSyncBajas" class="btn-publish-premium" onclick="window.syncGapsFromExcel('btnSyncBajas')" style="margin:0; padding: 0 16px; font-size: 0.72rem; font-weight: 800; border-radius: 12px; background: linear-gradient(135deg,#10b981,#059669); border:none; height: 38px; display: flex; align-items: center; gap: 8px; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.25); color: white; cursor: pointer; transition: transform 0.2s;">
+                        <i class="fas fa-magic" style="font-size: 0.8rem;"></i> <span>SYNC EXCEL</span>
                     </button>
-                    <button class="btn-publish-premium" onclick="window.openBajaPermisoModal()" style="margin:0;">+ Nueva Baja/Permiso</button>
+                    <button class="btn-publish-premium" onclick="window.openBajaPermisoModal()" style="margin:0; padding: 0 16px; font-size: 0.72rem; font-weight: 800; border-radius: 12px; background: linear-gradient(135deg,#3b82f6,#2563eb); border:none; height: 38px; display: flex; align-items: center; gap: 8px; box-shadow: 0 4px 12px rgba(59, 130, 246, 0.25); color: white; cursor: pointer; transition: transform 0.2s;">
+                        <i class="fas fa-plus" style="font-size: 0.8rem;"></i> <span>NUEVA BAJA/PERMISO</span>
+                    </button>
                 </div>
             </header>
             <div id="absences-content" style="padding:0 30px 30px;"></div>

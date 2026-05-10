@@ -6,8 +6,8 @@ let _bajasData=[], _bajasFiltered=[], _bajasGrouped=[];
 let _editingBaja=null, _bajasInitialized=false;
 // Persistent filter state (survives innerHTML re-renders)
 const _bajasState = {
-  hotel:'all', empSearch:'', tipo:'all', estado:'pendiente_activo',
-  sustSearch:'', noSust:false, dateStart:'', dateEnd:''
+  hotel:'all', empSearch:'', tipo:'all', estado:'all',
+  sustSearch:'', noSust:false, dateStart:todayISO(), dateEnd:''
 };
 let _skipDomCache = false;
 
@@ -31,8 +31,8 @@ function empLabel(id,emps){
   }
   return id;
 }
-function tipoNorm(t){return String(t||'').toUpperCase().replace(/[^A-Z_]/g,'');}
 function todayISO(){return window.isoDate ? window.isoDate(new Date()) : new Date().toISOString().slice(0,10);}
+function tipoNorm(t){return String(t||'').toUpperCase().replace(/[^A-Z_]/g,'');}
 function ensureDefaultPendingFromToday(){
   if(!_bajasState.dateStart && !_bajasState.dateEnd && _bajasState.estado === 'pendiente_activo'){
     _bajasState.dateStart = todayISO();
@@ -145,42 +145,52 @@ window.renderBajas=async()=>{
         <div style="font-size:1.6rem;font-weight:900;margin-top:4px;color:${c};">${v}</div>
       </div>`).join('')}
     </div>
-    <div class="glass-panel" style="padding:14px;border:1px solid var(--border);border-radius:14px;margin-bottom:16px;">
-      <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;">
-        <input type="date" id="bjDateStart" class="btn-premium" style="width:140px;" value="${_bajasState.dateStart||''}" onchange="window.renderBajas()">
-        <span style="color:var(--text-dim);font-size:0.8rem;">a</span>
-        <input type="date" id="bjDateEnd" class="btn-premium" style="width:140px;" value="${_bajasState.dateEnd||''}" onchange="window.renderBajas()">
-        <select id="bjHotel" class="btn-premium" onchange="window.renderBajas()">
+    <div class="glass-panel" style="padding:15px; border:1px solid var(--border); border-radius:14px; margin-bottom:16px; background: var(--bg3);">
+      <div style="display:flex; flex-wrap:wrap; gap:8px; align-items:center;">
+        <div class="glass-panel" style="display:flex; gap:0; border:1px solid var(--border); border-radius:10px; overflow:hidden; background:var(--bg); height:34px;">
+          <input type="date" id="bjDateStart" class="btn-premium" style="width:130px; border:none; background:transparent; font-size:0.75rem; padding:0 8px; margin:0;" value="${_bajasState.dateStart||''}" onchange="window.renderBajas()">
+          <div style="width:1px; background:var(--border);"></div>
+          <input type="date" id="bjDateEnd" class="btn-premium" style="width:130px; border:none; background:transparent; font-size:0.75rem; padding:0 8px; margin:0;" value="${_bajasState.dateEnd||''}" onchange="window.renderBajas()">
+        </div>
+
+        <select id="bjHotel" class="btn-premium" onchange="window.renderBajas()" style="height:34px; padding:0 12px; font-size:0.75rem;">
           <option value="all">Todos los hoteles</option>
           ${hotels.map(h=>`<option value="${h}"${fH===h?' selected':''}>${h}</option>`).join('')}
         </select>
-        <input type="text" id="bjEmpSearch" class="btn-premium" placeholder="🔍 Empleado / ID..." style="width:170px;" value="${_bajasState.empSearch||''}" oninput="window.renderBajas()">
-        <select id="bjTipo" class="btn-premium" onchange="window.renderBajas()">
-          <option value="all">Todos los tipos</option>
-          <option value="BAJA"${fT==='BAJA'?' selected':''}>Baja médica / IT</option>
-          <option value="PERM"${fT==='PERM'?' selected':''}>Permiso</option>
-          <option value="FORMACION"${fT==='FORMACION'?' selected':''}>Formación</option>
-          <option value="OTRO"${fT==='OTRO'?' selected':''}>Otro</option>
-        </select>
-        <select id="bjEstado" class="btn-premium" onchange="window.renderBajas()">
-          <option value="pendiente_activo"${fE==='pendiente_activo'?' selected':''}>Pendientes / Activos</option>
-          <option value="all"${fE==='all'?' selected':''}>Todos los estados</option>
-          <option value="pendiente"${fE==='pendiente'?' selected':''}>Pendiente</option>
-          <option value="activo"${fE==='activo'?' selected':''}>Activo</option>
-          <option value="aprobado"${fE==='aprobado'?' selected':''}>Aprobado</option>
-          <option value="rechazado"${fE==='rechazado'?' selected':''}>Rechazado</option>
-          <option value="anulado"${fE==='anulado'?' selected':''}>Anulado</option>
-          <option value="finalizado"${fE==='finalizado'?' selected':''}>Finalizado</option>
-        </select>
-        <input type="text" id="bjSustSearch" class="btn-premium" placeholder="🔍 Sustituto..." style="width:150px;" value="${_bajasState.sustSearch||''}" oninput="window.renderBajas()">
-        <label style="display:flex;align-items:center;gap:5px;font-size:0.75rem;font-weight:700;color:var(--text-dim);cursor:pointer;">
+
+        <div class="glass-panel" style="display:flex; gap:0; border:1px solid var(--border); border-radius:10px; overflow:hidden; background:var(--bg); height:34px;">
+          <input type="text" id="bjEmpSearch" class="btn-premium" placeholder="🔍 Empleado / ID..." style="width:160px; border:none; background:transparent; font-size:0.75rem; padding:0 10px; margin:0;" value="${_bajasState.empSearch||''}" oninput="window.renderBajas()">
+          <div style="width:1px; background:var(--border);"></div>
+          <select id="bjTipo" class="btn-premium" onchange="window.renderBajas()" style="border:none; background:transparent; font-size:0.75rem; padding:0 10px; margin:0; cursor:pointer;">
+            <option value="all">Todos los tipos</option>
+            <option value="BAJA"${fT==='BAJA'?' selected':''}>Baja Médica / IT</option>
+            <option value="PERM"${fT==='PERM'?' selected':''}>Permiso</option>
+            <option value="FORMACION"${fT==='FORMACION'?' selected':''}>Formación</option>
+            <option value="OTRO"${fT==='OTRO'?' selected':''}>Otro</option>
+          </select>
+          <div style="width:1px; background:var(--border);"></div>
+          <select id="bjEstado" class="btn-premium" onchange="window.renderBajas()" style="border:none; background:transparent; font-size:0.75rem; padding:0 10px; margin:0; cursor:pointer;">
+            <option value="all"${fE==='all'?' selected':''}>Todos los estados</option>
+            <option value="pendiente_activo"${fE==='pendiente_activo'?' selected':''}>Pendientes / Activos</option>
+            <option value="pendiente"${fE==='pendiente'?' selected':''}>Pendiente</option>
+            <option value="activo"${fE==='activo'?' selected':''}>Activo</option>
+            <option value="aprobado"${fE==='aprobado'?' selected':''}>Aprobado</option>
+            <option value="rechazado"${fE==='rechazado'?' selected':''}>Rechazado</option>
+            <option value="anulado"${fE==='anulado'?' selected':''}>Anulado</option>
+            <option value="finalizado"${fE==='finalizado'?' selected':''}>Finalizado</option>
+          </select>
+        </div>
+
+        <input type="text" id="bjSustSearch" class="btn-premium" placeholder="🔍 Sustituto..." style="width:140px; height:34px; font-size:0.75rem; padding:0 12px;" value="${_bajasState.sustSearch||''}" oninput="window.renderBajas()">
+        
+        <label style="display:flex; align-items:center; gap:6px; font-size:0.7rem; font-weight:700; color:var(--text-dim); cursor:pointer; background:var(--bg3); padding:8px 12px; border-radius:10px; border:1px solid var(--border);">
           <input type="checkbox" id="bjNoSust" ${_bajasState.noSust?'checked':''} onchange="window.renderBajas()"> Sin sustituto
         </label>
-        <button class="btn-premium" onclick="window.clearBajasFilters()" style="padding:8px 14px;font-size:0.7rem;">✕ Limpiar</button>
-        <button class="btn-premium" onclick="window.refreshBajas()" style="padding:8px 14px;font-size:0.7rem;">↻ Refrescar</button>
-        <button id="btnSyncGapsBajas" class="btn-publish-premium" onclick="window.syncGapsFromExcel('btnSyncGapsBajas')" style="padding:8px 14px;font-size:0.7rem;margin-left:auto;background:linear-gradient(135deg,#34d399,#10b981);border:none;">
-          <i class="fas fa-magic"></i> Completar Supabase
-        </button>
+
+        <div style="margin-left:auto; display:flex; gap:6px;">
+          <button class="btn-premium" onclick="window.clearBajasFilters()" style="padding:0 12px; height:34px; font-size:0.7rem; font-weight:700; border-radius:10px;">✕ Limpiar</button>
+          <button class="btn-premium" onclick="window.refreshBajas()" style="padding:0 12px; height:34px; font-size:0.7rem; font-weight:700; border-radius:10px;">↻ Refrescar</button>
+        </div>
       </div>
     </div>
     ${_bajasGrouped.length===0?`<div style="padding:3rem;text-align:center;color:var(--text-dim);font-size:0.9rem;">No hay ${fE==='all'?'registros de bajas o permisos':fE==='pendiente_activo'?'bajas o permisos pendientes o activos':fE==='pendiente'?'bajas o permisos pendientes':'registros con estado "'+fE+'"'} para los filtros actuales.</div>`:`
