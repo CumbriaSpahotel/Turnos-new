@@ -439,7 +439,12 @@ console.log("[ShiftResolver] Iniciando carga v5.0...");
                     const baseOrigCode = window.normalizeShiftValue(tOpA);
                     const baseDestCode = window.normalizeShiftValue(tOpB);
                     const hasComparableEvent = Boolean(eventOrigCode && eventDestCode);
-                    const isIncoherente = hasComparableEvent && ((baseOrigCode && eventOrigCode !== baseOrigCode) || (baseDestCode && eventDestCode !== baseDestCode));
+                    
+                    // Coherence check: If base is empty, we don't treat it as incoherent if the event has a value
+                    const isIncoherente = hasComparableEvent && (
+                        (baseOrigCode && eventOrigCode !== baseOrigCode) || 
+                        (baseDestCode && eventDestCode !== baseDestCode)
+                    );
 
                     let finalTurnoOrigen = tDestRaw;
                     let finalTurnoDestino = tOrigRaw;
@@ -448,6 +453,13 @@ console.log("[ShiftResolver] Iniciando carga v5.0...");
                         finalTurnoOrigen = tOpB;
                         finalTurnoDestino = tOpA;
                     }
+
+                    if (window.DEBUG_MODE) {
+                        console.log(`[ShiftResolver] Resolving ${tipo} for ${empId}:`, {
+                            isOrigin, isDestination, tOrigRaw, tDestRaw, tOpA, tOpB, finalTurnoOrigen, finalTurnoDestino
+                        });
+                    }
+
                     result.turno = isOrigin ? finalTurnoOrigen : finalTurnoDestino;
                     result.cambio = true;
                     result.intercambio = true;
