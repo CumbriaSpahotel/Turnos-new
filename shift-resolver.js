@@ -430,8 +430,8 @@ console.log("[ShiftResolver] Iniciando carga v5.0...");
                 const isDestination = empId === resolvedB || strippedEmpId === resolvedB;
 
                 if (isOrigin || isDestination) {
-                    let tOrigRaw = ev.turno_original || ev.turno_origen;
-                    let tDestRaw = ev.turno_nuevo || ev.turno_destino;
+                    let tOrigRaw = ev.turno_original || ev.turno_origen || ev.payload?.turno_original || ev.payload?.turno_origen || ev.payload?.origen;
+                    let tDestRaw = ev.turno_nuevo || ev.turno_destino || ev.payload?.turno_nuevo || ev.payload?.turno_destino || ev.payload?.destino;
                     const isLegacyCT = window.isInvalidLegacyChangeValue(tOrigRaw) || window.isInvalidLegacyChangeValue(tDestRaw);
                     const tOpA = (isOrigin ? result.turno : window.getTurnoOperativoBase(requestedA, date, { baseIndex, eventos })) || '—';
                     const tOpB = (isDestination ? result.turno : window.getTurnoOperativoBase(requestedB, date, { baseIndex, eventos })) || '—';

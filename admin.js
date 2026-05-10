@@ -3490,7 +3490,7 @@ window.createPuestosPreviewModel = ({
                     isSustitucion = false;
                 }
 
-                const occName = isVacante ? 'VACANTE' : getDisplayName(occupantId, { nombre: status.rawSust });
+                const occName = isVacante ? (status.rawSust || r.nombre || r.empleadoId || 'VACANTE') : getDisplayName(occupantId, { nombre: status.rawSust });
                 operationalRows.push({
                     ...r,
                     employee_id: occupantId,
@@ -5504,13 +5504,13 @@ window.showPublishPreview = async (targetHotel = null, targetWeekStart = null) =
              <i class="fas fa-check-circle"></i>
              <div>
                 <strong>Integridad Validada</strong>
-                <span style="font-size: 0.85rem;">El snapshot cumple con todas las reglas de protecciÃ³n.</span>
+                <span style="font-size: 0.85rem;">El snapshot cumple con todas las reglas de protección.</span>
              </div>
            </div>`
         : `<div style="background: #fef2f2; border: 1px solid #fecaca; color: #b91c1c; padding: 16px; border-radius: 12px; margin-bottom: 24px;">
              <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
                 <i class="fas fa-times-circle" style="font-size: 1.2rem;"></i>
-                <strong>Errores CrÃ­ticos Detectados</strong>
+                <strong>Errores Críticos Detectados</strong>
              </div>
              <ul style="margin: 0; padding-left: 20px; font-size: 0.85rem; line-height: 1.5;">
                 ${validation.errors.map(e => `<li>${cleanValidationMessage(e)}</li>`).join('')}
@@ -5530,14 +5530,14 @@ window.showPublishPreview = async (targetHotel = null, targetWeekStart = null) =
              </div>
              <ul style="margin: 0; padding-left: 20px; font-size: 0.8rem; opacity: 0.9;">
                 ${visibleWarnings.slice(0, 5).map(w => `<li>${cleanValidationMessage(w)}</li>`).join('')}
-                ${visibleWarnings.length > 5 ? `<li>... y ${visibleWarnings.length - 5} avisos mÃ¡s.</li>` : ''}
+                ${visibleWarnings.length > 5 ? `<li>... y ${visibleWarnings.length - 5} avisos más.</li>` : ''}
              </ul>
            </div>`
         : '';
         
     const authorizedWarningsHtml = authorizedWarningsCount > 0
         ? `<div style="background:#eff6ff;border:1px solid #dbeafe;color:#1e40af;padding:10px 12px;border-radius:10px;margin-bottom:16px;font-size:0.78rem;font-weight:700;">
-             ${authorizedWarningsCount} advertencia${authorizedWarningsCount === 1 ? '' : 's'} ya autorizada${authorizedWarningsCount === 1 ? '' : 's'} para esta semana. No se volverÃ¡n a tratar como pendiente.
+             ${authorizedWarningsCount} advertencia${authorizedWarningsCount === 1 ? '' : 's'} ya autorizada${authorizedWarningsCount === 1 ? '' : 's'} para esta semana. No se volverán a tratar como pendiente.
            </div>`
         : '';
 
@@ -5559,7 +5559,7 @@ window.showPublishPreview = async (targetHotel = null, targetWeekStart = null) =
                 </section>
 
                 <div style="background: #eff6ff; border: 1px solid #dbeafe; padding: 16px; border-radius: 12px; font-size: 0.85rem; color: #1e40af;">
-                    <strong>Nota:</strong> Al publicar, se crearÃ¡ una versiÃ³n inmutable (Snapshot) que serÃ¡ la Ãºnica fuente de verdad para el Cuadrante PÃºblico. Los cambios locales en el Excel tambiÃ©n se sincronizarÃ¡n con la base de datos.
+                    <strong>Nota:</strong> Al publicar, se creará una versión inmutable (Snapshot) que serÃ¡ la única fuente de verdad para el Cuadrante Público. Los cambios locales en el Excel también se sincronizarán con la base de datos.
                 </div>
             </div>
 
@@ -5720,7 +5720,7 @@ window.publishToSupabase = async () => {
             window.showPublishNotification({
                 type: 'warning',
                 title: 'PublicaciÃ³n creada',
-                message: 'La nueva versiÃ³n se guardÃ³ correctamente. Queda pendiente limpieza SQL de duplicados activos.',
+                message: 'La nueva versión se guardÃ³ correctamente. Queda pendiente limpieza SQL de duplicados activos.',
                 actionLabel: 'Ver limpieza SQL',
                 autoClose: true
             });
@@ -5728,7 +5728,7 @@ window.publishToSupabase = async () => {
             window.showPublishNotification({
                 type: 'success',
                 title: 'PublicaciÃ³n completada',
-                message: 'La nueva versiÃ³n fue publicada y las versiones anteriores quedaron reemplazadas.',
+                message: 'La nueva versión fue publicada y las versiones anteriores quedaron reemplazadas.',
                 autoClose: true
             });
         }
@@ -6157,7 +6157,8 @@ window.validatePublishChanges = (changes) => {
                         const code = String(cell.code || '').toUpperCase();
                         const type = String(cell.type || '').toUpperCase();
 
-                        // CÃ Â³digos esperados: VAC-¾ , BAJA-¾ , PERMISO/PERM-¾ = { 'VAC': 'VAC', 'BAJA': 'BAJA', 'PERMISO': 'PERM', 'PERM': 'PERM' };
+                        // Codigos esperados restaurados
+                        const expectedCodes = { 'VAC': 'VAC', 'BAJA': 'BAJA', 'PERMISO': 'PERM', 'PERM': 'PERM' };
                         const expected = expectedCodes[tipoEv];
 
                         const isRendered = expected && (code === expected || code.startsWith(expected) || type === expected);
