@@ -6328,8 +6328,9 @@ window.getGlobalPendingPublicationStatus = async function() {
     };
     try {
         const today = window.isoDate ? window.isoDate(new Date()) : new Date().toISOString().split('T')[0];
-        const rangeStart = window.addIsoDays ? window.addIsoDays(today, -14) : today;
-        const rangeEnd   = window.addIsoDays ? window.addIsoDays(today, 180) : today;
+        // Rango ampliado: hoy - 60d -> hoy + 365d
+        const rangeStart = window.addIsoDays ? window.addIsoDays(today, -60) : today;
+        const rangeEnd   = window.addIsoDays ? window.addIsoDays(today, 365) : today;
 
         // 1. Fetch all active events in the broad range
         const ACTIVE_STATES = ['activo','activa','aprobado','aprobada','pendiente'];
@@ -6382,6 +6383,25 @@ window.getGlobalPendingPublicationStatus = async function() {
             grouped.get(key).events.push(e);
         });
 
+        // Case Audit: October 2026 Target
+        const octTargetWeek = '2026-10-19';
+        const octTargetHotel = 'Sercotel Guadiana';
+        const octTargetKey = octTargetHotel + '::' + octTargetWeek;
+        const octGroup = grouped.get(octTargetKey);
+        const octSnap = snapMap.get(octTargetKey);
+        
+        console.log('[OCTOBER_TARGET_GLOBAL_AUDIT]', {
+            foundEvent: !!octGroup,
+            hotel: octTargetHotel,
+            weekStart: octTargetWeek,
+            eventCount: octGroup ? octGroup.events.length : 0,
+            snapshotExiste: !!octSnap,
+            snapshotVersion: octSnap ? octSnap.version : 'NONE',
+            snapshotFechaPublicacion: octSnap ? octSnap.created_at : 'NONE',
+            rangeStart,
+            rangeEnd
+        });
+
         for (const [key, group] of grouped) {
             const snap = snapMap.get(key);
             if (!snap) {
@@ -6391,7 +6411,7 @@ window.getGlobalPendingPublicationStatus = async function() {
                 result.byHotelWeek.push({
                     hotel: group.hotel, weekStart: group.weekStart,
                     snapshotExists: false, pendingCount: group.events.length,
-                    isOutdated: false
+                    isOutdated: false, eventIds: group.events.map(e => e.id)
                 });
                 continue;
             }
@@ -6407,12 +6427,14 @@ window.getGlobalPendingPublicationStatus = async function() {
                 result.outdatedSnapshots.push({
                     hotel: group.hotel, weekStart: group.weekStart,
                     snapshotId: snap.id, snapshotDate: snap.created_at,
-                    pendingCount: newerEvts.length
+                    pendingCount: newerEvts.length,
+                    eventIds: newerEvts.map(e => e.id)
                 });
                 result.byHotelWeek.push({
                     hotel: group.hotel, weekStart: group.weekStart,
                     snapshotExists: true, snapshotDate: snap.created_at,
-                    pendingCount: newerEvts.length, isOutdated: true
+                    pendingCount: newerEvts.length, isOutdated: true,
+                    eventIds: newerEvts.map(e => e.id)
                 });
             }
         }
@@ -6420,8 +6442,14 @@ window.getGlobalPendingPublicationStatus = async function() {
         console.log('[GLOBAL_PENDING_PUBLICATION_STATUS]', {
             totalPendingChanges: result.totalPendingChanges,
             totalOutdatedSnapshots: result.totalOutdatedSnapshots,
-            byHotelWeek: result.byHotelWeek,
-            pendingEvents: result.pendingEvents.length
+            pendingEventsCount: result.pendingEvents.length,
+            outdatedSnapshots: result.outdatedSnapshots.map(os => ({
+                hotel: os.hotel,
+                weekStart: os.weekStart,
+                eventCount: os.pendingCount,
+                eventIds: os.eventIds,
+                snapshotPublishedAt: os.snapshotDate
+            }))
         });
         console.log('[PANEL_BOOT_GLOBAL_AUDIT]', {
             loadedFromPanel: true,

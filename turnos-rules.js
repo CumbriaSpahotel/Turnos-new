@@ -240,12 +240,12 @@
         };
     };
 
-    const shouldShowPin = (cell) => {
+    const shouldShowPinSustitucion = (cell) => {
         if (!cell) return false;
         
         // 1. Determinar el tipo de ausencia que se está cubriendo
         const rawAbs = (
-            cell.absenceType || cell.tipoAusencia || cell.incidencia || cell.incidenciaCubierta ||
+            cell.absenceType || cell.tipoAbsence || cell.tipoAusencia || cell.incidencia || cell.incidenciaCubierta ||
             (cell.origen && cell.origen.startsWith('SUSTITUCION_') ? cell.origen.replace('SUSTITUCION_', '') : null) ||
             cell.sourceType || cell.reason || cell.source || cell.sourceReason || ''
         );
@@ -261,10 +261,11 @@
         // Exclusiones explícitas (prioridad absoluta)
         if (upAbs.includes('VAC') || upAbs.includes('FORMACION')) return false;
 
-        // 2. Determinar si el turno es de trabajo (M, T, N)
+        // 2. Determinar si el turno es válido para llevar pin (M, T, N, D)
         const rawShift = cell.code || cell.turno || cell.turnoFinal || cell.label || '';
         const sKey = shiftKey(rawShift, cell.type || cell.estadoFinal || 'NORMAL');
-        const isWorkedShift = ['m', 't', 'n'].includes(sKey);
+        // V13.31: El pin 📌 se muestra en Mañana, Tarde, Noche y Descanso si es cobertura de Baja/Permiso
+        const isValidPinShift = ['m', 't', 'n', 'd'].includes(sKey);
 
         // 3. Confirmar que es una cobertura
         const isCoverage = !!(
@@ -276,7 +277,7 @@
             (cell.origen && cell.origen.includes('SUSTITUCION'))
         );
 
-        return isMedPerm && isWorkedShift && isCoverage;
+        return isMedPerm && isValidPinShift && isCoverage;
     };
 
     const getPublicCellDisplay = (cell, options = {}) => {
@@ -338,8 +339,8 @@
         if (isForm)  icons.add('\u{1F313}');
         if (isChanged && !isVac && !isBaja && !isPerm && !isForm) icons.add('\u{1F504}');
         
-        // REGLA MAESTRA 📌: Solo si shouldShowPin es true
-        if (shouldShowPin(cell)) {
+        // REGLA MAESTRA 📌: Solo si shouldShowPinSustitucion es true
+        if (shouldShowPinSustitucion(cell)) {
             icons.add('\u{1F4CC}');
         } else {
             // Saneamiento de seguridad: si se coló un 📌 por error, lo quitamos
@@ -495,7 +496,8 @@
         isAbsenceType,
         isEmptyShift,
         describeCell,
-        shouldShowPin,
+        shouldShowPinSustitucion,
+        shouldShowPin: shouldShowPinSustitucion, // Alias for backward compatibility
         sortEmployees,
         normalizeHotelName,
         getCanonicalHotels,
