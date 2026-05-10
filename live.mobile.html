@@ -292,10 +292,30 @@
     }
 
     .night-indicator {
-      font-size: 0.46em !important;
-      margin-left: 1px;
-      vertical-align: super !important;
-      opacity: 0.95;
+      font-size: 4px !important;
+      opacity: 0.1 !important;
+      display: none !important;
+    }
+
+    /* BADGES DE CONTROL (MOVILES) */
+    .emp-badges-mobile {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      margin-left: 6px;
+    }
+    .badge-mini {
+      font-size: 8px;
+      font-weight: 800;
+      color: var(--muted);
+      background: rgba(0,0,0,0.03);
+      padding: 1px 3px;
+      border-radius: 4px;
+      white-space: nowrap;
+      line-height: 1;
+    }
+    .dark-mode .badge-mini {
+      background: rgba(255,255,255,0.06);
     }
 
     .change-indicator-bottom {

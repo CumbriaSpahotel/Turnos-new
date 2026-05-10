@@ -256,10 +256,20 @@
     shiftGrid.innerHTML = `<div style="padding:40px; text-align:center; opacity:0.5; font-weight:700;">Cargando publicacion...</div>`;
     
     try {
-        const result = await window.TurnosDB.loadPublishedSchedule({
-            semanaInicio: startIso,
-            semanaFin: endIso,
-            hotel: hotelInfo ? hotelInfo.dataName : null
+        const [result, profiles] = await Promise.all([
+            window.TurnosDB.loadPublishedSchedule({
+                semanaInicio: startIso,
+                semanaFin: endIso,
+                hotel: hotelInfo ? hotelInfo.dataName : null
+            }),
+            window.TurnosDB.getEmpleados()
+        ]);
+
+        // Guardar perfiles para reconciliación de metadatos en móvil
+        window._mobileProfilesData = {};
+        (profiles || []).forEach(p => {
+            if (p.id) window._mobileProfilesData[String(p.id).trim()] = p;
+            if (p.nombre) window._mobileProfilesData[String(p.nombre).trim()] = p;
         });
 
         if (!result.ok) {
@@ -495,6 +505,39 @@
                         <div class="grid-row" style="${emp.rowType === 'ausencia_informativa' ? 'opacity:0.6;' : ''}">
                             <div class="name-cell">
                                 <span class="emp-name">${escapeHtml(empName)}</span>
+                                ${(() => {
+                                    // Reconciliación de perfil en móvil
+                                    const idKey = String(emp.empleado_id || emp.nombre || '').trim();
+                                    const profile = (window._mobileProfilesData || {})[idKey];
+                                    if (profile) {
+                                        emp.tipo = emp.tipo || profile.tipo || profile.tipo_personal;
+                                        emp.rol = emp.rol || profile.rol || profile.rol_operativo;
+                                        emp.puesto = emp.puesto || profile.puesto || profile.categoria;
+                                    }
+                                    
+                                    const context = { 
+                                        view: 'mobile', 
+                                        hotel: hotelSelect?.value || 'ALL', 
+                                        weekStart: dateInput.value 
+                                    };
+                                    const showControls = window.TurnosRules.shouldShowNightRestControls(emp, context);
+                                    if (!showControls) return '';
+
+                                    // Calcular contadores si está permitido
+                                    let nights = 0, rests = 0;
+                                    dates.forEach(f => {
+                                        const d = daysMap[f] || {};
+                                        const c = String(d.code || d.turno || d.turnoFinal || '').toUpperCase();
+                                        if (c.startsWith('N')) nights++;
+                                        if (c === 'D' || c === 'DESCANSO') rests++;
+                                    });
+                                    return `
+                                        <div class="emp-badges-mobile">
+                                            <span class="badge-mini">🌙 ${nights}</span>
+                                            <span class="badge-mini">D ${rests}</span>
+                                        </div>
+                                    `;
+                                })()}
                             </div>
                             ${dates.map(f => {
                                 const day = daysMap[f] || {};

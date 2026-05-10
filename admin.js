@@ -4136,7 +4136,7 @@ window.renderEmpleadoCell = (turnoEmpleado, { isCompact = false } = {}) => {
         M:    { bg: '#dcfce7', color: '#166534', border: '#86efac', label: 'Mañana', icon: '' },
         T:    { bg: '#fef9c3', color: '#854d0e', border: '#fde047', label: 'Tarde', icon: '' },
         N:    { bg: '#dbeafe', color: '#1e40af', border: '#93c5fd', label: 'Noche', icon: '\u{1F319}' },
-        D:    { bg: '#f1f5f9', color: '#475569', border: '#e2e8f0', label: 'Descanso', icon: '' }
+        D:    { bg: '#fee2e2', color: '#991b1b', border: '#fecaca', label: 'Descanso', icon: '' }
     };
 
     const sKey = window.TurnosRules?.shiftKey?.(turnoVisible, 'NORMAL') || String(turnoVisible);

@@ -657,11 +657,20 @@
             window.TurnosDB.getEmpleados()
         ]);
         const snaps = snapsResult.data;
-        // Índice de nombres reales por ID para reconciliación rápida
+        // Índice de perfiles completos por ID para reconciliación y lógica de control
+        window._publicProfilesData = {};
         window._publicProfilesIndex = {};
         (empleadosResult || []).forEach(e => {
-            if (e.id && e.nombre) window._publicProfilesIndex[String(e.id).trim()] = e.nombre;
-            if (e.nombre) window._publicProfilesIndex[String(e.nombre).trim()] = e.nombre;
+            const keyId = String(e.id || '').trim();
+            const keyNombre = String(e.nombre || '').trim();
+            if (keyId) {
+                window._publicProfilesIndex[keyId] = e.nombre;
+                window._publicProfilesData[keyId] = e;
+            }
+            if (keyNombre) {
+                window._publicProfilesIndex[keyNombre] = e.nombre;
+                window._publicProfilesData[keyNombre] = e;
+            }
         });
 
         if (!snaps || snaps.length === 0) {
@@ -810,7 +819,24 @@
         table.renderRow = function(tr, rowData) {
             const tds = tr.children;
             const daysMap = rowData.turnosOperativos || rowData.cells || rowData.dias || {};
-            const showCounters = window.TurnosRules ? window.TurnosRules.shouldShowNightRestControls(rowData, { view: 'index' }) : true;
+            
+            // Reconciliación de perfil: Mergear metadatos del perfil (tipo, rol, etc.) si existen
+            const empIdForData = String(rowData.empleado_id || rowData.nombre || '').trim();
+            const profileData = (window._publicProfilesData || {})[empIdForData];
+            if (profileData) {
+                // Priorizar datos de fila pero llenar huecos con perfil
+                rowData.tipo = rowData.tipo || profileData.tipo || profileData.tipo_personal;
+                rowData.rol = rowData.rol || profileData.rol || profileData.rol_operativo;
+                rowData.puesto = rowData.puesto || profileData.puesto || profileData.categoria;
+                rowData.categoria = rowData.categoria || profileData.categoria;
+                rowData.activo = (rowData.activo !== undefined) ? rowData.activo : profileData.activo;
+            }
+
+            const showCounters = window.TurnosRules ? window.TurnosRules.shouldShowNightRestControls(rowData, { 
+                view: 'index',
+                hotel: snap.hotel,
+                weekStart: snap.semana_inicio
+            }) : true;
             const skipCounters = !showCounters;
             let nights = 0, rests = 0;
             if (!skipCounters) {

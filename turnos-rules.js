@@ -529,8 +529,11 @@
         });
 
         // 3. REGLA OBLIGATORIA: Próximamente es visible si es operativo
-        const isProximamente = name.includes('proximamente') || name.includes('próximamente');
-        if (isProximamente) return true;
+        const isProximamente = name.includes('proximamente') || name.includes('proximamente') || name.includes('próximamente');
+        if (isProximamente && hasOperationalTurns) {
+            if (window.DEBUG_MODE) console.log('[PUBLIC_ROW_FILTER] Permitiendo Próximamente operativo', { name, id });
+            return true;
+        }
 
         // 4. Si es un sustituto operativo con turnos reales, es visible
         const isOperationalSub = !!(
@@ -538,9 +541,13 @@
             employee.sustitucion || 
             employee.sustituyeA || 
             employee.titular_cubierto ||
-            employee.operativo === true
+            employee.operativo === true ||
+            (employee.rowType && (employee.rowType.includes('operativo') || employee.rowType.includes('sustitucion')))
         );
-        if (isOperationalSub && hasOperationalTurns) return true;
+        if (isOperationalSub && hasOperationalTurns) {
+            if (window.DEBUG_MODE) console.log('[PUBLIC_ROW_FILTER] Permitiendo sustituto operativo', { name, id });
+            return true;
+        }
 
         // 5. Filtros restrictivos para placeholders técnicos puros
         const blockedPatterns = ['sin asignar', 'sinasignar', 'placeholder', 'técnica', 'tecnica', 'control'];
@@ -557,64 +564,97 @@
         return true;
     };
 
-    const shouldShowNightRestControls = (employee, context) => {
-        const view = context?.view || context?.vista || 'unknown';
-        const name = employee?.nombre || employee?.nombreVisible || employee?.empName || 'Empleado';
-        const type = String(employee?.tipo || employee?.tipo_personal || employee?.tipoPersonal || '').toLowerCase();
+        const shouldShowNightRestControls = (employee, context) => {
+        if (!employee) return false;
         
-        // REGLA OBLIGATORIA: Ausencias en el rango visible excluyen control
-        const hasVacation = !!employee?.hasVacationInVisibleRange;
-        const hasBaja = !!employee?.hasBajaInVisibleRange;
-        const hasPermiso = !!employee?.hasPermisoInVisibleRange;
-        const isInternal = !isPublicEmployeeVisible(employee);
+        // REGLA MAESTRA: Admin Preview NUNCA muestra controles
+        if (context?.view === 'admin-preview' || context?.view === 'admin') return false;
 
-        // 1. REGLA MAESTRA: En Admin Preview NUNCA se muestran chips de noches/descansos
-        if (view === 'admin-preview' || view === 'admin') {
-            if (window.DEBUG_MODE) {
+        const name = String(employee.nombre || employee.nombreVisible || employee.name || employee.empleado || '').trim().toLowerCase();
+        const type = String(employee.tipo || employee.tipo_personal || employee.tipoPersonal || '').trim().toLowerCase();
+        const role = String(employee.rol || employee.rol_operativo || '').trim().toLowerCase();
+        const puesto = String(employee.puesto || employee.categoria || '').trim().toLowerCase();
+
+        const logVisibility = (show, reason) => {
+            if (window.DEBUG_MODE || context?.view === 'index') {
                 console.log('[NIGHT_REST_CONTROL_VISIBILITY]', {
-                    view, empleado: name, showControls: false, reason: 'admin_preview_no_controls'
+                    view: context?.view || 'unknown',
+                    hotel: context?.hotel || 'unknown',
+                    weekStart: context?.weekStart || 'unknown',
+                    empleado: name,
+                    tipo: type,
+                    rol: role,
+                    puesto: puesto,
+                    showControls: show,
+                    reason: reason
                 });
             }
+        };
+
+        // 1. Exclusiones por Nombre/ID (Placeholders)
+        if (name === 'vacante' || name.includes('vacante') || name === '¿?' || name.includes('sin asignar')) {
+            logVisibility(false, 'excluded_placeholder');
             return false;
         }
 
-        // 2. REGLA MAESTRA: En Index/Mobile solo para empleados públicos ordinarios activos
-        const isPublicView = (view === 'index' || view === 'public' || view === 'mobile');
-        if (isPublicView) {
-            let showControls = true;
-            let reason = 'public_ordinary_employee';
-
-            if (isInternal) {
-                showControls = false;
-                reason = 'internal_vacante';
-            } else if (type.includes('apoyo')) {
-                showControls = false;
-                reason = 'excluded_tipo_apoyo';
-            } else if (type.includes('ocasional')) {
-                showControls = false;
-                reason = 'excluded_tipo_ocasional';
-            } else if (hasVacation) {
-                showControls = false;
-                reason = 'excluded_vacaciones_visible_range';
-            } else if (hasBaja) {
-                showControls = false;
-                reason = 'excluded_baja_visible_range';
-            } else if (hasPermiso) {
-                showControls = false;
-                reason = 'excluded_permiso_visible_range';
-            }
-
-            console.log('[NIGHT_REST_CONTROL_VISIBILITY]', {
-                view, empleado: name, tipo: type, 
-                hasBajaInVisibleRange: hasBaja,
-                hasPermisoInVisibleRange: hasPermiso,
-                hasVacationInVisibleRange: hasVacation,
-                isInternal, showControls, reason
-            });
-
-            return showControls;
+        // 2. Exclusiones por Tipo (Apoyo, Ocasional)
+        if (type.includes('apoyo') || type.includes('ocasional')) {
+            logVisibility(false, 'excluded_tipo_apoyo_ocasional');
+            return false;
         }
 
+        // 3. Exclusiones por Rol/Puesto (Dirección, Jefatura, No Sujetos)
+        const excludedRoles = ['direccion', 'jefatura', 'gerencia', 'mantenimiento_externo', 'limpieza_externa'];
+        if (excludedRoles.some(r => role.includes(r) || puesto.includes(r))) {
+            logVisibility(false, 'excluded_rol_puesto_direccion_jefatura');
+            return false;
+        }
+
+        // 4. DETECCIÓN DINÁMICA DE AUSENCIAS EN EL RANGO VISIBLE
+        const daysMap = employee.turnosOperativos || employee.cells || employee.dias || {};
+        const turns = Object.values(daysMap);
+        
+        const hasVacation = turns.some(t => {
+            const c = String(t.code || t.turno || t.turnoFinal || t.label || '').toUpperCase();
+            return c === 'VAC' || c.includes('VACACIONES') || (t.type && String(t.type).startsWith('VAC'));
+        });
+        if (hasVacation || employee.hasVacationInVisibleRange) {
+            logVisibility(false, 'excluded_vacaciones_visible_range');
+            return false;
+        }
+
+        const hasBaja = turns.some(t => {
+            const c = String(t.code || t.turno || t.turnoFinal || t.label || '').toUpperCase();
+            return c === 'BAJA' || c.includes('BAJA') || c === 'IT' || c === 'BM' || (t.type && String(t.type).startsWith('BAJA'));
+        });
+        if (hasBaja || employee.hasBajaInVisibleRange) {
+            logVisibility(false, 'excluded_baja_visible_range');
+            return false;
+        }
+
+        const hasPermiso = turns.some(t => {
+            const c = String(t.code || t.turno || t.turnoFinal || t.label || '').toUpperCase();
+            return c === 'PERM' || c.includes('PERMISO') || (t.type && String(t.type).startsWith('PERM'));
+        });
+        if (hasPermiso || employee.hasPermisoInVisibleRange) {
+            logVisibility(false, 'excluded_permiso_visible_range');
+            return false;
+        }
+
+        // 5. REGLA ESTRICTA: Solo para empleados ordinarios activos o si se especifica control
+        const isOrdinario = type === 'ordinario' || type === 'fijo' || type === 'fijo_discontinuo' || role === 'titular';
+        if (!isOrdinario && type !== '') {
+            logVisibility(false, 'excluded_non_ordinary_type');
+            return false;
+        }
+
+        // Fallback final: Solo si es una vista pública y no hay motivos de exclusión
+        if (context?.view === 'index' || context?.view === 'mobile') {
+            logVisibility(true, 'ordinary_active_employee');
+            return true;
+        }
+
+        logVisibility(false, 'strict_fallback_false');
         return false;
     };
 
