@@ -201,7 +201,8 @@ console.log("[ShiftResolver] Iniciando carga v5.0...");
             evento.payload?.empleado_destino_id, evento.payload?.sustituto_id, evento.payload?.sustituto
         ].filter(Boolean).map(window.normalizeId);
         const candidatos = [...new Set([...candidatosTitular, ...candidatosDestino])];
-        if (candidatos.includes(target)) return true;
+        const strippedTarget = target.replace(/^(vacante|placeholder)-?/, '');
+        if (candidatos.includes(target) || candidatos.includes(strippedTarget)) return true;
         return false;
     };
 
@@ -424,8 +425,9 @@ console.log("[ShiftResolver] Iniciando carga v5.0...");
                 const requestedB = window.normalizeId(ev.empleado_destino_id || ev.destino_id || ev.sustituto_id || ev.participante_b);
                 const resolvedA = window.getOperationalOccupant(requestedA, date, eventos, hotel, { baseIndex });
                 const resolvedB = window.getOperationalOccupant(requestedB, date, eventos, hotel, { baseIndex });
-                const isOrigin = empId === resolvedA;
-                const isDestination = empId === resolvedB;
+                const strippedEmpId = empId.replace(/^(vacante|placeholder)-?/, '');
+                const isOrigin = empId === resolvedA || strippedEmpId === resolvedA;
+                const isDestination = empId === resolvedB || strippedEmpId === resolvedB;
 
                 if (isOrigin || isDestination) {
                     let tOrigRaw = ev.turno_original || ev.turno_origen;
@@ -452,6 +454,10 @@ console.log("[ShiftResolver] Iniciando carga v5.0...");
                     if (!window.isValidShiftValue(tOrigRaw) || !window.isValidShiftValue(tDestRaw) || isLegacyCT || isIncoherente) {
                         finalTurnoOrigen = tOpB;
                         finalTurnoDestino = tOpA;
+                    }
+
+                    if (window.normalizeId(empId).includes('proximamente') || window.normalizeId(empId).includes('diana') || window.normalizeId(empId).includes('dani')) {
+                        console.log('[DEBUG EXCHANGES]', { empId, isOrigin, isDestination, tOrigRaw, tDestRaw, tOpA, tOpB, finalTurnoOrigen, finalTurnoDestino, isIncoherente, isLegacyCT, eventOrigCode, eventDestCode, baseOrigCode, baseDestCode });
                     }
 
                     if (window.DEBUG_MODE) {
