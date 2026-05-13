@@ -1368,12 +1368,11 @@ window.openRefuerzoModal = async () => {
                 return false;
             })
             .sort((a, b) => (a.nombre || '').localeCompare(b.nombre || ''));
-        if (supportEmps.length === 0) {
-            rfEmp.innerHTML = '<option value="" disabled selected>No hay empleados de apoyo con ID válido</option>';
-        } else {
-            rfEmp.innerHTML = '<option value="" disabled selected>Seleccionar empleado...</option>' +
-                supportEmps.map(e => `<option value="${e.id}">${e.nombre || e.id} [${e.id_interno}]</option>`).join('');
-        }
+        const empOptions = supportEmps.map(e => `<option value="${e.id}">${e.nombre || e.id} [${e.id_interno}]</option>`).join('');
+        rfEmp.innerHTML =
+            '<option value="" disabled selected>Seleccionar empleado...</option>' +
+            empOptions +
+            '<option value="__MANUAL_OCASIONAL__">+ Ocasional sin ficha...</option>';
     }
 
     // Default date from Excel period
@@ -1385,8 +1384,11 @@ window.openRefuerzoModal = async () => {
     document.getElementById('rfDateEnd').value = '';
     document.getElementById('rfTurno').value = '—';
     document.getElementById('rfObs').value = '';
+    const rfEmpManual = document.getElementById('rfEmpManual');
+    if (rfEmpManual) rfEmpManual.value = '';
     document.querySelectorAll('input[name="rfTipo"]').forEach(r => { r.checked = (r.value === 'dia'); });
     window.updateRefuerzoFechas();
+    window.onRefuerzoEmployeeChange?.();
 
     m.style.display = 'flex';
     setTimeout(() => m.classList.add('open'), 10);
@@ -1442,12 +1444,11 @@ window.openRefuerzoModal = async () => {
                 return false;
             })
             .sort((a, b) => (a.nombre || '').localeCompare(b.nombre || ''));
-        if (supportEmps.length === 0) {
-            rfEmp.innerHTML = '<option value="" disabled selected>No hay empleados de apoyo con ID válido</option>';
-        } else {
-            rfEmp.innerHTML = '<option value="" disabled selected>Seleccionar empleado...</option>' +
-                supportEmps.map(e => `<option value="${e.id}">${e.nombre || e.id} [${e.id_interno}]</option>`).join('');
-        }
+        const empOptions = supportEmps.map(e => `<option value="${e.id}">${e.nombre || e.id} [${e.id_interno}]</option>`).join('');
+        rfEmp.innerHTML =
+            '<option value="" disabled selected>Seleccionar empleado...</option>' +
+            empOptions +
+            '<option value="__MANUAL_OCASIONAL__">+ Ocasional sin ficha...</option>';
     }
 
     // Default date from Excel period
@@ -1459,8 +1460,11 @@ window.openRefuerzoModal = async () => {
     document.getElementById('rfDateEnd').value = '';
     document.getElementById('rfTurno').value = '—';
     document.getElementById('rfObs').value = '';
+    const rfEmpManual = document.getElementById('rfEmpManual');
+    if (rfEmpManual) rfEmpManual.value = '';
     document.querySelectorAll('input[name="rfTipo"]').forEach(r => { r.checked = (r.value === 'dia'); });
     window.updateRefuerzoFechas();
+    window.onRefuerzoEmployeeChange?.();
 
     m.style.display = 'flex';
     setTimeout(() => m.classList.add('open'), 10);
@@ -1488,6 +1492,28 @@ window.updateRefuerzoFechas = () => {
     }
 };
 
+window.onRefuerzoEmployeeChange = () => {
+    const sel = document.getElementById('rfEmp');
+    const wrap = document.getElementById('rfEmpManualWrap');
+    const input = document.getElementById('rfEmpManual');
+    const warn = document.getElementById('refuerzoWarning');
+    const manual = sel?.value === '__MANUAL_OCASIONAL__';
+    if (wrap) wrap.style.display = manual ? '' : 'none';
+    if (input) {
+        if (!manual) input.value = '';
+        input.required = manual;
+    }
+    if (warn) {
+        if (manual) {
+            warn.style.display = '';
+            warn.textContent = 'Modo ocasional sin ficha: se guardará con el nombre escrito, sin validar ID interno.';
+        } else {
+            warn.style.display = 'none';
+            warn.textContent = '';
+        }
+    }
+};
+
 window.saveRefuerzo = async () => {
     const status = document.getElementById('refuerzoStatus');
     const warn = document.getElementById('refuerzoWarning');
@@ -1495,7 +1521,8 @@ window.saveRefuerzo = async () => {
     if (warn) { warn.style.display = 'none'; warn.textContent = ''; }
 
     const hotel = document.getElementById('rfHotel')?.value;
-    const empId = document.getElementById('rfEmp')?.value;
+    const empSelection = document.getElementById('rfEmp')?.value;
+    const empManualName = (document.getElementById('rfEmpManual')?.value || '').trim();
     const tipo = document.querySelector('input[name="rfTipo"]:checked')?.value || 'dia';
     const turno = document.getElementById('rfTurno')?.value || '—';
     const obs = document.getElementById('rfObs')?.value || '';
@@ -1504,15 +1531,23 @@ window.saveRefuerzo = async () => {
 
     // Validations
     if (!hotel) { status.innerHTML = '<span style="color:var(--danger);">Hotel obligatorio.</span>'; return; }
-    if (!empId) { status.innerHTML = '<span style="color:var(--danger);">Empleado obligatorio.</span>'; return; }
+    if (!empSelection) { status.innerHTML = '<span style="color:var(--danger);">Empleado obligatorio.</span>'; return; }
+    const isManualOccasional = empSelection === '__MANUAL_OCASIONAL__';
+    if (isManualOccasional && !empManualName) {
+        status.innerHTML = '<span style="color:var(--danger);">Escribe el nombre del empleado ocasional.</span>';
+        return;
+    }
     if (!dateStart) { status.innerHTML = '<span style="color:var(--danger);">Fecha obligatoria.</span>'; return; }
 
     // Validate employee has valid ID
+    const empId = isManualOccasional ? empManualName : empSelection;
     const emp = (window.empleadosGlobales || []).find(e => e.id === empId);
-    const idInt = String(emp?.id_interno || '').trim();
-    if (!/^EMP-\d{4,}$/.test(idInt)) {
-        status.innerHTML = '<span style="color:var(--danger);">Este empleado no tiene ID interno válido. No puede asignarse como refuerzo.</span>';
-        return;
+    if (!isManualOccasional) {
+        const idInt = String(emp?.id_interno || '').trim();
+        if (!/^EMP-\d{4,}$/.test(idInt)) {
+            status.innerHTML = '<span style="color:var(--danger);">Este empleado no tiene ID interno válido. No puede asignarse como refuerzo.</span>';
+            return;
+        }
     }
 
     // Compute date range
@@ -1883,10 +1918,14 @@ window.ensureChangeEditModal = () => {
                     <select id="edit-change-hotel" style="height:48px; border:1px solid #d5e1ef; border-radius:14px; padding:0 14px; font-size:0.95rem; font-weight:700;"></select>
                 </label>
                 <label style="display:grid; gap:7px; font-size:0.68rem; color:#64748b; font-weight:900; text-transform:uppercase;">Solicitante
-                    <input id="edit-change-employee" type="text" required style="height:48px; border:1px solid #d5e1ef; border-radius:14px; padding:0 14px; font-size:0.95rem; font-weight:700;">
+                    <select id="edit-change-employee" required style="height:48px; border:1px solid #d5e1ef; border-radius:14px; padding:0 14px; font-size:0.95rem; font-weight:700;">
+                        <option value="">Seleccionar empleado...</option>
+                    </select>
                 </label>
                 <label style="display:grid; gap:7px; font-size:0.68rem; color:#64748b; font-weight:900; text-transform:uppercase;">Compa&ntilde;ero
-                    <input id="edit-change-target" type="text" style="height:48px; border:1px solid #d5e1ef; border-radius:14px; padding:0 14px; font-size:0.95rem; font-weight:700;">
+                    <select id="edit-change-target" style="height:48px; border:1px solid #d5e1ef; border-radius:14px; padding:0 14px; font-size:0.95rem; font-weight:700;">
+                        <option value="">Sin compa&ntilde;ero</option>
+                    </select>
                 </label>
                 <label style="display:grid; gap:7px; font-size:0.68rem; color:#64748b; font-weight:900; text-transform:uppercase;">Turno original
                     <select id="edit-change-origin" style="height:48px; border:1px solid #d5e1ef; border-radius:14px; padding:0 14px; font-size:0.95rem; font-weight:700;">
@@ -1927,6 +1966,97 @@ window.closeChangeEditModal = () => {
     window._editingChangeEvent = null;
 };
 
+window.populateChangeEmployeeSelects = async (currentEmployee = '', currentTarget = '') => {
+    const empSelect = document.getElementById('edit-change-employee');
+    const targetSelect = document.getElementById('edit-change-target');
+    if (!empSelect || !targetSelect) return;
+
+    let emps = Array.isArray(window.empleadosGlobales) ? window.empleadosGlobales : [];
+    if (!emps.length && window.TurnosDB?.getEmpleados) {
+        emps = await window.TurnosDB.getEmpleados();
+        if (Array.isArray(emps) && emps.length) window.empleadosGlobales = emps;
+    }
+
+    const unique = new Map();
+    (emps || []).forEach((e) => {
+        const value = String(e?.id || e?.nombre || '').trim();
+        if (!value) return;
+        if (unique.has(value)) return;
+        const idInterno = String(e?.id_interno || '').trim();
+        const nombre = String(e?.nombre || e?.id || '').trim();
+        const label = idInterno ? `${nombre} [${idInterno}]` : nombre;
+        unique.set(value, { value, label });
+    });
+
+    const options = Array.from(unique.values())
+        .sort((a, b) => a.label.localeCompare(b.label, 'es', { sensitivity: 'base' }))
+        .map((o) => `<option value="${escapeHtml(o.value)}">${escapeHtml(o.label)}</option>`)
+        .join('');
+
+    empSelect.innerHTML = `<option value="">Seleccionar empleado...</option>${options}`;
+    targetSelect.innerHTML = `<option value="">Sin compa&ntilde;ero</option>${options}`;
+
+    const ensureAndSet = (selectEl, rawValue) => {
+        const val = String(rawValue || '').trim();
+        if (!val) return;
+        const exists = Array.from(selectEl.options).some((opt) => opt.value === val);
+        if (!exists) {
+            selectEl.insertAdjacentHTML('beforeend', `<option value="${escapeHtml(val)}">${escapeHtml(val)}</option>`);
+        }
+        selectEl.value = val;
+    };
+
+    ensureAndSet(empSelect, currentEmployee);
+    ensureAndSet(targetSelect, currentTarget);
+};
+
+window.openNewChangeModal = async () => {
+    try {
+        window.ensureChangeEditModal();
+        const hotels = await window.TurnosDB.getHotels();
+        const hotelSelect = document.getElementById('edit-change-hotel');
+        if (hotelSelect) {
+            hotelSelect.innerHTML = `<option value="">Sin hotel</option>${(hotels || []).map(h => `<option value="${escapeHtml(h)}">${escapeHtml(h)}</option>`).join('')}`;
+        }
+        await window.populateChangeEmployeeSelects('', '');
+
+        const today = new Date().toISOString().split('T')[0];
+        const setValue = (fieldId, value) => {
+            const field = document.getElementById(fieldId);
+            if (field) field.value = value || '';
+        };
+
+        // Modo alta manual: dejamos id vacío para que upsert inserte un nuevo evento.
+        window._editingChangeEvent = {
+            tipo: 'INTERCAMBIO_TURNO',
+            fecha_inicio: today,
+            fecha_fin: today,
+            estado: 'activo',
+            payload: {
+                created_from_admin_manual: true,
+                created_at: new Date().toISOString()
+            }
+        };
+
+        setValue('edit-change-date', today);
+        setValue('edit-change-hotel', '');
+        setValue('edit-change-employee', '');
+        setValue('edit-change-target', '');
+        setValue('edit-change-origin', '');
+        setValue('edit-change-dest', '');
+        setValue('edit-change-type', 'INTERCAMBIO_TURNO');
+        setValue('edit-change-status', 'activo');
+        setValue('edit-change-obs', '');
+
+        const idLabel = document.getElementById('changeEditId');
+        if (idLabel) idLabel.textContent = 'Nuevo cambio manual';
+        const modal = document.getElementById('changeEditModal');
+        if (modal) modal.style.display = 'flex';
+    } catch (err) {
+        alert('No se pudo abrir el alta manual: ' + err.message);
+    }
+};
+
 window.editChange = async (id) => {
     try {
         window.ensureChangeEditModal();
@@ -1937,6 +2067,7 @@ window.editChange = async (id) => {
         const ev = (eventos || []).find(item => String(item.id) === String(id));
         if (!ev) throw new Error('No se encontro el cambio seleccionado');
         window._editingChangeEvent = ev;
+        await window.populateChangeEmployeeSelects(ev.empleado_id || '', ev.empleado_destino_id || '');
 
         const hotelSelect = document.getElementById('edit-change-hotel');
         hotelSelect.innerHTML = `<option value="">Sin hotel</option>${(hotels || []).map(h => `<option value="${escapeHtml(h)}">${escapeHtml(h)}</option>`).join('')}`;
@@ -5740,9 +5871,9 @@ window.showPublishPreview = async () => {
                 <button onclick="document.getElementById('${modalId}').classList.remove('open')" style="padding: 12px 24px; border: 1px solid #e2e8f0; border-radius: 12px; background: white; font-weight: 700; cursor: pointer; color: #64748b;">Cancelar</button>
                 <button id="btnConfirmPublish" 
                         onclick="window.publishToSupabase()" 
-                        ${(!validation.ok || !pendingResult.hasChanges) ? 'disabled style="opacity: 0.5; cursor: not-allowed;"' : ''}
+                        ${(!validation.ok) ? 'disabled style="opacity: 0.5; cursor: not-allowed;"' : ''}
                         style="padding: 12px 32px; border: none; border-radius: 12px; background: #3b82f6; color: white; font-weight: 800; cursor: pointer; box-shadow: 0 4px 10px rgba(59, 130, 246, 0.3);">
-                    ${pendingResult.hasChanges ? "Confirmar y Publicar" : "Sin cambios pendientes"}
+                    ${pendingResult.hasChanges ? "Confirmar y Publicar" : "Forzar Publicación"}
                 </button>
             </footer>
         </div>
@@ -5937,6 +6068,41 @@ window.buildPublicationSnapshotPreview = async (weekStart, hotelName = 'all') =>
                     seen.add(key);
                     return true;
                 });
+
+                // Incluir refuerzos ocasionales sin ficha:
+                // si existen en turnos/eventos pero no en el modelo base de empleados,
+                // añadimos una fila operativa sintética para publicación pública/móvil.
+                const ensureSyntheticEmployee = (rawId, reason = 'turnos') => {
+                    const empId = String(rawId || '').trim();
+                    if (!empId) return;
+                    if (seen.has(empId)) return;
+                    seen.add(empId);
+                    deduplicated.push({
+                        employee_id: empId,
+                        nombre: empId,
+                        rowType: 'refuerzo',
+                        origenOrden: reason,
+                        puestoOrden: 999
+                    });
+                };
+
+                (data || [])
+                    .filter(r => String(r.hotel_id || '').trim() === String(hName || '').trim())
+                    .forEach(r => ensureSyntheticEmployee(r.empleado_id, 'turnos_sin_ficha'));
+
+                (eventos || [])
+                    .filter(ev => window.normalizeEstado(ev.estado) !== 'anulado')
+                    .filter(ev => String(window.getEventoHotel ? window.getEventoHotel(ev) : (ev.hotel_origen || ev.hotel_destino || ev.hotel || '')).trim() === String(hName || '').trim())
+                    .forEach(ev => {
+                        const isRefuerzoEvent = Boolean(
+                            ev?.isRefuerzo === true ||
+                            window.employeeNorm(ev?.origen) === 'refuerzo' ||
+                            window.employeeNorm(ev?.payload?.tipo_modulo) === 'refuerzo' ||
+                            window.employeeNorm(ev?.payload?.creado_desde) === 'admin_refuerzo' ||
+                            ev?.meta?.refuerzo === true
+                        );
+                        if (isRefuerzoEvent) ensureSyntheticEmployee(ev.empleado_id, 'evento_refuerzo_sin_ficha');
+                    });
 
                 hotelData = deduplicated.map((emp, idx) => {
                     const daysMap = {};

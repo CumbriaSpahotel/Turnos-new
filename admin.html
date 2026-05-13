@@ -475,7 +475,14 @@
             <div id="refuerzoStatus" style="margin-bottom:12px;"></div>
             <div style="display:grid; grid-template-columns: 1fr 1fr; gap:15px;">
                 <div><label style="display:block; font-size:0.6rem; font-weight:800; color:var(--text-dim); margin-bottom:5px;">HOTEL</label><select id="rfHotel" class="btn-premium" style="width:100%;"></select></div>
-                <div><label style="display:block; font-size:0.6rem; font-weight:800; color:var(--text-dim); margin-bottom:5px;">EMPLEADO REFUERZO</label><select id="rfEmp" class="btn-premium" style="width:100%;"></select></div>
+                <div>
+                    <label style="display:block; font-size:0.6rem; font-weight:800; color:var(--text-dim); margin-bottom:5px;">EMPLEADO REFUERZO</label>
+                    <select id="rfEmp" class="btn-premium" style="width:100%;" onchange="window.onRefuerzoEmployeeChange && window.onRefuerzoEmployeeChange()"></select>
+                </div>
+                <div id="rfEmpManualWrap" style="display:none;">
+                    <label style="display:block; font-size:0.6rem; font-weight:800; color:var(--text-dim); margin-bottom:5px;">NOMBRE OCASIONAL (SIN FICHA)</label>
+                    <input type="text" id="rfEmpManual" class="btn-premium" style="width:100%;" placeholder="Ej: Juan Pérez (extra evento)">
+                </div>
                 <div style="grid-column: span 2;"><label style="display:block; font-size:0.6rem; font-weight:800; color:var(--text-dim); margin-bottom:5px;">TIPO DE INSERCIÓN</label>
                     <div style="display:flex; gap:10px;" id="rfTipoInsercion">
                         <label style="display:flex; align-items:center; gap:5px; font-size:0.8rem; font-weight:600; cursor:pointer;"><input type="radio" name="rfTipo" value="dia" checked onchange="window.updateRefuerzoFechas()"> Día concreto</label>
