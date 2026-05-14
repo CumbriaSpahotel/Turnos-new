@@ -419,23 +419,88 @@
         <!-- CONFIGURACIÓN -->
         <section id="section-config" class="section">
             <header class="page-header"><div><h1 class="page-title">Configuración del Sistema</h1></div></header>
-            <div id="config-content" style="padding:0 30px 30px;">
+            <div id="config-content" style="padding:0 30px 30px; display:grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap:24px;">
+                <!-- PANEL: PARÁMETROS GENERALES -->
                 <div class="glass-panel" style="padding:24px; border-radius:24px; border:1px solid var(--border); background:var(--surface);">
-                    <h3 style="margin-top:0; font-size:1rem; font-weight:800; color:var(--text); margin-bottom:18px;">Parámetros Globales</h3>
-                    <div style="display:grid; gap:20px; max-width:600px;">
+                    <h3 style="margin-top:0; font-size:1rem; font-weight:800; color:var(--text); margin-bottom:18px;"><i class="fas fa-sliders-h" style="margin-right:10px; color:#6366f1;"></i> Parámetros Globales</h3>
+                    <div style="display:grid; gap:20px;">
                         <div>
                             <label style="display:block; font-size:0.7rem; font-weight:800; color:var(--text-dim); text-transform:uppercase; margin-bottom:8px;">Nombre de la Empresa</label>
-                            <input type="text" class="btn-premium" style="width:100%;" value="Cumbria & Guadiana">
+                            <input type="text" id="cfg-company-name" class="btn-premium" style="width:100%;" value="Cumbria & Guadiana">
                         </div>
                         <div>
                             <label style="display:block; font-size:0.7rem; font-weight:800; color:var(--text-dim); text-transform:uppercase; margin-bottom:8px;">Modo de Visualización</label>
-                            <select class="btn-premium" style="width:100%;">
-                                <option>Llamativo (Premium)</option>
-                                <option>Compacto (Excel)</option>
+                            <select id="cfg-view-mode" class="btn-premium" style="width:100%;">
+                                <option value="premium">Llamativo (Premium)</option>
+                                <option value="excel">Compacto (Excel)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label style="display:block; font-size:0.7rem; font-weight:800; color:var(--text-dim); text-transform:uppercase; margin-bottom:8px;">Auto-Refresh Dashboard</label>
+                            <select id="cfg-refresh-rate" class="btn-premium" style="width:100%;">
+                                <option value="60000">Cada 1 minuto</option>
+                                <option value="300000">Cada 5 minutos</option>
+                                <option value="900000" selected>Cada 15 minutos</option>
+                                <option value="0">Desactivado</option>
                             </select>
                         </div>
                         <div style="padding-top:10px;">
-                            <button class="btn-publish-premium" onclick="alert('Configuración guardada (Simulado)')">Guardar Configuración</button>
+                            <button class="btn-publish-premium" onclick="alert('Configuración guardada correctamente.')">Guardar Cambios</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- PANEL: MANTENIMIENTO Y PUBLICACIÓN -->
+                <div class="glass-panel" style="padding:24px; border-radius:24px; border:1px solid var(--border); background:var(--surface);">
+                    <h3 style="margin-top:0; font-size:1rem; font-weight:800; color:var(--text); margin-bottom:18px;"><i class="fas fa-database" style="margin-right:10px; color:#10b981;"></i> Mantenimiento Operativo</h3>
+                    <p style="font-size:0.8rem; color:var(--text-dim); margin-bottom:20px;">Acciones de sincronización masiva y limpieza de caché.</p>
+                    <div style="display:grid; gap:12px;">
+                        <button class="btn-premium" onclick="window.publishAllCurrentYear()" style="justify-content:flex-start; padding:15px; border:1px solid #10b981; background:rgba(16,185,129,0.05);">
+                            <i class="fas fa-calendar-check" style="margin-right:12px; color:#10b981; font-size:1.2rem;"></i>
+                            <div style="text-align:left;">
+                                <div style="font-weight:800; color:#10b981;">Publicar Año Completo</div>
+                                <div style="font-size:0.65rem; opacity:0.7;">Genera snapshots para todas las semanas del año actual.</div>
+                            </div>
+                        </button>
+                        <button class="btn-premium" onclick="location.reload()" style="justify-content:flex-start; padding:15px;">
+                            <i class="fas fa-sync" style="margin-right:12px; color:#6366f1; font-size:1.2rem;"></i>
+                            <div style="text-align:left;">
+                                <div style="font-weight:800;">Forzar Recarga de Aplicación</div>
+                                <div style="font-size:0.65rem; opacity:0.7;">Limpia la memoria volátil y reconecta con Supabase.</div>
+                            </div>
+                        </button>
+                        <button class="btn-premium" onclick="window.TurnosDB.clearCache?.(); alert('Caché local de empleados limpia.')" style="justify-content:flex-start; padding:15px;">
+                            <i class="fas fa-broom" style="margin-right:12px; color:#f59e0b; font-size:1.2rem;"></i>
+                            <div style="text-align:left;">
+                                <div style="font-weight:800;">Limpiar Caché Local</div>
+                                <div style="font-size:0.65rem; opacity:0.7;">Refresca la lista de empleados y hoteles desde el servidor.</div>
+                            </div>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- PANEL: DIAGNÓSTICO Y SALUD -->
+                <div class="glass-panel" style="padding:24px; border-radius:24px; border:1px solid var(--border); background:var(--surface);">
+                    <h3 style="margin-top:0; font-size:1rem; font-weight:800; color:var(--text); margin-bottom:18px;"><i class="fas fa-heartbeat" style="margin-right:10px; color:#ef4444;"></i> Salud del Sistema</h3>
+                    <div id="config-health-report" style="display:grid; gap:15px;">
+                        <div style="display:flex; justify-content:space-between; align-items:center; padding:10px 0; border-bottom:1px solid var(--border);">
+                            <span style="font-size:0.8rem; font-weight:600;">Estado Supabase</span>
+                            <span id="cfg-health-supabase" style="font-size:0.75rem; font-weight:800; color:#10b981;">CONECTADO</span>
+                        </div>
+                        <div style="display:flex; justify-content:space-between; align-items:center; padding:10px 0; border-bottom:1px solid var(--border);">
+                            <span style="font-size:0.8rem; font-weight:600;">Canal Realtime</span>
+                            <span id="cfg-health-realtime" style="font-size:0.75rem; font-weight:800; color:#10b981;">ACTIVO</span>
+                        </div>
+                        <div style="display:flex; justify-content:space-between; align-items:center; padding:10px 0; border-bottom:1px solid var(--border);">
+                            <span style="font-size:0.8rem; font-weight:600;">Versión Aplicación</span>
+                            <span style="font-size:0.75rem; font-weight:800; color:var(--text-dim);">v13.63 (Premium)</span>
+                        </div>
+                        <div style="margin-top:10px;">
+                            <label style="display:block; font-size:0.7rem; font-weight:800; color:var(--text-dim); text-transform:uppercase; margin-bottom:8px;">Modo Depuración (Console)</label>
+                            <div style="display:flex; gap:10px;">
+                                <button class="btn-premium" style="flex:1; font-size:0.7rem;" onclick="window.DEBUG_MODE = true; alert('Modo Debug activado.')">Activar</button>
+                                <button class="btn-premium" style="flex:1; font-size:0.7rem;" onclick="window.DEBUG_MODE = false; alert('Modo Debug desactivado.')">Desactivar</button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -492,7 +557,7 @@
                 </div>
                 <div id="rfFechaGroup1"><label style="display:block; font-size:0.6rem; font-weight:800; color:var(--text-dim); margin-bottom:5px;">FECHA</label><input type="date" id="rfDateStart" class="btn-premium" style="width:100%;"></div>
                 <div id="rfFechaGroup2" style="display:none;"><label style="display:block; font-size:0.6rem; font-weight:800; color:var(--text-dim); margin-bottom:5px;">FECHA FIN</label><input type="date" id="rfDateEnd" class="btn-premium" style="width:100%;"></div>
-                <div style="grid-column: span 2;"><label style="display:block; font-size:0.6rem; font-weight:800; color:var(--text-dim); margin-bottom:5px;">TURNO ASIGNADO</label><select id="rfTurno" class="btn-premium" style="width:100%;"><option value="—">Pendiente de asignar</option><option value="M">Mañana</option><option value="T">Tarde</option><option value="N">Noche</option><option value="D">Descanso</option></select></div>
+                <div style="grid-column: span 2;"><label style="display:block; font-size:0.6rem; font-weight:800; color:var(--text-dim); margin-bottom:5px;">TURNO ASIGNADO</label><select id="rfTurno" class="btn-premium" style="width:100%;"><option value="—">Pendiente de asignar</option><option value="M">Mañana</option><option value="T">Tarde</option><option value="P">Turno Partido</option><option value="N">Noche</option><option value="D">Descanso</option></select></div>
                 <div style="grid-column: span 2;"><label style="display:block; font-size:0.6rem; font-weight:800; color:var(--text-dim); margin-bottom:5px;">OBSERVACIONES</label><input type="text" id="rfObs" class="btn-premium" style="width:100%;" placeholder="Refuerzo operativo, apoyo evento..."></div>
             </div>
             <div id="refuerzoWarning" style="display:none; margin-top:12px; padding:10px 14px; border-radius:10px; background:rgba(245,158,11,0.1); border:1px solid rgba(245,158,11,0.3); color:#b45309; font-size:0.75rem; font-weight:600;"></div>

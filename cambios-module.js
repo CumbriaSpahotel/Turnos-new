@@ -252,7 +252,7 @@
                             </td>
                             <td style="padding:15px; font-size:0.85rem; color:#64748b;">${ev.hotel_origen || '—'}</td>
                             <td style="padding:15px;">
-                                <div style="font-weight:800; font-size:0.9rem;">${ev.empleado_id} ${ev.empleado_destino_id ? '<span style="color:#94a3b8; font-weight:400; margin:0 4px;">↔</span> ' + ev.empleado_destino_id : ''}</div>
+                                <div style="font-weight:800; font-size:0.9rem;">${window.getEmployeeDisplayName(ev.empleado_id)} ${ev.empleado_destino_id ? '<span style="color:#94a3b8; font-weight:400; margin:0 4px;">↔</span> ' + window.getEmployeeDisplayName(ev.empleado_destino_id) : ''}</div>
                             </td>
                             <td style="padding:15px;">${changeDetail(ev)}</td>
                             <td style="padding:15px;">
@@ -277,7 +277,7 @@
                 upcomingList.innerHTML = upcoming.map(ev => `
                     <div style="padding:12px; border-radius:12px; background:#f8fafc; border:1px solid #e2e8f0;">
                         <div style="font-weight:800; font-size:0.8rem; color:#1e293b;">${window.fmtDateLegacy ? window.fmtDateLegacy(ev.fecha_inicio) : ev.fecha_inicio} · ${ev.hotel_origen}</div>
-                        <div style="font-size:0.75rem; color:#64748b; margin-top:2px;">${ev.empleado_id} ${ev.empleado_destino_id ? '↔ ' + ev.empleado_destino_id : ''}</div>
+                        <div style="font-size:0.75rem; color:#64748b; margin-top:2px;">${window.getEmployeeDisplayName(ev.empleado_id)} ${ev.empleado_destino_id ? '↔ ' + window.getEmployeeDisplayName(ev.empleado_destino_id) : ''}</div>
                         <div style="font-size:0.72rem; color:#475569; margin-top:6px; display:flex; gap:6px; align-items:center; flex-wrap:wrap;">${changeDetail(ev)}</div>
                     </div>
                 `).join('') || '<div style="padding:10px; text-align:center; opacity:0.5; font-size:0.8rem;">No hay cambios próximos.</div>';
@@ -316,12 +316,12 @@
                         </label>
                         <label style="display:grid; gap:7px; font-size:0.68rem; color:#64748b; font-weight:900; text-transform:uppercase;">Turno original
                             <select id="edit-change-origin" style="height:48px; border:1px solid #d5e1ef; border-radius:14px; padding:0 14px; font-size:0.95rem; font-weight:700;">
-                        <option value="">&mdash;</option><option value="M">Ma&ntilde;ana</option><option value="T">Tarde</option><option value="N">Noche</option><option value="D">Descanso</option>
+                        <option value="">&mdash;</option><option value="M">Ma&ntilde;ana</option><option value="T">Tarde</option><option value="P">Turno Partido</option><option value="N">Noche</option><option value="D">Descanso</option>
                     </select>
                         </label>
                         <label style="display:grid; gap:7px; font-size:0.68rem; color:#64748b; font-weight:900; text-transform:uppercase;">Turno solicitado
                             <select id="edit-change-dest" style="height:48px; border:1px solid #d5e1ef; border-radius:14px; padding:0 14px; font-size:0.95rem; font-weight:700;">
-                        <option value="">&mdash;</option><option value="M">Ma&ntilde;ana</option><option value="T">Tarde</option><option value="N">Noche</option><option value="D">Descanso</option>
+                        <option value="">&mdash;</option><option value="M">Ma&ntilde;ana</option><option value="T">Tarde</option><option value="P">Turno Partido</option><option value="N">Noche</option><option value="D">Descanso</option>
                     </select>
                         </label>
                         <label style="display:grid; gap:7px; font-size:0.68rem; color:#64748b; font-weight:900; text-transform:uppercase;">Tipo

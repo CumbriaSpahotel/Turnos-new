@@ -514,29 +514,8 @@
                                         emp.rol = emp.rol || profile.rol || profile.rol_operativo;
                                         emp.puesto = emp.puesto || profile.puesto || profile.categoria;
                                     }
-                                    
-                                    const context = { 
-                                        view: 'mobile', 
-                                        hotel: hotelSelect?.value || 'ALL', 
-                                        weekStart: dateInput.value 
-                                    };
-                                    const showControls = window.TurnosRules.shouldShowNightRestControls(emp, context);
-                                    if (!showControls) return '';
-
-                                    // Calcular contadores si está permitido
-                                    let nights = 0, rests = 0;
-                                    dates.forEach(f => {
-                                        const d = daysMap[f] || {};
-                                        const c = String(d.code || d.turno || d.turnoFinal || '').toUpperCase();
-                                        if (c.startsWith('N')) nights++;
-                                        if (c === 'D' || c === 'DESCANSO') rests++;
-                                    });
-                                    return `
-                                        <div class="emp-badges-mobile">
-                                            <span class="badge-mini">🌙 ${nights}</span>
-                                            <span class="badge-mini">D ${rests}</span>
-                                        </div>
-                                    `;
+                                    // V12.6: Contadores 🌙/D eliminados de móvil (no necesarios en esta vista)
+                                    return '';
                                 })()}
                             </div>
                             ${dates.map(f => {
@@ -550,6 +529,11 @@
                                 let labelContent = getMobileShiftLabel(day, display.text, visual.mobileClass);
                                 if (display.icons && display.icons.includes('\u{1F4CC}') && !labelContent.includes('\u{1F4CC}')) {
                                     labelContent += ' <span class="pin-mobile">\u{1F4CC}</span>';
+                                }
+                                // V12.6 FIX: Añadir ↺ si getPublicCellDisplay detectó un cambio de turno
+                                // getMobileShiftLabel solo lee day.icons (snapshot), pero 🔄 se genera en runtime
+                                if (display.icons && display.icons.includes('\u{1F504}') && !labelContent.includes('\u{1F4CC}') && !labelContent.includes('↺') && !labelContent.includes('\u{1F504}')) {
+                                    labelContent += ' <span class="change-indicator-bottom" aria-label="Cambio de turno">↺</span>';
                                 }
 
                                 return `

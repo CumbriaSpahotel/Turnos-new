@@ -8,6 +8,13 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="flatpickr.min.css">
+  
+  <!-- PWA & Mobile Meta Tags -->
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#1a1d21">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="apple-touch-icon" href="Logo.png">
   <style>
       :root {
           --bg: #eef2f6;
@@ -323,13 +330,14 @@
       .v-t, .v-tarde { background: var(--amber-bg); color: var(--amber-text); border-color: #f3df9b; }
       .v-n, .v-noche { background: var(--slate-bg); color: var(--slate-text); border-color: #d8dee5; }
       .v-d, .v-descanso { background: #fee2e2 !important; color: #991b1b !important; border: 1px solid #fecaca !important; }
+      .v-p, .v-partido { background: #fef9c3 !important; color: #854d0e !important; border: 1px solid #fde047 !important; }
       .v-v, .v-vac {
           background: #e8f9ff;
           color: #0072a7;
           border-color: #aee6ff;
       }
       .v-baja { background: #f3e8ff !important; color: #581c87 !important; border-color: #d8b4fe !important; }
-      .v-p, .v-perm, .v-permiso { background: #f3e8ff !important; color: #581c87 !important; border-color: #d8b4fe !important; }
+      .v-perm, .v-permiso { background: #fdf4ff !important; color: #701a75 !important; border-color: #f5d0fe !important; }
 
       .icon-sync { font-size: 0.7rem; color: inherit; opacity: 0.85; }
       .icon-moon { font-size: 0.78rem; color: #d48a00; }
@@ -779,7 +787,13 @@
         const table = new window.VirtualTable(viewport, { columns, rowHeight: 62 });
 
         table.renderCellContent = function(cell, data, rowData, fecha) {
-            if (!data || data.code === '—' || data.code === '') {
+            // V12.6 FIX: también revisar label como fallback antes de mostrar "—"
+            // Snapshots publicados con code='' pero label='Tarde' deben renderizarse correctamente
+            const _cellCode = String(data?.code || '').trim();
+            const _cellLabel = String(data?.label || '').trim();
+            const _cellTurno = String(data?.turno || '').trim();
+            const _hasContent = (_cellCode && _cellCode !== '—') || (_cellLabel && _cellLabel !== '—') || (_cellTurno && _cellTurno !== '—');
+            if (!data || !_hasContent) {
                 return cell.innerHTML = '<span class="empty-dash">—</span>';
             }
             const context = {
@@ -788,7 +802,9 @@
                 weekStart: snap.semana_inicio
             };
             const display = window.TurnosRules.getPublicCellDisplay(data, { compact: false }, rowData, context);
-            const cls = window.TurnosRules.shiftKey(data.code, data.type);
+            // V12.6 FIX: usar display.label como fuente de color cuando code está vacío
+            const _codeForCls = data.code || data.label || data.turno || display.label || '';
+            const cls = window.TurnosRules.shiftKey(_codeForCls, data.type);
             
             cell.innerHTML = '';
             const pill = document.createElement('div');
@@ -824,10 +840,16 @@
             const empIdForData = String(rowData.empleado_id || rowData.nombre || '').trim();
             const profileData = (window._publicProfilesData || {})[empIdForData];
             if (profileData) {
-                // Priorizar datos de fila pero llenar huecos con perfil
-                rowData.tipo = rowData.tipo || profileData.tipo || profileData.tipo_personal;
-                rowData.rol = rowData.rol || profileData.rol || profileData.rol_operativo;
-                rowData.puesto = rowData.puesto || profileData.puesto || profileData.categoria;
+                // V12.8 FIX: Priorizar "apoyo" del perfil sobre "fijo" del snapshot si existe conflicto
+                const pTipo = (profileData.tipo || profileData.tipo_personal || "").toLowerCase();
+                if (pTipo.includes('apoyo')) {
+                    rowData.tipo = pTipo;
+                } else {
+                    rowData.tipo = rowData.tipo || rowData.tipo_personal || rowData.tipoPersonal || profileData.tipo || profileData.tipo_personal;
+                }
+                
+                rowData.rol = rowData.rol || rowData.rol_operativo || rowData.rolOperativo || profileData.rol || profileData.rol_operativo;
+                rowData.puesto = rowData.puesto || rowData.categoria || profileData.puesto || profileData.categoria;
                 rowData.categoria = rowData.categoria || profileData.categoria;
                 rowData.activo = (rowData.activo !== undefined) ? rowData.activo : profileData.activo;
             }
@@ -874,8 +896,10 @@
         };
 
         const filteredRows = rows.filter(r => {
+            const name = String(r.nombre || r.nombreVisible || '').trim();
+            if (!name || name === '—') return false; // V12.8: Eliminar filas sin personal
+
             const isVisible = window.TurnosRules.isPublicEmployeeVisible(r);
-            const name = r.nombre || r.nombreVisible || 'Unknown';
             
             if (window.DEBUG_MODE && (name.includes('Próximamente') || name.includes('VACANTE'))) {
                 console.log('[PUBLIC_ROW_FILTER]', {
@@ -1027,6 +1051,11 @@
         _startPeriodicRefresh();
         window.goToday();
     });
+  </script>
+  <script>
+    if ('serviceWorker' in navigator && window.location.protocol !== 'file:') {
+      navigator.serviceWorker.register('sw.js?v=13.30').catch(err => console.log("SW Error:", err));
+    }
   </script>
 </body>
 </html>

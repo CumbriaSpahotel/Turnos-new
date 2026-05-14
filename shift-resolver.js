@@ -1,4 +1,4 @@
-﻿/* shift-resolver.js
+/* shift-resolver.js
  * MOTOR ÚNICO DE RESOLUCIÓN DE TURNOS
  * v5.0 - Estabilización Estructural
  */
@@ -396,10 +396,11 @@ tipo=${normalized.tipo}`);
     };
 
     const PRIORITY_RANK = {
-        VAC: 1,
-        BAJA: 2,
-        PERMISO: 3,
-        PERM: 3,
+        BAJA: 1,
+        IT: 1,
+        PERMISO: 2,
+        PERM: 2,
+        VAC: 3,
         FORMACION: 4,
         SUSTITUCION: 5,
         COBERTURA: 5,
@@ -430,6 +431,7 @@ tipo=${normalized.tipo}`);
         if (!t || t === '-') return null;
         if (t === "M" || t === "MANANA" || t === "MAANA") return "M";
         if (t === "T" || t === "TARDE") return "T";
+        if (t === "P" || t === "PARTIDO") return "P";
         if (t === "N" || t === "NOCHE") return "N";
         if (t === "D" || t === "DESCANSO") return "D";
         return null;
@@ -705,7 +707,7 @@ tipo=${normalized.tipo}`);
         s = s.replaceAll('Mañana', 'Mañana').replaceAll('Formación', 'Formación').replaceAll('Permiso', 'Permiso');
         const up = s.toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/\s+/g, '');
         const MAP = {
-            'M': 'Mañana', 'MANANA': 'Mañana', 'T': 'Tarde', 'TARDE': 'Tarde', 'N': 'Noche', 'NOCHE': 'Noche',
+            'M': 'Mañana', 'MANANA': 'Mañana', 'T': 'Tarde', 'TARDE': 'Tarde', 'P': 'Turno Partido', 'PARTIDO': 'Turno Partido', 'N': 'Noche', 'NOCHE': 'Noche',
             'D': 'Descanso', 'DESCANSO': 'Descanso', 'VAC': 'Vacaciones', 'VACACIONES': 'Vacaciones',
             'BAJA': 'Baja', 'PERMISO': 'Permiso', 'FORMACION': 'Formación', '-': '—', '': '—'
         };

@@ -183,8 +183,8 @@ window.renderVacations = async () => {
 
     // Employee profiles for select
     const empProfiles = Array.from(availableEmps)
-      .map(id=>{const pr=employees.find(e=>e.id===id||e.nombre===id);return{id,nombre:pr?.nombre||id,id_interno:pr?.id_interno||id};})
-      .filter(e=>!e.id.includes('_DUP'))
+      .map(id=>{const pr=employees.find(e=>e.id===id||e.nombre===id);return{id,nombre:pr?.nombre||id,id_interno:pr?.id_interno||id, profile: pr};})
+      .filter(e=>!e.id.includes('_DUP') && !window.isEmployeeTerminated(e.profile))
       .sort((a,b)=>(a.nombre||'').localeCompare(b.nombre||''));
 
     // ── Actualmente KPI text ──
@@ -325,7 +325,7 @@ window.renderVacations = async () => {
     const newVacHotel = $('#newVacHotel');
     if(newVacEmp){
       newVacEmp.innerHTML = '<option value="" disabled selected>Seleccionar empleado...</option>' +
-        employees.map(e=>`<option value="${e.id}">${e.nombre||e.id}${e.id_interno?' ['+e.id_interno+']':''}</option>`).join('');
+        employees.filter(e => !window.isEmployeeTerminated(e)).map(e=>`<option value="${e.id}">${e.nombre||e.id}${e.id_interno?' ['+e.id_interno+']':''}</option>`).join('');
     }
     if(newVacHotel){
       newVacHotel.innerHTML = '<option value="" disabled selected>Hotel...</option>' +

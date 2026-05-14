@@ -1,4 +1,4 @@
-﻿/* supabase-dao.js 
+/* supabase-dao.js 
    MOTOR DE DATOS TURNOSWEB V8.1
    REGLAS DE ORO:
    - window.supabase como único cliente.
@@ -929,7 +929,9 @@ window.TurnosDB = {
                 }
             });
 
-            if (payload.estado_empresa !== 'Baja') {
+            const currentStatus = window.employeeNorm ? window.employeeNorm(payload.estado_empresa || '') : String(payload.estado_empresa || '').toLowerCase();
+            const isTerminated = currentStatus.includes('empresa') || currentStatus.includes('definitiva') || currentStatus === 'baja';
+            if (!isTerminated && !payload.fecha_baja) {
                 payload.fecha_baja = null;
             }
 
@@ -946,12 +948,10 @@ window.TurnosDB = {
 
                 console.error("DAO Error (upsertEmpleado detail):", error);
 
-                const missingColumn = String(
-                    error?.details ||
-                    error?.message ||
-                    error?.hint ||
-                    ''
-                ).match(/'([^']+)' column/)?.[1];
+                const errorStr = String(error?.details || error?.message || error?.hint || '');
+                const missingColumn = errorStr.match(/column ["']([^"']+)["']/i)?.[1] || 
+                                     errorStr.match(/Could not find column ["']([^"']+)["']/i)?.[1] ||
+                                     errorStr.match(/'([^']+)' column/i)?.[1];
 
                 if (
                     missingColumn &&
@@ -1294,12 +1294,20 @@ window.TurnosDB = {
             }
 
             // Regla: Una fila base (titular) no puede estar vacía toda la semana.
-            // Si tiene todo "—" o vacío, es un síntoma de snapshot corrupto o pre-fix B4.
+            // V12.6 FIX: En lugar de rechazar el snapshot ENTERO cuando un empleado base tiene
+            // codes vacíos (bug de serialización, ej. Sandra), solo advertimos y continuamos.
+            // También leemos label/turno como fallback por si code quedó vacío pero hay datos.
             const isBase = !emp.rowType || (emp.rowType !== 'extra' && emp.rowType !== 'refuerzo');
             if (isBase) {
-                const codes = Object.values(cells).map(c => String(c.code || '').trim());
+                const codes = Object.values(cells).map(c =>
+                    String(c.code || c.label || c.turno || '').trim()
+                );
                 const allEmpty = codes.every(code => code === '' || code === '—' || code === '-');
-                if (allEmpty) return false;
+                if (allEmpty) {
+                    console.warn('[SNAPSHOT_VALIDATION] Empleado base con todas las celdas vacías (ignorado sin rechazar snapshot):',
+                        emp.nombreVisible || emp.nombre || emp.empleado_id || 'Unknown');
+                    continue; // No return false — no rechazar todo el snapshot
+                }
             }
 
             // Regla específica para filas informativas de ausencia

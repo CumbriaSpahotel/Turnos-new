@@ -236,7 +236,8 @@ window.renderBajas=async()=>{
 window.openBajaPermisoModal=async(editData)=>{
   _editingBaja=editData||null;
   const m=$('#modalBaja');if(!m)return;
-  const [hotels,emps]=await Promise.all([window.getAvailableHotels(),window.TurnosDB.getEmpleados()]);
+  const [hotels,allEmps]=await Promise.all([window.getAvailableHotels(),window.TurnosDB.getEmpleados()]);
+  const emps = (allEmps || []).filter(e => !window.isEmployeeTerminated(e));
   $('#mbHotel').innerHTML='<option value="" disabled selected>Seleccionar hotel...</option>'+hotels.map(h=>`<option value="${h}"${_editingBaja&&_editingBaja.hotel_origen===h?' selected':''}>${h}</option>`).join('');
   $('#mbEmp').innerHTML='<option value="" disabled selected>Seleccionar empleado...</option>'+emps.map(e=>`<option value="${e.id}"${_editingBaja&&_editingBaja.empleado_id===e.id?' selected':''}>${e.nombre||e.id}${e.id_interno?' ['+e.id_interno+']':''}</option>`).join('');
   $('#mbSustituto').innerHTML='<option value="">Sin sustituto asignado</option>'+emps.map(e=>`<option value="${e.id}"${_editingBaja&&(_editingBaja.empleado_destino_id===e.id||_editingBaja.sustituto_id===e.id)?' selected':''}>${e.nombre||e.id}${e.id_interno?' ['+e.id_interno+']':''}</option>`).join('');

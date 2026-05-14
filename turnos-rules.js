@@ -26,12 +26,13 @@
         // 1. Turnos de trabajo (M, T, N): prioridad absoluta para permitir 📌 en sustituciones
         if (text.startsWith('m') || text.includes('manana')) return 'm';
         if (text.startsWith('t') || text.includes('tarde')) return 't';
+        if (text.startsWith('p') || text.includes('partido')) return 'p';
         if (text.startsWith('n') || text.includes('noche')) return 'n';
 
         // 2. Ausencias (VAC, BAJA, PERM): prioridad sobre descansos y otros estados
         if (upperType.startsWith('VAC')) return 'v';
         if (upperType.startsWith('BAJA') || upperType.startsWith('IT') || upperType === 'BM') return 'b';
-        if (upperType.startsWith('PERM')) return 'p';
+        if (upperType.startsWith('PERM')) return 'perm';
         
         // 3. Descanso (D): solo si no hay una ausencia superior
         if (text.startsWith('d') || text.includes('descanso')) return 'd';
@@ -41,7 +42,7 @@
         if (!text) return '';
         if (text.startsWith('v') || text.includes('vac')) return 'v';
         if (text.startsWith('b') || text.includes('baja')) return 'b';
-        if (text.startsWith('p') || text.includes('perm')) return 'p';
+        if (text.startsWith('p') || text.includes('perm')) return 'perm';
         return '';
     };
 
@@ -59,6 +60,12 @@
             publicClass: 'v-tarde',
             mobileClass: 't',
             adminStyle: 'background:#fff9db; color:#f08c00; border:1px solid #ffec99;'
+        },
+        p: { label: 'Turno Partido',
+            icon: '',
+            publicClass: 'v-partido',
+            mobileClass: 'p',
+            adminStyle: 'background:#fef9c3; color:#854d0e; border:1px solid #fde047;'
         },
         n: {
             label: 'Noche',
@@ -88,12 +95,12 @@
             mobileClass: 'b',
             adminStyle: 'background:#f3e8ff; color:#581c87; border:1px solid #d8b4fe;'
         },
-        p: {
+        perm: {
             label: 'Permiso 🗓️',
             icon: '',
-            publicClass: 'v-perm',
-            mobileClass: 'p',
-            adminStyle: 'background:#f3e8ff; color:#581c87; border:1px solid #d8b4fe;'
+            publicClass: 'v-permiso',
+            mobileClass: 'perm',
+            adminStyle: 'background:#fdf4ff; color:#701a75; border:1px solid #f5d0fe;'
         },
         ct: {
             label: 'Cambio',
@@ -521,7 +528,8 @@
         const daysMap = employee.turnosOperativos || employee.cells || employee.dias || {};
         const turns = Object.values(daysMap);
         const hasOperationalTurns = turns.some(t => {
-            const code = String(t.code || t.turno || t.turnoFinal || '').toUpperCase();
+            // V12.6 FIX: incluir t.label como fallback por si code quedó vacío en el snapshot
+            const code = String(t.code || t.turno || t.turnoFinal || t.label || '').toUpperCase();
             return code && code !== '—' && code !== '' && code !== 'SIN_TURNO';
         });
 
@@ -559,6 +567,9 @@
         if (employee.internalOnly === true && !hasOperationalTurns) return false;
         if (employee.publicVisible === false && !hasOperationalTurns) return false;
 
+        // 7. Ocultar bajas definitivas (No pertenecen a la empresa)
+        if (String(employee.estado || '').includes('Baja Empresa')) return false;
+
         // Caso por defecto: se muestra
         return true;
     };
@@ -589,16 +600,17 @@
             }
         };
 
-        // 1. Exclusiones permanentes (Apoyo, Ocasional, Dirección, VACANTE)
-        if (name.includes('vacante') || name === '¿?' || name.includes('sin asignar')) {
-            logVisibility(false, 'excluded_placeholder');
+        // 1. Exclusiones permanentes (Apoyo, Ocasional, Dirección, VACANTE, Sergio)
+        if (name.includes('vacante') || name === '¿?' || name.includes('sin asignar') || name === 'sergio' || name === 'sergio sánchez') {
+            logVisibility(false, 'excluded_placeholder_or_direction_by_name');
             return false;
         }
-        if (type.includes('apoyo') || type.includes('ocasional')) {
-            logVisibility(false, 'excluded_tipo_apoyo_ocasional');
+        const isSupport = type.includes('apoyo') || type.includes('ocasional') || role.includes('apoyo') || role.includes('ocasional') || puesto.includes('apoyo') || puesto.includes('ocasional');
+        if (isSupport) {
+            logVisibility(false, 'excluded_support_staff_robust');
             return false;
         }
-        const excludedRoles = ['direccion', 'jefatura', 'gerencia', 'mantenimiento_externo', 'limpieza_externa'];
+        const excludedRoles = ['direccion', 'jefatura', 'jefa', 'gerencia', 'administracion', 'mantenimiento_externo', 'limpieza_externa'];
         if (excludedRoles.some(r => role.includes(r) || puesto.includes(r))) {
             logVisibility(false, 'excluded_rol_puesto_direccion_jefatura');
             return false;
@@ -674,4 +686,6 @@
     };
     window.groupConsecutiveEvents = groupConsecutiveEvents; // Alias para compatibilidad modular
 })();
+
+
 

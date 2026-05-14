@@ -1601,6 +1601,7 @@ input, select, textarea { color: var(--text); }
 .emp-line-status-activo { background: #dcfce7; color: #166534; }
 .emp-line-status-vacaciones { background: #e0f2fe; color: #075985; }
 .emp-line-status-baja { background: #fee2e2; color: #991b1b; }
+.emp-line-status-baja-definitiva { background: #450a0a; color: #fecaca; font-weight: 800; border: 1px solid #991b1b; }
 .emp-line-shift-m { background: #dbeafe; color: #1d4ed8; }
 .emp-line-shift-t { background: #ffedd5; color: #c2410c; }
 .emp-line-shift-n { background: #ede9fe; color: #6d28d9; }
