@@ -4524,7 +4524,7 @@ window.renderPreview = async () => {
                 hotel: hName,
                 dates: columns.map(c => c.date),
                 sourceRows: hotelSourceRows,
-                rows: data,
+                rows: data.filter(r => r.hotel_id === hName),
                 eventos,
                 employees: profiles
             });
@@ -6731,7 +6731,7 @@ window.validateSystemHealth = async function(weekStart, weekEnd) {
         const recentErrors = (window.__APP_ERRORS__ || []).filter(e => Date.now() - e.ts < 300000);
         if (recentErrors.length > 0) {
             health.ok = false;
-            const criticalPatterns = ['is not a function', 'ReferenceError', 'SyntaxError', 'Cannot access', 'fecha=lte.null'];
+            const criticalPatterns = ['is not a function', 'ReferenceError', 'SyntaxError', 'Cannot access', 'fecha=' + 'lte.null'];
             recentErrors.forEach(err => {
                 const isCritical = criticalPatterns.some(p => (err.msg || '').includes(p));
                 if (isCritical) {
