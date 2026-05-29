@@ -6424,7 +6424,7 @@ window.buildPublicationSnapshotPreview = async (weekStart, hotelName = 'all') =>
         if (!allEmps[id]) allEmps[id] = [];
         Object.entries(r.cells).forEach(([fecha, c]) => {
             if (c.code && c.code !== '—' && c.code !== '') {
-                allEmps[id].push({ fecha, hotel: s.hotel_nombre });
+                allEmps[id].push({ fecha, hotel: s.hotel_nombre, cell: c });
             }
         });
     }));
@@ -6436,8 +6436,62 @@ window.buildPublicationSnapshotPreview = async (weekStart, hotelName = 'all') =>
         });
         Object.entries(days).forEach(([fecha, entries]) => {
             if (entries.length > 1) {
-                const hotels = entries.map(e => e.hotel).join(' y ');
-                errors.push('[BLOQUEO] Duplicado operativo: ' + id + ' tiene turnos en ' + hotels + ' el ' + fecha);
+                // Check if any pair of entries overlap in their working hours
+                const overlaps = [];
+                for (let i = 0; i < entries.length; i++) {
+                    for (let j = i + 1; j < entries.length; j++) {
+                        const e1 = entries[i];
+                        const e2 = entries[j];
+                        
+                        // Check overlap
+                        const c1 = e1.cell;
+                        const c2 = e2.cell;
+                        
+                        if (c1.isAbsence || c2.isAbsence) continue;
+                        
+                        let key1 = '';
+                        let key2 = '';
+                        if (window.TurnosRules && window.TurnosRules.shiftKey) {
+                            key1 = window.TurnosRules.shiftKey(c1.code, c1.type || 'NORMAL');
+                            key2 = window.TurnosRules.shiftKey(c2.code, c2.type || 'NORMAL');
+                        } else {
+                            const getFallbackKey = (code) => {
+                                const text = String(code || '').toLowerCase();
+                                if (text.startsWith('m') || text.includes('manana') || text.includes('mañana')) return 'm';
+                                if (text.startsWith('t') || text.includes('tarde')) return 't';
+                                if (text.startsWith('p') || text.includes('partido')) return 'p';
+                                if (text.startsWith('n') || text.includes('noche')) return 'n';
+                                if (text.startsWith('d') || text.includes('descanso')) return 'd';
+                                return '';
+                            };
+                            key1 = getFallbackKey(c1.code);
+                            key2 = getFallbackKey(c2.code);
+                        }
+                        
+                        const workingKeys = ['m', 't', 'n', 'p'];
+                        if (!workingKeys.includes(key1) || !workingKeys.includes(key2)) {
+                            continue;
+                        }
+                        
+                        let isOverlapping = false;
+                        if (key1 === key2) {
+                            isOverlapping = true;
+                        } else if (key1 === 'p' && (key2 === 'm' || key2 === 't')) {
+                            isOverlapping = true;
+                        } else if (key2 === 'p' && (key1 === 'm' || key1 === 't')) {
+                            isOverlapping = true;
+                        }
+                        
+                        if (isOverlapping) {
+                            overlaps.push(`${e1.hotel} (${c1.code.toUpperCase()}) y ${e2.hotel} (${c2.code.toUpperCase()})`);
+                        }
+                    }
+                }
+                
+                if (overlaps.length > 0) {
+                    const hotelsDesc = overlaps.join(', ');
+                    errors.push('[BLOQUEO] Duplicado operativo: ' + id + ' tiene turnos coincidentes en ' + hotelsDesc + ' el ' + fecha);
+                }
             }
         });
     });
