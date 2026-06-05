@@ -523,6 +523,9 @@
         
         const name = String(employee.nombre || employee.nombreVisible || employee.name || employee.empleado || '').trim().toLowerCase();
         const id = String(employee.empleado_id || employee.id || '').trim().toLowerCase();
+        
+        if (id.includes('_dup') || name.includes('_dup')) return false;
+
         const type = String(employee.tipo || employee.tipo_personal || employee.tipoPersonal || '').trim().toLowerCase();
 
         // 1. REGLA MAESTRA: Determinar si tiene turnos operativos reales
