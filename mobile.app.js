@@ -306,6 +306,31 @@
             await renderSnapshotTable(snap.hotel, snap.data, shiftGrid);
         }
 
+        if (shiftGrid.innerHTML !== "") {
+            const legendDiv = document.createElement('div');
+            legendDiv.className = 'mobile-legend';
+            legendDiv.style.display = 'flex';
+            legendDiv.style.justifyContent = 'center';
+            legendDiv.style.gap = '10px';
+            legendDiv.style.flexWrap = 'wrap';
+            legendDiv.style.padding = '16px 8px';
+            legendDiv.style.marginTop = '10px';
+            legendDiv.style.fontSize = '0.7rem';
+            legendDiv.style.fontWeight = '700';
+            legendDiv.style.color = 'var(--muted)';
+            legendDiv.innerHTML = `
+                <div style="display:flex; align-items:center; gap:4px;"><span style="width:10px; height:10px; border-radius:3px; background:#3b82f6; display:inline-block;"></span> M = Mañana</div>
+                <div style="display:flex; align-items:center; gap:4px;"><span style="width:10px; height:10px; border-radius:3px; background:#f97316; display:inline-block;"></span> T = Tarde</div>
+                <div style="display:flex; align-items:center; gap:4px;"><span style="width:10px; height:10px; border-radius:3px; background:#fef9c3; border:1px solid #fde047; display:inline-block;"></span> 🔀 T/P = Turno Partido</div>
+                <div style="display:flex; align-items:center; gap:4px;"><span style="width:10px; height:10px; border-radius:3px; background:#1e1b4b; display:inline-block;"></span> N = Noche</div>
+                <div style="display:flex; align-items:center; gap:4px;"><span style="width:10px; height:10px; border-radius:3px; background:#fee2e2; border:1px solid #fca5a5; display:inline-block;"></span> D = Descanso</div>
+                <div style="display:flex; align-items:center; gap:4px;"><span style="width:10px; height:10px; border-radius:3px; background:#10b981; display:inline-block;"></span> Vacaciones</div>
+                <div style="display:flex; align-items:center; gap:4px;"><span style="width:10px; height:10px; border-radius:3px; background:#ef4444; display:inline-block;"></span> Baja</div>
+                <div style="display:flex; align-items:center; gap:4px;"><span style="width:10px; height:10px; border-radius:3px; background:#8b5cf6; display:inline-block;"></span> Permiso</div>
+            `;
+            shiftGrid.appendChild(legendDiv);
+        }
+
         if (shiftGrid.innerHTML === "") {
             const availableHotels = [...new Set(
                 snapshots
@@ -356,7 +381,8 @@
     const shortByClass = { m: "M", t: "T", n: "N", d: "D" };
 
     if (visualClass === "b") return "Baja 🩺";
-    if (visualClass === "p") return "Permiso 🗓️";
+    if (visualClass === "perm") return "Permiso 🗓️";
+    if (visualClass === "p") return "🔀 T/P";
 
     if (shortByClass[visualClass]) {
       const changeHtml = hasChange ? '<span class="change-indicator-bottom" aria-label="Cambio de turno">↺</span>' : '';
@@ -381,7 +407,8 @@
     if (normalized === "N" || normalized.includes("NOC")) return "n";
     if (normalized.includes("VAC")) return "v";
     if (normalized.includes("BAJA") || normalized === "IT" || normalized === "BM") return "b";
-    if (normalized.includes("PERM")) return "p";
+    if (normalized.includes("PERM")) return "perm";
+    if (normalized === "P" || normalized === "TP" || normalized === "T/P" || normalized === "PARTIDO" || normalized === "TURNO PARTIDO") return "p";
     return visualClass || "empty";
   }
 

@@ -22,27 +22,28 @@
         const upperType = String(type || 'NORMAL').toUpperCase();
         const text = normalizeText(turno);
 
-        // REGLA MAESTRA V12.7: Priorización de clasificación
-        // 1. Turnos de trabajo (M, T, N): prioridad absoluta para permitir 📌 en sustituciones
-        if (text.startsWith('m') || text.includes('manana')) return 'm';
-        if (text.startsWith('t') || text.includes('tarde')) return 't';
-        if (text.startsWith('p') || text.includes('partido')) return 'p';
-        if (text.startsWith('n') || text.includes('noche')) return 'n';
-
-        // 2. Ausencias (VAC, BAJA, PERM): prioridad sobre descansos y otros estados
+        // 1. Ausencias explícitas (prioridad absoluta)
         if (upperType.startsWith('VAC')) return 'v';
         if (upperType.startsWith('BAJA') || upperType.startsWith('IT') || upperType === 'BM') return 'b';
         if (upperType.startsWith('PERM')) return 'perm';
-        
-        // 3. Descanso (D): solo si no hay una ausencia superior
+
+        if (text.startsWith('vac') || text.includes('vacaciones')) return 'v';
+        if (text.startsWith('baja') || text.includes('baja')) return 'b';
+        if (text.startsWith('perm') || text.includes('permiso')) return 'perm';
+
+        // 2. Turno Partido (Coincidencia exacta e inequívoca, antes de otros turnos para no chocar con "tp" o "t/p")
+        if (text === 'p' || text === 'tp' || text === 't/p' || text === 'partido' || text === 'turno partido') return 'p';
+
+        // 3. Otros turnos de trabajo (M, T, N)
+        if (text.startsWith('m') || text.includes('manana')) return 'm';
+        if (text.startsWith('t') || text.includes('tarde')) return 't';
+        if (text.startsWith('n') || text.includes('noche')) return 'n';
+
+        // 4. Descanso (D)
         if (text.startsWith('d') || text.includes('descanso')) return 'd';
 
-        // 4. Otros estados y fallbacks
+        // 5. Otros estados y fallbacks
         if (isCtType(upperType)) return 'ct';
-        if (!text) return '';
-        if (text.startsWith('v') || text.includes('vac')) return 'v';
-        if (text.startsWith('b') || text.includes('baja')) return 'b';
-        if (text.startsWith('p') || text.includes('perm')) return 'perm';
         return '';
     };
 
@@ -61,7 +62,7 @@
             mobileClass: 't',
             adminStyle: 'background:#fff9db; color:#f08c00; border:1px solid #ffec99;'
         },
-        p: { label: 'Turno Partido',
+        p: { label: '🔀 T/P',
             icon: '',
             publicClass: 'v-partido',
             mobileClass: 'p',

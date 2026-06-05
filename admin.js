@@ -1009,40 +1009,106 @@ window.goToExcelRecord = (empId, date) => {
     }, 600);
 };
 
-window.goToPreviewRecord = (empId, date) => {
-    window.switchSection('preview');
-    if (date) {
-        const monday = window.getWeekStartISO(date);
-        const input = document.getElementById('datePicker');
-        if (input) {
-            input.value = monday;
-            // Si flatpickr está activo, actualizarlo
-            if (input._flatpickr) input._flatpickr.setDate(monday);
-        }
+window.navigateToPreview = (hotel, date, empId) => {
+    console.log('[NAVIGATE_TO_PREVIEW]', { hotel, date, empId });
+
+    // 1. Cambiar a la sección de Vista Previa
+    if (window.switchSection) {
+        window.switchSection('preview');
+    } else {
+        console.warn('[NAVEGACIÓN] window.switchSection no está disponible');
     }
-    window.renderPreview();
-    
+
+    // Esperar un momento corto para que el DOM esté listo
     setTimeout(() => {
-        const empRows = document.querySelectorAll('.employee-row-header, .puesto-row-header');
-        let found = false;
-        for (const row of empRows) {
-             if (row.textContent.toLowerCase().includes(empId.toLowerCase())) {
-                 row.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                 const container = row.closest('.preview-row') || row.parentElement;
-                 container.style.transition = 'outline 0.3s';
-                 container.style.outline = '4px solid #3b82f6';
-                 container.style.outlineOffset = '-4px';
-                 container.style.borderRadius = '12px';
-                 container.style.zIndex = '10';
-                 setTimeout(() => {
-                     container.style.outline = 'none';
-                 }, 5000);
-                 found = true;
-                 break;
-             }
+        // Resolver el hotel del empleado si no se ha especificado uno explícitamente
+        let targetHotel = hotel;
+        if (!targetHotel && empId) {
+            const emp = (window.empleadosGlobales || []).find(e => 
+                window.normalizeId(e.id) === window.normalizeId(empId) || 
+                window.normalizeId(e.nombre) === window.normalizeId(empId) ||
+                window.normalizeId(e.id_interno) === window.normalizeId(empId)
+            );
+            targetHotel = emp ? (emp.hotel || emp.hotel_origen || emp.hotel_id) : null;
         }
-        if (!found) console.warn(`[NAVEGACIÃ“N] No se encontró la fila para ${empId} en Vista Previa`);
-    }, 1200);
+
+        // 2. Seleccionar el hotel correcto en prevHotel
+        const hotelSelect = document.getElementById('prevHotel');
+        if (hotelSelect) {
+            if (targetHotel) {
+                if (hotelSelect.value !== targetHotel) {
+                    hotelSelect.value = targetHotel;
+                    hotelSelect.dispatchEvent(new Event('change'));
+                }
+            }
+        } else {
+            console.warn('[NAVEGACIÓN] No se encontró el selector de hotel #prevHotel');
+        }
+
+        // 3 y 4. Actualizar fecha en DateManager y sincronizar flatpickr
+        let targetDate = null;
+        if (date) {
+            targetDate = window.getWeekStartISO ? window.getWeekStartISO(date) : date;
+            
+            if (window.DateManager) {
+                window.DateManager.state.currentDate = targetDate;
+                window.DateManager.updateUI();
+            } else {
+                console.warn('[NAVEGACIÓN] window.DateManager no está disponible');
+            }
+
+            const dateInput = document.getElementById('datePicker');
+            if (!dateInput) {
+                console.warn('[NAVEGACIÓN] No se encontró el input #datePicker');
+            }
+
+            if (window._fpInstance) {
+                window._fpInstance.setDate(targetDate, true);
+            } else {
+                console.warn('[NAVEGACIÓN] window._fpInstance (Flatpickr) no está disponible');
+            }
+        }
+
+        // 5. Renderizar/actualizar la vista
+        if (window.renderPreview) {
+            window.renderPreview();
+        } else {
+            console.warn('[NAVEGACIÓN] window.renderPreview no está disponible');
+        }
+
+        // 6. Hacer scroll al empleado/fila correspondiente
+        if (empId) {
+            setTimeout(() => {
+                const empRows = document.querySelectorAll('.employee-row-header, .puesto-row-header');
+                let found = false;
+                for (const row of empRows) {
+                     if (row.textContent.toLowerCase().includes(empId.toLowerCase())) {
+                         row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                         const container = row.closest('.preview-row') || row.parentElement;
+                         if (container) {
+                             container.style.transition = 'outline 0.3s';
+                             container.style.outline = '4px solid #3b82f6';
+                             container.style.outlineOffset = '-4px';
+                             container.style.borderRadius = '12px';
+                             container.style.zIndex = '10';
+                             setTimeout(() => {
+                                 container.style.outline = 'none';
+                             }, 5000);
+                         }
+                         found = true;
+                         break;
+                     }
+                }
+                if (!found) {
+                    console.warn(`[NAVEGACIÓN] No se encontró la fila para ${empId} en Vista Previa`);
+                }
+            }, 1000);
+        }
+    }, 150);
+};
+
+window.goToPreviewRecord = (empId, date) => {
+    window.navigateToPreview(null, date, empId);
 };
 // ==========================================
 // MÃ“DULO: MODO EXCEL (RESTAURADO)
@@ -4217,7 +4283,7 @@ window.renderEmpleadoCell = (turnoEmpleado, { isCompact = false } = {}) => {
     const capsuleStyles = {
         M:    { bg: '#dcfce7', color: '#166534', border: '#86efac', label: 'Mañana', icon: '' },
         T:    { bg: '#fef3c7', color: '#92400e', border: '#fcd34d', label: 'Tarde', icon: '' },
-        P:    { bg: '#fef9c3', color: '#854d0e', border: '#fde047', label: 'Turno Partido', icon: '' },
+        P:    { bg: '#fef9c3', color: '#854d0e', border: '#fde047', label: '🔀 T/P', icon: '' },
         N:    { bg: '#dbeafe', color: '#1e40af', border: '#93c5fd', label: 'Noche', icon: '🌙' },
         D:    { bg: '#fee2e2', color: '#991b1b', border: '#fecaca', label: 'Descanso', icon: '' },
         BAJA: { bg: '#fee2e2', color: '#991b1b', border: '#fecaca', label: 'Baja', icon: '' },
@@ -4738,6 +4804,29 @@ window.renderPreview = async () => {
                 area.appendChild(hotelSection);
             }
         }
+
+        // Renderizar leyenda visual al final del contenedor de Vista Previa
+        const legendDiv = document.createElement('div');
+        legendDiv.className = 'cal-legend';
+        legendDiv.style.marginTop = '20px';
+        legendDiv.style.background = 'var(--surface)';
+        legendDiv.style.border = '1px solid var(--border)';
+        legendDiv.style.borderRadius = '12px';
+        legendDiv.style.padding = '12px 24px';
+        legendDiv.style.display = 'flex';
+        legendDiv.style.gap = '16px';
+        legendDiv.style.flexWrap = 'wrap';
+        legendDiv.innerHTML = `
+            <div class="cal-legend-item" style="display:flex; align-items:center; gap:6px; font-size:0.72rem; font-weight:600; color:var(--text-muted, #64748b);"><span class="cal-legend-dot" style="width:10px; height:10px; border-radius:50%; flex-shrink:0; background:#dcfce7; border:1px solid #86efac; display:inline-block;"></span>Mañana</div>
+            <div class="cal-legend-item" style="display:flex; align-items:center; gap:6px; font-size:0.72rem; font-weight:600; color:var(--text-muted, #64748b);"><span class="cal-legend-dot" style="width:10px; height:10px; border-radius:50%; flex-shrink:0; background:#fef3c7; border:1px solid #fcd34d; display:inline-block;"></span>Tarde</div>
+            <div class="cal-legend-item" style="display:flex; align-items:center; gap:6px; font-size:0.72rem; font-weight:600; color:var(--text-muted, #64748b);"><span class="cal-legend-dot" style="width:10px; height:10px; border-radius:50%; flex-shrink:0; background:#fef9c3; border:1px solid #fde047; display:inline-block;"></span>🔀 T/P = Turno Partido</div>
+            <div class="cal-legend-item" style="display:flex; align-items:center; gap:6px; font-size:0.72rem; font-weight:600; color:var(--text-muted, #64748b);"><span class="cal-legend-dot" style="width:10px; height:10px; border-radius:50%; flex-shrink:0; background:#dbeafe; border:1px solid #93c5fd; display:inline-block;"></span>Noche 🌙</div>
+            <div class="cal-legend-item" style="display:flex; align-items:center; gap:6px; font-size:0.72rem; font-weight:600; color:var(--text-muted, #64748b);"><span class="cal-legend-dot" style="width:10px; height:10px; border-radius:50%; flex-shrink:0; background:#fee2e2; border:1px solid #fecaca; display:inline-block;"></span>Descanso</div>
+            <div class="cal-legend-item" style="display:flex; align-items:center; gap:6px; font-size:0.72rem; font-weight:600; color:var(--text-muted, #64748b);"><span class="cal-legend-dot" style="width:10px; height:10px; border-radius:50%; flex-shrink:0; background:#e0f2fe; border:1px solid #bae6fd; display:inline-block;"></span>Vacaciones 🏖️</div>
+            <div class="cal-legend-item" style="display:flex; align-items:center; gap:6px; font-size:0.72rem; font-weight:600; color:var(--text-muted, #64748b);"><span class="cal-legend-dot" style="width:10px; height:10px; border-radius:50%; flex-shrink:0; background:#f3e8ff; border:1px solid #d8b4fe; display:inline-block;"></span>Baja 🩺</div>
+            <div class="cal-legend-item" style="display:flex; align-items:center; gap:6px; font-size:0.72rem; font-weight:600; color:var(--text-muted, #64748b);"><span class="cal-legend-dot" style="width:10px; height:10px; border-radius:50%; flex-shrink:0; background:#fdf4ff; border:1px solid #f5d0fe; display:inline-block;"></span>Permiso 🗓️</div>
+        `;
+        area.appendChild(legendDiv);
     } catch (err) {
         area.innerHTML = `<div style="padding:2rem; color:red;">Error: ${err.message}</div>`;
     }
@@ -6554,9 +6643,9 @@ window.getGlobalPendingPublicationStatus = async function() {
     };
     try {
         const today = window.isoDate ? window.isoDate(new Date()) : new Date().toISOString().split('T')[0];
-        // Rango ampliado: hoy - 60d -> hoy + 365d
-        const rangeStart = window.addIsoDays ? window.addIsoDays(today, -60) : today;
-        const rangeEnd   = window.addIsoDays ? window.addIsoDays(today, 365) : today;
+        // Rango ampliado sin límites de fecha actual: pasado, presente y futuro (2020 a 2035)
+        const rangeStart = '2020-01-01';
+        const rangeEnd   = '2035-12-31';
 
         // 1. Fetch all active events in the broad range
         const ACTIVE_STATES = ['activo','activa','aprobado','aprobada','pendiente'];
@@ -7053,7 +7142,100 @@ window.renderDashboard = async () => {
                         </div>
                     </div>
                 `).join('');
+        }
+
+        // --- SECCIÓN: CAMBIOS PENDIENTES DE PUBLICAR ---
+        let pendingChangesContainer = document.getElementById('pending-publications-container');
+        if (!pendingChangesContainer) {
+            pendingChangesContainer = document.createElement('div');
+            pendingChangesContainer.id = 'pending-publications-container';
+            pendingChangesContainer.className = 'operational-risk-panel';
+            pendingChangesContainer.style.background = 'var(--surface)';
+            pendingChangesContainer.style.border = '1px solid var(--border)';
+            pendingChangesContainer.style.borderRadius = '20px';
+            pendingChangesContainer.style.padding = '20px';
+            pendingChangesContainer.style.marginTop = '20px';
+            
+            const opRisk = document.getElementById('operational-risk');
+            if (opRisk && opRisk.parentNode) {
+                opRisk.parentNode.insertBefore(pendingChangesContainer, opRisk.nextSibling);
             }
+        }
+
+        const pendingEvents = globalStatus.pendingEvents || [];
+        if (pendingEvents.length === 0) {
+            pendingChangesContainer.innerHTML = `
+                <div class="panel-header" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+                    <h3 style="margin:0; font-size:1rem; font-weight:800;"><i class="fas fa-history" style="margin-right:10px; color:#6366f1;"></i> CAMBIOS PENDIENTES DE PUBLICAR</h3>
+                    <span style="background:rgba(16, 185, 129, 0.1); color:#10b981; padding:4px 12px; border-radius:20px; font-weight:700; font-size:0.75rem;">0 cambios</span>
+                </div>
+                <div style="padding:40px; text-align:center; opacity:0.5; font-size:0.9rem;">
+                    <i class="fas fa-calendar-check fa-2x" style="display:block; margin-bottom:12px; color:#10b981;"></i>
+                    No hay cambios de turno pendientes de publicar
+                </div>
+            `;
+        } else {
+            const rowsHtml = pendingEvents.map(e => {
+                const hotelName = e.hotel_origen || e.hotel_id || e.hotel || 'Cumbria Spa&Hotel';
+                const dateVal = e.fecha_inicio || e.fecha;
+                const empIdVal = e.empleado_id || '—';
+                
+                const emp = (empleados || []).find(emp => 
+                    window.normalizeId(emp.id) === window.normalizeId(empIdVal) ||
+                    window.normalizeId(emp.nombre) === window.normalizeId(empIdVal) ||
+                    window.normalizeId(emp.id_interno) === window.normalizeId(empIdVal)
+                );
+                const empName = emp ? emp.nombre : empIdVal;
+
+                const prevTurn = e.turno_original || '—';
+                const newTurn = e.turno_nuevo || (e.tipo === 'VAC' ? 'Vacaciones' : (e.tipo === 'BAJA' ? 'Baja' : (e.tipo === 'PERMISO' || e.tipo === 'PERM' ? 'Permiso' : e.tipo || '—')));
+                const tipoLabel = e.tipo || 'CAMBIO';
+                const estadoLabel = 'pendiente de publicar';
+
+                return `
+                    <tr style="border-bottom:1px solid var(--border); height:48px;">
+                        <td style="padding:10px 15px; font-weight:700; color:var(--text);">${window.escapeHtml(empName)}</td>
+                        <td style="padding:10px 15px; color:var(--text);">${window.escapeHtml(hotelName)}</td>
+                        <td style="padding:10px 15px; color:var(--text); font-weight:600;">${window.escapeHtml(dateVal)}</td>
+                        <td style="padding:10px 15px;"><span style="background:rgba(99,102,241,0.1); color:#6366f1; padding:2px 8px; border-radius:12px; font-size:0.7rem; font-weight:700;">${window.escapeHtml(tipoLabel)}</span></td>
+                        <td style="padding:10px 15px; color:var(--text-dim);">${window.escapeHtml(prevTurn)}</td>
+                        <td style="padding:10px 15px; color:#10b981; font-weight:700;">${window.escapeHtml(newTurn)}</td>
+                        <td style="padding:10px 15px;"><span style="color:#f59e0b; font-weight:700; font-size:0.75rem;"><i class="fas fa-clock" style="margin-right:4px;"></i>${estadoLabel}</span></td>
+                        <td style="padding:10px 15px; text-align:center;">
+                            <button class="alert-btn primary" onclick="window.navigateToPreview('${hotelName.replace(/'/g, "\\'")}', '${dateVal}', '${empIdVal.replace(/'/g, "\\'")}')" style="margin:0; padding:4px 10px; font-size:0.7rem;">
+                                Ver en Vista Previa
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+
+            pendingChangesContainer.innerHTML = `
+                <div class="panel-header" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+                    <h3 style="margin:0; font-size:1rem; font-weight:800;"><i class="fas fa-history" style="margin-right:10px; color:#6366f1;"></i> CAMBIOS PENDIENTES DE PUBLICAR</h3>
+                    <span style="background:rgba(99, 102, 241, 0.1); color:#6366f1; padding:4px 12px; border-radius:20px; font-weight:700; font-size:0.75rem;">${pendingEvents.length} cambios</span>
+                </div>
+                <div style="overflow-x:auto; max-height: 400px;">
+                    <table style="width:100%; border-collapse:collapse; text-align:left; font-size:0.8rem;">
+                        <thead>
+                            <tr style="border-bottom:2px solid var(--border); color:var(--text-dim); text-transform:uppercase; font-size:0.7rem; font-weight:800;">
+                                <th style="padding:10px 15px;">Empleado</th>
+                                <th style="padding:10px 15px;">Hotel</th>
+                                <th style="padding:10px 15px;">Fecha</th>
+                                <th style="padding:10px 15px;">Tipo</th>
+                                <th style="padding:10px 15px;">Turno Anterior</th>
+                                <th style="padding:10px 15px;">Turno Nuevo</th>
+                                <th style="padding:10px 15px;">Estado</th>
+                                <th style="padding:10px 15px; text-align:center;">Acción</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${rowsHtml}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+        }
         }
 
         // Badges y KPIs nuevos
@@ -8389,32 +8571,7 @@ window.diagnoseOperationalOrder = (hotel, weekStart) => {
 
 
 window.goToRiskPreview = (hotel, weekStart) => {
-    console.log('[NAV_DASHBOARD_PREVIEW]', { hotel, weekStart });
-    // 1. Cambiar a la sección de Vista Previa
-    if (window.switchSection) window.switchSection('preview');
-    
-    // 2. Esperar a que el DOM se actualice
-    setTimeout(() => {
-        const hotelSelect = document.getElementById('previewHotel');
-        const dateInput = document.getElementById('previewDate');
-        
-        if (hotelSelect) {
-            hotelSelect.value = hotel;
-            hotelSelect.dispatchEvent(new Event('change'));
-        }
-        
-        if (dateInput) {
-            dateInput.value = weekStart;
-            if (dateInput._flatpickr) {
-                dateInput._flatpickr.setDate(weekStart, true);
-            }
-        }
-        
-        // 3. Forzar el renderizado de la vista previa
-        if (window.renderPreview) {
-            window.renderPreview();
-        }
-    }, 150);
+    window.navigateToPreview(hotel, weekStart, null);
 };
 
 /**
