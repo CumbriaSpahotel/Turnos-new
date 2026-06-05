@@ -7700,6 +7700,77 @@ window.formatLocalDate = (date) => {
     return `${y}-${m}-${d}`;
 };
 
+/**
+ * Reúne TODOS los eventos que pertenecen a un empleado buscando en todas las
+ * fuentes globales disponibles (sin límite de ventana de fechas cargada).
+ * Deduplicación por id o por clave compuesta.
+ */
+window.collectAllEventsForEmployee = (emp) => {
+    const sources = [
+        window.eventosGlobales,
+        window.eventosActivos,
+        window._lastEventos,
+        window.allEventos,
+        window._cachedEventos,
+    ].filter(s => Array.isArray(s));
+
+    // Eliminar duplicados entre fuentes
+    const seen = new Set();
+    const all = [];
+    for (const src of sources) {
+        for (const ev of src) {
+            const belongs = window.eventoPerteneceAEmpleado
+                ? window.eventoPerteneceAEmpleado(ev, emp.id)
+                : (String(ev.empleado_id || '') === String(emp.id || '') ||
+                   String(ev.empleado_uuid || '') === String(emp.uuid || ''));
+            if (!belongs) continue;
+            const key = ev.id
+                ? String(ev.id)
+                : `${ev.fecha_inicio || ev.fecha}_${ev.tipo}_${ev.empleado_id || ev.empleado}`;
+            if (!seen.has(key)) {
+                seen.add(key);
+                all.push(ev);
+            }
+        }
+    }
+    return all;
+};
+
+/**
+ * Determina si el empleado de la ficha (emp) fue el SOLICITANTE del cambio.
+ * Prioriza campos explícitos de solicitante; si no existen, asume origen = solicitante.
+ */
+window.isSelfRequestedChange = (ev, empId) => {
+    const normEmp = window.normalizeId(empId);
+    const p = ev?.payload || {};
+    // Campo explícito de solicitante
+    const explicitReq = ev?.solicitante || p.solicitante || p.solicitado_por || p.creado_por || ev?.created_by || '';
+    if (explicitReq) {
+        return window.normalizeId(explicitReq) === normEmp;
+    }
+    // Sin campo explícito: asumir que el origen (empleado_id) es el solicitante
+    const origins = window.getEventOriginCandidates
+        ? window.getEventOriginCandidates(ev).map(window.normalizeId)
+        : [window.normalizeId(ev?.empleado_id || '')];
+    return origins.some(o => o && o === normEmp);
+};
+
+/**
+ * Devuelve el nombre del compañero implicado en el cambio para el empleado de la ficha.
+ * Usa getOtroEmpleadoDelCambio de shift-resolver si está disponible.
+ * @returns {string} Nombre legible o 'No informado'
+ */
+window.getChangeCounterpartName = (ev, empId) => {
+    const otherId = window.getOtroEmpleadoDelCambio
+        ? window.getOtroEmpleadoDelCambio(ev, empId)
+        : '';
+    if (otherId) {
+        const name = window.getEmployeeDisplayName(otherId);
+        return name && name !== otherId ? name : otherId;
+    }
+    return 'No informado';
+};
+
 window.mergeVacationRanges = (vacations) => {
     if (!Array.isArray(vacations) || vacations.length === 0) return [];
     
@@ -8055,7 +8126,14 @@ window.buildEmployeeProfileModel = (empId, refISO) => {
         });
         return Array.from(byPeriod.values());
     };
-    const rawVacs = eventosActivos.filter(isVacationEvent);
+    // Buscar vacaciones en TODAS las fuentes globales (sin límite de ventana de fechas).
+    // eventosActivos puede estar limitado al rango ±90 días del calendario cargado,
+    // por lo que podría omitir vacaciones programadas fuera de ese rango.
+    const allEmpEvents = window.collectAllEventsForEmployee ? window.collectAllEventsForEmployee(emp) : eventosActivos;
+    const rawVacs = allEmpEvents.filter(ev => {
+        const state = String(ev.estado || 'activo').toLowerCase();
+        return isVacationEvent(ev) && state !== 'anulado' && state !== 'cancelado' && state !== 'rechazado';
+    });
     const yearRawVacs = rawVacs.filter(ev => {
         const start = String(ev.fecha_inicio || '').slice(0, 10);
         const end = String(ev.fecha_fin || start || '').slice(0, 10);
@@ -8129,6 +8207,26 @@ window.buildEmployeeProfileModel = (empId, refISO) => {
     const leavePermissionEvents = periodGroupedEvents.filter(isLeavePermissionEvent);
     const yearLeavePermissionEvents = yearGroupedEvents.filter(isLeavePermissionEvent);
     const cambioEvents = periodGroupedEvents.filter(ev => /CAMBIO|INTERCAMBIO/.test(String(ev.tipo || '').toUpperCase()));
+
+    // Cambios del año: todos (activos + pendientes) que involucren al empleado
+    const yearAllCambios = allEmpEvents.filter(ev => {
+        const start = String(ev.fecha_inicio || '').slice(0, 10);
+        const end = String(ev.fecha_fin || start || '').slice(0, 10);
+        const state = String(ev.estado || 'activo').toLowerCase();
+        const isCambio = /CAMBIO|INTERCAMBIO/.test(String(ev.tipo || '').toUpperCase());
+        const isActive = state === 'activo' || state === 'pendiente';
+        return start && end && start <= yearEndISO && end >= yearStartISO && isCambio && isActive;
+    });
+    const yearActiveCambios = yearAllCambios.filter(ev => String(ev.estado || 'activo').toLowerCase() === 'activo');
+    const yearPendingCambios = yearAllCambios.filter(ev => String(ev.estado || '').toLowerCase() === 'pendiente');
+
+    // Separar: propios (empleado de la ficha es el solicitante) vs. de otros compañeros
+    const selfCambios = yearAllCambios.filter(ev => window.isSelfRequestedChange ? window.isSelfRequestedChange(ev, emp.id) : false);
+    const otherCambios = yearAllCambios.filter(ev => window.isSelfRequestedChange ? !window.isSelfRequestedChange(ev, emp.id) : false);
+    const selfGroupedCambios = window.groupShiftChangeRequests ? window.groupShiftChangeRequests(selfCambios) : selfCambios;
+    const otherGroupedCambios = window.groupShiftChangeRequests ? window.groupShiftChangeRequests(otherCambios) : otherCambios;
+    const allGroupedCambios = window.groupShiftChangeRequests ? window.groupShiftChangeRequests(yearActiveCambios) : yearActiveCambios;
+    const pendingGroupedCambios = window.groupShiftChangeRequests ? window.groupShiftChangeRequests(yearPendingCambios) : yearPendingCambios;
     const configuredRole = window.employeeConfiguredRole ? window.employeeConfiguredRole(profile) : 'titular';
     const roleToday = activeTodayEvents.some(ev => window.isExplicitRefuerzoEvent(ev))
         ? 'refuerzo'
@@ -8236,6 +8334,11 @@ window.buildEmployeeProfileModel = (empId, refISO) => {
         explicitRefuerzoEvents,
         leavePermissionEvents,
         cambioEvents,
+        cambiosPropios: selfGroupedCambios,
+        cambiosDeOtros: otherGroupedCambios,
+        allGroupedCambios,
+        pendingGroupedCambios,
+        yearAllCambios,
         alerts,
         pendingPolicy: {
             applies: pendingApplies,
@@ -8724,35 +8827,17 @@ window.renderEmployeeProfile = () => {
         tabContent = `<section class="emp-card glass emp-year-card" style="padding:20px; border-radius:18px; border:1px solid var(--border);"><div class="emp-year-header"><div><h3 style="margin:0 0 6px; font-size:0.9rem; font-weight:800;">Bajas / Permisos ${selectedYear}</h3><div class="emp-year-subtitle">Mostrando todo el año natural, del 01/01/${selectedYear} al 31/12/${selectedYear}.</div></div>${yearTabs}</div><div class="emp-leave-summary"><span><strong>${leaveEventsYear.length}</strong> registros</span><span><strong>${totalDays}</strong> días naturales</span></div>${renderRowsTable(leaveRows, `No hay bajas ni permisos registrados en ${selectedYear}.`)}</section>`;
     } else if (currentTab === 'changes') {
         const selectedYear = refDate.getFullYear();
-        const yearStart = `${selectedYear}-01-01`;
-        const yearEnd = `${selectedYear}-12-31`;
-        
-        const isChangeType = (ev) => /CAMBIO|INTERCAMBIO|CT/.test(String(ev.tipo || '').toUpperCase());
-        
-        const yearChanges = (model.eventosActivos || []).filter(ev => {
-            const start = String(ev.fecha_inicio || '').slice(0, 10);
-            const end = String(ev.fecha_fin || start || '').slice(0, 10);
-            const state = String(ev.estado || '').toLowerCase();
-            const isChange = isChangeType(ev);
-            const isActiveOrPending = state === 'activo' || state === 'pendiente';
-            return start && end && start <= yearEnd && end >= yearStart && isChange && isActiveOrPending;
-        });
-        
-        const activeYearChanges = yearChanges.filter(ev => {
-            const state = String(ev.estado || '').toLowerCase();
-            return state === 'activo';
-        });
-        
-        const pendingYearChanges = yearChanges.filter(ev => {
-            const state = String(ev.estado || '').toLowerCase();
-            return state === 'pendiente';
-        });
-        
-        const groupedRequests = window.groupShiftChangeRequests(activeYearChanges);
-        const groupedPending = window.groupShiftChangeRequests(pendingYearChanges);
-        
+
+        // Usar datos precalculados del modelo (fuente ampliada, sin límite de ventana)
+        const selfGrouped  = model.cambiosPropios        || [];
+        const otherGrouped = model.cambiosDeOtros        || [];
+        const allGrouped   = model.allGroupedCambios     || [];
+        const pendingGroup = model.pendingGroupedCambios || [];
+        const allRaw       = model.yearAllCambios        || [];
+
+        // Días únicos afectados (activos)
         const uniqueChangeDays = new Set();
-        activeYearChanges.forEach(ev => {
+        allRaw.filter(ev => String(ev.estado || 'activo').toLowerCase() === 'activo').forEach(ev => {
             const s = window.parseLocalDate(ev.fecha_inicio);
             const e = window.parseLocalDate(ev.fecha_fin || ev.fecha_inicio);
             if (!s || !e) return;
@@ -8763,7 +8848,8 @@ window.renderEmployeeProfile = () => {
             }
         });
         const diasAfectados = uniqueChangeDays.size;
-        
+
+        // Fecha del último cambio (dd/mm/yy)
         let ultimoCambio = 'No registrado';
         if (uniqueChangeDays.size > 0) {
             const sortedDates = Array.from(uniqueChangeDays).sort();
@@ -8771,37 +8857,112 @@ window.renderEmployeeProfile = () => {
             const parts = lastDateStr.split('-');
             ultimoCambio = `${parts[2]}/${parts[1]}/${parts[0].slice(2)}`;
         }
-        
+
+        const totalSolicitudes = selfGrouped.length + otherGrouped.length;
+
+        const kpiCardStyle = `padding:13px 14px; border-radius:14px; border:1px solid var(--border); background:white;`;
+        const kpiLabelStyle = `display:block; font-size:0.58rem; font-weight:800; color:var(--text-dim); text-transform:uppercase; margin-bottom:5px; letter-spacing:0.04em;`;
+
         const summaryCards = `
             <section class="emp-card glass" style="padding:20px; border-radius:18px; border:1px solid var(--border); margin-bottom:18px;">
                 <h3 style="margin:0 0 14px; font-size:0.9rem; font-weight:800; text-transform:uppercase;">Resumen ${selectedYear}</h3>
-                <div style="display:grid; grid-template-columns:repeat(5, 1fr); gap:12px;">
-                    <div class="emp-kpi-card glass" style="padding:12px; border-radius:14px; border:1px solid var(--border); background:white;">
-                        <label style="display:block; font-size:0.6rem; font-weight:800; color:var(--text-dim); text-transform:uppercase; margin-bottom:4px;">Solicitudes de cambio</label>
-                        <strong style="font-size:1.1rem; color:var(--text);">${groupedRequests.length}</strong>
+                <div style="display:grid; grid-template-columns:repeat(6, 1fr); gap:10px;">
+                    <div class="emp-kpi-card glass" style="${kpiCardStyle}">
+                        <label style="${kpiLabelStyle}">Propias</label>
+                        <strong style="font-size:1.1rem; color:var(--accent);">${selfGrouped.length}</strong>
+                        <div style="font-size:0.62rem; color:var(--text-dim); margin-top:3px;">solicitudes</div>
                     </div>
-                    <div class="emp-kpi-card glass" style="padding:12px; border-radius:14px; border:1px solid var(--border); background:white;">
-                        <label style="display:block; font-size:0.6rem; font-weight:800; color:var(--text-dim); text-transform:uppercase; margin-bottom:4px;">Días afectados</label>
+                    <div class="emp-kpi-card glass" style="${kpiCardStyle}">
+                        <label style="${kpiLabelStyle}">De otros</label>
+                        <strong style="font-size:1.1rem; color:#7c3aed;">${otherGrouped.length}</strong>
+                        <div style="font-size:0.62rem; color:var(--text-dim); margin-top:3px;">solicitudes</div>
+                    </div>
+                    <div class="emp-kpi-card glass" style="${kpiCardStyle}">
+                        <label style="${kpiLabelStyle}">Total solicitudes</label>
+                        <strong style="font-size:1.1rem; color:var(--text);">${totalSolicitudes}</strong>
+                        <div style="font-size:0.62rem; color:var(--text-dim); margin-top:3px;">agrupadas</div>
+                    </div>
+                    <div class="emp-kpi-card glass" style="${kpiCardStyle}">
+                        <label style="${kpiLabelStyle}">Días afectados</label>
                         <strong style="font-size:1.1rem; color:var(--text);">${diasAfectados}</strong>
+                        <div style="font-size:0.62rem; color:var(--text-dim); margin-top:3px;">días únicos</div>
                     </div>
-                    <div class="emp-kpi-card glass" style="padding:12px; border-radius:14px; border:1px solid var(--border); background:white;">
-                        <label style="display:block; font-size:0.6rem; font-weight:800; color:var(--text-dim); text-transform:uppercase; margin-bottom:4px;">Activos</label>
-                        <strong style="font-size:1.1rem; color:#10b981;">${diasAfectados}</strong>
+                    <div class="emp-kpi-card glass" style="${kpiCardStyle}">
+                        <label style="${kpiLabelStyle}">Pendientes</label>
+                        <strong style="font-size:1.1rem; color:${pendingGroup.length > 0 ? '#f59e0b' : 'var(--text)'};">${pendingGroup.length}</strong>
+                        <div style="font-size:0.62rem; color:var(--text-dim); margin-top:3px;">solicitudes</div>
                     </div>
-                    <div class="emp-kpi-card glass" style="padding:12px; border-radius:14px; border:1px solid var(--border); background:white;">
-                        <label style="display:block; font-size:0.6rem; font-weight:800; color:var(--text-dim); text-transform:uppercase; margin-bottom:4px;">Pendientes</label>
-                        <strong style="font-size:1.1rem; color:${groupedPending.length > 0 ? '#f59e0b' : 'var(--text)'};">${groupedPending.length}</strong>
-                    </div>
-                    <div class="emp-kpi-card glass" style="padding:12px; border-radius:14px; border:1px solid var(--border); background:white;">
-                        <label style="display:block; font-size:0.6rem; font-weight:800; color:var(--text-dim); text-transform:uppercase; margin-bottom:4px;">Último cambio</label>
-                        <strong style="font-size:0.95rem; color:var(--text);">${ultimoCambio}</strong>
+                    <div class="emp-kpi-card glass" style="${kpiCardStyle}">
+                        <label style="${kpiLabelStyle}">Último cambio</label>
+                        <strong style="font-size:0.92rem; color:var(--text);">${escapeHtml(ultimoCambio)}</strong>
                     </div>
                 </div>
             </section>
         `;
-        
-        const changeRows = model.cambioEvents.map(ev => ({ fecha: ev.fecha_inicio, main: `<strong>${escapeHtml(window.employeeProfileEventLabel(ev))}</strong> · ${escapeHtml(window.employeeProfileDateRangeLabel(ev.fecha_inicio, ev.fecha_fin || ev.fecha_inicio))}`, secondary: `${escapeHtml(ev.observaciones || 'Sin observaciones')} · origen ${escapeHtml(window.employeeProfileReadableSource(ev))}`, badge: `${escapeHtml(ev.estado || 'activo')} 🔄` }));
-        tabContent = `${summaryCards}<section class="emp-card glass" style="padding:20px; border-radius:18px; border:1px solid var(--border);"><h3 style="margin:0 0 14px; font-size:0.9rem; font-weight:800;">Cambios de turno</h3>${renderRowsTable(changeRows, 'No hay cambios de turno en este periodo.')}</section>`;
+
+        // Listado enriquecido: mostrar todos los cambios del año usando la fuente ampliada
+        const listSource = allRaw.slice().sort((a, b) =>
+            String(a.fecha_inicio || '').localeCompare(String(b.fecha_inicio || ''))
+        );
+
+        const renderChangesTable = (rows) => {
+            if (rows.length === 0) {
+                return `<div style="padding:30px; text-align:center; opacity:0.5; font-size:0.82rem;">No hay cambios de turno en este periodo.</div>`;
+            }
+            return `
+                <table style="width:100%; border-collapse:collapse; font-size:0.79rem;">
+                    <thead>
+                        <tr style="border-bottom:1.5px solid var(--border); color:var(--text-dim); font-size:0.68rem; text-transform:uppercase; font-weight:800; text-align:left;">
+                            <th style="padding:8px 6px;">Fecha</th>
+                            <th style="padding:8px 6px;">Tipo</th>
+                            <th style="padding:8px 6px;">Participantes</th>
+                            <th style="padding:8px 6px;">Solicitante</th>
+                            <th style="padding:8px 6px;">Motivo · Origen</th>
+                            <th style="padding:8px 6px; text-align:center;">Estado</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${rows.map(ev => {
+                            const counterpart = window.getChangeCounterpartName
+                                ? window.getChangeCounterpartName(ev, emp.id)
+                                : 'No informado';
+                            const isSelf = window.isSelfRequestedChange
+                                ? window.isSelfRequestedChange(ev, emp.id)
+                                : null;
+                            const solicitanteLabel = isSelf === true
+                                ? `<span style="color:var(--accent); font-weight:700;">${escapeHtml(emp.nombre)}</span>`
+                                : isSelf === false
+                                    ? `<span style="color:#7c3aed; font-weight:700;">${escapeHtml(counterpart)}</span>`
+                                    : `<span style="color:var(--text-dim);">No informado</span>`;
+                            const dirLabel = counterpart !== 'No informado'
+                                ? `${escapeHtml(emp.nombre)} ↔ ${escapeHtml(counterpart)}`
+                                : `${escapeHtml(emp.nombre)}`;
+                            const tipoLabel = escapeHtml(window.employeeProfileEventLabel(ev));
+                            const fechaLabel = window.employeeProfileDateRangeLabel
+                                ? escapeHtml(window.employeeProfileDateRangeLabel(ev.fecha_inicio, ev.fecha_fin || ev.fecha_inicio))
+                                : escapeHtml(ev.fecha_inicio || '—');
+                            const motivo = escapeHtml(ev.observaciones || ev.payload?.motivo || ev.payload?.observaciones || 'Sin motivo');
+                            const origen = escapeHtml(window.employeeProfileReadableSource ? window.employeeProfileReadableSource(ev) : 'manual');
+                            const estado = String(ev.estado || 'activo').toLowerCase();
+                            const estadoColor = estado === 'activo' ? '#10b981' : estado === 'pendiente' ? '#f59e0b' : '#94a3b8';
+                            const estadoBadge = `<span style="display:inline-block; padding:3px 9px; border-radius:20px; font-size:0.68rem; font-weight:700; background:${estadoColor}18; color:${estadoColor}; border:1px solid ${estadoColor}44;">${escapeHtml(ev.estado || 'activo')}</span>`;
+                            return `
+                                <tr style="border-bottom:1px solid var(--border);">
+                                    <td style="padding:10px 6px; font-weight:700; color:var(--text); white-space:nowrap;">${escapeHtml(ev.fecha_inicio || '—')}</td>
+                                    <td style="padding:10px 6px; color:var(--text);">${tipoLabel}<div style="font-size:0.68rem; color:var(--text-dim); margin-top:2px;">${fechaLabel}</div></td>
+                                    <td style="padding:10px 6px; color:var(--text); font-weight:600;">${dirLabel}</td>
+                                    <td style="padding:10px 6px;">${solicitanteLabel}</td>
+                                    <td style="padding:10px 6px; color:var(--text-dim);">${motivo}<div style="font-size:0.68rem; margin-top:2px;">origen: ${origen}</div></td>
+                                    <td style="padding:10px 6px; text-align:center;">${estadoBadge}</td>
+                                </tr>
+                            `;
+                        }).join('')}
+                    </tbody>
+                </table>
+            `;
+        };
+
+        tabContent = `${summaryCards}<section class="emp-card glass" style="padding:20px; border-radius:18px; border:1px solid var(--border);"><h3 style="margin:0 0 14px; font-size:0.9rem; font-weight:800;">Cambios de turno ${selectedYear}</h3>${renderChangesTable(listSource)}</section>`;
     } else if (currentTab === 'substitutions') {
         const doneRows = model.substitutionsDone.map(ev => ({ fecha: ev.fecha_inicio, main: `<strong>${escapeHtml(window.employeeProfileEventLabel(ev))}</strong> · cubre a ${escapeHtml(ev.empleado_id || 'No informado')}`, secondary: `${escapeHtml(window.employeeProfileDateRangeLabel(ev.fecha_inicio, ev.fecha_fin || ev.fecha_inicio))} · hotel ${escapeHtml(window.getEventoHotel ? window.getEventoHotel(ev) : (ev.hotel || ev.hotel_origen || ev.hotel_destino || emp.hotel || 'No informado'))}`, badge: escapeHtml(ev.id || ev.evento_id || 'sin id') }));
         const receivedRows = model.substitutionsReceived.map(ev => ({ fecha: ev.fecha_inicio, main: `<strong>${escapeHtml(window.employeeProfileEventLabel(ev))}</strong> · sustituye ${escapeHtml(ev.empleado_destino_id || ev.sustituto_id || ev.payload?.sustituto || 'No informado')}`, secondary: `${escapeHtml(window.employeeProfileDateRangeLabel(ev.fecha_inicio, ev.fecha_fin || ev.fecha_inicio))} · motivo ${escapeHtml(ev.observaciones || 'Sin observaciones')}`, badge: escapeHtml(ev.id || ev.evento_id || 'sin id') }));
