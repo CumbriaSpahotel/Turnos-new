@@ -3931,7 +3931,7 @@ if (!assignedNorms.has(normTitular)) {
         extraRefuerzoRows.sort((a, b) => (a.nombre || '').localeCompare(b.nombre || ''));
 
         return [...operationalRows, ...absentRows, ...extraRefuerzoRows].filter(r => {
-            const validId = r.employee_id && !String(r.employee_id).includes('---') && !String(r.employee_id).includes('___');
+            const validId = r.employee_id && !String(r.employee_id).includes('---') && !String(r.employee_id).includes('___') && !String(r.employee_id).includes('_DUP');
             const validName = r.nombre && r.nombre !== 'Empleado' && r.nombre.trim().length > 1;
             return validId && validName;
         });
@@ -4568,7 +4568,7 @@ window.renderPreview = async () => {
             if (hotelSourceRows.length === 0 && data && data.length > 0) {
                 const hotelData = data.filter(r => r.hotel_id === hName);
                 if (hotelData.length > 0) {
-                    const empsInHotel = [...new Set(hotelData.map(r => r.empleado_id))];
+                    const empsInHotel = [...new Set(hotelData.map(r => r.empleado_id))].filter(id => id && !id.includes('_DUP'));
                     empsInHotel.forEach((empId, idx) => {
                         const empProfile = (profiles || []).find(p => p.id === empId || p.nombre === empId);
                         const row = {
