@@ -5173,9 +5173,11 @@ window.closeEmpDrawer = () => { if($('#empDrawer')) $('#empDrawer').classList.re
 window._employeeLineFilters = window._employeeLineFilters || {
     hotel: 'all',
     estado: 'all',
+    tipo: 'all',
     search: '',
     sort: 'operativo'
 };
+if (typeof window._employeeLineFilters.tipo === 'undefined') window._employeeLineFilters.tipo = 'all';
 
 window.employeeNorm = (value) => String(value || '')
     .normalize('NFD')
@@ -5358,6 +5360,11 @@ window.renderEmployeeLineRows = () => {
             if (filters.estado === 'refuerzo' && line.rolOperativo !== 'refuerzo') return false;
             if (!['operativo', 'apoyo', 'ocasional', 'sustituto', 'refuerzo'].includes(filters.estado) && line.estado !== filters.estado) return false;
         }
+        if (filters.tipo && filters.tipo !== 'all') {
+            const lineTipo = window.employeeNorm(line.tipoEmpleado || line.tipo || 'fijo');
+            if (filters.tipo === 'fijo' && lineTipo !== 'fijo') return false;
+            if (filters.tipo !== 'fijo' && lineTipo !== filters.tipo) return false;
+        }
         return !q || window.employeeNorm(`${line.nombre} ${line.id} ${line.id_interno || ''}`).includes(q);
     });
     const sorters = {
@@ -5371,20 +5378,31 @@ window.renderEmployeeLineRows = () => {
     };
     lines.sort(sorters[filters.sort] || sorters.operativo);
     const hotels = window._employeeLineHotels || [];
+    const uniqueHotels = [];
+    const seenH = new Set();
+    for (const h of hotels) {
+        const sh = window.employeeShortHotel(h);
+        if (!seenH.has(sh)) {
+            seenH.add(sh);
+            uniqueHotels.push({ val: h, label: sh });
+        }
+    }
     const stateOptions = ['operativo', 'Activo', 'Vacaciones', 'Baja', 'apoyo', 'ocasional', 'sustituto', 'refuerzo', 'all'];
+    const typeOptions = [{v:'all', l:'Todos los tipos'}, {v:'fijo', l:'Fijo'}, {v:'apoyo', l:'Apoyo'}, {v:'ocasional', l:'Ocasional'}, {v:'eventual', l:'Eventual'}];
     area.innerHTML = `
         <div class="employees-dashboard line-mode">
             <div class="ed-summary">
                 <div><span>Filas visibles</span><strong>${lines.length}</strong></div>
                 <div><span>Activos</span><strong>${lines.filter(l => l.estado === 'Activo').length}</strong></div>
                 <div><span>Incidencias</span><strong>${lines.filter(l => l.estado !== 'Activo').length}</strong></div>
+                <div><span>Por resolver</span><strong style="color:var(--danger)">${lines.filter(l => l.pendingPolicy?.diasPendientes > 0).length}</strong></div>
                 <div><span>Apoyo/Ocasional</span><strong>${lines.filter(l => ['apoyo', 'ocasional'].includes(l.tipoEmpleado)).length}</strong></div>
-                <div><span>Refuerzos hoy</span><strong>${lines.filter(l => l.rolOperativo === 'refuerzo').length}</strong></div>
             </div>
             <div class="ed-tools">
                 <input id="empLineSearch" type="search" value="${escapeHtml(filters.search)}" placeholder="Buscar nombre o ID">
-                <select id="empLineHotel"><option value="all">Todos los hoteles</option>${hotels.map(h => `<option value="${escapeHtml(h)}" ${filters.hotel === h ? 'selected' : ''}>${escapeHtml(window.employeeShortHotel(h))}</option>`).join('')}</select>
+                <select id="empLineHotel"><option value="all">Todos los hoteles</option>${uniqueHotels.map(h => `<option value="${escapeHtml(h.val)}" ${filters.hotel === h.val ? 'selected' : ''}>${escapeHtml(h.label)}</option>`).join('')}</select>
                 <select id="empLineEstado">${stateOptions.map(s => `<option value="${escapeHtml(s)}" ${filters.estado === s ? 'selected' : ''}>${escapeHtml(s === 'all' ? 'Todos los estados' : s === 'operativo' ? 'Operativo sin bajas' : s === 'apoyo' ? 'Tipo: Apoyo' : s === 'ocasional' ? 'Tipo: Ocasional' : s === 'sustituto' ? 'Rol: Sustituto' : s === 'refuerzo' ? 'Rol: Refuerzo' : s)}</option>`).join('')}</select>
+                <select id="empLineTipo">${typeOptions.map(t => `<option value="${t.v}" ${(filters.tipo || 'all') === t.v ? 'selected' : ''}>${t.l}</option>`).join('')}</select>
                 <select id="empLineSort">
                     <option value="operativo" ${filters.sort === 'operativo' ? 'selected' : ''}>Orden operativo</option>
                     <option value="nombre" ${filters.sort === 'nombre' ? 'selected' : ''}>Nombre</option>
@@ -5414,6 +5432,7 @@ window.renderEmployeeLineRows = () => {
     });
     $('#empLineHotel')?.addEventListener('change', (e) => { window._employeeLineFilters.hotel = e.target.value; window.renderEmployeeLineRows(); });
     $('#empLineEstado')?.addEventListener('change', (e) => { window._employeeLineFilters.estado = e.target.value; window.renderEmployeeLineRows(); });
+    $('#empLineTipo')?.addEventListener('change', (e) => { window._employeeLineFilters.tipo = e.target.value; window.renderEmployeeLineRows(); });
     $('#empLineSort')?.addEventListener('change', (e) => { window._employeeLineFilters.sort = e.target.value; window.renderEmployeeLineRows(); });
     if (restoreSearchFocus) {
         const search = document.getElementById('empLineSearch');
@@ -5601,7 +5620,7 @@ window.detectarConflictosOperativos = async (fecha, hotel, inputEventos = null, 
             empleado: emp,
             empleadoId: empId,
             fecha,
-            eventos: emp.events,
+            eventos: emp.eventos,
             allEvents: eventos,
             resolveId: resolveId
         }) : null;
@@ -8842,7 +8861,7 @@ window.saveNewEmployeeInline = async (event) => {
         telefono: document.getElementById('new-emp-telefono')?.value?.trim() || null,
         hotel: hotel,
         hotel_id: hotel,
-        hoteles_asignados: hotelesAsignados,
+        hoteles_asignados: Array.isArray(hotelesAsignados) ? hotelesAsignados.join(',') : hotelesAsignados,
         puesto: document.getElementById('new-emp-puesto')?.value?.trim() || null,
         categoria: document.getElementById('new-emp-puesto')?.value?.trim() || null,
         tipo,
@@ -9061,7 +9080,17 @@ window.renderEmployeeProfile = () => {
         `;
     }
     const monthRows = (model.calendario || []).filter(day => !day.outsideMonth);
-    const renderRowsTable = (rows, emptyText) => rows.length > 0 ? `<div style="display:grid; gap:10px;">${rows.map(row => `<div style="display:grid; grid-template-columns:92px 1fr 1fr 120px; gap:12px; align-items:center; padding:12px 14px; border:1px solid var(--border); border-radius:14px; background:white;"><strong style="font-size:0.78rem; color:var(--text);">${escapeHtml(row.fecha || '—')}</strong><span style="font-size:0.78rem; color:var(--text);">${row.main}</span><span style="font-size:0.76rem; color:var(--text-dim);">${row.secondary || '—'}</span><span style="font-size:0.74rem; color:var(--accent); font-weight:700; text-align:right;">${row.badge || '—'}</span></div>`).join('')}</div>` : `<div style="padding:26px; text-align:center; opacity:0.45; font-size:0.82rem;">${emptyText}</div>`;
+    const renderRowsTable = (rows, emptyText) => rows.length > 0 ? `<div style="display:grid; gap:10px;">${rows.map(row => {
+        let bColor = 'var(--accent)';
+        if (row.badge) {
+            const b = String(row.badge).toLowerCase();
+            if (b === 'consumidas' || b === 'finalizado' || b === 'realizado') bColor = '#64748b';
+            else if (b === 'próximas' || b === 'activo' || b === 'aprobado' || b === 'ok') bColor = '#10b981';
+            else if (b === 'anuladas' || b === 'rechazado' || b === 'cancelado' || b === 'anulado') bColor = '#ef4444';
+            else if (b === 'pendiente') bColor = '#f59e0b';
+        }
+        return `<div style="display:grid; grid-template-columns:92px 1fr 1fr 120px; gap:12px; align-items:center; padding:12px 14px; border:1px solid var(--border); border-radius:14px; background:white;"><strong style="font-size:0.78rem; color:var(--text);">${escapeHtml(row.fecha || '—')}</strong><span style="font-size:0.78rem; color:var(--text);">${row.main}</span><span style="font-size:0.76rem; color:var(--text-dim);">${row.secondary || '—'}</span><span style="font-size:0.74rem; color:${bColor}; font-weight:800; text-align:right; text-transform:uppercase;">${row.badge || '—'}</span></div>`;
+    }).join('')}</div>` : `<div style="padding:26px; text-align:center; opacity:0.45; font-size:0.82rem;">${emptyText}</div>`;
     const alertHTML = model.alerts.length > 0 ? `<section class="emp-card glass" style="padding:18px 20px; border-radius:18px; border:1px solid var(--border);"><h3 style="margin:0 0 12px; font-size:0.88rem; font-weight:800;">Alertas</h3><div style="display:grid; gap:10px;">${model.alerts.map(alert => `<div class="emp-alert-box" style="display:flex; align-items:flex-start; gap:10px; padding:11px 13px; border-radius:13px; border:1px solid ${alert.level === 'danger' ? 'rgba(239,68,68,0.25)' : 'rgba(245,158,11,0.25)'}; background:${alert.level === 'danger' ? 'rgba(239,68,68,0.06)' : 'rgba(245,158,11,0.06)'};"><i class="fas ${alert.level === 'danger' ? 'fa-triangle-exclamation' : 'fa-circle-info'}" style="color:${alert.level === 'danger' ? '#dc2626' : '#d97706'};"></i><span style="font-size:0.8rem; font-weight:600; color:var(--text);">${escapeHtml(alert.text)}</span></div>`).join('')}</div></section>` : '';
     const headerHTML = `<div class="emp-premium-header"><div class="emp-header-info"><div class="emp-avatar" style="background:var(--accent); color:white; width:52px; height:52px; border-radius:15px; display:flex; align-items:center; justify-content:center; font-size:1.3rem; font-weight:800; box-shadow:0 8px 16px rgba(0,0,0,0.08);">${escapeHtml((emp.nombre || 'E').charAt(0))}</div><div class="emp-title-block"><h2 style="margin:0; font-size:1.2rem; font-weight:800; color:var(--text);">${escapeHtml(emp.nombre)}</h2><div style="margin-top:4px; font-size:0.74rem; color:#94a3b8; font-weight:600;">${escapeHtml(emp.id_interno || 'No informado')}</div><div style="display:flex; flex-wrap:wrap; gap:8px; margin-top:10px;"><span class="status-pill ${model.typeMeta.cls}">${escapeHtml(model.typeMeta.label)}</span><span class="status-pill ${model.laborStatus.cls}">${escapeHtml(model.laborStatus.label)}</span><span class="status-pill ${model.currentRoleMeta.cls}">${escapeHtml(model.currentRoleMeta.label)}</span><span class="status-pill activo">${escapeHtml(assignedHotelLabel)}</span></div></div></div><div class="emp-header-actions" style="display:grid; gap:4px; text-align:right; max-width:230px;"><div style="font-size:0.72rem; color:var(--text-dim); font-weight:700; text-transform:uppercase;">Edición</div><div style="font-size:0.82rem; color:var(--text); font-weight:700;">ID protegido</div><div style="font-size:0.72rem; color:var(--text-dim); line-height:1.35;">El ID interno no se edita. El resto de datos se gestiona desde la pesta&ntilde;a Ficha.</div></div></div>`;
     const kpiHTML = `<div class="emp-kpi-grid" style="display:grid; grid-template-columns:repeat(6, minmax(120px, 1fr)); gap:12px; margin-bottom:18px;"><div class="emp-kpi-card glass" style="padding:14px; border-radius:16px; border:1px solid var(--border);"><label style="display:block; font-size:0.6rem; font-weight:800; color:var(--text-dim); text-transform:uppercase; margin-bottom:4px;">Rol actual</label><strong style="font-size:0.98rem; color:var(--text);">${escapeHtml(model.currentRoleMeta.label)}</strong></div><div class="emp-kpi-card glass" style="padding:14px; border-radius:16px; border:1px solid var(--border);"><label style="display:block; font-size:0.6rem; font-weight:800; color:var(--text-dim); text-transform:uppercase; margin-bottom:4px;">Estado operativo</label><strong style="font-size:0.98rem; color:var(--text);">${escapeHtml(currentShiftLabel)}</strong></div><div class="emp-kpi-card glass" style="padding:14px; border-radius:16px; border:1px solid var(--border);"><label style="display:block; font-size:0.6rem; font-weight:800; color:var(--text-dim); text-transform:uppercase; margin-bottom:4px;">Próximo turno</label><strong style="font-size:0.9rem; color:var(--text);">${escapeHtml(nextShiftLabel)}</strong></div><div class="emp-kpi-card glass" style="padding:14px; border-radius:16px; border:1px solid var(--border);"><label style="display:block; font-size:0.6rem; font-weight:800; color:var(--text-dim); text-transform:uppercase; margin-bottom:4px;">Incidencia</label><strong style="font-size:0.9rem; color:var(--text);">${escapeHtml(incidenciaLabel)}</strong></div><div class="emp-kpi-card glass" style="padding:14px; border-radius:16px; border:1px solid var(--border);" title="Días con turno en la plantilla base que aún no tienen asignado un turno final"><label style="display:block; font-size:0.6rem; font-weight:800; color:var(--text-dim); text-transform:uppercase; margin-bottom:4px;">Por resolver (Base)</label><strong style="font-size:0.98rem; color:var(--text);">${model.pendingPolicy.applies ? model.periodKpis.diasPendiente : 'No aplica'}</strong></div><div class="emp-kpi-card glass" style="padding:14px; border-radius:16px; border:1px solid var(--border);"><label style="display:block; font-size:0.6rem; font-weight:800; color:var(--text-dim); text-transform:uppercase; margin-bottom:4px;">Saldo vac.</label><strong style="font-size:0.98rem; color:#10b981;">${escapeHtml(vacationBalanceLabel)}</strong></div></div>`;
@@ -9198,7 +9227,8 @@ window.renderEmployeeProfile = () => {
             let statusStr = escapeHtml(String(ev.estado || 'activo').toLowerCase());
             if (statusStr === 'activo') {
                 const todayStr = window.isoDate(new Date());
-                if (endStr && endStr < todayStr) statusStr = 'consumidas';
+                if (computableDays === 0 && overlappingBajas > 0) statusStr = 'anuladas';
+                else if (endStr && endStr < todayStr) statusStr = 'consumidas';
                 else if (startStr && startStr > todayStr) statusStr = 'próximas';
             }
             const cancelText = overlappingBajas > 0 
@@ -9456,7 +9486,7 @@ window.saveEmployeeProfileInline = async (event) => {
         telefono: $('#edit-emp-telefono')?.value?.trim() || null,
         hotel,
         hotel_id: hotel,
-        hoteles_asignados: hotelesAsignados,
+        hoteles_asignados: Array.isArray(hotelesAsignados) ? hotelesAsignados.join(',') : hotelesAsignados,
         puesto: $('#edit-emp-puesto')?.value?.trim() || null,
         categoria: $('#edit-emp-puesto')?.value?.trim() || null,
         tipo: tipo,

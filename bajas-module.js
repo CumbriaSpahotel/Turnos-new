@@ -108,6 +108,11 @@ function calcKPIs(groups){
 window.renderBajas=async()=>{
   const area=$('#absences-content');
   if(!area)return;
+  
+  const activeId = document.activeElement ? document.activeElement.id : null;
+  const selStart = document.activeElement && document.activeElement.selectionStart !== undefined ? document.activeElement.selectionStart : null;
+  const selEnd = document.activeElement && document.activeElement.selectionEnd !== undefined ? document.activeElement.selectionEnd : null;
+
   // Cache filter values from DOM BEFORE destroying with innerHTML
   // Skip if clearBajasFilters just set fresh values
   if (!_skipDomCache) {
@@ -157,7 +162,7 @@ window.renderBajas=async()=>{
           ${hotels.map(h=>`<option value="${h}"${fH===h?' selected':''}>${h}</option>`).join('')}
         </select>
 
-        <div class="glass-panel" style="display:flex; gap:0; border:1px solid var(--border); border-radius:10px; overflow:hidden; background:var(--bg); height:34px;">
+        <div class="glass-panel" style="display:flex; gap:0; border:1px solid var(--border); border-radius:10px; background:var(--bg); height:34px;">
           <input type="text" id="bjEmpSearch" class="btn-premium" placeholder="🔍 Empleado / ID..." style="width:160px; border:none; background:transparent; font-size:0.75rem; padding:0 10px; margin:0;" value="${_bajasState.empSearch||''}" oninput="window.renderBajas()">
           <div style="width:1px; background:var(--border);"></div>
           <select id="bjTipo" class="btn-premium" onchange="window.renderBajas()" style="border:none; background:transparent; font-size:0.75rem; padding:0 10px; margin:0; cursor:pointer;">
@@ -229,6 +234,18 @@ window.renderBajas=async()=>{
   }catch(e){
     console.error('[BAJAS] Render error:',e);
     area.innerHTML=`<div style="padding:2rem;color:var(--danger);"><strong>Error cargando Bajas y Permisos:</strong> ${e.message}<br><pre style="font-size:0.7rem;margin-top:8px;opacity:0.7;">${e.stack||''}</pre></div>`;
+  }
+  
+  if (activeId) {
+      setTimeout(() => {
+          const el = document.getElementById(activeId);
+          if (el) {
+              el.focus();
+              if (el.setSelectionRange && selStart !== null && selStart !== undefined) {
+                  el.setSelectionRange(selStart, selEnd);
+              }
+          }
+      }, 10);
   }
 };
 
