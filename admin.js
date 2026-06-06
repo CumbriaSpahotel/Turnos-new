@@ -8496,20 +8496,21 @@ window.buildEmployeeProfileModel = (empId, refISO) => {
         if (isAbsence && !window.isTitularOfAbsence(ev, emp.id)) return false;
         return /VAC|BAJA|IT|PERM|REFUERZO|SUSTITUCION|COBERTURA|CAMBIO|INTERCAMBIO/i.test(String(ev.tipo || ''));
     }) || null;
-    const futureWorkingDays = monthDays.filter(day => day.fecha > todayISO && ['M', 'T', 'N'].includes(window.employeeProfileShiftCodeMeta(day.turno || day.detalle?.turno).code));
+    const yearDays = window.generarHistorialDesdeResolver ? window.generarHistorialDesdeResolver(emp.id, yearStartISO, yearEndISO, eventos, baseIndex) : [];
+    const futureWorkingDays = yearDays.filter(day => day.fecha > todayISO && ['M', 'T', 'N'].includes(window.employeeProfileShiftCodeMeta(day.turno || day.detalle?.turno).code));
     const nextShiftDay = futureWorkingDays[0] || null;
-    const futureAssignedDays = monthDays.filter(day => day.fecha > todayISO && window.employeeProfileShiftCodeMeta(day.turnoBase || day.detalle?.turnoBase).code !== '—');
-    const turnosBase = monthDays.filter(day => ['M', 'T', 'P', 'N', 'D'].includes(window.employeeProfileShiftCodeMeta(day.turnoBase || day.detalle?.turnoBase).code));
-    const workedDays = monthDays.filter(day => ['M', 'T', 'N'].includes(window.employeeProfileShiftCodeMeta(day.turno || day.detalle?.turno).code));
+    const futureAssignedDays = yearDays.filter(day => day.fecha > todayISO && window.employeeProfileShiftCodeMeta(day.turno_base || day.turnoBase || day.detalle?.turnoBase).code !== '—');
+    const turnosBase = yearDays.filter(day => ['M', 'T', 'P', 'N', 'D'].includes(window.employeeProfileShiftCodeMeta(day.turno_base || day.turnoBase || day.detalle?.turnoBase).code));
+    const workedDays = yearDays.filter(day => ['M', 'T', 'N'].includes(window.employeeProfileShiftCodeMeta(day.turno || day.detalle?.turno).code));
     const morningDays = workedDays.filter(day => window.employeeProfileShiftCodeMeta(day.turno || day.detalle?.turno).code === 'M').length;
     const tardeDays = workedDays.filter(day => window.employeeProfileShiftCodeMeta(day.turno || day.detalle?.turno).code === 'T').length;
     const nightDays = workedDays.filter(day => window.employeeProfileShiftCodeMeta(day.turno || day.detalle?.turno).code === 'N').length;
-    const restDays = monthDays.filter(day => window.employeeProfileShiftCodeMeta(day.turno || day.detalle?.turno).code === 'D').length;
-    const vacDays = monthDays.filter(day => window.employeeProfileShiftCodeMeta(day.turno || day.detalle?.turno).code === 'VAC').length;
-    const bajaPermDays = monthDays.filter(day => window.employeeProfileShiftCodeMeta(day.turno || day.detalle?.turno).code === 'BAJA').length;
-    const changeDays = monthDays.filter(day => day.cambio).length;
-    const unresolvedBaseDays = monthDays.filter(day => {
-        const baseCode = window.employeeProfileShiftCodeMeta(day.turnoBase || day.detalle?.turnoBase).code;
+    const restDays = yearDays.filter(day => window.employeeProfileShiftCodeMeta(day.turno || day.detalle?.turno).code === 'D').length;
+    const vacDays = yearDays.filter(day => window.employeeProfileShiftCodeMeta(day.turno || day.detalle?.turno).code === 'VAC').length;
+    const bajaPermDays = yearDays.filter(day => window.employeeProfileShiftCodeMeta(day.turno || day.detalle?.turno).code === 'BAJA').length;
+    const changeDays = yearDays.filter(day => day.cambio).length;
+    const unresolvedBaseDays = yearDays.filter(day => {
+        const baseCode = window.employeeProfileShiftCodeMeta(day.turno_base || day.turnoBase || day.detalle?.turnoBase).code;
         const finalCode = window.employeeProfileShiftCodeMeta(day.turno || day.detalle?.turno).code;
         return ['M', 'T', 'N', 'D'].includes(baseCode) && finalCode === '—';
     }).length;
@@ -9135,7 +9136,12 @@ window.renderEmployeeProfile = () => {
             }
             
             const computableDays = totalVacs - overlappingBajas;
-            const statusStr = escapeHtml(ev.estado || 'activo');
+            let statusStr = escapeHtml(String(ev.estado || 'activo').toLowerCase());
+            if (statusStr === 'activo') {
+                const todayStr = window.isoDate(new Date());
+                if (endStr && endStr < todayStr) statusStr = 'consumidas';
+                else if (startStr && startStr > todayStr) statusStr = 'próximas';
+            }
             const cancelText = overlappingBajas > 0 
                 ? `<span style="color:#dc2626; font-weight:700;">${overlappingBajas} anulados por baja médica</span>`
                 : `0 anulados por baja médica`;
@@ -9145,7 +9151,7 @@ window.renderEmployeeProfile = () => {
                 fecha: ev.fecha_inicio,
                 main: `<strong>${escapeHtml(window.employeeProfileDateRangeLabel(ev.fecha_inicio, ev.fecha_fin || ev.fecha_inicio))}</strong>`,
                 secondary: secondaryLabel,
-                badge: escapeHtml(ev.estado || 'activo')
+                badge: statusStr
             };
         });
         tabContent = `<div style="display:grid; grid-template-columns:1.1fr 0.9fr; gap:18px;"><section class="emp-card glass" style="padding:20px; border-radius:18px; border:1px solid var(--border);"><h3 style="margin:0 0 14px; font-size:0.9rem; font-weight:800;">Vacaciones ${refDate.getFullYear()}</h3>${renderRowsTable(vacRows, 'No hay vacaciones registradas en el año en curso.')}</section><section class="emp-card glass" style="padding:20px; border-radius:18px; border:1px solid var(--border);"><h3 style="margin:0 0 14px; font-size:0.9rem; font-weight:800;">Saldo vacacional</h3><div style="display:grid; gap:10px;">${window.renderEmployeeProfileField(['Derecho anual', model.vacaciones.applies ? `${model.vacaciones.derechoAnual} dias` : 'No aplica'])}${window.renderEmployeeProfileField(['Consumidas', model.vacaciones.applies ? `${model.vacaciones.usadas} dias` : 'No aplica'])}${window.renderEmployeeProfileField(['Previstas año', model.vacaciones.applies ? `${model.annualKpis.vacacionesPlanificadas} dias` : 'No aplica'])}${window.renderEmployeeProfileField(['Previstas futuras', model.vacaciones.applies ? `${model.vacaciones.previstas} dias` : 'No aplica'])}${window.renderEmployeeProfileField(['Ajustes', model.vacaciones.applies ? `${model.vacaciones.saldo >= 0 ? '+' : ''}${model.vacaciones.saldo} dias` : 'No aplica'])}${model.anuladasPorBajaCount > 0 ? window.renderEmployeeProfileField(['Anuladas por baja', `${model.anuladasPorBajaCount} dias`]) : ''}${window.renderEmployeeProfileField(['Saldo neto', vacationBalanceLabel])}</div></section></div>`;
