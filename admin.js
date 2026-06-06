@@ -7478,16 +7478,40 @@ window.isExplicitRefuerzoEvent = (ev) => Boolean(
     /REFUERZO|COBERTURA_EXTRA/i.test(String(ev?.tipo || ''))
 );
 
-window.getEmployeeIdentityKeys = (profile) => new Set([
-    window.normalizeId(profile?.uuid),
-    window.normalizeId(profile?.id),
-    window.normalizeId(profile?.id_interno),
-    window.normalizeId(profile?.legacy_id),
-    window.normalizeId(profile?.nombre)
-].filter(Boolean));
+window.ensureIdentityKeySet = (identityKeys) => {
+  if (identityKeys instanceof Set) {
+    return new Set([...identityKeys].filter(Boolean).map(window.normalizeId));
+  }
 
-window.eventHasEmployeeIdentity = (ev, identityKeys) => {
-    const keys = [
+  if (Array.isArray(identityKeys)) {
+    return new Set(identityKeys.filter(Boolean).map(window.normalizeId));
+  }
+
+  if (typeof identityKeys === 'string' || typeof identityKeys === 'number') {
+    return new Set([window.normalizeId(identityKeys)]);
+  }
+
+  if (identityKeys && typeof identityKeys === 'object') {
+    const values = [
+      identityKeys.id,
+      identityKeys.uuid,
+      identityKeys.codigo,
+      identityKeys.employeeId,
+      identityKeys.legacyId,
+      identityKeys.nombre,
+      identityKeys.name,
+      identityKeys.displayName,
+      identityKeys.id_interno
+    ];
+
+    return new Set(values.filter(Boolean).map(window.normalizeId));
+  }
+
+  return new Set();
+};
+
+window.getEventEmployeeIdentityKeys = (ev) => {
+    return [
         ev?.empleado_uuid,
         ev?.empleado_id,
         ev?.id_interno,
@@ -7496,8 +7520,21 @@ window.eventHasEmployeeIdentity = (ev, identityKeys) => {
         ev?.payload?.empleado_id,
         ev?.payload?.empleado,
         ev?.payload?.empleado_nombre
-    ].map(v => window.normalizeId(v)).filter(Boolean);
-    return keys.some(key => identityKeys.has(key));
+    ].filter(Boolean).map(window.normalizeId);
+};
+
+window.eventHasEmployeeIdentity = (ev, identityKeys) => {
+  const keySet = window.ensureIdentityKeySet(identityKeys);
+  if (!keySet.size) return false;
+
+  const evKeys = typeof window.getEventEmployeeIdentityKeys === 'function'
+    ? window.getEventEmployeeIdentityKeys(ev)
+    : [];
+
+  return evKeys
+    .filter(Boolean)
+    .map(window.normalizeId)
+    .some(k => keySet.has(k));
 };
 
 window.resolveEmployeeCanonicalId = (rawId, employees = window.empleadosGlobales || []) => {
@@ -7516,16 +7553,17 @@ window.resolveEmployeeCanonicalId = (rawId, employees = window.empleadosGlobales
 
 window.eventAffectsEmployeeProfile = (ev, profile, identityKeys = window.getEmployeeIdentityKeys(profile)) => {
     if (!ev || !profile) return false;
-    if (window.eventHasEmployeeIdentity(ev, identityKeys) || window.eventHasDestinationIdentity(ev, identityKeys)) return true;
+    const keySet = window.ensureIdentityKeySet(identityKeys);
+    if (window.eventHasEmployeeIdentity(ev, keySet) || window.eventHasDestinationIdentity(ev, keySet)) return true;
     if (window.eventoPerteneceAEmpleado && window.eventoPerteneceAEmpleado(ev, profile.id)) return true;
     const canonicalEmployee = window.resolveEmployeeCanonicalId(ev.empleado_id, window.empleadosGlobales || []);
     const canonicalDestination = window.resolveEmployeeCanonicalId(ev.empleado_destino_id || ev.sustituto_id || ev.sustituto || ev.payload?.sustituto, window.empleadosGlobales || []);
-    return [canonicalEmployee, canonicalDestination].map(window.normalizeId).some(key => identityKeys.has(key));
+    return [canonicalEmployee, canonicalDestination].map(window.normalizeId).some(key => keySet.has(key));
 };
 
 window.employeeProfileVacationPeriods = (events, profile, year) => {
     const employees = window.empleadosGlobales || [];
-    const identityKeys = window.getEmployeeIdentityKeys(profile);
+    const keySet = window.ensureIdentityKeySet(window.getEmployeeIdentityKeys(profile));
     const yearStart = `${year}-01-01`;
     const yearEnd = `${year}-12-31`;
     const isExcluded = (estado) => /^(anulad|rechazad|cancelad)/i.test(String(estado || ''));
@@ -7535,7 +7573,7 @@ window.employeeProfileVacationPeriods = (events, profile, year) => {
     };
     const sourceBelongs = (ev) => {
         const canonical = window.resolveEmployeeCanonicalId(ev?.empleado_id || ev?.payload?.empleado_id || ev?.payload?.empleado, employees);
-        return identityKeys.has(window.normalizeId(canonical));
+        return keySet.has(window.normalizeId(canonical));
     };
     const vacEvents = (events || [])
         .filter(ev => isVac(ev) && !isExcluded(ev.estado))
@@ -7590,6 +7628,9 @@ window.employeeProfileVacationPeriods = (events, profile, year) => {
 };
 
 window.eventHasDestinationIdentity = (ev, identityKeys) => {
+    const keySet = window.ensureIdentityKeySet(identityKeys);
+    if (!keySet.size) return false;
+
     const keys = [
         ev?.empleado_destino_uuid,
         ev?.empleado_destino_id,
@@ -7601,7 +7642,7 @@ window.eventHasDestinationIdentity = (ev, identityKeys) => {
         ev?.payload?.sustituto,
         ev?.payload?.sustituto_nombre
     ].map(v => window.normalizeId(v)).filter(Boolean);
-    return keys.some(key => identityKeys.has(key));
+    return keys.some(key => keySet.has(key));
 };
 
 window.employeeProfileEventLabel = (ev) => {
@@ -7743,13 +7784,15 @@ window.getShiftChangeParticipantKeys = (ev) => {
 };
 
 window.employeeMatchesVacationEvent = (ev, empKeys) => {
+    const keySet = window.ensureIdentityKeySet(empKeys);
     const evKeys = window.getVacationEmployeeIdentityKeys(ev);
-    return evKeys.some(k => empKeys.has(k));
+    return evKeys.some(k => keySet.has(k));
 };
 
 window.employeeParticipatesInShiftChange = (ev, empKeys) => {
+    const keySet = window.ensureIdentityKeySet(empKeys);
     const evKeys = window.getShiftChangeParticipantKeys(ev);
-    return evKeys.some(k => empKeys.has(k));
+    return evKeys.some(k => keySet.has(k));
 };
 
 window.collectAllEventsForEmployee = (emp) => {
@@ -7795,16 +7838,17 @@ window.getChangeRequesterRaw = (ev) => {
 };
 
 window.isSelfRequestedChange = (ev, empKeys) => {
+    const keySet = window.ensureIdentityKeySet(empKeys);
     const rawReq = window.extractIdentityValue(window.getChangeRequesterRaw(ev));
     if (rawReq) {
-        return empKeys.has(window.normalizeId(rawReq));
+        return keySet.has(window.normalizeId(rawReq));
     }
     const origins = window.getEventOriginCandidates
         ? window.getEventOriginCandidates(ev).map(window.normalizeId)
         : [window.normalizeId(window.extractIdentityValue(ev?.empleado_id || ''))];
     
     // Si no hay requester explícito pero el origen coincide, consideramos que es self
-    if (origins.some(o => o && empKeys.has(o))) return true;
+    if (origins.some(o => o && keySet.has(o))) return true;
 
     // Si ni el explícito ni el origen resuelven, es no informado
     return null;
@@ -8035,7 +8079,7 @@ window.buildEmployeeProfileModel = (empId, refISO) => {
     if (!profile) return null;
 
     const hotelPrincipal = profile.hotel_id || profile.hotel || '';
-    const identityKeys = window.getEmployeeIdentityKeys(profile);
+    const identityKeys = window.ensureIdentityKeySet(window.getEmployeeIdentityKeys(profile));
     const emp = {
         ...profile,
         hotel: hotelPrincipal,
