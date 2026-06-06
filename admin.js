@@ -1124,9 +1124,14 @@ window.renderExcelView = async () => {
     const oldHotelSelect = $('#excelHotel');
     const oldDateStart = $('#excelDateStart')?.value;
     const oldDateEnd = $('#excelDateEnd')?.value;
+    
+    if (!window.excelFilters) window.excelFilters = { search: '', onlyPending: false, hoteles: [], empleados: [] };
+    
     const preset = window._excelPreset || null;
-    if (preset) window._excelPreset = null;
-    const selectedHotel = preset?.hotel || oldHotelSelect?.value || 'all';
+    if (preset) {
+        window.excelFilters.hoteles = preset.hotel && preset.hotel !== 'all' ? [preset.hotel] : [];
+        window._excelPreset = null;
+    }
 
     container.innerHTML = '<div style="padding: 2rem; text-align: center; color: var(--text-dim);"><i class="fas fa-spinner fa-spin"></i> Cargando Excel base...</div>';
     
@@ -1142,9 +1147,9 @@ window.renderExcelView = async () => {
         const wEndStr = window.isoDate(new Date(new Date(dateEnd + 'T12:00:00').getTime() + 7 * 86400000));
         
         let dbHotels = await window.getAvailableHotels();
-        const rawData = await window.TurnosDB.fetchTurnosBase(wStartStr, wEndStr, selectedHotel === 'all' ? null : selectedHotel);
+        // Always fetch all to allow local filtering
+        const rawData = await window.TurnosDB.fetchTurnosBase(wStartStr, wEndStr, null);
         
-        if (!window.excelFilters) window.excelFilters = { search: '', onlyPending: false };
         // Helper: valid internal ID
         const _hasValidId = (empId) => {
             const profile = (window.empleadosGlobales || []).find(e => window.normalizeId(e.id) === window.normalizeId(empId) || window.normalizeId(e.nombre) === window.normalizeId(empId));
@@ -1228,51 +1233,59 @@ window.renderExcelView = async () => {
             });
         });
         // Reset selection if employee no longer in filtered set
-        if (window.excelFilters.search && !_availableExcelEmps.has(window.excelFilters.search)) {
-            window.excelFilters.search = '';
+        if (window.excelFilters.empleados && window.excelFilters.empleados.length > 0) {
+            window.excelFilters.empleados = window.excelFilters.empleados.filter(id => _availableExcelEmps.has(id));
         }
         // PHASE 3: Apply employee filter to grouped for table rendering
-        if (window.excelFilters.search) {
-            const selEmp = window.excelFilters.search;
+        if (window.excelFilters.empleados && window.excelFilters.empleados.length > 0) {
             Object.keys(grouped).forEach(h => {
                 Object.keys(grouped[h]).forEach(w => {
                     Object.keys(grouped[h][w]).forEach(e => {
-                        if (window.normalizeId(e) !== window.normalizeId(selEmp)) delete grouped[h][w][e];
+                        if (!window.excelFilters.empleados.some(selEmp => window.normalizeId(e) === window.normalizeId(selEmp))) {
+                            delete grouped[h][w][e];
+                        }
                     });
                     if (Object.keys(grouped[h][w]).length === 0) delete grouped[h][w];
                 });
                 if (Object.keys(grouped[h]).length === 0) delete grouped[h];
             });
         }
-        const hotelsToRender = selectedHotel === 'all' ? dbHotels : [selectedHotel];
+        
+        const hotelsToRender = (window.excelFilters.hoteles && window.excelFilters.hoteles.length > 0) ? window.excelFilters.hoteles : dbHotels;
         const saveBtnActive = window.pendingChangesCount > 0;
+        
+        const empProfilesOptions = Array.from(_availableExcelEmps)
+            .map(id => {
+                const profile = (window.empleadosGlobales || []).find(e => window.normalizeId(e.id) === window.normalizeId(id) || window.normalizeId(e.nombre) === window.normalizeId(id));
+                return { id, nombre: profile?.nombre || id, id_interno: profile?.id_interno || id, isDup: id.includes('_DUP'), hasValidId: _hasValidId(id) };
+            })
+            .filter(e => !e.isDup && e.hasValidId)
+            .sort((a,b) => (a.nombre || '').localeCompare(b.nombre || ''))
+            .map(e => ({ val: e.id, label: `${e.nombre} [${e.id_interno}]` }));
+
         container.innerHTML = `
-            <div class="excel-toolbar">
-                <div class="toolbar-group"><label>Hotel</label><select id="excelHotel" class="toolbar-input" onchange="window.renderExcelView()"><option value="all">Ver Todos</option>${dbHotels.map(h => `<option value="${h}" ${h === selectedHotel ? 'selected' : ''}>${h}</option>`).join('')}</select></div>
-                <div class="toolbar-group">
-                    <label>Periodo</label>
-                    <input type="text" id="excelRangePicker" class="toolbar-input" placeholder="Seleccionar periodo..." readonly style="width:220px; cursor:pointer;">
+            <div class="excel-toolbar" style="display:flex; flex-wrap:wrap; gap:10px; align-items:center;">
+                ${window.renderMultiSelectFilter({
+                    id: 'excelFilterHotel',
+                    label: 'Hoteles',
+                    options: dbHotels.map(h => ({ val: h, label: h })),
+                    selectedValues: window.excelFilters.hoteles,
+                    onChangeStr: "window.excelFilters.hoteles = window.getMultiSelectValues('excelFilterHotel'); window.renderExcelView();",
+                    clearLabel: 'Limpiar hoteles'
+                })}
+                <div class="toolbar-group" style="margin:0;">
+                    <input type="text" id="excelRangePicker" class="toolbar-input" placeholder="Periodo..." readonly style="width:200px; cursor:pointer; padding:8px 12px; border:1px solid #e2e8f0; border-radius:8px; font-size:0.8rem; box-shadow:0 1px 2px rgba(0,0,0,0.05);">
                     <input type="hidden" id="excelDateStart" value="${dateStart}">
                     <input type="hidden" id="excelDateEnd" value="${dateEnd}">
                 </div>
-                <div class="toolbar-group">
-                    <label>Empleado / ID</label>
-                    <select id="excelSearch" class="toolbar-input" onchange="window.excelFilters.search=this.value; window.renderExcelView()">
-                        <option value="">Ver Todos los Empleados</option>
-                        ${(() => {
-                            // Use pre-computed _availableExcelEmps from Phase 2 (before employee filter)
-                            const empProfiles = Array.from(_availableExcelEmps)
-                                .map(id => {
-                                    const profile = (window.empleadosGlobales || []).find(e => window.normalizeId(e.id) === window.normalizeId(id) || window.normalizeId(e.nombre) === window.normalizeId(id));
-                                    return { id, nombre: profile?.nombre || id, id_interno: profile?.id_interno || id, isDup: id.includes('_DUP'), hasValidId: _hasValidId(id) };
-                                })
-                                .filter(e => !e.isDup && e.hasValidId)
-                                .sort((a,b) => (a.nombre || '').localeCompare(b.nombre || ''));
-                            if (empProfiles.length === 0) return '<option value="" disabled>Sin empleados para este filtro</option>';
-                            return empProfiles.map(e => `<option value="${e.id}" ${window.excelFilters.search === e.id ? 'selected' : ''}>${e.nombre} [${e.id_interno}]</option>`).join('');
-                        })()}
-                    </select>
-                </div>
+                ${window.renderMultiSelectFilter({
+                    id: 'excelFilterEmp',
+                    label: 'Empleados',
+                    options: empProfilesOptions,
+                    selectedValues: window.excelFilters.empleados,
+                    onChangeStr: "window.excelFilters.empleados = window.getMultiSelectValues('excelFilterEmp'); window.renderExcelView();",
+                    clearLabel: 'Limpiar empleados'
+                })}
                 <div class="toolbar-group"><label>Filtro Rápido</label><label style="display:flex; align-items:center; gap:8px; cursor:pointer; font-size:0.8rem; text-transform:none; color:#1e293b; font-weight:600;"><input type="checkbox" id="excelOnlyPending" ${window.excelFilters.onlyPending ? 'checked' : ''} onchange="window.excelFilters.onlyPending=this.checked; window.renderExcelView()"> Solo Pendientes</label></div>
                 <div class="toolbar-group" style="margin-left:auto; text-align:right;"><label>Pendientes</label><div style="font-weight:900; color:#b91c1c; font-size:1.1rem;"><span id="excelCounter">${totalPendientes}</span></div>${totalSupportPendientes > 0 ? `<div style="font-size:0.7rem; color:#64748b; font-weight:500;">Apoyo: ${totalSupportPendientes}</div>` : ''}${_noIdSet.size > 0 ? `<div style="font-size:0.65rem; color:#ef4444; font-weight:500;">Sin ID: ${_noIdSet.size} emp.</div>` : ''}</div>
                 <button class="btn-premium" onclick="window.openRefuerzoModal()" style="padding:10px 18px; font-size:0.75rem; font-weight:700; white-space:nowrap; background:linear-gradient(135deg,#3b82f6,#2563eb); color:white; border:none; border-radius:12px; cursor:pointer;"><i class="fas fa-user-plus"></i> Añadir refuerzo</button>
@@ -2175,17 +2188,23 @@ window.renderRequests = async () => {
     const container = $('#changes-content');
     if (!container) return;
     
-    if (!window._requestsFilter) window._requestsFilter = 'pendiente';
+    if (!window._requestsFilters) window._requestsFilters = ['pendiente'];
 
     container.innerHTML = `
         <div class="requests-toolbar" style="display:flex; align-items:center; gap:20px; margin-bottom:20px; background:white; padding:15px 25px; border-radius:16px; border:1px solid #e2e8f0; box-shadow:0 4px 6px -1px rgba(0,0,0,0.05);">
             <div style="font-size:0.75rem; font-weight:800; color:#64748b; text-transform:uppercase; letter-spacing:0.05em;">Filtrar por:</div>
-            <select id="requestsFilter" class="toolbar-input" style="padding:8px 15px; border-radius:10px; border:1px solid #cbd5e1; background:#f8fafc; font-weight:700; color:#1e293b; cursor:pointer;" onchange="window._requestsFilter = this.value; window.renderRequests()">
-                <option value="pendiente" ${window._requestsFilter === 'pendiente' ? 'selected' : ''}>Pendientes de Revisión</option>
-                <option value="aprobada" ${window._requestsFilter === 'aprobada' ? 'selected' : ''}>Aprobadas</option>
-                <option value="rechazada" ${window._requestsFilter === 'rechazada' ? 'selected' : ''}>Rechazadas</option>
-                <option value="all" ${window._requestsFilter === 'all' ? 'selected' : ''}>Todas las Solicitudes</option>
-            </select>
+            ${window.renderMultiSelectFilter({
+                id: 'reqFilterStatus',
+                label: 'Estados',
+                options: [
+                    {val:'pendiente', label:'Pendientes de Revisión'},
+                    {val:'aprobada', label:'Aprobadas'},
+                    {val:'rechazada', label:'Rechazadas'}
+                ],
+                selectedValues: window._requestsFilters,
+                onChangeStr: "window._requestsFilters = window.getMultiSelectValues('reqFilterStatus'); window.renderRequests();",
+                clearLabel: 'Limpiar estados'
+            })}
             <div id="requestsCount" style="margin-left:auto; font-size:0.8rem; font-weight:700; color:#0ea5e9;">Cargando...</div>
         </div>
         <div id="requests-list">
@@ -2197,8 +2216,8 @@ window.renderRequests = async () => {
         console.log("[ADMIN] Peticiones recibidas:", data.length);
         
         let filtered = data;
-        if (window._requestsFilter !== 'all') {
-            filtered = data.filter(r => r.estado === window._requestsFilter);
+        if (window._requestsFilters && window._requestsFilters.length > 0) {
+            filtered = data.filter(r => window._requestsFilters.includes(r.estado));
         }
 
         $('#requestsCount').textContent = `${filtered.length} resultados`;
@@ -4304,7 +4323,7 @@ window.renderEmpleadoCell = (turnoEmpleado, { isCompact = false } = {}) => {
     if (isCompact) {
         // VISTA MENSUAL
         const labelText = style.label || turnoVisible || '-';
-        const compactIcons = (style.icon ? ` ${style.icon}` : '') + (hayCambio ? ' ðŸ”„' : '');
+        const compactIcons = (style.icon ? ` ${style.icon}` : '') + (hayCambio ? ' 🔄' : '');
         
         return `
         <div style="display:flex; align-items:center; justify-content:center; padding:4px 2px; border-radius:6px; font-size:0.7rem; font-weight:700; min-height:45px; background:${style.bg}; color:${style.color}; border:1px solid rgba(0,0,0,0.05);">
@@ -5171,13 +5190,105 @@ window.closeEmpDrawer = () => { if($('#empDrawer')) $('#empDrawer').classList.re
 // 6B. EMPLEADOS - LISTADO OPERATIVO EN LINEAS
 // ==========================================
 window._employeeLineFilters = window._employeeLineFilters || {
-    hotel: 'all',
-    estado: 'all',
-    tipo: 'all',
+    hoteles: [],
+    estados: [],
+    tipos: [],
     search: '',
     sort: 'operativo'
 };
-if (typeof window._employeeLineFilters.tipo === 'undefined') window._employeeLineFilters.tipo = 'all';
+// Migrate old state if it exists
+if (window._employeeLineFilters.hotel !== undefined) {
+    window._employeeLineFilters.hoteles = window._employeeLineFilters.hotel !== 'all' ? [window._employeeLineFilters.hotel] : [];
+    delete window._employeeLineFilters.hotel;
+}
+if (window._employeeLineFilters.estado !== undefined) {
+    window._employeeLineFilters.estados = window._employeeLineFilters.estado !== 'all' ? [window._employeeLineFilters.estado] : [];
+    delete window._employeeLineFilters.estado;
+}
+if (window._employeeLineFilters.tipo !== undefined) {
+    window._employeeLineFilters.tipos = window._employeeLineFilters.tipo !== 'all' ? [window._employeeLineFilters.tipo] : [];
+    delete window._employeeLineFilters.tipo;
+}
+if (!Array.isArray(window._employeeLineFilters.hoteles)) window._employeeLineFilters.hoteles = [];
+if (!Array.isArray(window._employeeLineFilters.estados)) window._employeeLineFilters.estados = [];
+if (!Array.isArray(window._employeeLineFilters.tipos)) window._employeeLineFilters.tipos = [];
+
+window.normalizeFilterValue = (value) => {
+    return String(value || '')
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .trim();
+};
+
+window.renderMultiSelectFilter = ({ id, label, options, selectedValues, onChangeStr, clearLabel }) => {
+    const isAll = !selectedValues || selectedValues.length === 0;
+    let btnText = `${label}: Todos`;
+    if (!isAll) {
+        if (selectedValues.length === 1) {
+            const opt = options.find(o => window.normalizeFilterValue(o.val) === window.normalizeFilterValue(selectedValues[0]));
+            btnText = `${label}: ${opt ? opt.label : selectedValues[0]}`;
+        } else {
+            btnText = `${label}: ${selectedValues.length} seleccionados`;
+        }
+    }
+    
+    const checkboxesHtml = options.map(opt => {
+        const normVal = window.normalizeFilterValue(opt.val);
+        const isChecked = selectedValues && selectedValues.some(v => window.normalizeFilterValue(v) === normVal);
+        return `
+        <label style="display:flex; align-items:center; padding:6px 10px; cursor:pointer; border-radius:4px; font-size:0.8rem; color:#334155;" onmouseover="this.style.background='#f1f5f9'" onmouseout="this.style.background='transparent'">
+            <input type="checkbox" value="${window.escapeHtml(opt.val)}" ${isChecked ? 'checked' : ''} onchange="${onChangeStr}" style="margin-right:8px; accent-color:#3b82f6;">
+            ${window.escapeHtml(opt.label)}
+        </label>`;
+    }).join('');
+
+    return `
+    <div class="multi-select-wrapper" style="position:relative; display:inline-block;" data-id="${id}">
+        <button type="button" onclick="window.toggleMultiSelect('${id}')" style="padding:8px 12px; border:1px solid #e2e8f0; border-radius:8px; background:white; color:#475569; font-size:0.8rem; cursor:pointer; display:flex; align-items:center; gap:6px; font-weight:600; box-shadow:0 1px 2px rgba(0,0,0,0.05);">
+            ${window.escapeHtml(btnText)} <i class="fas fa-chevron-down" style="font-size:0.7rem; opacity:0.6; margin-left:4px;"></i>
+        </button>
+        <div id="${id}-popover" class="multi-select-popover" hidden style="position:absolute; top:100%; left:0; margin-top:4px; background:white; border:1px solid #e2e8f0; border-radius:8px; box-shadow:0 4px 15px rgba(0,0,0,0.1); z-index:100; min-width:220px; padding:8px; display:flex; flex-direction:column; gap:2px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px; padding-bottom:6px; border-bottom:1px solid #f1f5f9;">
+                <span style="font-size:0.75rem; font-weight:700; color:#64748b; text-transform:uppercase;">${label}</span>
+                <button type="button" onclick="window.clearMultiSelect('${id}'); ${onChangeStr.replace('e.target', 'null').replace('this', 'null')}" style="background:none; border:none; color:#ef4444; font-size:0.7rem; cursor:pointer; font-weight:600; padding:2px 4px; border-radius:4px;" onmouseover="this.style.background='#fee2e2'" onmouseout="this.style.background='transparent'">${clearLabel || 'Limpiar'}</button>
+            </div>
+            <div style="max-height:250px; overflow-y:auto; display:flex; flex-direction:column;" id="${id}-checkboxes">
+                ${checkboxesHtml}
+            </div>
+        </div>
+    </div>`;
+};
+
+window.toggleMultiSelect = (id) => {
+    const popover = document.getElementById(`${id}-popover`);
+    const isHidden = popover.hasAttribute('hidden');
+    window.closeAllMultiSelects();
+    if (isHidden) popover.removeAttribute('hidden');
+};
+
+window.closeAllMultiSelects = () => {
+    document.querySelectorAll('.multi-select-popover').forEach(p => p.setAttribute('hidden', ''));
+};
+
+window.clearMultiSelect = (id) => {
+    const container = document.getElementById(`${id}-checkboxes`);
+    if (container) {
+        container.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
+    }
+};
+
+window.getMultiSelectValues = (id) => {
+    const container = document.getElementById(`${id}-checkboxes`);
+    if (!container) return [];
+    return Array.from(container.querySelectorAll('input[type="checkbox"]:checked')).map(cb => cb.value);
+};
+
+document.addEventListener('click', (e) => {
+    if (!e.target.closest('.multi-select-wrapper')) {
+        window.closeAllMultiSelects();
+    }
+});
 
 window.employeeNorm = (value) => String(value || '')
     .normalize('NFD')
@@ -5351,20 +5462,37 @@ window.renderEmployeeLineRows = () => {
         const profile = (window.empleadosGlobales || []).find(e => e.id === line.id);
         if (profile && window.isEmployeeTerminated(profile)) return false;
 
-        if (filters.hotel !== 'all' && line.hotel !== filters.hotel) return false;
-        if (filters.estado !== 'all') {
-            if (filters.estado === 'operativo' && line.estado === 'Baja') return false;
-            if (filters.estado === 'apoyo' && line.tipoEmpleado !== 'apoyo') return false;
-            if (filters.estado === 'ocasional' && line.tipoEmpleado !== 'ocasional') return false;
-            if (filters.estado === 'sustituto' && line.rolOperativo !== 'sustituto') return false;
-            if (filters.estado === 'refuerzo' && line.rolOperativo !== 'refuerzo') return false;
-            if (!['operativo', 'apoyo', 'ocasional', 'sustituto', 'refuerzo'].includes(filters.estado) && line.estado !== filters.estado) return false;
+        if (filters.hoteles && filters.hoteles.length > 0) {
+            const hMatch = filters.hoteles.some(h => window.normalizeFilterValue(line.hotel) === window.normalizeFilterValue(h));
+            if (!hMatch) return false;
         }
-        if (filters.tipo && filters.tipo !== 'all') {
+
+        if (filters.estados && filters.estados.length > 0) {
+            const normEstados = filters.estados.map(window.normalizeFilterValue);
+            let match = false;
+            for (const est of normEstados) {
+                if (est === 'operativo' && line.estado === 'Activo' && line.estado !== 'Baja' && line.estado !== 'Vacaciones') { match = true; break; }
+                if (est === 'baja' && line.estado === 'Baja') { match = true; break; }
+                if (est === 'vacaciones' && line.estado === 'Vacaciones') { match = true; break; }
+                if (est === 'activo' && line.estado === 'Activo') { match = true; break; }
+                if (est === 'apoyo' && window.employeeNorm(line.tipoEmpleado) === 'apoyo') { match = true; break; }
+                if (est === 'ocasional' && window.employeeNorm(line.tipoEmpleado) === 'ocasional') { match = true; break; }
+                if (est === 'sustituto' && window.employeeNorm(line.rolOperativo) === 'sustituto') { match = true; break; }
+                if (est === 'refuerzo' && window.employeeNorm(line.rolOperativo) === 'refuerzo') { match = true; break; }
+            }
+            if (!match) return false;
+        }
+
+        if (filters.tipos && filters.tipos.length > 0) {
             const lineTipo = window.employeeNorm(line.tipoEmpleado || line.tipo || 'fijo');
-            if (filters.tipo === 'fijo' && lineTipo !== 'fijo') return false;
-            if (filters.tipo !== 'fijo' && lineTipo !== filters.tipo) return false;
+            const tMatch = filters.tipos.some(t => {
+                const normT = window.normalizeFilterValue(t);
+                if (normT === 'fijo') return lineTipo === 'fijo';
+                return lineTipo === normT;
+            });
+            if (!tMatch) return false;
         }
+
         return !q || window.employeeNorm(`${line.nombre} ${line.id} ${line.id_interno || ''}`).includes(q);
     });
     const sorters = {
@@ -5398,12 +5526,33 @@ window.renderEmployeeLineRows = () => {
                 <div><span>Por resolver</span><strong style="color:var(--danger)">${lines.filter(l => l.pendingPolicy?.diasPendientes > 0).length}</strong></div>
                 <div><span>Apoyo/Ocasional</span><strong>${lines.filter(l => ['apoyo', 'ocasional'].includes(l.tipoEmpleado)).length}</strong></div>
             </div>
-            <div class="ed-tools">
-                <input id="empLineSearch" type="search" value="${escapeHtml(filters.search)}" placeholder="Buscar nombre o ID">
-                <select id="empLineHotel"><option value="all">Todos los hoteles</option>${uniqueHotels.map(h => `<option value="${escapeHtml(h.val)}" ${filters.hotel === h.val ? 'selected' : ''}>${escapeHtml(h.label)}</option>`).join('')}</select>
-                <select id="empLineEstado">${stateOptions.map(s => `<option value="${escapeHtml(s)}" ${filters.estado === s ? 'selected' : ''}>${escapeHtml(s === 'all' ? 'Todos los estados' : s === 'operativo' ? 'Operativo sin bajas' : s === 'apoyo' ? 'Tipo: Apoyo' : s === 'ocasional' ? 'Tipo: Ocasional' : s === 'sustituto' ? 'Rol: Sustituto' : s === 'refuerzo' ? 'Rol: Refuerzo' : s)}</option>`).join('')}</select>
-                <select id="empLineTipo">${typeOptions.map(t => `<option value="${t.v}" ${(filters.tipo || 'all') === t.v ? 'selected' : ''}>${t.l}</option>`).join('')}</select>
-                <select id="empLineSort">
+            <div class="ed-tools" style="display:flex; flex-wrap:wrap; gap:10px; align-items:center;">
+                <input id="empLineSearch" type="search" value="${escapeHtml(filters.search)}" placeholder="Buscar nombre o ID" style="padding:8px 12px; border:1px solid #e2e8f0; border-radius:8px; width:200px; font-size:0.8rem; box-shadow:0 1px 2px rgba(0,0,0,0.05);">
+                ${window.renderMultiSelectFilter({
+                    id: 'filterHotel',
+                    label: 'Hoteles',
+                    options: uniqueHotels,
+                    selectedValues: filters.hoteles,
+                    onChangeStr: "const vals = window.getMultiSelectValues('filterHotel'); window._employeeLineFilters.hoteles = vals; window.renderEmployeeLineRows();",
+                    clearLabel: 'Limpiar hoteles'
+                })}
+                ${window.renderMultiSelectFilter({
+                    id: 'filterEstado',
+                    label: 'Estados',
+                    options: stateOptions.filter(s => s !== 'all').map(s => ({ val: s, label: s === 'operativo' ? 'Operativo sin bajas' : s === 'apoyo' ? 'Tipo: Apoyo' : s === 'ocasional' ? 'Tipo: Ocasional' : s === 'sustituto' ? 'Rol: Sustituto' : s === 'refuerzo' ? 'Rol: Refuerzo' : s })),
+                    selectedValues: filters.estados,
+                    onChangeStr: "const vals = window.getMultiSelectValues('filterEstado'); window._employeeLineFilters.estados = vals; window.renderEmployeeLineRows();",
+                    clearLabel: 'Limpiar estados'
+                })}
+                ${window.renderMultiSelectFilter({
+                    id: 'filterTipo',
+                    label: 'Tipos',
+                    options: typeOptions.filter(t => t.v !== 'all').map(t => ({ val: t.v, label: t.l })),
+                    selectedValues: filters.tipos,
+                    onChangeStr: "const vals = window.getMultiSelectValues('filterTipo'); window._employeeLineFilters.tipos = vals; window.renderEmployeeLineRows();",
+                    clearLabel: 'Limpiar tipos'
+                })}
+                <select id="empLineSort" style="padding:8px 12px; border:1px solid #e2e8f0; border-radius:8px; background:white; color:#475569; font-size:0.8rem; box-shadow:0 1px 2px rgba(0,0,0,0.05); margin-left:auto;">
                     <option value="operativo" ${filters.sort === 'operativo' ? 'selected' : ''}>Orden operativo</option>
                     <option value="nombre" ${filters.sort === 'nombre' ? 'selected' : ''}>Nombre</option>
                     <option value="hotel" ${filters.sort === 'hotel' ? 'selected' : ''}>Hotel</option>
@@ -5412,6 +5561,7 @@ window.renderEmployeeLineRows = () => {
                     <option value="saldoVacaciones" ${filters.sort === 'saldoVacaciones' ? 'selected' : ''}>Saldo vacaciones</option>
                     <option value="cambiosActivos" ${filters.sort === 'cambiosActivos' ? 'selected' : ''}>Cambios activos</option>
                 </select>
+                <button type="button" onclick="window._employeeLineFilters.hoteles=[]; window._employeeLineFilters.estados=[]; window._employeeLineFilters.tipos=[]; window._employeeLineFilters.search=''; window.renderEmployeeLineRows();" style="padding:8px 12px; border:1px solid #e2e8f0; border-radius:8px; background:#fef2f2; color:#ef4444; font-size:0.8rem; cursor:pointer; font-weight:600; display:flex; align-items:center; gap:4px; margin-left:10px;"><i class="fas fa-times-circle"></i> Limpiar filtros</button>
             </div>
             <div class="ed-actions">
                 <button type="button" class="emp-new-btn" onclick="window.openNewEmployeeDrawer()"><i class="fas fa-user-plus"></i><span>Nuevo empleado</span></button>
@@ -5430,9 +5580,6 @@ window.renderEmployeeLineRows = () => {
         clearTimeout(window._employeeLineSearchTimer);
         window._employeeLineSearchTimer = setTimeout(() => window.renderEmployeeLineRows(), 260);
     });
-    $('#empLineHotel')?.addEventListener('change', (e) => { window._employeeLineFilters.hotel = e.target.value; window.renderEmployeeLineRows(); });
-    $('#empLineEstado')?.addEventListener('change', (e) => { window._employeeLineFilters.estado = e.target.value; window.renderEmployeeLineRows(); });
-    $('#empLineTipo')?.addEventListener('change', (e) => { window._employeeLineFilters.tipo = e.target.value; window.renderEmployeeLineRows(); });
     $('#empLineSort')?.addEventListener('change', (e) => { window._employeeLineFilters.sort = e.target.value; window.renderEmployeeLineRows(); });
     if (restoreSearchFocus) {
         const search = document.getElementById('empLineSearch');
