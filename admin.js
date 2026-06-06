@@ -8310,7 +8310,6 @@ window.buildEmployeeProfileModel = (empId, refISO) => {
 
         return (
             text.includes('baja medica') ||
-            text.includes('baja médica') ||
             text.includes('incapacidad temporal') ||
             /\bit\b/.test(text) ||
             /\bbaja\b/.test(text)
@@ -8431,17 +8430,30 @@ window.buildEmployeeProfileModel = (empId, refISO) => {
         return start && start <= todayISO && todayISO <= end;
     });
     const explicitRefuerzoEvents = periodGroupedEvents.filter(ev => window.isExplicitRefuerzoEvent(ev));
-    const substitutionsReceived = periodGroupedEvents.filter(ev => {
+    const checkSubDone = (ev) => {
         const tipo = String(ev.tipo || '').toUpperCase();
-        return (['VAC', 'BAJA', 'IT', 'PERM', 'PERMISO', 'FORMACION'].includes(window.normalizeTipo ? window.normalizeTipo(ev.tipo) : tipo) || /SUSTITUCION|COBERTURA/i.test(tipo))
-            && window.eventHasEmployeeIdentity(ev, identityKeys)
-            && (ev.empleado_destino_id || ev.sustituto_id || ev.payload?.sustituto_id || ev.payload?.sustituto);
-    });
-    const substitutionsDone = periodGroupedEvents.filter(ev => {
+        const norm = window.normalizeTipo ? window.normalizeTipo(ev.tipo) : tipo;
+        const isSust = /SUSTITUCION|COBERTURA/i.test(norm);
+        const isLeave = ['VAC', 'BAJA', 'IT', 'PERM', 'PERMISO', 'FORMACION'].includes(norm);
+        if (!isSust && !isLeave) return false;
+        
+        if (isSust) return window.eventHasEmployeeIdentity(ev, identityKeys);
+        return window.eventHasDestinationIdentity(ev, identityKeys);
+    };
+
+    const checkSubRecv = (ev) => {
         const tipo = String(ev.tipo || '').toUpperCase();
-        return (['VAC', 'BAJA', 'IT', 'PERM', 'PERMISO', 'FORMACION'].includes(window.normalizeTipo ? window.normalizeTipo(ev.tipo) : tipo) || /SUSTITUCION|COBERTURA/i.test(tipo))
-            && window.eventHasDestinationIdentity(ev, identityKeys);
-    });
+        const norm = window.normalizeTipo ? window.normalizeTipo(ev.tipo) : tipo;
+        const isSust = /SUSTITUCION|COBERTURA/i.test(norm);
+        const isLeave = ['VAC', 'BAJA', 'IT', 'PERM', 'PERMISO', 'FORMACION'].includes(norm);
+        if (!isSust && !isLeave) return false;
+
+        if (isSust) return window.eventHasDestinationIdentity(ev, identityKeys);
+        return window.eventHasEmployeeIdentity(ev, identityKeys) && (ev.empleado_destino_id || ev.sustituto_id || ev.payload?.sustituto_id || ev.payload?.sustituto);
+    };
+
+    const substitutionsReceived = periodGroupedEvents.filter(checkSubRecv);
+    const substitutionsDone = periodGroupedEvents.filter(checkSubDone);
     const leavePermissionEvents = periodGroupedEvents.filter(isLeavePermissionEvent);
     const yearLeavePermissionEvents = yearGroupedEvents.filter(isLeavePermissionEvent);
     const cambioEvents = periodGroupedEvents.filter(ev => /CAMBIO|INTERCAMBIO/.test(String(ev.tipo || '').toUpperCase()));
@@ -8510,17 +8522,8 @@ window.buildEmployeeProfileModel = (empId, refISO) => {
     const annualChanges = yearGroupedEvents.filter(ev => /CAMBIO|INTERCAMBIO/.test(String(ev.tipo || '').toUpperCase())).length;
     const annualRefuerzos = yearGroupedEvents.filter(ev => window.isExplicitRefuerzoEvent(ev)).length;
     const annualBajas = yearGroupedEvents.filter(ev => /BAJA|IT|PERM|PERMISO/.test(String(ev.tipo || '').toUpperCase())).length;
-    const annualSubDone = yearGroupedEvents.filter(ev => {
-        const tipo = String(ev.tipo || '').toUpperCase();
-        return (['VAC', 'BAJA', 'IT', 'PERM', 'PERMISO', 'FORMACION'].includes(window.normalizeTipo ? window.normalizeTipo(ev.tipo) : tipo) || /SUSTITUCION|COBERTURA/i.test(tipo))
-            && window.eventHasDestinationIdentity(ev, identityKeys);
-    }).length;
-    const annualSubRecv = yearGroupedEvents.filter(ev => {
-        const tipo = String(ev.tipo || '').toUpperCase();
-        return (['VAC', 'BAJA', 'IT', 'PERM', 'PERMISO', 'FORMACION'].includes(window.normalizeTipo ? window.normalizeTipo(ev.tipo) : tipo) || /SUSTITUCION|COBERTURA/i.test(tipo))
-            && window.eventHasEmployeeIdentity(ev, identityKeys)
-            && (ev.empleado_destino_id || ev.sustituto_id || ev.payload?.sustituto_id || ev.payload?.sustituto);
-    }).length;
+    const annualSubDone = yearGroupedEvents.filter(checkSubDone).length;
+    const annualSubRecv = yearGroupedEvents.filter(checkSubRecv).length;
     const pendingApplies = !isReducedSupport && (
         structuralType === 'fijo'
         || (structuralType === 'temporada' && futureAssignedDays.length > 0)
@@ -9317,7 +9320,9 @@ window.renderEmployeeProfile = () => {
         tabContent = `${summaryCards}<section class="emp-card glass" style="padding:20px; border-radius:18px; border:1px solid var(--border);"><h3 style="margin:0 0 14px; font-size:0.9rem; font-weight:800;">Cambios de turno ${selectedYear}</h3>${renderChangesTable(listSource)}</section>`;
     } else if (currentTab === 'substitutions') {
         const doneRows = model.substitutionsDone.map(ev => {
-            const coveredName = window.getEmployeeDisplayName(ev.empleado_id || 'No informado');
+            const isSust = /SUSTITUCION|COBERTURA/i.test(ev.tipo);
+            const coveredId = isSust ? (ev.empleado_destino_id || ev.payload?.empleado_destino_id) : (ev.empleado_id || ev.payload?.empleado_id);
+            const coveredName = window.getEmployeeDisplayName(coveredId || 'No informado');
             return {
                 fecha: ev.fecha_inicio,
                 main: `<strong>${escapeHtml(window.employeeProfileEventLabel(ev))}</strong> · cubre a ${escapeHtml(coveredName)}`,
@@ -9326,7 +9331,8 @@ window.renderEmployeeProfile = () => {
             };
         });
         const receivedRows = model.substitutionsReceived.map(ev => {
-            const subId = ev.empleado_destino_id || ev.sustituto_id || ev.payload?.sustituto_id || ev.payload?.sustituto;
+            const isSust = /SUSTITUCION|COBERTURA/i.test(ev.tipo);
+            const subId = isSust ? (ev.empleado_id || ev.payload?.empleado_id) : (ev.empleado_destino_id || ev.sustituto_id || ev.payload?.sustituto_id || ev.payload?.sustituto);
             const subName = subId ? window.getEmployeeDisplayName(subId) : 'No informado';
             return {
                 fecha: ev.fecha_inicio,
