@@ -7544,9 +7544,9 @@ window.eventHasEmployeeIdentity = (ev, identityKeys) => {
   const keySet = window.ensureIdentityKeySet(identityKeys);
   if (!keySet.size) return false;
 
-  const evKeys = typeof window.getEventEmployeeIdentityKeys === 'function'
-    ? window.getEventEmployeeIdentityKeys(ev)
-    : [];
+  const evKeys = typeof window.getEventOriginCandidates === 'function'
+    ? window.getEventOriginCandidates(ev)
+    : (typeof window.getEventEmployeeIdentityKeys === 'function' ? window.getEventEmployeeIdentityKeys(ev) : []);
 
   return evKeys
     .filter(Boolean)
@@ -7648,18 +7648,21 @@ window.eventHasDestinationIdentity = (ev, identityKeys) => {
     const keySet = window.ensureIdentityKeySet(identityKeys);
     if (!keySet.size) return false;
 
-    const keys = [
-        ev?.empleado_destino_uuid,
-        ev?.empleado_destino_id,
-        ev?.sustituto_id,
-        ev?.sustituto,
-        ev?.payload?.empleado_destino_uuid,
-        ev?.payload?.empleado_destino_id,
-        ev?.payload?.sustituto_id,
-        ev?.payload?.sustituto,
-        ev?.payload?.sustituto_nombre
-    ].map(v => window.normalizeId(v)).filter(Boolean);
-    return keys.some(key => keySet.has(key));
+    const keys = typeof window.getEventDestinationCandidates === 'function'
+        ? window.getEventDestinationCandidates(ev)
+        : [
+            ev?.empleado_destino_uuid,
+            ev?.empleado_destino_id,
+            ev?.sustituto_id,
+            ev?.sustituto,
+            ev?.payload?.empleado_destino_uuid,
+            ev?.payload?.empleado_destino_id,
+            ev?.payload?.sustituto_id,
+            ev?.payload?.sustituto,
+            ev?.payload?.sustituto_nombre
+        ];
+
+    return keys.map(v => window.normalizeId(v)).filter(Boolean).some(key => keySet.has(key));
 };
 
 window.employeeProfileEventLabel = (ev) => {
@@ -8450,7 +8453,6 @@ window.buildEmployeeProfileModel = (empId, refISO) => {
         const isLeave = ['VAC', 'BAJA', 'IT', 'PERM', 'PERMISO', 'FORMACION'].includes(norm);
         if (!isSust && !isLeave) return false;
         
-        if (isSust) return window.eventHasEmployeeIdentity(ev, identityKeys);
         return window.eventHasDestinationIdentity(ev, identityKeys);
     };
 
@@ -8461,8 +8463,7 @@ window.buildEmployeeProfileModel = (empId, refISO) => {
         const isLeave = ['VAC', 'BAJA', 'IT', 'PERM', 'PERMISO', 'FORMACION'].includes(norm);
         if (!isSust && !isLeave) return false;
 
-        if (isSust) return window.eventHasDestinationIdentity(ev, identityKeys);
-        return window.eventHasEmployeeIdentity(ev, identityKeys) && (ev.empleado_destino_id || ev.sustituto_id || ev.payload?.sustituto_id || ev.payload?.sustituto);
+        return window.eventHasEmployeeIdentity(ev, identityKeys) && (ev.empleado_destino_id || ev.sustituto_id || ev.payload?.sustituto_id || ev.payload?.sustituto || window.eventHasDestinationIdentity(ev, new Set()) === false || (typeof window.getEventDestinationCandidates === 'function' && window.getEventDestinationCandidates(ev).length > 0));
     };
 
     const substitutionsReceived = periodGroupedEvents.filter(checkSubRecv);
@@ -8510,10 +8511,16 @@ window.buildEmployeeProfileModel = (empId, refISO) => {
             return start <= todayISO && todayISO <= end;
         })
             ? 'sustituto'
-            : activeTodayEvents.some(ev => /VAC|BAJA|IT|PERM/i.test(String(ev.tipo || '')))
+            : activeTodayEvents.some(ev => /VAC|BAJA|IT|PERM/i.test(String(ev.tipo || '')) && window.isTitularOfAbsence(ev, emp.id))
                 ? 'ausente'
                 : configuredRole;
-    const activeIncident = activeTodayEvents.find(ev => /VAC|BAJA|IT|PERM|REFUERZO|SUSTITUCION|COBERTURA|CAMBIO|INTERCAMBIO/i.test(String(ev.tipo || ''))) || null;
+    
+    // Solo mostramos como incidencia activa de ausencia si es el titular real
+    const activeIncident = activeTodayEvents.find(ev => {
+        const isAbsence = /VAC|BAJA|IT|PERM/i.test(String(ev.tipo || ''));
+        if (isAbsence && !window.isTitularOfAbsence(ev, emp.id)) return false;
+        return /VAC|BAJA|IT|PERM|REFUERZO|SUSTITUCION|COBERTURA|CAMBIO|INTERCAMBIO/i.test(String(ev.tipo || ''));
+    }) || null;
     const futureWorkingDays = monthDays.filter(day => day.fecha > todayISO && ['M', 'T', 'N'].includes(window.employeeProfileShiftCodeMeta(day.turno || day.detalle?.turno).code));
     const nextShiftDay = futureWorkingDays[0] || null;
     const futureAssignedDays = monthDays.filter(day => day.fecha > todayISO && window.employeeProfileShiftCodeMeta(day.turnoBase || day.detalle?.turnoBase).code !== '—');
@@ -9077,9 +9084,9 @@ window.renderEmployeeProfile = () => {
                                 return state !== 'anulado' && state !== 'cancelado' && state !== 'rechazado' && window.eventoAplicaEnFecha(ev, d.fecha);
                             });
                             
-                            const hasVacation = d.incidencia === 'VAC' || dayEvents.some(ev => String(ev.tipo || '').toUpperCase().includes('VAC'));
-                            const hasBaja = d.incidencia === 'BAJA' || d.incidencia === 'IT' || dayEvents.some(ev => /BAJA|IT/i.test(ev.tipo || ''));
-                            const hasPermiso = d.incidencia === 'PERM' || d.incidencia === 'PERMISO' || dayEvents.some(ev => /PERM/i.test(ev.tipo || ''));
+                            const hasVacation = d.incidencia === 'VAC' || dayEvents.some(ev => String(ev.tipo || '').toUpperCase().includes('VAC') && window.isTitularOfAbsence(ev, emp.id));
+                            const hasBaja = d.incidencia === 'BAJA' || d.incidencia === 'IT' || dayEvents.some(ev => /BAJA|IT/i.test(ev.tipo || '') && window.isTitularOfAbsence(ev, emp.id));
+                            const hasPermiso = d.incidencia === 'PERM' || d.incidencia === 'PERMISO' || dayEvents.some(ev => /PERM/i.test(ev.tipo || '') && window.isTitularOfAbsence(ev, emp.id));
                             const hasRetraso = dayEvents.some(ev => String(ev.tipo || '').toUpperCase().includes('RETRASO'));
                             const hasRefuerzo = dayEvents.some(ev => String(ev.tipo || '').toUpperCase().includes('REFUERZO'));
                             const hasCambio = d.cambio === true || dayEvents.some(ev => /CAMBIO|INTERCAMBIO|CT/i.test(ev.tipo || ''));
