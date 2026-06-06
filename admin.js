@@ -7797,6 +7797,7 @@ window.employeeParticipatesInShiftChange = (ev, empKeys) => {
 
 window.collectAllEventsForEmployee = (emp) => {
     const sources = [
+        window._employeeProfileEvents,
         window.eventosGlobales, window.eventosActivos,
         window._lastEventos, window.allEventos, window._cachedEventos,
     ].filter(s => Array.isArray(s));
@@ -8089,7 +8090,7 @@ window.buildEmployeeProfileModel = (empId, refISO) => {
 
     const refDate = new Date(`${refISO}T12:00:00`);
     const startMonth = new Date(refDate.getFullYear(), refDate.getMonth(), 1);
-    const eventos = window.eventosActivos || window.eventosGlobales || [];
+    const eventos = window._employeeProfileEvents || window.eventosActivos || window.eventosGlobales || [];
     let baseIndex = null;
     const employeeKeys = new Set([
         window.normalizeId(profile.id),
@@ -8699,7 +8700,18 @@ window.openEmpDrawer = async (id) => {
     window._employeeProfileId = id;
     window._employeeProfileTab = 'summary';
     window._employeeProfileDate = window.isoDate(new Date());
-    await window.loadEmployeeProfileBaseRows(id, window._employeeProfileDate);
+
+    const yearSelected = new Date(window._employeeProfileDate + 'T12:00:00').getFullYear();
+    try {
+        const [baseRows, yearEvents] = await Promise.all([
+            window.loadEmployeeProfileBaseRows(id, window._employeeProfileDate),
+            window.TurnosDB.fetchEventos(`${yearSelected}-01-01`, `${yearSelected}-12-31`)
+        ]);
+        window._employeeProfileEvents = yearEvents;
+    } catch (e) {
+        console.warn('[EMP DRAWER] Error cargando datos iniciales:', e);
+        window._employeeProfileEvents = null;
+    }
     
     const drawer = $('#empDrawer');
     if (drawer) {
@@ -8715,9 +8727,24 @@ window.setEmployeeProfileTab = (tab) => {
 
 window.moveEmployeeProfilePeriod = async (months) => {
     const d = new Date(window._employeeProfileDate + 'T12:00:00');
+    const oldYear = d.getFullYear();
     d.setMonth(d.getMonth() + months);
     window._employeeProfileDate = window.isoDate(d);
-    await window.loadEmployeeProfileBaseRows(window._employeeProfileId, window._employeeProfileDate);
+    
+    const newYear = d.getFullYear();
+    try {
+        if (newYear !== oldYear) {
+            const [baseRows, yearEvents] = await Promise.all([
+                window.loadEmployeeProfileBaseRows(window._employeeProfileId, window._employeeProfileDate),
+                window.TurnosDB.fetchEventos(`${newYear}-01-01`, `${newYear}-12-31`)
+            ]);
+            window._employeeProfileEvents = yearEvents;
+        } else {
+            await window.loadEmployeeProfileBaseRows(window._employeeProfileId, window._employeeProfileDate);
+        }
+    } catch (e) {
+        console.warn('[EMP DRAWER] Error moviendo periodo:', e);
+    }
     window.renderEmployeeProfile();
 };
 
@@ -8725,8 +8752,14 @@ window.setEmployeeProfileYear = async (year) => {
     const parsedYear = Number(year);
     if (!Number.isFinite(parsedYear)) return;
     window._employeeProfileDate = `${parsedYear}-01-01`;
-    if (window._employeeProfileId && window.loadEmployeeProfileBaseRows) {
-        await window.loadEmployeeProfileBaseRows(window._employeeProfileId, window._employeeProfileDate);
+    try {
+        const [baseRows, yearEvents] = await Promise.all([
+            window.loadEmployeeProfileBaseRows(window._employeeProfileId, window._employeeProfileDate),
+            window.TurnosDB.fetchEventos(`${parsedYear}-01-01`, `${parsedYear}-12-31`)
+        ]);
+        window._employeeProfileEvents = yearEvents;
+    } catch (e) {
+        console.warn('[EMP DRAWER] Error configurando año:', e);
     }
     window.renderEmployeeProfile();
 };
