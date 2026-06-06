@@ -5237,39 +5237,59 @@ window.renderMultiSelectFilter = ({ id, label, options, selectedValues, onChange
         const normVal = window.normalizeFilterValue(opt.val);
         const isChecked = selectedValues && selectedValues.some(v => window.normalizeFilterValue(v) === normVal);
         return `
-        <label style="display:flex; align-items:center; padding:6px 10px; cursor:pointer; border-radius:4px; font-size:0.8rem; color:#334155;" onmouseover="this.style.background='#f1f5f9'" onmouseout="this.style.background='transparent'">
-            <input type="checkbox" value="${window.escapeHtml(opt.val)}" ${isChecked ? 'checked' : ''} onchange="${onChangeStr}" style="margin-right:8px; accent-color:#3b82f6;">
-            ${window.escapeHtml(opt.label)}
+        <label class="filter-option" style="display:flex; align-items:center; gap:10px; padding:8px 10px; border-radius:10px; cursor:pointer; background:${isChecked ? '#eef4ff' : 'transparent'}; font-weight:${isChecked ? '700' : '400'}; transition:background 0.2s;" onmouseover="if(!${isChecked}) this.style.background='#f3f6fb'" onmouseout="if(!${isChecked}) this.style.background='transparent'">
+            <input type="checkbox" value="${window.escapeHtml(opt.val)}" ${isChecked ? 'checked' : ''} onchange="${onChangeStr}" style="margin:0; width:16px; height:16px; accent-color:#3b82f6; cursor:pointer;">
+            <span style="font-size:0.85rem; color:#1e293b; user-select:none;">${window.escapeHtml(opt.label)}</span>
         </label>`;
     }).join('');
 
+    const isHidden = window._openFilterPopover !== id;
+
     return `
-    <div class="multi-select-wrapper" style="position:relative; display:inline-block;" data-id="${id}">
-        <button type="button" onclick="window.toggleMultiSelect('${id}')" style="padding:8px 12px; border:1px solid #e2e8f0; border-radius:8px; background:white; color:#475569; font-size:0.8rem; cursor:pointer; display:flex; align-items:center; gap:6px; font-weight:600; box-shadow:0 1px 2px rgba(0,0,0,0.05);">
-            ${window.escapeHtml(btnText)} <i class="fas fa-chevron-down" style="font-size:0.7rem; opacity:0.6; margin-left:4px;"></i>
+    <div class="filter-multiselect multi-select-wrapper" style="position:relative; display:inline-block;" data-id="${id}">
+        <button type="button" onclick="window.toggleMultiSelect('${id}')" style="height:38px; padding:0 14px; border:1px solid #e2e8f0; border-radius:10px; background:white; color:#475569; font-size:0.85rem; cursor:pointer; display:flex; align-items:center; gap:8px; font-weight:600; box-shadow:0 1px 2px rgba(0,0,0,0.05); transition:all 0.2s;" onmouseover="this.style.borderColor='#cbd5e1'" onmouseout="this.style.borderColor='#e2e8f0'">
+            ${window.escapeHtml(btnText)} <i class="fas fa-chevron-down" style="font-size:0.7rem; opacity:0.6;"></i>
         </button>
-        <div id="${id}-popover" class="multi-select-popover" hidden style="position:absolute; top:100%; left:0; margin-top:4px; background:white; border:1px solid #e2e8f0; border-radius:8px; box-shadow:0 4px 15px rgba(0,0,0,0.1); z-index:100; min-width:220px; padding:8px; display:flex; flex-direction:column; gap:2px;">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px; padding-bottom:6px; border-bottom:1px solid #f1f5f9;">
-                <span style="font-size:0.75rem; font-weight:700; color:#64748b; text-transform:uppercase;">${label}</span>
-                <button type="button" onclick="window.clearMultiSelect('${id}'); ${onChangeStr.replace('e.target', 'null').replace('this', 'null')}" style="background:none; border:none; color:#ef4444; font-size:0.7rem; cursor:pointer; font-weight:600; padding:2px 4px; border-radius:4px;" onmouseover="this.style.background='#fee2e2'" onmouseout="this.style.background='transparent'">${clearLabel || 'Limpiar'}</button>
+        <div id="${id}-popover" class="filter-popover multi-select-popover" style="position:absolute; top:calc(100% + 6px); left:0; z-index:1000; width:240px; max-height:320px; overflow-y:auto; padding:10px; border-radius:14px; background:#ffffff; box-shadow:0 16px 36px rgba(15, 23, 42, 0.18); border:1px solid #e5e7eb; display:${isHidden ? 'none' : 'flex'}; flex-direction:column; gap:4px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; padding-bottom:8px; border-bottom:1px solid #f1f5f9;">
+                <span style="font-size:0.75rem; font-weight:800; color:#64748b; text-transform:uppercase; letter-spacing:0.05em;">${window.escapeHtml(label)}</span>
+                <button type="button" onclick="window.clearMultiSelect('${id}'); ${onChangeStr.replace('e.target', 'null').replace('this', 'null')}" style="background:none; border:none; color:#ef4444; font-size:0.75rem; cursor:pointer; font-weight:600; padding:4px 6px; border-radius:6px; transition:background 0.2s;" onmouseover="this.style.background='#fee2e2'" onmouseout="this.style.background='transparent'">${window.escapeHtml(clearLabel || 'Limpiar')}</button>
             </div>
-            <div style="max-height:250px; overflow-y:auto; display:flex; flex-direction:column;" id="${id}-checkboxes">
+            <div id="${id}-checkboxes" style="display:flex; flex-direction:column; gap:2px;">
                 ${checkboxesHtml}
             </div>
         </div>
     </div>`;
 };
 
+window._openFilterPopover = null;
+
 window.toggleMultiSelect = (id) => {
-    const popover = document.getElementById(`${id}-popover`);
-    const isHidden = popover.hasAttribute('hidden');
-    window.closeAllMultiSelects();
-    if (isHidden) popover.removeAttribute('hidden');
+    if (window._openFilterPopover === id) {
+        window._openFilterPopover = null;
+    } else {
+        window._openFilterPopover = id;
+    }
+    document.querySelectorAll('.multi-select-popover').forEach(p => p.style.display = 'none');
+    if (window._openFilterPopover) {
+        const popover = document.getElementById(`${window._openFilterPopover}-popover`);
+        if (popover) popover.style.display = 'flex';
+    }
 };
 
 window.closeAllMultiSelects = () => {
-    document.querySelectorAll('.multi-select-popover').forEach(p => p.setAttribute('hidden', ''));
+    window._openFilterPopover = null;
+    document.querySelectorAll('.multi-select-popover').forEach(p => p.style.display = 'none');
 };
+
+document.addEventListener('click', (e) => {
+    if (window._openFilterPopover) {
+        const wrapper = document.querySelector(`.multi-select-wrapper[data-id="${window._openFilterPopover}"]`);
+        if (wrapper && !wrapper.contains(e.target)) {
+            window.closeAllMultiSelects();
+        }
+    }
+});
 
 window.clearMultiSelect = (id) => {
     const container = document.getElementById(`${id}-checkboxes`);
