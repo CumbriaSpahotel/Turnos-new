@@ -5263,6 +5263,20 @@ window.buildEmployeeLineModel = (empleado) => {
     const bajas = (stats.b || 0) + (stats.p || 0);
     const ajusteVac = Number(profile.ajuste_vacaciones_dias || 0);
 
+    const isReducedSupport = ['apoyo', 'ocasional'].includes(tipoEstructural) && window.employeeNorm(profile.tipo_personal || profile.tipo || profile.contrato || '').includes('refuerzo');
+    const futureAssignedDays = history.filter(h => h.fecha > todayISO && window.employeeProfileShiftCodeMeta(h.cell?._finalState?.turnoBase).code !== '—');
+    const pendingApplies = !isReducedSupport && (
+        tipoEstructural === 'fijo'
+        || (tipoEstructural === 'temporada' && futureAssignedDays.length > 0)
+        || tipoEstructural === 'placeholder'
+    );
+    const unresolvedBaseDays = history.filter(h => {
+        if (!h.cell || !h.cell._finalState) return false;
+        const baseCode = window.employeeProfileShiftCodeMeta(h.cell._finalState.turnoBase).code;
+        const finalCode = window.employeeProfileShiftCodeMeta(h.cell._finalState.turnoFinal || h.turno).code;
+        return ['M', 'T', 'N', 'D'].includes(baseCode) && finalCode === '—';
+    }).length;
+
     return {
         id,
         nombre,
@@ -5288,6 +5302,7 @@ window.buildEmployeeLineModel = (empleado) => {
         cambiosActivos: activeChanges.length || (todayShift?.cell?.cambio ? 1 : null),
         saldoVacaciones: Number.isFinite(ajusteVac) && ajusteVac !== 0 ? ajusteVac : null,
         saldoDescansos: null,
+        pendingPolicy: { applies: pendingApplies, diasPendientes: pendingApplies ? unresolvedBaseDays : 0 },
         profile,
         history,
         events,
@@ -5612,6 +5627,16 @@ window.detectarConflictosOperativos = async (fecha, hotel, inputEventos = null, 
                     });
                 }
             }
+        }
+
+        if (emp.pendingPolicy && emp.pendingPolicy.diasPendientes > 0) {
+            groupedConflicts.WARNING.push({
+                type: 'PENDIENTES',
+                empId, fecha,
+                title: 'Turnos por resolver',
+                desc: `${emp.nombre} acumula ${emp.pendingPolicy.diasPendientes} turnos de la plantilla base sin resolver en el periodo visible.`,
+                suggestion: 'Revisar cuadrante y asignar los turnos finales correspondientes.'
+            });
         }
 
         // B. Regla de Jornada Progresiva (5d/6d/7+)
@@ -8420,7 +8445,41 @@ window.buildEmployeeProfileModel = (empId, refISO) => {
         const end = String(ev.fecha_fin || start || '').slice(0, 10);
         return start && start <= todayISO && todayISO <= end;
     });
-    const explicitRefuerzoEvents = periodGroupedEvents.filter(ev => window.isExplicitRefuerzoEvent(ev));
+    const explicitRefuerzoEvents = yearGroupedEvents.filter(ev => window.isExplicitRefuerzoEvent(ev));
+    const implicitRefuerzoDays = yearDays ? yearDays.filter(day => {
+        const tCode = window.employeeProfileShiftCodeMeta(day.turno || day.detalle?.turno).code;
+        if (!['M', 'T', 'N', 'P'].includes(tCode)) return false;
+        if (day.sustituyeA || day.incidenciaCubierta) return false;
+        
+        const isExplicit = explicitRefuerzoEvents.some(ev => {
+            const start = String(ev.fecha_inicio || '').slice(0, 10);
+            const end = String(ev.fecha_fin || ev.fecha_inicio || '').slice(0, 10);
+            return start <= day.fecha && day.fecha <= end;
+        });
+        if (isExplicit) return false;
+
+        const baseCode = window.employeeProfileShiftCodeMeta(day.turno_base || day.turnoBase || day.detalle?.turnoBase).code;
+        return baseCode === '—' || baseCode === 'D';
+    }) : [];
+    
+    const implicitRefuerzoGroups = [];
+    let currentImp = null;
+    implicitRefuerzoDays.forEach(day => {
+        if (!currentImp) {
+            currentImp = { fecha_inicio: day.fecha, fecha_fin: day.fecha, turno: day.turno, hotel: emp.hotel, origen: 'BBDD (Turno extra)', isImplicit: true };
+        } else {
+            const lastEnd = new Date(currentImp.fecha_fin + 'T12:00:00');
+            const nextStart = new Date(day.fecha + 'T12:00:00');
+            if (Math.round((nextStart - lastEnd) / 86400000) === 1 && currentImp.turno === day.turno) {
+                currentImp.fecha_fin = day.fecha;
+            } else {
+                implicitRefuerzoGroups.push(currentImp);
+                currentImp = { fecha_inicio: day.fecha, fecha_fin: day.fecha, turno: day.turno, hotel: emp.hotel, origen: 'BBDD (Turno extra)', isImplicit: true };
+            }
+        }
+    });
+    if (currentImp) implicitRefuerzoGroups.push(currentImp);
+    const allRefuerzos = [...explicitRefuerzoEvents, ...implicitRefuerzoGroups].sort((a, b) => String(a.fecha_inicio || '').localeCompare(String(b.fecha_inicio || '')));
     const checkSubDone = (ev) => {
         const tipo = String(ev.tipo || '').toUpperCase();
         const norm = window.normalizeTipo ? window.normalizeTipo(ev.tipo) : tipo;
@@ -8609,7 +8668,7 @@ window.buildEmployeeProfileModel = (empId, refISO) => {
         anuladasPorBajaCount: medicalLeaveCancelledVacationDays.length,
         substitutionsDone,
         substitutionsReceived,
-        explicitRefuerzoEvents,
+        explicitRefuerzoEvents: allRefuerzos,
         leavePermissionEvents,
         cambioEvents,
         cambiosPropios: selfGroupedCambios,
@@ -8636,7 +8695,7 @@ window.buildEmployeeProfileModel = (empId, refISO) => {
             cambiosTurno: changeDays || cambioEvents.length,
             sustitucionesRealizadas: substitutionsDone.length,
             sustitucionesRecibidas: substitutionsReceived.length,
-            refuerzosExplicitos: explicitRefuerzoEvents.length,
+            refuerzosExplicitos: allRefuerzos.length,
             diasPendiente: pendingDays
         },
         annualKpis: {
@@ -8645,7 +8704,7 @@ window.buildEmployeeProfileModel = (empId, refISO) => {
             cambiosTurno: annualChanges,
             sustitucionesRealizadas: annualSubDone,
             sustitucionesRecibidas: annualSubRecv,
-            refuerzosExplicitos: annualRefuerzos
+            refuerzosExplicitos: allRefuerzos.length
         },
         vacaciones: {
             applies: !isReducedSupport,
@@ -9008,7 +9067,7 @@ window.renderEmployeeProfile = () => {
     const kpiHTML = `<div class="emp-kpi-grid" style="display:grid; grid-template-columns:repeat(6, minmax(120px, 1fr)); gap:12px; margin-bottom:18px;"><div class="emp-kpi-card glass" style="padding:14px; border-radius:16px; border:1px solid var(--border);"><label style="display:block; font-size:0.6rem; font-weight:800; color:var(--text-dim); text-transform:uppercase; margin-bottom:4px;">Rol actual</label><strong style="font-size:0.98rem; color:var(--text);">${escapeHtml(model.currentRoleMeta.label)}</strong></div><div class="emp-kpi-card glass" style="padding:14px; border-radius:16px; border:1px solid var(--border);"><label style="display:block; font-size:0.6rem; font-weight:800; color:var(--text-dim); text-transform:uppercase; margin-bottom:4px;">Estado operativo</label><strong style="font-size:0.98rem; color:var(--text);">${escapeHtml(currentShiftLabel)}</strong></div><div class="emp-kpi-card glass" style="padding:14px; border-radius:16px; border:1px solid var(--border);"><label style="display:block; font-size:0.6rem; font-weight:800; color:var(--text-dim); text-transform:uppercase; margin-bottom:4px;">Próximo turno</label><strong style="font-size:0.9rem; color:var(--text);">${escapeHtml(nextShiftLabel)}</strong></div><div class="emp-kpi-card glass" style="padding:14px; border-radius:16px; border:1px solid var(--border);"><label style="display:block; font-size:0.6rem; font-weight:800; color:var(--text-dim); text-transform:uppercase; margin-bottom:4px;">Incidencia</label><strong style="font-size:0.9rem; color:var(--text);">${escapeHtml(incidenciaLabel)}</strong></div><div class="emp-kpi-card glass" style="padding:14px; border-radius:16px; border:1px solid var(--border);" title="Días con turno en la plantilla base que aún no tienen asignado un turno final"><label style="display:block; font-size:0.6rem; font-weight:800; color:var(--text-dim); text-transform:uppercase; margin-bottom:4px;">Por resolver (Base)</label><strong style="font-size:0.98rem; color:var(--text);">${model.pendingPolicy.applies ? model.periodKpis.diasPendiente : 'No aplica'}</strong></div><div class="emp-kpi-card glass" style="padding:14px; border-radius:16px; border:1px solid var(--border);"><label style="display:block; font-size:0.6rem; font-weight:800; color:var(--text-dim); text-transform:uppercase; margin-bottom:4px;">Saldo vac.</label><strong style="font-size:0.98rem; color:#10b981;">${escapeHtml(vacationBalanceLabel)}</strong></div></div>`;
     let tabContent = '';
     if (currentTab === 'summary') {
-        tabContent = `<div style="display:grid; gap:18px;"><div class="emp-grid" style="display:grid; grid-template-columns:1.1fr 1fr; gap:18px;"><section class="emp-card glass" style="padding:20px; border-radius:18px; border:1px solid var(--border);"><h3 style="margin:0 0 14px; font-size:0.9rem; font-weight:800;">Identidad y estado</h3><div style="display:grid; gap:10px;">${window.renderEmployeeProfileField(['Hotel principal', emp.hotel || 'No informado'])}${window.renderEmployeeProfileField(['Hoteles asignados', assignedHotelLabel])}${window.renderEmployeeProfileField(['Tipo de empleado', model.typeMeta.label])}${window.renderEmployeeProfileField(['Estado laboral', model.laborStatus.label])}${window.renderEmployeeProfileField(['Rol operativo actual', model.currentRoleMeta.label])}${window.renderEmployeeProfileField(['Próximo turno', nextShiftLabel])}${window.renderEmployeeProfileField(['Incidencia activa', incidenciaLabel])}</div></section><section class="emp-card glass" style="padding:20px; border-radius:18px; border:1px solid var(--border);"><h3 style="margin:0 0 14px; font-size:0.9rem; font-weight:800;">KPIs del periodo</h3><div style="display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:10px;">${window.renderEmployeeProfileField(['Turnos base', model.periodKpis.turnosBase])}${window.renderEmployeeProfileField(['Turnos trabajados', model.periodKpis.turnosTrabajados])}${window.renderEmployeeProfileField(['Mañanas', model.periodKpis.mananas])}${window.renderEmployeeProfileField(['Tardes', model.periodKpis.tardes])}${window.renderEmployeeProfileField(['Noches', model.periodKpis.noches])}${window.renderEmployeeProfileField(['Descansos', model.periodKpis.descansos])}${window.renderEmployeeProfileField(['Vacaciones', model.periodKpis.vacaciones])}${window.renderEmployeeProfileField(['Bajas / Permisos', model.periodKpis.bajasPermisos])}${window.renderEmployeeProfileField(['Cambios de turno', model.periodKpis.cambiosTurno])}${window.renderEmployeeProfileField(['Sustituciones realizadas', model.periodKpis.sustitucionesRealizadas])}${window.renderEmployeeProfileField(['Sustituciones recibidas', model.periodKpis.sustitucionesRecibidas])}${window.renderEmployeeProfileField(['Refuerzos explícitos', model.periodKpis.refuerzosExplicitos])}</div></section></div><section class="emp-card glass" style="padding:20px; border-radius:18px; border:1px solid var(--border);"><h3 style="margin:0 0 14px; font-size:0.9rem; font-weight:800;">Vision anual ${refDate.getFullYear()}</h3><div style="display:grid; grid-template-columns:repeat(3, minmax(0, 1fr)); gap:10px;">${window.renderEmployeeProfileField(['Vacaciones previstas', model.vacaciones.applies ? `${model.annualKpis.vacacionesPlanificadas} dias` : 'No aplica'])}${window.renderEmployeeProfileField(['Bajas / Permisos', model.annualKpis.bajasPermisos])}${window.renderEmployeeProfileField(['Cambios de turno', model.annualKpis.cambiosTurno])}${window.renderEmployeeProfileField(['Sustituciones realizadas', model.annualKpis.sustitucionesRealizadas])}${window.renderEmployeeProfileField(['Sustituciones recibidas', model.annualKpis.sustitucionesRecibidas])}${window.renderEmployeeProfileField(['Refuerzos explícitos', model.annualKpis.refuerzosExplicitos])}</div></section><section class="emp-card glass" style="padding:20px; border-radius:18px; border:1px solid var(--border);"><h3 style="margin:0 0 14px; font-size:0.9rem; font-weight:800;">Pendientes y balance</h3><div style="display:grid; grid-template-columns:repeat(4, minmax(0, 1fr)); gap:10px;">${window.renderEmployeeProfileField(['Cuenta para pendientes', model.pendingPolicy.applies ? 'Sí' : 'No'])}${window.renderEmployeeProfileField(['Días con pendiente', model.pendingPolicy.applies ? model.periodKpis.diasPendiente : 'No aplica'])}${window.renderEmployeeProfileField(['Descanso pendiente', model.pendingPolicy.applies ? model.resumenGlobal.descansoPendiente : 'No aplica'])}${window.renderEmployeeProfileField(['Saldo vacacional neto', vacationBalanceLabel])}</div></section>${alertHTML}</div>`;
+        tabContent = `<div style="display:grid; gap:18px;"><div class="emp-grid" style="display:grid; grid-template-columns:1.1fr 1fr; gap:18px;"><section class="emp-card glass" style="padding:20px; border-radius:18px; border:1px solid var(--border);"><h3 style="margin:0 0 14px; font-size:0.9rem; font-weight:800;">Identidad y estado</h3><div style="display:grid; gap:10px;">${window.renderEmployeeProfileField(['Hotel principal', emp.hotel || 'No informado'])}${window.renderEmployeeProfileField(['Hoteles asignados', assignedHotelLabel])}${window.renderEmployeeProfileField(['Tipo de empleado', model.typeMeta.label])}${window.renderEmployeeProfileField(['Estado laboral', model.laborStatus.label])}${window.renderEmployeeProfileField(['Rol operativo actual', model.currentRoleMeta.label])}${window.renderEmployeeProfileField(['Próximo turno', nextShiftLabel])}${window.renderEmployeeProfileField(['Incidencia activa', incidenciaLabel])}</div></section><section class="emp-card glass" style="padding:20px; border-radius:18px; border:1px solid var(--border);"><h3 style="margin:0 0 14px; font-size:0.9rem; font-weight:800;">KPIs del año en curso</h3><div style="display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:10px;">${window.renderEmployeeProfileField(['Turnos base', model.periodKpis.turnosBase])}${window.renderEmployeeProfileField(['Turnos trabajados', model.periodKpis.turnosTrabajados])}${window.renderEmployeeProfileField(['Mañanas', model.periodKpis.mananas])}${window.renderEmployeeProfileField(['Tardes', model.periodKpis.tardes])}${window.renderEmployeeProfileField(['Noches', model.periodKpis.noches])}${window.renderEmployeeProfileField(['Descansos', model.periodKpis.descansos])}${window.renderEmployeeProfileField(['Vacaciones', model.periodKpis.vacaciones])}${window.renderEmployeeProfileField(['Bajas / Permisos', model.periodKpis.bajasPermisos])}${window.renderEmployeeProfileField(['Cambios de turno', model.periodKpis.cambiosTurno])}${window.renderEmployeeProfileField(['Sustituciones realizadas', model.periodKpis.sustitucionesRealizadas])}${window.renderEmployeeProfileField(['Sustituciones recibidas', model.periodKpis.sustitucionesRecibidas])}${window.renderEmployeeProfileField(['Refuerzos', model.periodKpis.refuerzosExplicitos])}</div></section></div><section class="emp-card glass" style="padding:20px; border-radius:18px; border:1px solid var(--border);"><h3 style="margin:0 0 14px; font-size:0.9rem; font-weight:800;">Vision anual ${refDate.getFullYear()}</h3><div style="display:grid; grid-template-columns:repeat(3, minmax(0, 1fr)); gap:10px;">${window.renderEmployeeProfileField(['Vacaciones previstas', model.vacaciones.applies ? `${model.annualKpis.vacacionesPlanificadas} dias` : 'No aplica'])}${window.renderEmployeeProfileField(['Bajas / Permisos', model.annualKpis.bajasPermisos])}${window.renderEmployeeProfileField(['Cambios de turno', model.annualKpis.cambiosTurno])}${window.renderEmployeeProfileField(['Sustituciones realizadas', model.annualKpis.sustitucionesRealizadas])}${window.renderEmployeeProfileField(['Sustituciones recibidas', model.annualKpis.sustitucionesRecibidas])}${window.renderEmployeeProfileField(['Refuerzos', model.annualKpis.refuerzosExplicitos])}</div></section><section class="emp-card glass" style="padding:20px; border-radius:18px; border:1px solid var(--border);"><h3 style="margin:0 0 14px; font-size:0.9rem; font-weight:800;">Pendientes y balance</h3><div style="display:grid; grid-template-columns:repeat(4, minmax(0, 1fr)); gap:10px;">${window.renderEmployeeProfileField(['Acumula turnos por resolver', model.pendingPolicy.applies ? 'Sí' : 'No'])}${window.renderEmployeeProfileField(['Turnos por resolver (Base)', model.pendingPolicy.applies ? model.periodKpis.diasPendiente : 'No aplica'])}${window.renderEmployeeProfileField(['Descanso pendiente', model.pendingPolicy.applies ? model.resumenGlobal.descansoPendiente : 'No aplica'])}${window.renderEmployeeProfileField(['Saldo vacacional neto', vacationBalanceLabel])}</div></section>${alertHTML}</div>`;
     } else if (currentTab === 'profile') {
         tabContent = window.renderEmployeeProfileEditForm(emp, model);
     } else if (currentTab === 'turns') {
@@ -9357,7 +9416,7 @@ window.renderEmployeeProfile = () => {
         tabContent = `<div style="display:grid; grid-template-columns:1fr 1fr; gap:18px;"><section class="emp-card glass" style="padding:20px; border-radius:18px; border:1px solid var(--border);"><h3 style="margin:0 0 14px; font-size:0.9rem; font-weight:800;">Sustituciones realizadas</h3>${renderRowsTable(doneRows, 'No ha realizado sustituciones en este periodo.')}</section><section class="emp-card glass" style="padding:20px; border-radius:18px; border:1px solid var(--border);"><h3 style="margin:0 0 14px; font-size:0.9rem; font-weight:800;">Sustituciones recibidas</h3>${renderRowsTable(receivedRows, 'No ha recibido sustituciones en este periodo.')}</section></div>`;
     } else if (currentTab === 'reinforcements') {
         const refRows = model.explicitRefuerzoEvents.map(ev => ({ fecha: ev.fecha_inicio, main: `<strong>${escapeHtml(window.employeeProfileDateRangeLabel(ev.fecha_inicio, ev.fecha_fin || ev.fecha_inicio))}</strong> · ${escapeHtml(window.getEventoHotel ? window.getEventoHotel(ev) : (ev.hotel || ev.hotel_origen || ev.hotel_destino || emp.hotel || 'No informado'))}`, secondary: `Turno ${escapeHtml(ev.turno || ev.payload?.turno || 'No informado')} · origen ${escapeHtml(window.employeeProfileReadableSource(ev))}`, badge: escapeHtml(ev.id || ev.evento_id || 'sin id') }));
-        tabContent = `<section class="emp-card glass" style="padding:20px; border-radius:18px; border:1px solid var(--border);"><h3 style="margin:0 0 14px; font-size:0.9rem; font-weight:800;">Refuerzos explícitos</h3>${renderRowsTable(refRows, 'No hay refuerzos explícitos para este empleado en el periodo.')}</section>`;
+        tabContent = `<section class="emp-card glass" style="padding:20px; border-radius:18px; border:1px solid var(--border);"><h3 style="margin:0 0 14px; font-size:0.9rem; font-weight:800;">Refuerzos</h3>${renderRowsTable(refRows, 'No hay refuerzos explícitos para este empleado en el año en curso.')}</section>`;
     } else if (currentTab === 'history') {
         const historyRows = (model.yearGroupedEvents || model.groupedEvents || []).slice().sort((a, b) => String(b.fecha_inicio || '').localeCompare(String(a.fecha_inicio || ''))).map(ev => ({ fecha: ev.fecha_inicio, main: `<strong>${escapeHtml(window.employeeProfileEventLabel(ev))}</strong> · ${escapeHtml(window.employeeProfileDateRangeLabel(ev.fecha_inicio, ev.fecha_fin || ev.fecha_inicio))}`, secondary: `${escapeHtml(window.employeeProfileActorLabel(ev))} · ${escapeHtml(ev.observaciones || 'Sin observaciones')} · origen ${escapeHtml(window.employeeProfileReadableSource(ev))}`, badge: escapeHtml(ev.estado || 'activo') }));
         tabContent = `<section class="emp-card glass" style="padding:20px; border-radius:18px; border:1px solid var(--border);"><h3 style="margin:0 0 14px; font-size:0.9rem; font-weight:800;">Historial</h3>${renderRowsTable(historyRows, 'No hay histórico de eventos para este empleado.')}</section>`;
