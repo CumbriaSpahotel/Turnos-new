@@ -3380,6 +3380,8 @@ window.renderEmployeeProfile = () => {
                     </div>
                     <div class="emp-profile-field" style="margin-top:15px;"><label>Días Vacaciones/Año</label><input type="number" id="edit-emp-vac-anuales" value="${emp.vacaciones_anuales || 44}" class="btn-premium" style="width:100%; margin-top:5px;"></div>
                     <div class="emp-profile-field" style="margin-top:15px;"><label>Ajuste Saldo (Días)</label><input type="number" id="edit-emp-vac-ajuste" value="${emp.ajuste_vacaciones_dias || 0}" class="btn-premium" style="width:100%; margin-top:5px;"></div>
+                    <div class="emp-profile-field" style="margin-top:15px;"><label>Año del Ajuste</label><input type="number" id="edit-emp-vac-ajuste-anyo" value="${emp.ajuste_vacaciones_anyo || new Date().getFullYear()}" class="btn-premium" style="width:100%; margin-top:5px;"></div>
+                    <div class="emp-profile-field" style="margin-top:15px;"><label>Motivo del Ajuste</label><input type="text" id="edit-emp-vac-ajuste-motivo" value="${escapeHtml(emp.ajuste_vacaciones_motivo || '')}" placeholder="Ej: Arrastre 2024" class="btn-premium" style="width:100%; margin-top:5px;"></div>
                 </div>
                 <div class="span-6">
                     <div class="emp-profile-field"><label>Categoría / Puesto</label><input type="text" id="edit-emp-puesto" value="${emp.puesto || ''}" class="btn-premium" style="width:100%; margin-top:5px;"></div>
@@ -3439,6 +3441,8 @@ window.saveEmployeeProfileInline = async () => {
         id_interno: $('#edit-emp-id-interno').value,
         vacaciones_anuales: Number($('#edit-emp-vac-anuales').value || 44),
         ajuste_vacaciones_dias: Number($('#edit-emp-vac-ajuste').value || 0),
+        ajuste_vacaciones_anyo: Number($('#edit-emp-vac-ajuste-anyo').value || new Date().getFullYear()),
+        ajuste_vacaciones_motivo: $('#edit-emp-vac-ajuste-motivo').value?.trim() || null,
         updated_at: new Date().toISOString()
     };
     try {
@@ -5442,33 +5446,41 @@ window.populateEmployees = async () => {
             if (hotelName && stats[key].hotel === 'Sin hotel') stats[key].hotel = hotelName;
             return stats[key];
         };
-        hotelsList.forEach(hName => {
+        const baseRowsFlat = [];
+        rows.forEach(r => baseRowsFlat.push({ empleadoId: r.empleado_id, fecha: r.fecha, turno: r.turno }));
+        const baseIndex = window.buildIndices ? window.buildIndices(profilesResult, eventos, baseRowsFlat).baseIndex : null;
+
+        profilesResult.forEach(profile => {
+            const hName = profile.hotel_id || profile.hotel || 'Sin hotel';
+            const s = getStat(profile.id || profile.nombre, hName);
+            if (!s) return;
+            
             dates.forEach(date => {
-                const hotelExcelRows = excelSource[hName] || [];
-                const weekSeed = hotelExcelRows.find(r => window.getFechasSemana(r?.weekStart).includes(date));
-                const weekStartIso = weekSeed ? weekSeed.weekStart : window.getWeekStartISO(date);
-                const fechasSemana = window.getFechasSemana(weekStartIso);
-                const sourceIndex = Math.max(0, fechasSemana.indexOf(date));
-                const weekExcelRows = hotelExcelRows.filter(r => r.weekStart === weekStartIso);
-                const dayRoster = window.TurnosEngine.buildDayRoster({ rows, events: eventos, employees: profilesResult, date, hotel: hName, sourceRows: weekExcelRows, sourceIndex });
-                dayRoster.forEach(entry => {
-                    const s = getStat(entry.displayAs || entry.id || entry.norm, hName);
-                    if (!s) return;
-                    const cell = entry.cell || {};
-                    let label = cell.turno || '';
-                    if (cell.tipo && cell.tipo !== 'NORMAL' && cell.tipo !== 'CT') label = cell.tipo;
-                    const cls = window.TurnosRules ? window.TurnosRules.shiftKey(label, cell.tipo) : '';
-                    if (date <= todayISO) {
-                        if (cls === 'm') s.m++;
-                        else if (cls === 't') s.t++;
-                        else if (cls === 'n') s.n++;
-                        else if (cls === 'v') s.v++;
-                        else if (cls === 'd') s.d++;
-                        else if (cls === 'b') s.b++;
-                        else if (String(cell.tipo || '').toUpperCase().startsWith('PERM')) s.p++;
-                    }
-                    s.history.push({ fecha: date, turno: label || '', cls: cls || 'x', cell });
+                const res = window.resolveEmployeeDay({
+                    empleado: profile,
+                    empleadoId: profile.id,
+                    hotel: hName,
+                    fecha: date,
+                    eventos: eventos,
+                    baseIndex: baseIndex,
+                    allEvents: eventos,
+                    resolveId: window.normalizeId
                 });
+                
+                const cell = window.TurnosEngine ? window.TurnosEngine.adaptResultToCell(res) : {};
+                let label = cell.turno || '';
+                if (cell.tipo && cell.tipo !== 'NORMAL' && cell.tipo !== 'CT') label = cell.tipo;
+                const cls = window.TurnosRules ? window.TurnosRules.shiftKey(label, cell.tipo) : '';
+                if (date <= todayISO) {
+                    if (cls === 'm') s.m++;
+                    else if (cls === 't') s.t++;
+                    else if (cls === 'n') s.n++;
+                    else if (cls === 'v') s.v++;
+                    else if (cls === 'd') s.d++;
+                    else if (cls === 'b') s.b++;
+                    else if (String(cell.tipo || '').toUpperCase().startsWith('PERM')) s.p++;
+                }
+                s.history.push({ fecha: date, turno: label || '', cls: cls || 'x', cell });
             });
         });
         profilesResult.forEach(profile => {
@@ -8245,7 +8257,7 @@ window.buildEmployeeProfileModel = (empId, refISO) => {
     const allEmpEvents = window.collectAllEventsForEmployee ? window.collectAllEventsForEmployee(emp) : eventosActivos;
     const rawVacs = allEmpEvents.filter(ev => {
         const state = String(ev.estado || 'activo').toLowerCase();
-        return isVacationEvent(ev) && state !== 'anulado' && state !== 'cancelado' && state !== 'rechazado';
+        return isVacationEvent(ev) && state !== 'anulado' && state !== 'cancelado' && state !== 'rechazado' && window.eventHasEmployeeIdentity(ev, identityKeys);
     });
     
     // [BLOQUE DIAGNÓSTICO - TEMPORAL]
@@ -8349,7 +8361,8 @@ window.buildEmployeeProfileModel = (empId, refISO) => {
 
     const isLeavePermissionEvent = (ev) => {
         const tipo = window.normalizeTipo ? window.normalizeTipo(ev.tipo) : String(ev.tipo || '').toUpperCase();
-        return ['BAJA', 'IT', 'PERM', 'PERMISO', 'FORMACION'].includes(tipo);
+        if (!['BAJA', 'IT', 'PERM', 'PERMISO', 'FORMACION'].includes(tipo)) return false;
+        return window.eventHasEmployeeIdentity(ev, identityKeys);
     };
 
     const availableYears = Array.from(new Set([
@@ -8369,7 +8382,7 @@ window.buildEmployeeProfileModel = (empId, refISO) => {
         const start = String(ev.fecha_inicio || '').slice(0, 10);
         const end = String(ev.fecha_fin || start || '').slice(0, 10);
         const intersects = start && end && start <= yearEndISO && end >= yearStartISO;
-        return isMedicalLeaveEvent(ev) && isEventActive(ev) && intersects;
+        return isMedicalLeaveEvent(ev) && isEventActive(ev) && intersects && window.eventHasEmployeeIdentity(ev, identityKeys);
     });
 
     const uniqueVacationDaysOriginalYear = expandDaysClipped(yearGroupedVacs);
@@ -8742,6 +8755,8 @@ window.openNewEmployeeDrawer = () => {
                     <div id="supportReducedNotice" class="emp-support-note span-2" hidden>Personal de apoyo/ocasional: ficha reducida. No computa vacaciones ni descansos pendientes.</div>
                     <label data-balance-field><span>Vacaciones/a&ntilde;o</span><input id="new-emp-vac-anuales" type="number" min="0" step="1" value="44"></label>
                     <label data-balance-field><span>Ajuste vacaciones</span><input id="new-emp-vac-ajuste" type="number" step="1" value="0"></label>
+                    <label data-balance-field><span>A&ntilde;o del ajuste</span><input id="new-emp-vac-ajuste-anyo" type="number" min="2020" step="1" value="${new Date().getFullYear()}"></label>
+                    <label data-balance-field><span>Motivo del ajuste</span><input id="new-emp-vac-ajuste-motivo" type="text" placeholder="Ej: Arrastre 2024"></label>
                     <label class="span-2"><span>Observaciones</span><textarea id="new-emp-observaciones" rows="3"></textarea></label>
                     <div class="emp-edit-actions span-2">
                         <span id="empProfileSaveStatus">Completa la ficha y guarda para crear el empleado.</span>
@@ -8798,6 +8813,8 @@ window.saveNewEmployeeInline = async (event) => {
         activo: estado === 'Activo',
         vacaciones_anuales: isReducedSupport ? null : Number(document.getElementById('new-emp-vac-anuales')?.value || 44),
         ajuste_vacaciones_dias: isReducedSupport ? 0 : Number(document.getElementById('new-emp-vac-ajuste')?.value || 0),
+        ajuste_vacaciones_anyo: isReducedSupport ? null : Number(document.getElementById('new-emp-vac-ajuste-anyo')?.value || new Date().getFullYear()),
+        ajuste_vacaciones_motivo: isReducedSupport ? null : (document.getElementById('new-emp-vac-ajuste-motivo')?.value?.trim() || null),
         fecha_baja: document.getElementById('new-emp-fecha-baja')?.value || null,
         observaciones: document.getElementById('new-emp-observaciones')?.value?.trim() || null
     };
@@ -8945,6 +8962,8 @@ window.renderEmployeeProfileEditForm = (emp, model) => {
                 <div id="supportReducedNotice" class="emp-support-note span-2" ${isReducedSupport ? '' : 'hidden'}>Personal de apoyo/ocasional: ficha reducida. No computa vacaciones ni descansos pendientes.</div>
                 <label data-balance-field ${isReducedSupport ? 'hidden' : ''}><span>Vacaciones/a&ntilde;o</span><input id="edit-emp-vac-anuales" type="number" min="0" step="1" value="${escapeHtml(emp.vacaciones_anuales || model?.vacaciones?.derechoAnual || 44)}"></label>
                 <label data-balance-field ${isReducedSupport ? 'hidden' : ''}><span>Ajuste vacaciones</span><input id="edit-emp-vac-ajuste" type="number" step="1" value="${escapeHtml(emp.ajuste_vacaciones_dias || 0)}"></label>
+                <label data-balance-field ${isReducedSupport ? 'hidden' : ''}><span>A&ntilde;o del ajuste</span><input id="edit-emp-vac-ajuste-anyo" type="number" min="2020" step="1" value="${escapeHtml(emp.ajuste_vacaciones_anyo || new Date().getFullYear())}"></label>
+                <label data-balance-field ${isReducedSupport ? 'hidden' : ''}><span>Motivo del ajuste</span><input id="edit-emp-vac-ajuste-motivo" type="text" value="${escapeHtml(emp.ajuste_vacaciones_motivo || '')}" placeholder="Ej: Arrastre 2024"></label>
                 <label class="span-2"><span>Observaciones</span><textarea id="edit-emp-observaciones" rows="3">${escapeHtml(emp.observaciones || emp.notas || '')}</textarea></label>
                 <div class="emp-edit-actions span-2">
                     <span id="empProfileSaveStatus">El ID no se modifica en este formulario.</span>
@@ -9397,6 +9416,8 @@ window.saveEmployeeProfileInline = async (event) => {
         activo: estado === 'Activo',
         vacaciones_anuales: isReducedSupport ? null : Number(document.getElementById('edit-emp-vac-anuales')?.value || 44),
         ajuste_vacaciones_dias: isReducedSupport ? 0 : Number(document.getElementById('edit-emp-vac-ajuste')?.value || 0),
+        ajuste_vacaciones_anyo: isReducedSupport ? null : Number(document.getElementById('edit-emp-vac-ajuste-anyo')?.value || new Date().getFullYear()),
+        ajuste_vacaciones_motivo: isReducedSupport ? null : (document.getElementById('edit-emp-vac-ajuste-motivo')?.value?.trim() || null),
         fecha_baja: document.getElementById('edit-emp-fecha-baja')?.value || null,
         observaciones: $('#edit-emp-observaciones')?.value?.trim() || null
     };
