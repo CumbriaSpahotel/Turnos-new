@@ -8120,15 +8120,6 @@ window.buildEmployeeProfileModel = (empId, refISO) => {
 
     if (Array.isArray(window._employeeProfileBaseRows) && window._employeeProfileBaseRows.length > 0 && window.buildIndices) {
         const baseRowsFlat = window._employeeProfileBaseRows
-            .filter(row => {
-                const rowKeys = [
-                    window.normalizeId(row.empleado_id),
-                    window.normalizeId(row.empleadoId),
-                    window.normalizeId(row.nombre),
-                    window.normalizeId(row.displayName)
-                ].filter(Boolean);
-                return rowKeys.some(key => employeeKeys.has(key));
-            })
             .map(row => ({
                 empleadoId: row.empleado_id || row.empleadoId || profile.id,
                 fecha: row.fecha,
@@ -8149,17 +8140,10 @@ window.buildEmployeeProfileModel = (empId, refISO) => {
             if (excelSource && window.buildIndices) {
                 const baseRowsFlat = [];
                 Object.values(excelSource).flat().forEach(sRow => {
-                    const rowKeys = [
-                        window.normalizeId(sRow.empleadoId),
-                        window.normalizeId(sRow.displayName),
-                        window.normalizeId(sRow.nombre),
-                        window.normalizeId(sRow.id_interno)
-                    ].filter(Boolean);
-                    if (!rowKeys.some(key => employeeKeys.has(key))) return;
                     const fechasSemana = window.getFechasSemana ? window.getFechasSemana(sRow.weekStart || sRow.week_start) : [];
                     (sRow.values || sRow.turnos || []).forEach((turno, idx) => {
                         const fecha = fechasSemana[idx];
-                        if (fecha) baseRowsFlat.push({ empleadoId: sRow.empleadoId || sRow.displayName || profile.id, fecha, turno: turno || null });
+                        if (fecha) baseRowsFlat.push({ empleadoId: sRow.empleadoId || sRow.displayName || sRow.nombre, fecha, turno: turno || null });
                     });
                 });
                 if (baseRowsFlat.length > 0) {
@@ -8168,17 +8152,8 @@ window.buildEmployeeProfileModel = (empId, refISO) => {
             }
             if (!baseIndex && Array.isArray(window._lastRawTurnosBase) && window._lastRawTurnosBase.length > 0 && window.buildIndices) {
                 const baseRowsFlat = window._lastRawTurnosBase
-                    .filter(row => {
-                        const rowKeys = [
-                            window.normalizeId(row.empleado_id),
-                            window.normalizeId(row.empleadoId),
-                            window.normalizeId(row.nombre),
-                            window.normalizeId(row.displayName)
-                        ].filter(Boolean);
-                        return rowKeys.some(key => employeeKeys.has(key));
-                    })
                     .map(row => ({
-                        empleadoId: row.empleado_id || row.empleadoId || profile.id,
+                        empleadoId: row.empleado_id || row.empleadoId || row.nombre,
                         fecha: row.fecha,
                         turno: row.turno || null
                     }));
@@ -8466,8 +8441,8 @@ window.buildEmployeeProfileModel = (empId, refISO) => {
         return window.eventHasEmployeeIdentity(ev, identityKeys) && (ev.empleado_destino_id || ev.sustituto_id || ev.payload?.sustituto_id || ev.payload?.sustituto || window.eventHasDestinationIdentity(ev, new Set()) === false || (typeof window.getEventDestinationCandidates === 'function' && window.getEventDestinationCandidates(ev).length > 0));
     };
 
-    const substitutionsReceived = periodGroupedEvents.filter(checkSubRecv);
-    const substitutionsDone = periodGroupedEvents.filter(checkSubDone);
+    const substitutionsReceived = yearGroupedEvents.filter(checkSubRecv);
+    const substitutionsDone = yearGroupedEvents.filter(checkSubDone);
     const leavePermissionEvents = periodGroupedEvents.filter(isLeavePermissionEvent);
     const yearLeavePermissionEvents = yearGroupedEvents.filter(isLeavePermissionEvent);
     const cambioEvents = periodGroupedEvents.filter(ev => /CAMBIO|INTERCAMBIO/.test(String(ev.tipo || '').toUpperCase()));
@@ -9349,9 +9324,12 @@ window.renderEmployeeProfile = () => {
             const isSust = /SUSTITUCION|COBERTURA/i.test(ev.tipo);
             const coveredId = isSust ? (ev.empleado_destino_id || ev.payload?.empleado_destino_id) : (ev.empleado_id || ev.payload?.empleado_id);
             const coveredName = window.getEmployeeDisplayName(coveredId || 'No informado');
+            const startD = new Date(ev.fecha_inicio);
+            const endD = new Date(ev.fecha_fin || ev.fecha_inicio);
+            const diffDays = Math.ceil(Math.abs(endD - startD) / (1000 * 60 * 60 * 24)) + 1;
             return {
                 fecha: ev.fecha_inicio,
-                main: `<strong>${escapeHtml(window.employeeProfileEventLabel(ev))}</strong> · cubre a ${escapeHtml(coveredName)}`,
+                main: `<strong>${escapeHtml(window.employeeProfileEventLabel(ev))}</strong> · ${diffDays} días · cubre a ${escapeHtml(coveredName)}`,
                 secondary: `${escapeHtml(window.employeeProfileDateRangeLabel(ev.fecha_inicio, ev.fecha_fin || ev.fecha_inicio))} · hotel ${escapeHtml(window.getEventoHotel ? window.getEventoHotel(ev) : (ev.hotel || ev.hotel_origen || ev.hotel_destino || emp.hotel || 'No informado'))}`,
                 badge: escapeHtml(ev.id || ev.evento_id || 'sin id')
             };
@@ -9360,9 +9338,12 @@ window.renderEmployeeProfile = () => {
             const isSust = /SUSTITUCION|COBERTURA/i.test(ev.tipo);
             const subId = isSust ? (ev.empleado_id || ev.payload?.empleado_id) : (ev.empleado_destino_id || ev.sustituto_id || ev.payload?.sustituto_id || ev.payload?.sustituto);
             const subName = subId ? window.getEmployeeDisplayName(subId) : 'No informado';
+            const startD = new Date(ev.fecha_inicio);
+            const endD = new Date(ev.fecha_fin || ev.fecha_inicio);
+            const diffDays = Math.ceil(Math.abs(endD - startD) / (1000 * 60 * 60 * 24)) + 1;
             return {
                 fecha: ev.fecha_inicio,
-                main: `<strong>${escapeHtml(window.employeeProfileEventLabel(ev))}</strong> · sustituido por ${escapeHtml(subName)}`,
+                main: `<strong>${escapeHtml(window.employeeProfileEventLabel(ev))}</strong> · ${diffDays} días · sustituido por ${escapeHtml(subName)}`,
                 secondary: `${escapeHtml(window.employeeProfileDateRangeLabel(ev.fecha_inicio, ev.fecha_fin || ev.fecha_inicio))} · motivo ${escapeHtml(ev.observaciones || 'Sin observaciones')}`,
                 badge: escapeHtml(ev.id || ev.evento_id || 'sin id')
             };

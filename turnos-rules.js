@@ -433,14 +433,14 @@
                     const nextStart = new Date(e.fecha_inicio + 'T12:00:00');
                     const diffDays = Math.round((nextStart - lastEnd) / (1000 * 60 * 60 * 24));
                     
-                    // Criterios de agrupación: consecutivo, mismo tipo, mismo hotel, mismo sustituto, mismo estado
                     const sameType = (currentGroup.tipo || '').split(' ')[0] === (e.tipo || '').split(' ')[0];
-                    const sameHotel = currentGroup.hotel_origen === e.hotel_origen;
-                    const sameSust = (currentGroup.empleado_destino_id || currentGroup.sustituto_id) === (e.empleado_destino_id || e.sustituto_id);
                     const sameState = (currentGroup.estado || 'activo') === (e.estado || 'activo');
+                    const sameMotivo = (currentGroup.observaciones || '').trim().toLowerCase() === (e.observaciones || '').trim().toLowerCase();
                     
-                    if (diffDays === 1 && sameType && sameHotel && sameSust && sameState) {
-                        currentGroup.fecha_fin = e.fecha_fin || e.fecha_inicio;
+                    if (diffDays <= 1 && sameType && sameState && sameMotivo) {
+                        const endA = currentGroup.fecha_fin || currentGroup.fecha_inicio;
+                        const endB = e.fecha_fin || e.fecha_inicio;
+                        currentGroup.fecha_fin = endA > endB ? endA : endB;
                         currentGroup.ids.push(e.id);
                         currentGroup.isGroup = true;
                     } else {
