@@ -7700,33 +7700,83 @@ window.formatLocalDate = (date) => {
     return `${y}-${m}-${d}`;
 };
 
-/**
- * Reúne TODOS los eventos que pertenecen a un empleado buscando en todas las
- * fuentes globales disponibles (sin límite de ventana de fechas cargada).
- * Deduplicación por id o por clave compuesta.
- */
+window.extractIdentityValue = (value) => {
+    if (!value) return '';
+    if (typeof value === 'string' || typeof value === 'number') return String(value);
+    if (typeof value === 'object') {
+        return (
+            value.id || value.uuid || value.codigo ||
+            value.employeeId || value.empleadoId || value.nombre ||
+            value.name || value.displayName || ''
+        );
+    }
+    return '';
+};
+
+window.getEmployeeIdentityKeys = (emp) => {
+    return [
+        emp?.id, emp?.uuid, emp?.codigo, emp?.employeeId,
+        emp?.legacyId, emp?.nombre, emp?.name, emp?.displayName,
+        emp?.id_interno
+    ].filter(Boolean).map(window.normalizeId);
+};
+
+window.getVacationEmployeeIdentityKeys = (ev) => {
+    return [
+        ev?.empleado_id, ev?.employeeId, ev?.empleadoId, ev?.empId,
+        ev?.uuid, ev?.employeeUuid, ev?.persona, ev?.empleado,
+        ev?.nombreEmpleado, ev?.payload?.empleado_id, ev?.payload?.employeeId,
+        ev?.payload?.empleadoId, ev?.payload?.persona, ev?.payload?.empleado,
+        ev?.payload?.nombreEmpleado, ev?.destinoEmpleadoId, ev?.afectadoId,
+        ev?.payload?.afectadoId
+    ].map(window.extractIdentityValue).filter(Boolean).map(window.normalizeId);
+};
+
+window.getShiftChangeParticipantKeys = (ev) => {
+    const base = window.getVacationEmployeeIdentityKeys(ev);
+    const extra = [
+        ev?.solicitante, ev?.payload?.solicitante, ev?.payload?.solicitado_por,
+        ev?.created_by, ev?.createdBy, ev?.payload?.creado_por,
+        ev?.empleado_destino_id, ev?.payload?.destino
+    ].map(window.extractIdentityValue).filter(Boolean).map(window.normalizeId);
+    return [...base, ...extra];
+};
+
+window.employeeMatchesVacationEvent = (ev, empKeys) => {
+    const evKeys = window.getVacationEmployeeIdentityKeys(ev);
+    return evKeys.some(k => empKeys.has(k));
+};
+
+window.employeeParticipatesInShiftChange = (ev, empKeys) => {
+    const evKeys = window.getShiftChangeParticipantKeys(ev);
+    return evKeys.some(k => empKeys.has(k));
+};
+
 window.collectAllEventsForEmployee = (emp) => {
     const sources = [
-        window.eventosGlobales,
-        window.eventosActivos,
-        window._lastEventos,
-        window.allEventos,
-        window._cachedEventos,
+        window.eventosGlobales, window.eventosActivos,
+        window._lastEventos, window.allEventos, window._cachedEventos,
     ].filter(s => Array.isArray(s));
 
-    // Eliminar duplicados entre fuentes
+    const empKeys = new Set(window.getEmployeeIdentityKeys(emp));
     const seen = new Set();
     const all = [];
+
     for (const src of sources) {
         for (const ev of src) {
-            const belongs = window.eventoPerteneceAEmpleado
-                ? window.eventoPerteneceAEmpleado(ev, emp.id)
-                : (String(ev.empleado_id || '') === String(emp.id || '') ||
-                   String(ev.empleado_uuid || '') === String(emp.uuid || ''));
+            const isVac = /VAC|BAJA|PERM|IT|FORM/i.test(String(ev.tipo || ''));
+            const isChange = /CAMBIO|INTERCAMBIO|CT/i.test(String(ev.tipo || ''));
+            let belongs = false;
+
+            if (isVac) belongs = window.employeeMatchesVacationEvent(ev, empKeys);
+            else if (isChange) belongs = window.employeeParticipatesInShiftChange(ev, empKeys);
+            else belongs = window.employeeMatchesVacationEvent(ev, empKeys);
+
             if (!belongs) continue;
+
             const key = ev.id
                 ? String(ev.id)
-                : `${ev.fecha_inicio || ev.fecha}_${ev.tipo}_${ev.empleado_id || ev.empleado}`;
+                : `${ev.fecha_inicio || ev.fecha}_${ev.tipo}_${window.extractIdentityValue(ev.empleado_id || ev.empleado)}`;
             if (!seen.has(key)) {
                 seen.add(key);
                 all.push(ev);
@@ -7736,30 +7786,30 @@ window.collectAllEventsForEmployee = (emp) => {
     return all;
 };
 
-/**
- * Determina si el empleado de la ficha (emp) fue el SOLICITANTE del cambio.
- * Prioriza campos explícitos de solicitante; si no existen, asume origen = solicitante.
- */
-window.isSelfRequestedChange = (ev, empId) => {
-    const normEmp = window.normalizeId(empId);
-    const p = ev?.payload || {};
-    // Campo explícito de solicitante
-    const explicitReq = ev?.solicitante || p.solicitante || p.solicitado_por || p.creado_por || ev?.created_by || '';
-    if (explicitReq) {
-        return window.normalizeId(explicitReq) === normEmp;
-    }
-    // Sin campo explícito: asumir que el origen (empleado_id) es el solicitante
-    const origins = window.getEventOriginCandidates
-        ? window.getEventOriginCandidates(ev).map(window.normalizeId)
-        : [window.normalizeId(ev?.empleado_id || '')];
-    return origins.some(o => o && o === normEmp);
+window.getChangeRequesterRaw = (ev) => {
+    return ev?.solicitante || ev?.solicitanteId || ev?.requestedBy ||
+           ev?.created_by || ev?.createdBy || ev?.payload?.solicitante ||
+           ev?.payload?.solicitanteId || ev?.payload?.solicitado_por ||
+           ev?.payload?.requestedBy || ev?.payload?.creado_por ||
+           ev?.payload?.createdBy || '';
 };
 
-/**
- * Devuelve el nombre del compañero implicado en el cambio para el empleado de la ficha.
- * Usa getOtroEmpleadoDelCambio de shift-resolver si está disponible.
- * @returns {string} Nombre legible o 'No informado'
- */
+window.isSelfRequestedChange = (ev, empKeys) => {
+    const rawReq = window.extractIdentityValue(window.getChangeRequesterRaw(ev));
+    if (rawReq) {
+        return empKeys.has(window.normalizeId(rawReq));
+    }
+    const origins = window.getEventOriginCandidates
+        ? window.getEventOriginCandidates(ev).map(window.normalizeId)
+        : [window.normalizeId(window.extractIdentityValue(ev?.empleado_id || ''))];
+    
+    // Si no hay requester explícito pero el origen coincide, consideramos que es self
+    if (origins.some(o => o && empKeys.has(o))) return true;
+
+    // Si ni el explícito ni el origen resuelven, es no informado
+    return null;
+};
+
 window.getChangeCounterpartName = (ev, empId) => {
     const otherId = window.getOtroEmpleadoDelCambio
         ? window.getOtroEmpleadoDelCambio(ev, empId)
@@ -7885,7 +7935,7 @@ window.normalizeChangeReason = (value) => {
     .trim();
 };
 
-window.groupShiftChangeRequests = (changes) => {
+window.groupShiftChangeRequests = (changes, empId) => {
     if (!Array.isArray(changes) || changes.length === 0) return [];
     
     const items = changes.map(c => {
@@ -7893,9 +7943,14 @@ window.groupShiftChangeRequests = (changes) => {
         const d = window.parseLocalDate(dateStr);
         const type = window.normalizeTipo ? window.normalizeTipo(c.tipo) : String(c.tipo || '').toUpperCase();
         const reason = window.normalizeChangeReason(c.observaciones || c.payload?.motivo || '');
-        const origin = window.normalizeId(c.empleado_id || c.empleadoId || c.empleado_uuid || '');
+        const origin = window.normalizeId(window.extractIdentityValue(c.empleado_id || c.empleadoId || c.empleado_uuid || ''));
         const state = window.normalizeEstado ? window.normalizeEstado(c.estado) : String(c.estado || '').toLowerCase();
         
+        const requesterRaw = window.getChangeRequesterRaw(c);
+        const requesterId = requesterRaw ? window.normalizeId(window.extractIdentityValue(requesterRaw)) : 'no-requester';
+        
+        const counterpartId = window.getOtroEmpleadoDelCambio ? window.normalizeId(window.extractIdentityValue(window.getOtroEmpleadoDelCambio(c, empId))) : 'no-counterpart';
+
         return {
             dateStr,
             date: d,
@@ -7903,6 +7958,8 @@ window.groupShiftChangeRequests = (changes) => {
             reason,
             origin,
             state,
+            requesterId,
+            counterpartId,
             originalEvent: c
         };
     }).filter(item => item.date !== null);
@@ -7922,6 +7979,8 @@ window.groupShiftChangeRequests = (changes) => {
         reason: items[0].reason,
         origin: items[0].origin,
         state: items[0].state,
+        requesterId: items[0].requesterId,
+        counterpartId: items[0].counterpartId,
         events: [items[0].originalEvent]
     };
     
@@ -7936,9 +7995,11 @@ window.groupShiftChangeRequests = (changes) => {
         const isSameReason = next.reason === current.reason;
         const isSameOrigin = next.origin === current.origin;
         const isSameState = next.state === current.state;
+        const isSameRequester = next.requesterId === current.requesterId;
+        const isSameCounterpart = next.counterpartId === current.counterpartId;
         const isSameYear = next.date.getFullYear() === current.fromDate.getFullYear();
         
-        if (isConsecutive && isSameType && isSameReason && isSameOrigin && isSameState && isSameYear) {
+        if (isConsecutive && isSameType && isSameReason && isSameOrigin && isSameState && isSameRequester && isSameCounterpart && isSameYear) {
             current.toDate = next.date;
             current.to = next.dateStr;
             current.days += 1;
@@ -7955,6 +8016,8 @@ window.groupShiftChangeRequests = (changes) => {
                 reason: next.reason,
                 origin: next.origin,
                 state: next.state,
+                requesterId: next.requesterId,
+                counterpartId: next.counterpartId,
                 events: [next.originalEvent]
             };
         }
@@ -8134,9 +8197,23 @@ window.buildEmployeeProfileModel = (empId, refISO) => {
         const state = String(ev.estado || 'activo').toLowerCase();
         return isVacationEvent(ev) && state !== 'anulado' && state !== 'cancelado' && state !== 'rechazado';
     });
+    
+    // [BLOQUE DIAGNÓSTICO - TEMPORAL]
+    if (window.DEBUG_MODE) {
+        console.table({
+            eventosGlobales: Array.isArray(window.eventosGlobales) ? window.eventosGlobales.length : 0,
+            eventosGlobalesRaw: Array.isArray(window.eventosGlobalesRaw) ? window.eventosGlobalesRaw.length : 0,
+            allEventos: Array.isArray(window.allEventos) ? window.allEventos.length : 0,
+            eventosActivos: Array.isArray(window.eventosActivos) ? window.eventosActivos.length : 0,
+            lastEventosGlobales: Array.isArray(window._lastEventosGlobales) ? window._lastEventosGlobales.length : 0,
+            cachedEventos: Array.isArray(window._cachedEventos) ? window._cachedEventos.length : 0
+        });
+    }
+
     const yearRawVacs = rawVacs.filter(ev => {
         const start = String(ev.fecha_inicio || '').slice(0, 10);
         const end = String(ev.fecha_fin || start || '').slice(0, 10);
+        // Intersección con el año
         return start && end && start <= yearEndISO && end >= yearStartISO;
     });
     const periodRawVacs = rawVacs.filter(ev => {
@@ -8145,6 +8222,26 @@ window.buildEmployeeProfileModel = (empId, refISO) => {
         return start && end && start <= monthEndISO && end >= monthStartISO;
     });
     const yearGroupedVacs = window.mergeVacationRanges(yearRawVacs);
+    
+    // Expand days correctly clipping to the year bounds
+    const expandVacationDaysClipped = (ranges) => {
+        const dates = new Set();
+        if (!Array.isArray(ranges)) return dates;
+        ranges.forEach(r => {
+            const startStr = String(r.fecha_inicio || r.desde || r.fecha).slice(0, 10);
+            const endStr = String(r.fecha_fin || r.hasta || r.fecha_inicio || r.fecha).slice(0, 10);
+            if (!startStr || !endStr) return;
+            const start = window.parseLocalDate(startStr < yearStartISO ? yearStartISO : startStr);
+            const end = window.parseLocalDate(endStr > yearEndISO ? yearEndISO : endStr);
+            if (!start || !end) return;
+            let curr = new Date(start);
+            while (curr <= end) {
+                dates.add(window.formatLocalDate(curr));
+                curr.setDate(curr.getDate() + 1);
+            }
+        });
+        return dates;
+    };
     const groupedVacs = window.mergeVacationRanges(periodRawVacs);
 
     const isLeavePermissionEvent = (ev) => {
@@ -8163,7 +8260,17 @@ window.buildEmployeeProfileModel = (empId, refISO) => {
         })
     ])).sort((a, b) => a - b);
 
-    const uniqueVacationDaysYear = window.expandVacationDays(yearGroupedVacs);
+    const uniqueVacationDaysYear = expandVacationDaysClipped(yearGroupedVacs);
+    
+    // [BLOQUE DIAGNÓSTICO - TEMPORAL]
+    if (window.DEBUG_MODE) {
+        console.log('[DetalleEmpleado][Vacaciones]', {
+            empleado: emp,
+            rawVacs,
+            mergedVacs: yearGroupedVacs,
+            uniqueDays: uniqueVacationDaysYear.size
+        });
+    }
     let usadas = 0;
     let previstas = 0;
     uniqueVacationDaysYear.forEach(dateStr => {
@@ -8209,24 +8316,35 @@ window.buildEmployeeProfileModel = (empId, refISO) => {
     const cambioEvents = periodGroupedEvents.filter(ev => /CAMBIO|INTERCAMBIO/.test(String(ev.tipo || '').toUpperCase()));
 
     // Cambios del año: todos (activos + pendientes) que involucren al empleado
+    const empKeys = new Set(window.getEmployeeIdentityKeys ? window.getEmployeeIdentityKeys(emp) : []);
     const yearAllCambios = allEmpEvents.filter(ev => {
         const start = String(ev.fecha_inicio || '').slice(0, 10);
         const end = String(ev.fecha_fin || start || '').slice(0, 10);
         const state = String(ev.estado || 'activo').toLowerCase();
-        const isCambio = /CAMBIO|INTERCAMBIO/.test(String(ev.tipo || '').toUpperCase());
+        const isCambio = /CAMBIO|INTERCAMBIO|CT/.test(String(ev.tipo || '').toUpperCase());
         const isActive = state === 'activo' || state === 'pendiente';
-        return start && end && start <= yearEndISO && end >= yearStartISO && isCambio && isActive;
+        const participates = window.employeeParticipatesInShiftChange ? window.employeeParticipatesInShiftChange(ev, empKeys) : true;
+        return start && end && start <= yearEndISO && end >= yearStartISO && isCambio && isActive && participates;
     });
     const yearActiveCambios = yearAllCambios.filter(ev => String(ev.estado || 'activo').toLowerCase() === 'activo');
     const yearPendingCambios = yearAllCambios.filter(ev => String(ev.estado || '').toLowerCase() === 'pendiente');
 
-    // Separar: propios (empleado de la ficha es el solicitante) vs. de otros compañeros
-    const selfCambios = yearAllCambios.filter(ev => window.isSelfRequestedChange ? window.isSelfRequestedChange(ev, emp.id) : false);
-    const otherCambios = yearAllCambios.filter(ev => window.isSelfRequestedChange ? !window.isSelfRequestedChange(ev, emp.id) : false);
-    const selfGroupedCambios = window.groupShiftChangeRequests ? window.groupShiftChangeRequests(selfCambios) : selfCambios;
-    const otherGroupedCambios = window.groupShiftChangeRequests ? window.groupShiftChangeRequests(otherCambios) : otherCambios;
-    const allGroupedCambios = window.groupShiftChangeRequests ? window.groupShiftChangeRequests(yearActiveCambios) : yearActiveCambios;
-    const pendingGroupedCambios = window.groupShiftChangeRequests ? window.groupShiftChangeRequests(yearPendingCambios) : yearPendingCambios;
+    // Separar: propios (empleado de la ficha es el solicitante) vs. de otros compañeros vs. no informado
+    const selfCambios = [];
+    const otherCambios = [];
+    const unknownCambios = [];
+    yearAllCambios.forEach(ev => {
+        const isSelf = window.isSelfRequestedChange ? window.isSelfRequestedChange(ev, empKeys) : null;
+        if (isSelf === true) selfCambios.push(ev);
+        else if (isSelf === false) otherCambios.push(ev);
+        else unknownCambios.push(ev);
+    });
+    
+    const selfGroupedCambios = window.groupShiftChangeRequests ? window.groupShiftChangeRequests(selfCambios, emp.id) : selfCambios;
+    const otherGroupedCambios = window.groupShiftChangeRequests ? window.groupShiftChangeRequests(otherCambios, emp.id) : otherCambios;
+    const unknownGroupedCambios = window.groupShiftChangeRequests ? window.groupShiftChangeRequests(unknownCambios, emp.id) : unknownCambios;
+    const allGroupedCambios = window.groupShiftChangeRequests ? window.groupShiftChangeRequests(yearActiveCambios, emp.id) : yearActiveCambios;
+    const pendingGroupedCambios = window.groupShiftChangeRequests ? window.groupShiftChangeRequests(yearPendingCambios, emp.id) : yearPendingCambios;
     const configuredRole = window.employeeConfiguredRole ? window.employeeConfiguredRole(profile) : 'titular';
     const roleToday = activeTodayEvents.some(ev => window.isExplicitRefuerzoEvent(ev))
         ? 'refuerzo'
@@ -8336,6 +8454,7 @@ window.buildEmployeeProfileModel = (empId, refISO) => {
         cambioEvents,
         cambiosPropios: selfGroupedCambios,
         cambiosDeOtros: otherGroupedCambios,
+        cambiosDesconocidos: unknownGroupedCambios,
         allGroupedCambios,
         pendingGroupedCambios,
         yearAllCambios,
@@ -8829,11 +8948,12 @@ window.renderEmployeeProfile = () => {
         const selectedYear = refDate.getFullYear();
 
         // Usar datos precalculados del modelo (fuente ampliada, sin límite de ventana)
-        const selfGrouped  = model.cambiosPropios        || [];
-        const otherGrouped = model.cambiosDeOtros        || [];
-        const allGrouped   = model.allGroupedCambios     || [];
-        const pendingGroup = model.pendingGroupedCambios || [];
-        const allRaw       = model.yearAllCambios        || [];
+        const selfGrouped    = model.cambiosPropios        || [];
+        const otherGrouped   = model.cambiosDeOtros        || [];
+        const unknownGrouped = model.cambiosDesconocidos   || [];
+        const allGrouped     = model.allGroupedCambios     || [];
+        const pendingGroup   = model.pendingGroupedCambios || [];
+        const allRaw         = model.yearAllCambios        || [];
 
         // Días únicos afectados (activos)
         const uniqueChangeDays = new Set();
@@ -8858,7 +8978,7 @@ window.renderEmployeeProfile = () => {
             ultimoCambio = `${parts[2]}/${parts[1]}/${parts[0].slice(2)}`;
         }
 
-        const totalSolicitudes = selfGrouped.length + otherGrouped.length;
+        const totalSolicitudes = selfGrouped.length + otherGrouped.length + unknownGrouped.length;
 
         const kpiCardStyle = `padding:13px 14px; border-radius:14px; border:1px solid var(--border); background:white;`;
         const kpiLabelStyle = `display:block; font-size:0.58rem; font-weight:800; color:var(--text-dim); text-transform:uppercase; margin-bottom:5px; letter-spacing:0.04em;`;
@@ -8866,7 +8986,7 @@ window.renderEmployeeProfile = () => {
         const summaryCards = `
             <section class="emp-card glass" style="padding:20px; border-radius:18px; border:1px solid var(--border); margin-bottom:18px;">
                 <h3 style="margin:0 0 14px; font-size:0.9rem; font-weight:800; text-transform:uppercase;">Resumen ${selectedYear}</h3>
-                <div style="display:grid; grid-template-columns:repeat(6, 1fr); gap:10px;">
+                <div style="display:grid; grid-template-columns:repeat(7, 1fr); gap:8px;">
                     <div class="emp-kpi-card glass" style="${kpiCardStyle}">
                         <label style="${kpiLabelStyle}">Propias</label>
                         <strong style="font-size:1.1rem; color:var(--accent);">${selfGrouped.length}</strong>
@@ -8878,14 +8998,19 @@ window.renderEmployeeProfile = () => {
                         <div style="font-size:0.62rem; color:var(--text-dim); margin-top:3px;">solicitudes</div>
                     </div>
                     <div class="emp-kpi-card glass" style="${kpiCardStyle}">
-                        <label style="${kpiLabelStyle}">Total solicitudes</label>
+                        <label style="${kpiLabelStyle}">No info.</label>
+                        <strong style="font-size:1.1rem; color:#64748b;">${unknownGrouped.length}</strong>
+                        <div style="font-size:0.62rem; color:var(--text-dim); margin-top:3px;">solicitudes</div>
+                    </div>
+                    <div class="emp-kpi-card glass" style="${kpiCardStyle}">
+                        <label style="${kpiLabelStyle}">Totales</label>
                         <strong style="font-size:1.1rem; color:var(--text);">${totalSolicitudes}</strong>
                         <div style="font-size:0.62rem; color:var(--text-dim); margin-top:3px;">agrupadas</div>
                     </div>
                     <div class="emp-kpi-card glass" style="${kpiCardStyle}">
-                        <label style="${kpiLabelStyle}">Días afectados</label>
+                        <label style="${kpiLabelStyle}">Días</label>
                         <strong style="font-size:1.1rem; color:var(--text);">${diasAfectados}</strong>
-                        <div style="font-size:0.62rem; color:var(--text-dim); margin-top:3px;">días únicos</div>
+                        <div style="font-size:0.62rem; color:var(--text-dim); margin-top:3px;">afectados</div>
                     </div>
                     <div class="emp-kpi-card glass" style="${kpiCardStyle}">
                         <label style="${kpiLabelStyle}">Pendientes</label>
@@ -8893,8 +9018,9 @@ window.renderEmployeeProfile = () => {
                         <div style="font-size:0.62rem; color:var(--text-dim); margin-top:3px;">solicitudes</div>
                     </div>
                     <div class="emp-kpi-card glass" style="${kpiCardStyle}">
-                        <label style="${kpiLabelStyle}">Último cambio</label>
+                        <label style="${kpiLabelStyle}">Último</label>
                         <strong style="font-size:0.92rem; color:var(--text);">${escapeHtml(ultimoCambio)}</strong>
+                        <div style="font-size:0.62rem; color:var(--text-dim); margin-top:3px;">cambio</div>
                     </div>
                 </div>
             </section>
@@ -8926,17 +9052,16 @@ window.renderEmployeeProfile = () => {
                             const counterpart = window.getChangeCounterpartName
                                 ? window.getChangeCounterpartName(ev, emp.id)
                                 : 'No informado';
+                            const empKeys = new Set(window.getEmployeeIdentityKeys(emp));
                             const isSelf = window.isSelfRequestedChange
-                                ? window.isSelfRequestedChange(ev, emp.id)
+                                ? window.isSelfRequestedChange(ev, empKeys)
                                 : null;
                             const solicitanteLabel = isSelf === true
                                 ? `<span style="color:var(--accent); font-weight:700;">${escapeHtml(emp.nombre)}</span>`
                                 : isSelf === false
                                     ? `<span style="color:#7c3aed; font-weight:700;">${escapeHtml(counterpart)}</span>`
-                                    : `<span style="color:var(--text-dim);">No informado</span>`;
-                            const dirLabel = counterpart !== 'No informado'
-                                ? `${escapeHtml(emp.nombre)} ↔ ${escapeHtml(counterpart)}`
-                                : `${escapeHtml(emp.nombre)}`;
+                                    : `<span style="color:#64748b;">No informado</span>`;
+                            const dirLabel = `${escapeHtml(emp.nombre)} ↔ ${escapeHtml(counterpart)}`;
                             const tipoLabel = escapeHtml(window.employeeProfileEventLabel(ev));
                             const fechaLabel = window.employeeProfileDateRangeLabel
                                 ? escapeHtml(window.employeeProfileDateRangeLabel(ev.fecha_inicio, ev.fecha_fin || ev.fecha_inicio))
