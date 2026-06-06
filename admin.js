@@ -8446,6 +8446,7 @@ window.buildEmployeeProfileModel = (empId, refISO) => {
         return start && start <= todayISO && todayISO <= end;
     });
     const explicitRefuerzoEvents = yearGroupedEvents.filter(ev => window.isExplicitRefuerzoEvent(ev));
+    const yearDays = window.generarHistorialDesdeResolver ? window.generarHistorialDesdeResolver(emp.id, yearStartISO, yearEndISO, eventos, baseIndex) : [];
     const implicitRefuerzoDays = yearDays ? yearDays.filter(day => {
         const tCode = window.employeeProfileShiftCodeMeta(day.turno || day.detalle?.turno).code;
         if (!['M', 'T', 'N', 'P'].includes(tCode)) return false;
@@ -8555,7 +8556,6 @@ window.buildEmployeeProfileModel = (empId, refISO) => {
         if (isAbsence && !window.isTitularOfAbsence(ev, emp.id)) return false;
         return /VAC|BAJA|IT|PERM|REFUERZO|SUSTITUCION|COBERTURA|CAMBIO|INTERCAMBIO/i.test(String(ev.tipo || ''));
     }) || null;
-    const yearDays = window.generarHistorialDesdeResolver ? window.generarHistorialDesdeResolver(emp.id, yearStartISO, yearEndISO, eventos, baseIndex) : [];
     const futureWorkingDays = yearDays.filter(day => day.fecha > todayISO && ['M', 'T', 'N'].includes(window.employeeProfileShiftCodeMeta(day.turno || day.detalle?.turno).code));
     const nextShiftDay = futureWorkingDays[0] || null;
     const futureAssignedDays = yearDays.filter(day => day.fecha > todayISO && window.employeeProfileShiftCodeMeta(day.turno_base || day.turnoBase || day.detalle?.turnoBase).code !== '—');

@@ -6,7 +6,7 @@ let _bajasData=[], _bajasFiltered=[], _bajasGrouped=[];
 let _editingBaja=null, _bajasInitialized=false;
 // Persistent filter state (survives innerHTML re-renders)
 const _bajasState = {
-  hotel:'all', empSearch:'', tipo:'all', estado:'all',
+  hotel:'all', empSearch:'', tipo:'all', estados:['pendiente','activo'],
   sustSearch:'', noSust:false, dateStart:todayISO(), dateEnd:''
 };
 let _skipDomCache = false;
@@ -34,7 +34,7 @@ function empLabel(id,emps){
 function todayISO(){return window.isoDate ? window.isoDate(new Date()) : new Date().toISOString().slice(0,10);}
 function tipoNorm(t){return String(t||'').toUpperCase().replace(/[^A-Z_]/g,'');}
 function ensureDefaultPendingFromToday(){
-  if(!_bajasState.dateStart && !_bajasState.dateEnd && _bajasState.estado === 'pendiente_activo'){
+  if(!_bajasState.dateStart && !_bajasState.dateEnd && _bajasState.estados.includes('pendiente') && _bajasState.estados.includes('activo') && _bajasState.estados.length === 2){
     _bajasState.dateStart = todayISO();
   }
 }
@@ -65,12 +65,11 @@ function applyFilters(data){
       if(!txt.toLowerCase().includes(s.empSearch))return false;
     }
     if(s.tipo!=='all'){const t=tipoNorm(ev.tipo);if(!t.startsWith(s.tipo))return false;}
-    if(s.estado!=='all'){
+    if(_bajasState.estados.length > 0 && !_bajasState.estados.includes('all')){
       const rawEs=normEstado(ev.estado);
       const fin=ev.fecha_fin||ev.fecha_inicio;
       const displayEs=(fin<hoy&&rawEs!=='anulado'&&rawEs!=='rechazado')?'finalizado':rawEs;
-      if(s.estado==='pendiente_activo'){if(displayEs!=='pendiente'&&displayEs!=='activo')return false;}
-      else if(displayEs!==s.estado)return false;
+      if(!_bajasState.estados.includes(displayEs))return false;
     }
     if(s.sustSearch){
       const txt=(ev.empleado_destino_id||'')+(ev.sustituto_nombre||'')+(ev.sustituto_id||'');
@@ -115,7 +114,7 @@ window.renderBajas=async()=>{
     const _h=$('#bjHotel');if(_h)_bajasState.hotel=_h.value;
     const _e=$('#bjEmpSearch');if(_e)_bajasState.empSearch=_e.value.toLowerCase();
     const _t=$('#bjTipo');if(_t)_bajasState.tipo=_t.value;
-    const _es=$('#bjEstado');if(_es)_bajasState.estado=_es.value;
+    // (estados is handled immediately on change, no need to cache here)
     const _ss=$('#bjSustSearch');if(_ss)_bajasState.sustSearch=_ss.value.toLowerCase();
     const _ns=$('#bjNoSust');if(_ns)_bajasState.noSust=_ns.checked;
     const _ds=$('#bjDateStart');if(_ds)_bajasState.dateStart=_ds.value;
@@ -135,7 +134,7 @@ window.renderBajas=async()=>{
     const kpi=calcKPIs(_bajasGrouped);
     const fH=_bajasState.hotel;
     const fT=_bajasState.tipo;
-    const fE=_bajasState.estado;
+    const fE=_bajasState.estados;
 
     area.innerHTML=`
     <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:12px;margin-bottom:16px;">
@@ -168,17 +167,18 @@ window.renderBajas=async()=>{
             <option value="FORMACION"${fT==='FORMACION'?' selected':''}>Formación</option>
             <option value="OTRO"${fT==='OTRO'?' selected':''}>Otro</option>
           </select>
-          <div style="width:1px; background:var(--border);"></div>
-          <select id="bjEstado" class="btn-premium" onchange="window.renderBajas()" style="border:none; background:transparent; font-size:0.75rem; padding:0 10px; margin:0; cursor:pointer;">
-            <option value="all"${fE==='all'?' selected':''}>Todos los estados</option>
-            <option value="pendiente_activo"${fE==='pendiente_activo'?' selected':''}>Pendientes / Activos</option>
-            <option value="pendiente"${fE==='pendiente'?' selected':''}>Pendiente</option>
-            <option value="activo"${fE==='activo'?' selected':''}>Activo</option>
-            <option value="aprobado"${fE==='aprobado'?' selected':''}>Aprobado</option>
-            <option value="rechazado"${fE==='rechazado'?' selected':''}>Rechazado</option>
-            <option value="anulado"${fE==='anulado'?' selected':''}>Anulado</option>
-            <option value="finalizado"${fE==='finalizado'?' selected':''}>Finalizado</option>
-          </select>
+          <div class="custom-dropdown" style="position:relative;" id="bjEstadoDropdownContainer">
+            <button class="btn-premium" onclick="document.getElementById('bjEstadoOptions').style.display=document.getElementById('bjEstadoOptions').style.display==='block'?'none':'block';event.stopPropagation();" style="border:none; background:transparent; font-size:0.75rem; padding:0 10px; margin:0; cursor:pointer; height:34px;">
+              ${fE.includes('all') ? 'Todos los estados ▾' : fE.length + ' estados ▾'}
+            </button>
+            <div id="bjEstadoOptions" onclick="event.stopPropagation()" style="display:none; position:absolute; top:100%; left:-20px; background:var(--bg); border:1px solid var(--border); border-radius:10px; padding:8px; z-index:999; box-shadow:0 10px 15px -3px rgba(0,0,0,0.1); width:140px; margin-top:4px;">
+              ${['pendiente','activo','aprobado','rechazado','anulado','finalizado'].map(est => `
+                  <label style="display:block; padding:4px 8px; font-size:0.75rem; cursor:pointer; border-radius:6px; margin-bottom:2px;" onmouseover="this.style.background='var(--bg3)'" onmouseout="this.style.background='transparent'">
+                      <input type="checkbox" value="${est}" ${fE.includes(est) || fE.includes('all') ? 'checked' : ''} onchange="window.updateBjEstados(this)"> ${est.charAt(0).toUpperCase() + est.slice(1)}
+                  </label>
+              `).join('')}
+            </div>
+          </div>
         </div>
 
         <input type="text" id="bjSustSearch" class="btn-premium" placeholder="🔍 Sustituto..." style="width:140px; height:34px; font-size:0.75rem; padding:0 12px;" value="${_bajasState.sustSearch||''}" oninput="window.renderBajas()">
@@ -193,7 +193,7 @@ window.renderBajas=async()=>{
         </div>
       </div>
     </div>
-    ${_bajasGrouped.length===0?`<div style="padding:3rem;text-align:center;color:var(--text-dim);font-size:0.9rem;">No hay ${fE==='all'?'registros de bajas o permisos':fE==='pendiente_activo'?'bajas o permisos pendientes o activos':fE==='pendiente'?'bajas o permisos pendientes':'registros con estado "'+fE+'"'} para los filtros actuales.</div>`:`
+    ${_bajasGrouped.length===0?`<div style="padding:3rem;text-align:center;color:var(--text-dim);font-size:0.9rem;">No hay registros para los filtros actuales.</div>`:`
     <div class="glass-panel" style="padding:0;overflow:hidden;border-radius:15px;border:1px solid var(--border);">
       <table style="width:100%;border-collapse:collapse;">
         <thead><tr style="background:var(--bg3);">
@@ -350,13 +350,46 @@ window.anularBajaPermisoAction=async()=>{
 
 // ── CLEAR FILTERS ──
 window.clearBajasFilters=()=>{
-  // Reset persistent state to defaults (estado defaults to pendiente)
+  // Reset persistent state to defaults (estado defaults to pendiente/activo)
   _bajasState.hotel='all';_bajasState.empSearch='';_bajasState.tipo='all';
-  _bajasState.estado='pendiente_activo';_bajasState.sustSearch='';_bajasState.noSust=false;
+  _bajasState.estados=['pendiente','activo'];_bajasState.sustSearch='';_bajasState.noSust=false;
   _bajasState.dateStart=todayISO();_bajasState.dateEnd='';
   _skipDomCache = true;
   window.renderBajas();
 };
+
+// Multi-select updates
+window.updateBjEstados = (cb) => {
+    if(cb.value === 'all') {
+        _bajasState.estados = ['all'];
+    } else {
+        if(_bajasState.estados.includes('all')) _bajasState.estados = [];
+        if(cb.checked) {
+            if(!_bajasState.estados.includes(cb.value)) _bajasState.estados.push(cb.value);
+        } else {
+            _bajasState.estados = _bajasState.estados.filter(e => e !== cb.value);
+        }
+        if(_bajasState.estados.length === 0) _bajasState.estados = ['all'];
+    }
+    _skipDomCache = true;
+    window.renderBajas();
+    // Reopen dropdown to simulate not closing it
+    setTimeout(() => {
+        const opts = document.getElementById('bjEstadoOptions');
+        if(opts) opts.style.display = 'block';
+    }, 10);
+};
+
+if(!window._bjClickOutsideInstalled) {
+    window._bjClickOutsideInstalled = true;
+    document.addEventListener('click', (e) => {
+        const drop = document.getElementById('bjEstadoOptions');
+        const btn = document.querySelector('#bjEstadoDropdownContainer button');
+        if(drop && drop.style.display === 'block' && !drop.contains(e.target) && (!btn || !btn.contains(e.target))) {
+            drop.style.display = 'none';
+        }
+    });
+}
 
 // ── REFRESH ──
 window.refreshBajas=async()=>{_bajasInitialized=false;await window.renderBajas();};
