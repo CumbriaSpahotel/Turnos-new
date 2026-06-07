@@ -3702,7 +3702,7 @@ window.createPuestosPreviewModel = ({
     // 3. Procesar las Ausencias con Sustituto para GARANTIZAR que el sustituto aparezca
     ausenciaSustitucionMap.forEach((coberturas, normSust) => {
         if (!puestosMap.has(normSust)) {
-            const employeeName = window.getDisplayName(normSust) || `Sustituto (${normSust})`;
+            const employeeName = getDisplayName(normSust) || `Sustituto (${normSust})`;
             puestosMap.set(normSust, {
                 employee_id: normSust,
                 employee_name: employeeName,
