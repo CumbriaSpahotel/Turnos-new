@@ -1,67 +1,39 @@
 const fs = require('fs');
 let admin = fs.readFileSync('admin.js', 'utf8');
 
-// The replacement logic:
-// We want to replace the Excel parsing logic inside the BOTH hotelsList.forEach loops
-// and the double-counting prevention.
-
-const targetExcelLogic = `                const hotelExcelRows = excelSource[hName] || [];
+const targetStr = `                const hotelExcelRows = excelSource[hName] || [];
                 const weekSeed = hotelExcelRows.find(r => window.getFechasSemana(r?.weekStart).includes(date));
                 if (!weekSeed) return;
-
-                // Lunes correspondiente a este día
                 const weekStartIso = weekSeed.weekStart;
                 const fechasSemana = window.getFechasSemana(weekStartIso);
                 const sourceIndex = Math.max(0, fechasSemana.indexOf(date));
-
                 const weekExcelRows = hotelExcelRows.filter(r => r.weekStart === weekStartIso);`;
 
-const newExcelLogic = `                const hotelExcelRows = excelSource[hName] || [];
+const replacementStr = `                const hotelExcelRows = excelSource[hName] || [];
                 const ambosExcelRows = excelSource['Ambos hoteles'] || [];
                 const combinedExcelRows = [...hotelExcelRows, ...ambosExcelRows];
                 const weekSeed = combinedExcelRows.find(r => window.getFechasSemana(r?.weekStart).includes(date));
                 if (!weekSeed) return;
-
-                // Lunes correspondiente a este día
                 const weekStartIso = weekSeed.weekStart;
                 const fechasSemana = window.getFechasSemana(weekStartIso);
                 const sourceIndex = Math.max(0, fechasSemana.indexOf(date));
-
                 const weekExcelRows = combinedExcelRows.filter(r => r.weekStart === weekStartIso);`;
 
-admin = admin.replaceAll(targetExcelLogic, newExcelLogic);
+admin = admin.replace(targetStr, replacementStr);
 
 const targetDoubleCount = `                dayRoster.forEach(entry => {
-                    const cell = entry.cell || {};
-                    // entry.displayAs trae el nombre normalizado pero visualmente correcto
-                    const s = getStat(entry.displayAs || entry.id || entry.norm, hName);
-                    
-                    let label = cell.turno || 'ï¿½ ';`;
-
-const newDoubleCount = `                dayRoster.forEach(entry => {
-                    const cell = entry.cell || {};
-                    // entry.displayAs trae el nombre normalizado pero visualmente correcto
-                    const s = getStat(entry.displayAs || entry.id || entry.norm, hName);
-                    if (s && s.history.some(h => h.fecha === date)) return; // Prevent double count
-                    
-                    let label = cell.turno || '—';`;
-
-admin = admin.replaceAll(targetDoubleCount, newDoubleCount);
-
-const targetDoubleCount2 = `                dayRoster.forEach(entry => {
                     const s = getStat(entry.displayAs || entry.id || entry.norm, hName);
                     if (!s) return;
                     const cell = entry.cell || {};
                     let label = cell.turno || '';`;
 
-const newDoubleCount2 = `                dayRoster.forEach(entry => {
+const replacementDoubleCount = `                dayRoster.forEach(entry => {
                     const s = getStat(entry.displayAs || entry.id || entry.norm, hName);
                     if (!s) return;
                     if (s.history.some(h => h.fecha === date)) return; // Prevent double count
                     const cell = entry.cell || {};
                     let label = cell.turno || '';`;
 
-admin = admin.replaceAll(targetDoubleCount2, newDoubleCount2);
-
+admin = admin.replace(targetDoubleCount, replacementDoubleCount);
 fs.writeFileSync('admin.js', admin);
-console.log('Fixed admin.js successfully with replaceAll');
+console.log('Fixed admin.js double count 2');
