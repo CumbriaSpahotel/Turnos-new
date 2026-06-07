@@ -3855,9 +3855,6 @@ window.createPuestosPreviewModel = ({
             }
             const normS = resolveId(sRaw);
             
-            const existing = weekStatus.get(normT);
-            if (existing && existing.sustitutoId && !sRaw) return;
-
             const statusData = { 
                 tipo, 
                 sustitutoId: normS, 
@@ -3867,7 +3864,11 @@ window.createPuestosPreviewModel = ({
                 payload: ev.payload,
                 meta: ev.meta
             };
-            weekStatus.set(normT, statusData);
+            
+            if (!weekStatus.has(normT)) {
+                weekStatus.set(normT, []);
+            }
+            weekStatus.get(normT).push(statusData);
             if (normS) substitutesMap.set(normS, statusData);
         });
 
@@ -3878,10 +3879,10 @@ window.createPuestosPreviewModel = ({
             
             const normTitular = resolveId(r.empleadoId);
             const v9Order = window.getV9ExcelOrder(hotel, r.week_start || firstDate, r.empleadoId) || 500;
-            const status = weekStatus.get(normTitular);
+            const statuses = weekStatus.get(normTitular);
 
             // CASO A: TITULAR ESTÁ AUSENTE
-            if (status) {
+            if (statuses && statuses.length > 0) {
                 const titularName = getDisplayName(r.empleadoId, r);
                 absentRows.push({
                     ...r,
@@ -3891,44 +3892,51 @@ window.createPuestosPreviewModel = ({
                     isAbsentInformative: true,
                     rowType: 'ausencia_informativa',
                     puestoOrden: v9Order + 1000,
-                    evento_id: status.event_id,
+                    evento_id: statuses[0].event_id,
                     titularOriginalId: r.empleadoId
                 });
 
-                let occupantId = null;
-                let isSustitucion = false;
-                let isVacante = false;
+                const seenOccsForThisTitular = new Set();
 
-                if (status.sustitutoId) {
-                    occupantId = status.sustitutoId;
-                    isSustitucion = true;
-                } else {
-                    occupantId = 'VACANTE-' + normTitular;
-                    isVacante = true;
-                }
+                statuses.forEach(status => {
+                    let occupantId = null;
+                    let isSustitucion = false;
+                    let isVacante = false;
 
-                const normOcc = resolveId(occupantId);
-                if (isSustitucion && assignedNorms.has(normOcc)) {
-                    return;
-                }
+                    if (status.sustitutoId) {
+                        occupantId = status.sustitutoId;
+                        isSustitucion = true;
+                    } else {
+                        occupantId = 'VACANTE-' + normTitular;
+                        isVacante = true;
+                    }
 
-                const occName = isVacante ? 'VACANTE' : getDisplayName(occupantId, { nombre: status.rawSust });
-                operationalRows.push({
-                    ...r,
-                    employee_id: occupantId,
-                    empleadoId: occupantId,
-                    nombre: occName,
-                    nombreVisible: occName,
-                    displayName: occName,
-                    isVacante,
-                    isSustitucion,
-                    puestoOrden: v9Order,
-                    rowType: 'operativo',
-                    titularOriginal: titularName,
-                    titularOriginalId: r.empleadoId,
-                    evento_id: status.event_id
+                    if (seenOccsForThisTitular.has(occupantId)) return;
+                    seenOccsForThisTitular.add(occupantId);
+
+                    const normOcc = resolveId(occupantId);
+                    if (isSustitucion && assignedNorms.has(normOcc)) {
+                        return;
+                    }
+
+                    const occName = isVacante ? 'VACANTE' : getDisplayName(occupantId, { nombre: status.rawSust });
+                    operationalRows.push({
+                        ...r,
+                        employee_id: occupantId,
+                        empleadoId: occupantId,
+                        nombre: occName,
+                        nombreVisible: occName,
+                        displayName: occName,
+                        isVacante,
+                        isSustitucion,
+                        puestoOrden: v9Order,
+                        rowType: 'operativo',
+                        titularOriginal: titularName,
+                        titularOriginalId: r.empleadoId,
+                        evento_id: status.event_id
+                    });
+                    if (occupantId && !isVacante) assignedNorms.add(normOcc);
                 });
-                if (occupantId && !isVacante) assignedNorms.add(normOcc);
 
             } 
             // CASO B: TITULAR ESTÁ PRESENTE
@@ -3985,16 +3993,7 @@ if (!assignedNorms.has(normTitular)) {
         extraRefuerzoRows.sort((a, b) => (a.nombre || '').localeCompare(b.nombre || ''));
 
         if (dates[0] && dates[0].includes('2025-12-29') && hotel.includes('Cumbria')) {
-            const sergioEvents = eventos.filter(ev => {
-                const tId = ev.empleado_id || ev.titular_id || ev.participante_a || ev.empleado;
-                return tId && resolveId(tId).includes('sergio');
-            }).map(ev => ({
-                id: ev.id,
-                tipo: ev.tipo,
-                fecha_inicio: ev.fecha_inicio,
-                sust: ev.sustituto_id || ev.sustituto || ev.payload?.sustituto_id || ev.participante_b
-            }));
-            throw new Error('[DEBUG_SERGIO_EVENTS] ' + JSON.stringify(sergioEvents));
+            // Eliminated debug throw
         }
         
         return [...operationalRows, ...absentRows, ...extraRefuerzoRows].filter(r => {
