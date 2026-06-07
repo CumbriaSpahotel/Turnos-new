@@ -1186,7 +1186,7 @@ window.renderExcelView = async () => {
             const empId = record.empleado_id || 'Desconocido';
             if (empId.startsWith('_DUP') || empId.startsWith('Test_') || empId.startsWith('test_')) return;
             const h = record.hotel_id || 'Sin Hotel';
-            if (selectedHotel !== 'all' && h !== selectedHotel) return;
+            if (window.excelFilters && window.excelFilters.hoteles && window.excelFilters.hoteles.length > 0 && !window.excelFilters.hoteles.includes(h)) return;
             const wStart = window.getWeekStartISO(record.fecha);
             const val = record.turno || '—';
             const isPending = (val === '—' || val === '-' || !val);
