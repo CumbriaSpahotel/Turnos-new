@@ -3985,7 +3985,16 @@ if (!assignedNorms.has(normTitular)) {
         extraRefuerzoRows.sort((a, b) => (a.nombre || '').localeCompare(b.nombre || ''));
 
         if (dates[0] && dates[0].includes('2025-12-29') && hotel.includes('Cumbria')) {
-            throw new Error('[DEBUG_GETEMPLOYEES] OP: ' + operationalRows.map(r=>r.employee_id).join(', ') + ' | ABS: ' + absentRows.map(r=>r.employee_id).join(', ') + ' | SUST: ' + Array.from(weekStatus.entries()).map(([k,v])=>`${k}->${v.sustitutoId}`).join(', '));
+            const sergioEvents = eventos.filter(ev => {
+                const tId = ev.empleado_id || ev.titular_id || ev.participante_a || ev.empleado;
+                return tId && resolveId(tId).includes('sergio');
+            }).map(ev => ({
+                id: ev.id,
+                tipo: ev.tipo,
+                fecha_inicio: ev.fecha_inicio,
+                sust: ev.sustituto_id || ev.sustituto || ev.payload?.sustituto_id || ev.participante_b
+            }));
+            throw new Error('[DEBUG_SERGIO_EVENTS] ' + JSON.stringify(sergioEvents));
         }
         
         return [...operationalRows, ...absentRows, ...extraRefuerzoRows].filter(r => {
