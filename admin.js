@@ -5258,12 +5258,14 @@ window.populateEmployees = async () => {
         hotelsList.forEach(hName => {
             dates.forEach(date => {
                 const hotelExcelRows = excelSource[hName] || [];
-                const weekSeed = hotelExcelRows.find(r => window.getFechasSemana(r?.weekStart).includes(date));
+                const ambosExcelRows = excelSource['Ambos hoteles'] || [];
+                const combinedExcelRows = [...hotelExcelRows, ...ambosExcelRows];
+                const weekSeed = combinedExcelRows.find(r => window.getFechasSemana(r?.weekStart).includes(date));
                 if (!weekSeed) return;
                 const weekStartIso = weekSeed.weekStart;
                 const fechasSemana = window.getFechasSemana(weekStartIso);
                 const sourceIndex = Math.max(0, fechasSemana.indexOf(date));
-                const weekExcelRows = hotelExcelRows.filter(r => r.weekStart === weekStartIso);
+                const weekExcelRows = combinedExcelRows.filter(r => r.weekStart === weekStartIso);
                 if (!weekExcelRows.length) return;
                 const dayRoster = window.TurnosEngine.buildDayRoster({ rows, events: eventos, employees: profilesResult, date, hotel: hName, sourceRows: weekExcelRows, sourceIndex });
                 dayRoster.forEach(entry => {
