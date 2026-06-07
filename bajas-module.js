@@ -3,7 +3,7 @@
 'use strict';
 const $=s=>document.querySelector(s);
 let _bajasData=[], _bajasFiltered=[], _bajasGrouped=[];
-let _editingBaja=null, _bajasInitialized=false;
+let _editingBaja=null, _bajasInitialized=false;\n    await window.TurnosDB.fetchEventos();
 // Persistent filter state (survives innerHTML re-renders)
 const _bajasState = {
   hotel:'all', empSearch:'', tipo:'all', estados:['pendiente','activo'],

@@ -3352,25 +3352,41 @@ window.renderEmployeeProfile = () => {
         const vacs = (model.groupedVacs || []).sort((a,b) => b.fecha_inicio.localeCompare(a.fecha_inicio));
         
         tabContent = `
-            <div style="display:grid; grid-template-columns: 1fr 300px; gap:24px;">
-                <section class="emp-card glass" style="padding:24px; border-radius:24px; border:1px solid var(--border);">
-                    <h3 style="margin-top:0; font-size:0.95rem; font-weight:800; color:var(--text); margin-bottom:18px;">Periodos de Vacaciones</h3>
-                    <div style="display:grid; gap:10px;">
-                        ${vacs.length > 0 ? vacs.map(ev => {
-                            const days = Math.round((new Date((ev.fecha_fin || ev.fecha_inicio) + 'T12:00:00') - new Date(ev.fecha_inicio + 'T12:00:00')) / 86400000) + 1;
-                            return `
-                                <div style="display:flex; justify-content:space-between; align-items:center; padding:15px; background:var(--bg2); border-radius:15px; border:1px solid var(--border);">
-                                    <div>
-                                        <div style="font-weight:800; font-size:0.9rem;">${window.fmtDateLegacy(ev.fecha_inicio)}${ev.fecha_fin && ev.fecha_fin !== ev.fecha_inicio ? ` — ${window.fmtDateLegacy(ev.fecha_fin)}` : ''}</div>
-                                        <div style="font-size:0.75rem; color:var(--text-dim); margin-top:3px;">${days} días naturales ${ev.isGroup ? '(Agrupados)' : ''}</div>
+            <div style="display:grid; grid-template-columns: 1fr 300px; gap:24px; align-items:start;">
+                <div style="display:flex; flex-direction:column; gap:24px;">
+                    <section class="emp-card glass" style="padding:24px; border-radius:24px; border:1px solid var(--border);">
+                        <h3 style="margin-top:0; font-size:0.95rem; font-weight:800; color:var(--text); margin-bottom:18px;">Periodos de Vacaciones</h3>
+                        <div style="display:grid; gap:10px;">
+                            ${vacs.length > 0 ? vacs.map(ev => {
+                                const days = Math.round((new Date((ev.fecha_fin || ev.fecha_inicio) + 'T12:00:00') - new Date(ev.fecha_inicio + 'T12:00:00')) / 86400000) + 1;
+                                return `
+                                    <div style="display:flex; justify-content:space-between; align-items:center; padding:15px; background:var(--bg2); border-radius:15px; border:1px solid var(--border);">
+                                        <div>
+                                            <div style="font-weight:800; font-size:0.9rem;">${window.fmtDateLegacy(ev.fecha_inicio)}${ev.fecha_fin && ev.fecha_fin !== ev.fecha_inicio ? ` — ${window.fmtDateLegacy(ev.fecha_fin)}` : ''}</div>
+                                            <div style="font-size:0.75rem; color:var(--text-dim); margin-top:3px;">${days} días naturales ${ev.isGroup ? '(Agrupados)' : ''}</div>
+                                        </div>
+                                        <span class="status-pill ${ev.estado === 'activo' ? 'activo' : 'baja'}">${ev.estado || 'activo'}</span>
                                     </div>
-                                    <span class="status-pill ${ev.estado === 'activo' ? 'activo' : 'baja'}">${ev.estado || 'activo'}</span>
+                                `;
+                            }).join('') : '<div style="padding:60px; text-align:center; opacity:0.4;">No hay periodos de vacaciones registrados este año.</div>'}
+                        </div>
+                    </section>
+                    <section class="emp-card glass" style="padding:24px; border-radius:24px; border:1px solid var(--border);">
+                        <h3 style="margin-top:0; font-size:0.95rem; font-weight:800; color:var(--text); margin-bottom:18px;">Registro de Ajustes</h3>
+                        <div style="display:grid; gap:10px;">
+                            ${emp.ajuste_vacaciones_dias ? `
+                                <div style="display:flex; justify-content:space-between; align-items:center; padding:15px; background:var(--bg2); border-radius:15px; border:1px solid var(--border); border-left:4px solid var(--accent);">
+                                    <div>
+                                        <div style="font-weight:800; font-size:0.9rem;">Año del Ajuste: ${emp.ajuste_vacaciones_anyo || new Date().getFullYear()}</div>
+                                        <div style="font-size:0.75rem; color:var(--text-dim); margin-top:3px;">Motivo: ${escapeHtml(emp.ajuste_vacaciones_motivo || 'Ajuste manual')}</div>
+                                    </div>
+                                    <span class="status-pill ${emp.ajuste_vacaciones_dias > 0 ? 'activo' : 'baja'}" style="font-size:0.9rem; padding:6px 12px;">${emp.ajuste_vacaciones_dias > 0 ? '+' : ''}${emp.ajuste_vacaciones_dias} días</span>
                                 </div>
-                            `;
-                        }).join('') : '<div style="padding:60px; text-align:center; opacity:0.4;">No hay periodos de vacaciones registrados este año.</div>'}
-                    </div>
-                </section>
-                <section class="emp-card glass" style="padding:20px; border-radius:24px; border:1px solid var(--border); background:rgba(37,99,235,0.05);">
+                            ` : '<div style="padding:40px; text-align:center; opacity:0.4;">No hay ajustes de saldo registrados.</div>'}
+                        </div>
+                    </section>
+                </div>
+                <section class="emp-card glass" style="padding:20px; border-radius:24px; border:1px solid var(--border); background:rgba(37,99,235,0.05); position:sticky; top:24px;">
                     <h4 style="margin:0 0 15px; font-size:0.8rem; font-weight:800; text-transform:uppercase; color:var(--accent);">Desglose del Saldo</h4>
                         <div style="display:flex; flex-direction:column; gap:12px;">
                             <div style="display:flex; justify-content:space-between; font-size:0.85rem;"><span>Derecho Anual:</span> <strong>${model.vacaciones.derechoAnual} días</strong></div>
