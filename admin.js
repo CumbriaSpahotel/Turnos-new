@@ -3699,6 +3699,19 @@ window.createPuestosPreviewModel = ({
     const { baseIndex } = window.buildIndices(employees, eventos, [...(rows || []), ...baseRowsFlat]);
     baseIndex.ausenciaSustitucionMap = ausenciaSustitucionMap;
 
+    // 3. Procesar las Ausencias con Sustituto para GARANTIZAR que el sustituto aparezca
+    ausenciaSustitucionMap.forEach((coberturas, normSust) => {
+        if (!puestosMap.has(normSust)) {
+            const employeeName = window.getDisplayName(normSust) || `Sustituto (${normSust})`;
+            puestosMap.set(normSust, {
+                employee_id: normSust,
+                employee_name: employeeName,
+                rowIndex: 99999, // Add at the bottom
+                asignaciones: {}
+            });
+        }
+    });
+
     const puestos = Array.from(puestosMap.values()).sort((a, b) => {
         const valA = a.rowIndex === null || a.rowIndex === undefined ? 99999 : a.rowIndex;
         const valB = b.rowIndex === null || b.rowIndex === undefined ? 99999 : b.rowIndex;
