@@ -1114,10 +1114,9 @@ window.goToPreviewRecord = (empId, date) => {
 // MÃ“DULO: MODO EXCEL (RESTAURADO)
 // ==========================================
 window.renderExcelView = async () => {
-    try {
     const container = $('#excel-grid-container');
     if (!container) return;
-
+    try {
     // Asegurar carga del mapa de orden V9
     await window.loadV9ExcelOrderMap();
     
