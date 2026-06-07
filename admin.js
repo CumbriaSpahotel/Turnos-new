@@ -4461,6 +4461,11 @@ window.renderPreview = async () => {
             const deduplicatedList = [];
             employeesToRender.forEach(emp => {
                 const key = emp.employee_id;
+                const rawName = String(emp.nombre || emp.displayName || emp.employee_id || '').trim();
+                // Ignorar filas separadoras o de relleno
+                if (rawName.includes('---') || rawName.includes('___') || rawName === '' || rawName.toLowerCase() === 'vacante') {
+                    return;
+                }
                 if (!seenEmps.has(key)) {
                     seenEmps.add(key);
                     deduplicatedList.push(emp);
