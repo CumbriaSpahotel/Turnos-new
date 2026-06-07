@@ -3,11 +3,11 @@
 'use strict';
 const $=s=>document.querySelector(s);
 let _bajasData=[], _bajasFiltered=[], _bajasGrouped=[];
-let _editingBaja=null, _bajasInitialized=false;\n    await window.TurnosDB.fetchEventos();
+let _editingBaja=null, _bajasInitialized=false;
 // Persistent filter state (survives innerHTML re-renders)
 const _bajasState = {
   hotel:'all', empSearch:'', tipo:'all', estados:['pendiente','activo'],
-  sustSearch:'', noSust:false, dateStart:todayISO(), dateEnd:''
+  sustSearch:'', noSust:false, dateStart:'', dateEnd:''
 };
 let _skipDomCache = false;
 
@@ -34,9 +34,9 @@ function empLabel(id,emps){
 function todayISO(){return window.isoDate ? window.isoDate(new Date()) : new Date().toISOString().slice(0,10);}
 function tipoNorm(t){return String(t||'').toUpperCase().replace(/[^A-Z_]/g,'');}
 function ensureDefaultPendingFromToday(){
-  if(!_bajasState.dateStart && !_bajasState.dateEnd && _bajasState.estados.includes('pendiente') && _bajasState.estados.includes('activo') && _bajasState.estados.length === 2){
-    _bajasState.dateStart = todayISO();
-  }
+  // filter disabled
+
+
 }
 
 // ── LOAD DATA ──
@@ -309,6 +309,7 @@ window.saveBajaPermiso=async()=>{
     status.innerHTML='<span style="color:#10b981;">✓ Guardado correctamente</span>';
     if(window.addLog)window.addLog(`Baja/Permiso ${_editingBaja?'actualizado':'creado'}: ${tipo} - ${empId}`,'info');
     _bajasInitialized=false;
+    await window.TurnosDB.fetchEventos();
     setTimeout(()=>{window.closeBajaPermisoModal();window.renderBajas();},800);
   }catch(e){
     status.innerHTML=`<span style="color:var(--danger);">Error: ${e.message}</span>`;
