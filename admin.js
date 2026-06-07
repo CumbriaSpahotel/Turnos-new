@@ -3984,6 +3984,7 @@ if (!assignedNorms.has(normTitular)) {
         absentRows.sort((a, b) => a.puestoOrden - b.puestoOrden);
         extraRefuerzoRows.sort((a, b) => (a.nombre || '').localeCompare(b.nombre || ''));
 
+        console.log('[DEBUG_GETEMPLOYEES]', { operationalRows: operationalRows.map(r=>r.employee_id), absentRows: absentRows.map(r=>r.employee_id) });
         return [...operationalRows, ...absentRows, ...extraRefuerzoRows].filter(r => {
             const validId = r.employee_id && !String(r.employee_id).includes('---') && !String(r.employee_id).includes('___') && !String(r.employee_id).includes('_DUP');
             const validName = r.nombre && r.nombre !== 'Empleado' && r.nombre.trim().length > 1;
