@@ -3918,7 +3918,7 @@ window.createPuestosPreviewModel = ({
                         return;
                     }
 
-                    const occName = isVacante ? 'VACANTE' : getDisplayName(occupantId, { nombre: status.rawSust });
+                    const occName = isVacante ? `VACANTE (${titularName})` : getDisplayName(occupantId, { nombre: status.rawSust });
                     operationalRows.push({
                         ...r,
                         employee_id: occupantId,
