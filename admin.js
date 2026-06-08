@@ -3781,8 +3781,9 @@ if (!assignedNorms.has(normTitular)) {
 
         return [...operationalRows, ...absentRows, ...extraRefuerzoRows].filter(r => {
             const validId = r.employee_id && !String(r.employee_id).includes('---') && !String(r.employee_id).includes('___');
+            const isGhost = /^#?_dup_/i.test(r.employee_id) || /^#?_dup_/i.test(r.nombre);
             const validName = r.nombre && r.nombre !== 'Empleado' && r.nombre.trim().length > 1;
-            return validId && validName;
+            return validId && validName && !isGhost;
         });
     };
 
