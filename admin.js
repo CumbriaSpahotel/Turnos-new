@@ -4463,7 +4463,7 @@ window.renderPreview = async () => {
                 const key = emp.employee_id;
                 const rawName = String(emp.nombre || emp.displayName || emp.employee_id || '').trim();
                 // Ignorar filas separadoras o de relleno
-                if (rawName.includes('---') || rawName.includes('___') || rawName === '' || rawName.toLowerCase() === 'vacante') {
+                if (rawName.includes('---') || rawName.includes('___') || rawName === '' || rawName.toLowerCase() === 'vacante' || rawName.toLowerCase() === 'undefined' || rawName.toLowerCase() === 'null') {
                     return;
                 }
                 if (!seenEmps.has(key)) {
@@ -4832,7 +4832,12 @@ window.populateEmployees = async () => {
         window.empleadosGlobales = profilesResult;
         
         const profiles = {};
-        profilesResult.forEach(p => profiles[p.id || p.nombre] = p);
+        const profileByNorm = new Map();
+        profilesResult.forEach(p => {
+            profiles[p.id || p.nombre] = p;
+            if (p.id) profileByNorm.set(window.employeeNorm(p.id), p);
+            if (p.nombre) profileByNorm.set(window.employeeNorm(p.nombre), p);
+        });
         
         const excelSource = await window.loadAdminExcelSourceRows();
         
