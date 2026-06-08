@@ -4856,7 +4856,8 @@ window.populateEmployees = async () => {
                     emp: empName,
                     hotel: hotelName || 'Sin Hotel',
                     m: 0, t: 0, n: 0, v: 0, d: 0, b: 0, x: 0,
-                    history: []
+                    history: [],
+                    eventos: []
                 };
             }
             return stats[empName];
