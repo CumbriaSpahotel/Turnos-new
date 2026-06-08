@@ -4836,6 +4836,14 @@ window.isGhostEmployeeRecord = (profile = {}, stats = {}) => {
     return false;
 };
 
+window.isEmployeeTerminated = (profile = {}) => {
+    if (!profile) return false;
+    if (profile.activo === false) return true;
+    if (window.employeeNorm && profile.estado_empresa && window.employeeNorm(profile.estado_empresa).includes('baja')) return true;
+    if (profile.estado && String(profile.estado).toLowerCase().includes('inactivo')) return true;
+    return false;
+};
+
 window.employeeDash = (value) => {
     if (value === 0) return '0';
     if (value === false || value === null || typeof value === 'undefined' || value === '') return '&mdash;';
