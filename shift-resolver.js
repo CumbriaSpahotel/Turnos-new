@@ -333,6 +333,9 @@ tipo=${normalized.tipo}`);
     };
 
     window.getTurnoOperativoBase = (empleadoId, fecha, context = {}) => {
+        if (context.turnoBase !== undefined && context.turnoBase !== null) {
+            return context.turnoBase;
+        }
         const baseIndex = context.baseIndex || context;
         const events = context.eventos || [];
         const empIdNorm = window.normalizeId(empleadoId);
@@ -437,17 +440,17 @@ tipo=${normalized.tipo}`);
         return null;
     };
 
-    window.resolveEmployeeDay = ({ empleadoId, fecha, eventos = [], baseIndex = {}, hotel = '', skipChanges = false, _isResolvingRecursive = false }) => {
+    window.resolveEmployeeDay = ({ empleadoId, fecha, eventos = [], baseIndex = {}, hotel = '', skipChanges = false, _isResolvingRecursive = false, turnoBase = null }) => {
         const empId = window.normalizeId(empleadoId);
         const date = window.normalizeDate(fecha);
-        const context = { baseIndex, eventos, hotel, _isResolvingRecursive };
+        const context = { baseIndex, eventos, hotel, _isResolvingRecursive, turnoBase };
         const isDiagTarget = empId === 'proximamente' || empId === 'dani' || empId === '¿?' || empId === '?';
 
         const result = {
             empleadoId: empId,
             fecha: date,
             turno: window.getTurnoOperativoBase(empId, date, context) || '—',
-            turnoBase: window.getTurnoBaseDeEmpleado(empId, date, baseIndex),
+            turnoBase: (turnoBase !== undefined && turnoBase !== null) ? turnoBase : window.getTurnoBaseDeEmpleado(empId, date, baseIndex),
             incidencia: null,
             cambio: false,
             intercambio: false,

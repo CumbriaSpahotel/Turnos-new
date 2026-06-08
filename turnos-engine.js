@@ -129,6 +129,45 @@
             }
         });
 
+        // 3. Fallback final: Incluir a todos los demás empleados del hotel actual para que siempre aparezcan en listas y estadísticas
+        employees.forEach(profile => {
+            if (!profile || !profile.id) return;
+            const empId = profile.id;
+            const norm = window.normalizeId(empId);
+            if (renderedNorms.has(norm)) return;
+            
+            const hotelAsignado = window.normalizeId(profile.hotel_id || profile.hotel || '');
+            if (hotel !== 'TODOS' && hotelAsignado !== window.normalizeId(hotel)) return;
+
+            const res = window.resolveEmployeeDay({
+                empleado: profile,
+                empleadoId: empId,
+                hotel,
+                fecha: date,
+                turnoBase: null,
+                eventos: events,
+                baseIndex
+            });
+
+            const cell = adaptResultToCell(res);
+            entries.push({
+                norm,
+                id: empId,
+                name: profile.nombre || empId,
+                displayAs: profile.nombre || empId,
+                profile,
+                sourceOrder: 9999,
+                isAbsent: !!res.incidencia,
+                cell,
+                showStats: employeeComputesForStats(profile),
+                substituting: res.sustituyeA,
+                substitutedBy: res.sustituidoPor,
+                _finalState: res
+            });
+            renderedNorms.add(norm);
+        });
+
+        // 4. Post-procesar coberturas cruzadas (identificar si alguien cubre y no tiene "incidencia" propia)
         return entries;
     };
 
