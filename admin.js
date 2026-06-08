@@ -4466,6 +4466,9 @@ window.renderPreview = async () => {
                 if (rawName.includes('---') || rawName.includes('___') || rawName === '' || rawName.toLowerCase() === 'vacante' || rawName.toLowerCase() === 'undefined' || rawName.toLowerCase() === 'null') {
                     return;
                 }
+                if (/^#?_dup_/i.test(rawName) || /^#?_dup_/i.test(key)) {
+                    return;
+                }
                 if (!seenEmps.has(key)) {
                     seenEmps.add(key);
                     deduplicatedList.push(emp);
