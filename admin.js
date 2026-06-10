@@ -3923,10 +3923,19 @@ window.detectarErrores = (previewModel) => {
         errores.push(detalle);
     };
 
+    const isGhostOrPlaceholder = (id) => {
+        if (!id) return true;
+        const norm = window.normalizeId(id);
+        return norm.startsWith('_dup_') || norm.startsWith('#_dup_') || 
+               norm.includes('vacante') || norm.includes('placeholder') || 
+               norm.includes('sin asignar') || norm.includes('---') || norm.includes('___');
+    };
+
     const employees = previewModel.getEmployees ? previewModel.getEmployees() : [];
     const fechas = Array.isArray(previewModel.dates) ? previewModel.dates : [];
 
     employees.forEach(employee => {
+        if (isGhostOrPlaceholder(employee.employee_id)) return;
         fechas.forEach(fecha => {
             const turnoEmpleado = previewModel.getTurnoEmpleado(employee.employee_id, fecha);
             if (turnoEmpleado?.conflicto) {
@@ -3945,7 +3954,15 @@ window.detectarErrores = (previewModel) => {
             const celda = previewModel.getCelda(puesto.puesto_id, fecha);
             if (!celda) return;
 
-            if (celda.incidencia && !celda.cobertura && (!celda.real || celda.real === celda.titular)) {
+            const realIdNorm = window.normalizeId(celda.real_id || celda.real);
+            const titularIdNorm = window.normalizeId(celda.titular_id || celda.titular);
+
+            // Ignorar completamente si es un registro fantasma o vacante
+            if (isGhostOrPlaceholder(realIdNorm) || isGhostOrPlaceholder(titularIdNorm)) {
+                return;
+            }
+
+            if (celda.incidencia && !celda.cobertura && (!realIdNorm || realIdNorm === titularIdNorm)) {
                 warnError({
                     tipo: 'turno_sin_cubrir',
                     fecha,
@@ -3955,7 +3972,7 @@ window.detectarErrores = (previewModel) => {
                 });
             }
 
-            if (celda.real && celda.real !== celda.titular && !celda.incidencia) {
+            if (realIdNorm && realIdNorm !== titularIdNorm && !celda.incidencia) {
                 warnError({
                     tipo: 'sustitucion_sin_incidencia',
                     fecha,
