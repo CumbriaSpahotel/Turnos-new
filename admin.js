@@ -8087,24 +8087,25 @@ window.goToRiskPreview = (hotel, weekStart) => {
     
     // 2. Esperar a que el DOM se actualice
     setTimeout(() => {
-        const hotelSelect = document.getElementById('previewHotel');
-        const dateInput = document.getElementById('previewDate');
+        const hotelSelect = document.getElementById('prevHotel');
         
         if (hotelSelect) {
             hotelSelect.value = hotel;
             hotelSelect.dispatchEvent(new Event('change'));
         }
         
-        if (dateInput) {
-            dateInput.value = weekStart;
-            if (dateInput._flatpickr) {
+        if (window.DateManager) {
+            window.DateManager.state.currentDate = weekStart;
+            window.DateManager.state.view = 'weekly';
+            window.DateManager.syncAndRender();
+        } else {
+            const dateInput = document.getElementById('datePicker');
+            if (dateInput && dateInput._flatpickr) {
                 dateInput._flatpickr.setDate(weekStart, true);
             }
-        }
-        
-        // 3. Forzar el renderizado de la vista previa
-        if (window.renderPreview) {
-            window.renderPreview();
+            if (window.renderPreview) {
+                window.renderPreview();
+            }
         }
     }, 150);
 };
