@@ -7725,6 +7725,9 @@ window.openEmpDrawer = async (id) => {
         window.renderEmployeeProfile();
     }
 };
+window.closeEmpDrawer = () => {
+    if ($('#empDrawer')) $('#empDrawer').classList.remove('open');
+};
 
 window.setEmployeeProfileTab = (tab) => {
     window._employeeProfileTab = tab;
