@@ -548,19 +548,53 @@ window.renderVacations = async () => {
         );
 
         // Mapear a periodos
+        const bajaFechasPorEmp = {};
+        eventos.forEach(ev => {
+            if (String(ev.tipo || '').toUpperCase().includes('BAJA') && !ESTADO_EXCLUIDO.test(ev.estado || '')) {
+                const titularId = ev.empleado_id;
+                if (typeof window.isTitularOfAbsence === 'function' && window.isTitularOfAbsence(ev, titularId)) {
+                    if (!bajaFechasPorEmp[titularId]) bajaFechasPorEmp[titularId] = new Set();
+                    const bStart = new Date(ev.fecha_inicio + 'T12:00:00');
+                    const bEnd = new Date((ev.fecha_fin || ev.fecha_inicio) + 'T12:00:00');
+                    for (let d = new Date(bStart); d <= bEnd; d.setDate(d.getDate() + 1)) {
+                        bajaFechasPorEmp[titularId].add(d.toISOString().split('T')[0]);
+                    }
+                }
+            }
+        });
+
         const groupedVacs = window.groupConsecutiveEvents(vacEventos);
-        const allPeriods = groupedVacs.map(ev => ({
-            id:        ev.id,
-            ids:       ev.ids || [ev.id],
-            isGroup:   ev.isGroup || false,
-            empId:     ev.empleado_id,
-            hotel:     ev.hotel_origen || ev.payload?.hotel_id || 'General',
-            start:     ev.fecha_inicio,
-            end:       ev.fecha_fin || ev.fecha_inicio,
-            days:      Math.max(1, Math.round((new Date((ev.fecha_fin || ev.fecha_inicio) + 'T12:00:00') - new Date(ev.fecha_inicio + 'T12:00:00')) / 86400000) + 1),
-            sustituto: ev.empleado_destino_id || ev.payload?.sustituto || '',
-            estado:    ev.estado || 'activo'
-        }));
+        const allPeriods = groupedVacs.map(ev => {
+            let diasNoComputablesBaja = 0;
+            const pStart = new Date(ev.fecha_inicio + 'T12:00:00');
+            const pEnd = new Date((ev.fecha_fin || ev.fecha_inicio) + 'T12:00:00');
+            const empId = ev.empleado_id;
+            const setBajas = bajaFechasPorEmp[empId];
+            
+            for (let d = new Date(pStart); d <= pEnd; d.setDate(d.getDate() + 1)) {
+                if (setBajas && setBajas.has(d.toISOString().split('T')[0])) {
+                    diasNoComputablesBaja++;
+                }
+            }
+            
+            const days = Math.max(1, Math.round((pEnd - pStart) / 86400000) + 1);
+            const diasComputables = days - diasNoComputablesBaja;
+
+            return {
+                id:        ev.id,
+                ids:       ev.ids || [ev.id],
+                isGroup:   ev.isGroup || false,
+                empId:     empId,
+                hotel:     ev.hotel_origen || ev.payload?.hotel_id || 'General',
+                start:     ev.fecha_inicio,
+                end:       ev.fecha_fin || ev.fecha_inicio,
+                days:      days,
+                diasNoComputablesBaja: diasNoComputablesBaja,
+                diasComputables: diasComputables,
+                sustituto: ev.empleado_destino_id || ev.payload?.sustituto || '',
+                estado:    ev.estado || 'activo'
+            };
+        });
 
         // Filtrado local
         let visible = allPeriods.filter(p => {
@@ -577,6 +611,10 @@ window.renderVacations = async () => {
         const years = [];
         const currentYear = new Date().getFullYear();
         for(let y=currentYear-1; y<=currentYear+2; y++) years.push(y);
+
+        const totalDiasNaturalesBrutos = visible.reduce((sum, p) => sum + p.days, 0);
+        const totalNoComputables = visible.reduce((sum, p) => sum + p.diasNoComputablesBaja, 0);
+        const totalDiasComputables = visible.reduce((sum, p) => sum + p.diasComputables, 0);
 
         area.innerHTML = `
             <!-- ALTA FORM -->
@@ -602,7 +640,7 @@ window.renderVacations = async () => {
                     </label>
                     <div style="display:flex; gap:5px;">
                         <button id="btnCreateVac" class="btn-publish-premium" type="submit" style="flex:1; margin:0;">Guardar</button>
-                        <button id="btnCancelEditVac" class="btn-premium" type="button" style="display:none; padding:10px;" onclick="window.resetVacationForm()">âœ–</button>
+                        <button id="btnCancelEditVac" class="btn-premium" type="button" style="display:none; padding:10px;" onclick="window.resetVacationForm()">✖</button>
                     </div>
                 </form>
             </section>
@@ -635,18 +673,22 @@ window.renderVacations = async () => {
             </section>
 
             <!-- KPIs -->
-            <div style="display:grid; grid-template-columns:repeat(3, minmax(180px, 1fr)); gap:12px; margin-bottom:14px;">
+            <div style="display:grid; grid-template-columns:repeat(4, minmax(150px, 1fr)); gap:12px; margin-bottom:14px;">
                 <div class="glass-panel" style="padding:16px; border:1px solid var(--border); border-radius:15px;">
                     <div style="font-size:0.7rem; color:var(--text-dim); font-weight:800; text-transform:uppercase;">Periodos</div>
                     <div style="font-size:2rem; font-weight:900; margin-top:4px;">${visible.length}</div>
                 </div>
                 <div class="glass-panel" style="padding:16px; border:1px solid var(--border); border-radius:15px;">
-                    <div style="font-size:0.7rem; color:var(--text-dim); font-weight:800; text-transform:uppercase;">Personas</div>
-                    <div style="font-size:2rem; font-weight:900; margin-top:4px;">${new Set(visible.map(p => p.empId)).size}</div>
+                    <div style="font-size:0.7rem; color:var(--text-dim); font-weight:800; text-transform:uppercase;">Días naturales brutos</div>
+                    <div style="font-size:2rem; font-weight:900; margin-top:4px;">${totalDiasNaturalesBrutos}</div>
                 </div>
                 <div class="glass-panel" style="padding:16px; border:1px solid var(--border); border-radius:15px;">
-                    <div style="font-size:0.7rem; color:var(--text-dim); font-weight:800; text-transform:uppercase;">Próxima salida</div>
-                    <div style="font-size:1.15rem; font-weight:900; margin-top:8px;">${visible.length ? visible[0].empId : '—'}</div>
+                    <div style="font-size:0.7rem; color:var(--text-dim); font-weight:800; text-transform:uppercase;">Días Computables</div>
+                    <div style="font-size:2rem; font-weight:900; margin-top:4px; color:#10b981;">${totalDiasComputables}</div>
+                </div>
+                <div class="glass-panel" style="padding:16px; border:1px solid var(--border); border-radius:15px;">
+                    <div style="font-size:0.7rem; color:var(--text-dim); font-weight:800; text-transform:uppercase;">No computables baja/IT</div>
+                    <div style="font-size:2rem; font-weight:900; margin-top:4px; color:#ef4444;">${totalNoComputables}</div>
                 </div>
             </div>
 
@@ -670,13 +712,21 @@ window.renderVacations = async () => {
                                 <td style="padding:1rem; font-size:0.85rem;">${p.hotel}</td>
                                 <td style="padding:1rem; font-size:0.85rem; color:var(--text-dim);">${p.sustituto || '—'}</td>
                                 <td style="padding:1rem; text-align:center;">
-                                    <span style="background:${p.end >= todayKey ? 'rgba(16,185,129,0.1)' : 'rgba(255,255,255,0.05)'}; color:${p.end >= todayKey ? '#10b981' : 'var(--text-dim)'}; padding:4px 10px; border-radius:8px; font-weight:800; font-size:0.6rem;">
-                                        ${p.end >= todayKey ? 'PENDIENTE' : 'PASADA'}
-                                    </span>
+                                    ${p.diasNoComputablesBaja === p.days && p.days > 0
+                                        ? `<span style="background:rgba(239,68,68,0.1); color:#ef4444; padding:4px 10px; border-radius:8px; font-weight:800; font-size:0.6rem;">SUSPENDIDA POR BAJA</span>`
+                                        : p.diasNoComputablesBaja > 0 
+                                            ? `<span style="background:rgba(245,158,11,0.1); color:#f59e0b; padding:4px 10px; border-radius:8px; font-weight:800; font-size:0.6rem;">PARCIAL BAJA/IT</span><br><span style="background:${p.end >= todayKey ? 'rgba(16,185,129,0.1)' : 'rgba(255,255,255,0.05)'}; color:${p.end >= todayKey ? '#10b981' : 'var(--text-dim)'}; padding:4px 10px; border-radius:8px; font-weight:800; font-size:0.6rem; margin-top:4px; display:inline-block;">${p.end >= todayKey ? 'PENDIENTE' : 'PASADA'}</span>`
+                                            : `<span style="background:${p.end >= todayKey ? 'rgba(16,185,129,0.1)' : 'rgba(255,255,255,0.05)'}; color:${p.end >= todayKey ? '#10b981' : 'var(--text-dim)'}; padding:4px 10px; border-radius:8px; font-weight:800; font-size:0.6rem;">${p.end >= todayKey ? 'PENDIENTE' : 'PASADA'}</span>`
+                                    }
                                 </td>
                                 <td style="padding:1rem; text-align:center;">
                                     <div style="font-weight:700;">${window.fmtDateLegacy(p.start)} — ${window.fmtDateLegacy(p.end)}</div>
-                                    <div style="font-size:0.65rem; color:var(--text-dim); margin-top:4px; font-weight:700;">${Math.round((new Date(p.end + 'T12:00:00') - new Date(p.start + 'T12:00:00')) / 86400000) + 1} DÍAS</div>
+                                    <div style="font-size:0.65rem; color:var(--text-dim); margin-top:4px; font-weight:700;">
+                                        ${p.diasNoComputablesBaja > 0 
+                                            ? `${p.diasComputables} días computables · <span style="color:#ef4444;">${p.diasNoComputablesBaja} no computables por baja/IT</span>` 
+                                            : `${p.days} DÍAS NATURALES`
+                                        }
+                                    </div>
                                 </td>
                                 <td style="padding:1rem; text-align:center;">
                                     <button class="btn-premium" onclick="window.editVacationByIndex(${idx})" style="padding:5px 10px; font-size:0.7rem;">Gestionar</button>
@@ -7656,40 +7706,44 @@ window.buildEmployeeProfileModel = (empId, refISO) => {
         return false;
     };
     const dedupeVacationPeriods = (items) => {
-        const sorted = [...(items || [])].sort((a, b) => {
-            const startA = new Date((a.fecha_inicio || '') + 'T12:00:00');
-            const endA = new Date((a.fecha_fin || a.fecha_inicio || '') + 'T12:00:00');
-            const startB = new Date((b.fecha_inicio || '') + 'T12:00:00');
-            const endB = new Date((b.fecha_fin || b.fecha_inicio || '') + 'T12:00:00');
-
-            const lenA = isNaN(endA - startA) ? 0 : (endA - startA);
-            const lenB = isNaN(endB - startB) ? 0 : (endB - startB);
-
-            if (lenB !== lenA) return lenB - lenA;
-            return (b.isGroup ? 1 : 0) - (a.isGroup ? 1 : 0);
+        if (!items || items.length === 0) return [];
+        const sorted = [...items].sort((a, b) => {
+            const startA = String(a.fecha_inicio || '').slice(0, 10);
+            const startB = String(b.fecha_inicio || '').slice(0, 10);
+            return startA.localeCompare(startB);
         });
 
-        const finalVacs = [];
+        const merged = [];
+        let current = null;
 
         sorted.forEach(ev => {
             const start = String(ev.fecha_inicio || '').slice(0, 10);
             const end = String(ev.fecha_fin || ev.fecha_inicio || '').slice(0, 10);
             if (!start) return;
 
-            const isIncluded = finalVacs.some(accepted => {
-                const aStart = String(accepted.fecha_inicio || '').slice(0, 10);
-                const aEnd = String(accepted.fecha_fin || accepted.fecha_inicio || '').slice(0, 10);
-                return start >= aStart && end <= aEnd;
-            });
+            if (!current) {
+                current = { ...ev, fecha_inicio: start, fecha_fin: end };
+                return;
+            }
 
-            if (!isIncluded) {
-                finalVacs.push(ev);
+            const currentEnd = String(current.fecha_fin || current.fecha_inicio || '').slice(0, 10);
+            
+            const currEndDate = new Date(currentEnd + 'T12:00:00');
+            const nextStartDate = new Date(start + 'T12:00:00');
+            const diffDays = Math.round((nextStartDate - currEndDate) / 86400000);
+
+            if (diffDays <= 1) { // Overlaps or is exactly adjacent (diffDays = 0 or 1)
+                if (end > currentEnd) {
+                    current.fecha_fin = end;
+                }
+            } else {
+                merged.push(current);
+                current = { ...ev, fecha_inicio: start, fecha_fin: end };
             }
         });
 
-        return finalVacs.sort((a, b) =>
-            String(a.fecha_inicio || '').localeCompare(String(b.fecha_inicio || ''))
-        );
+        if (current) merged.push(current);
+        return merged;
     };
     const yearGroupedVacs = dedupeVacationPeriods(yearGroupedEvents.filter(isVacationEvent));
     const groupedVacs = dedupeVacationPeriods(periodGroupedEvents.filter(isVacationEvent));
