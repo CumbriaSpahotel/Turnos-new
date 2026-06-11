@@ -580,6 +580,13 @@ window.renderVacations = async () => {
             const days = Math.max(1, Math.round((pEnd - pStart) / 86400000) + 1);
             const diasComputables = days - diasNoComputablesBaja;
 
+            const opStatus = window.getVacationOperationalStatus({ estado: ev.estado, fecha_inicio: ev.fecha_inicio, fecha_fin: ev.fecha_fin }, {
+                todayISO: todayKey,
+                totalDays: days,
+                computables: diasComputables,
+                noComputables: diasNoComputablesBaja
+            });
+
             return {
                 id:        ev.id,
                 ids:       ev.ids || [ev.id],
@@ -592,7 +599,8 @@ window.renderVacations = async () => {
                 diasNoComputablesBaja: diasNoComputablesBaja,
                 diasComputables: diasComputables,
                 sustituto: ev.empleado_destino_id || ev.payload?.sustituto || '',
-                estado:    ev.estado || 'activo'
+                estado:    ev.estado || 'activo',
+                opStatus:  opStatus
             };
         });
 
@@ -600,8 +608,9 @@ window.renderVacations = async () => {
         let visible = allPeriods.filter(p => {
             if (hotel !== 'all' && p.hotel !== hotel) return false;
             if (emp !== 'all' && p.empId !== emp) return false;
-            if (status === 'pending') return p.end >= todayKey;
-            if (status === 'past') return p.end < todayKey;
+            if (status === 'pending') return ['Pendiente', 'En curso'].includes(p.opStatus.label);
+            if (status === 'past') return ['Consumida', 'No computable baja/IT'].includes(p.opStatus.label) && p.end < todayKey;
+            if (status === 'cancelled') return p.opStatus.label === 'Anulada';
             return true;
         });
         visible.sort((a,b) => a.start.localeCompare(b.start));
@@ -664,8 +673,9 @@ window.renderVacations = async () => {
                             ${years.map(y => `<option value="${y}" ${selectedYear === y ? 'selected' : ''}>${y}</option>`).join('')}
                         </select>
                         <select id="vacStatus" class="btn-premium" onchange="window.renderVacations()">
-                            <option value="pending" ${status === 'pending' ? 'selected' : ''}>Pendientes</option>
-                            <option value="past" ${status === 'past' ? 'selected' : ''}>Pasadas</option>
+                            <option value="pending" ${status === 'pending' ? 'selected' : ''}>Pendientes / Actuales</option>
+                            <option value="past" ${status === 'past' ? 'selected' : ''}>Finalizadas</option>
+                            <option value="cancelled" ${status === 'cancelled' ? 'selected' : ''}>Anuladas</option>
                             <option value="all" ${status === 'all' ? 'selected' : ''}>Todas</option>
                         </select>
                     </div>
@@ -701,6 +711,7 @@ window.renderVacations = async () => {
                             <th style="padding:1rem; text-align:left; font-size:0.7rem; color:var(--text-dim); text-transform:uppercase;">Hotel</th>
                             <th style="padding:1rem; text-align:left; font-size:0.7rem; color:var(--text-dim); text-transform:uppercase;">Sustituto</th>
                             <th style="padding:1rem; text-align:center; font-size:0.7rem; color:var(--text-dim); text-transform:uppercase;">Estado</th>
+                            <th style="padding:1rem; text-align:center; font-size:0.7rem; color:var(--text-dim); text-transform:uppercase;">Situación</th>
                             <th style="padding:1rem; text-align:center; font-size:0.7rem; color:var(--text-dim); text-transform:uppercase;">Periodo / Duración</th>
                             <th style="padding:1rem; text-align:center; font-size:0.7rem; color:var(--text-dim); text-transform:uppercase;">Acciones</th>
                         </tr>
@@ -712,12 +723,16 @@ window.renderVacations = async () => {
                                 <td style="padding:1rem; font-size:0.85rem;">${p.hotel}</td>
                                 <td style="padding:1rem; font-size:0.85rem; color:var(--text-dim);">${p.sustituto || '—'}</td>
                                 <td style="padding:1rem; text-align:center;">
-                                    ${p.diasNoComputablesBaja === p.days && p.days > 0
-                                        ? `<span style="background:rgba(239,68,68,0.1); color:#ef4444; padding:4px 10px; border-radius:8px; font-weight:800; font-size:0.6rem;">SUSPENDIDA POR BAJA</span>`
+                                    <span class="el-pill el-type-${p.opStatus.cls}" style="padding:4px 10px; border-radius:8px; font-weight:800; font-size:0.65rem; text-transform:uppercase;">${p.opStatus.label}</span>
+                                </td>
+                                <td style="padding:1rem; text-align:center;">
+                                    ${p.opStatus.label === 'Anulada' ? '<span style="color:var(--text-dim); font-size:0.6rem;">—</span>' : (
+                                        p.diasNoComputablesBaja === p.days && p.days > 0
+                                        ? \`<span style="background:rgba(239,68,68,0.1); color:#ef4444; padding:4px 10px; border-radius:8px; font-weight:800; font-size:0.6rem;">SUSPENDIDA POR BAJA</span>\`
                                         : p.diasNoComputablesBaja > 0 
-                                            ? `<span style="background:rgba(245,158,11,0.1); color:#f59e0b; padding:4px 10px; border-radius:8px; font-weight:800; font-size:0.6rem;">PARCIAL BAJA/IT</span><br><span style="background:${p.end >= todayKey ? 'rgba(16,185,129,0.1)' : 'rgba(255,255,255,0.05)'}; color:${p.end >= todayKey ? '#10b981' : 'var(--text-dim)'}; padding:4px 10px; border-radius:8px; font-weight:800; font-size:0.6rem; margin-top:4px; display:inline-block;">${p.end >= todayKey ? 'PENDIENTE' : 'PASADA'}</span>`
-                                            : `<span style="background:${p.end >= todayKey ? 'rgba(16,185,129,0.1)' : 'rgba(255,255,255,0.05)'}; color:${p.end >= todayKey ? '#10b981' : 'var(--text-dim)'}; padding:4px 10px; border-radius:8px; font-weight:800; font-size:0.6rem;">${p.end >= todayKey ? 'PENDIENTE' : 'PASADA'}</span>`
-                                    }
+                                            ? \`<span style="background:rgba(245,158,11,0.1); color:#f59e0b; padding:4px 10px; border-radius:8px; font-weight:800; font-size:0.6rem;">PARCIAL BAJA/IT</span><br><span style="color:var(--text-dim); font-size:0.6rem; margin-top:4px; display:inline-block;">\${p.end >= todayKey ? (p.start <= todayKey ? 'EN CURSO' : 'PRÓXIMA/FUTURA') : 'FINALIZADA'}</span>\`
+                                            : \`<span style="color:var(--text-dim); font-size:0.6rem;">\${p.end >= todayKey ? (p.start <= todayKey ? 'EN CURSO' : 'PRÓXIMA/FUTURA') : 'FINALIZADA'}</span>\`
+                                    )}
                                 </td>
                                 <td style="padding:1rem; text-align:center;">
                                     <div style="font-weight:700;">${window.fmtDateLegacy(p.start)} — ${window.fmtDateLegacy(p.end)}</div>
@@ -5087,6 +5102,40 @@ window.employeeStatusMeta = (estado) => {
     return { label: 'Activo', cls: 'activo', rank: 1 };
 };
 
+window.getVacationOperationalStatus = function(ev, options = {}) {
+    const { todayISO, totalDays = 0, computables = 0, noComputables = 0 } = options;
+    const adminState = String(ev?.estado || '').toLowerCase();
+    
+    if (adminState.includes('anulad') || adminState.includes('cancel') || adminState === 'cancelled') {
+        return { label: 'Anulada', cls: 'baja-definitiva' };
+    }
+    
+    if (totalDays > 0 && noComputables >= totalDays) {
+        return { label: 'No computable baja/IT', cls: 'baja' };
+    }
+    
+    if (noComputables > 0) {
+        return { label: 'Parcial baja/IT', cls: 'excedencia' };
+    }
+    
+    const start = String(ev?.fecha_inicio || '').slice(0, 10);
+    const end = String(ev?.fecha_fin || ev?.fecha_inicio || '').slice(0, 10);
+    
+    if (end && end < todayISO) {
+        return { label: 'Consumida', cls: 'fijo' };
+    }
+    
+    if (start && start > todayISO) {
+        return { label: 'Pendiente', cls: 'activo' };
+    }
+    
+    if (start && end && start <= todayISO && todayISO <= end) {
+        return { label: 'En curso', cls: 'vacaciones' };
+    }
+    
+    return { label: 'Pendiente', cls: 'activo' };
+};
+
 window.employeeOperationalRoleMeta = (rol) => {
     const key = window.employeeNorm(rol);
     if (key.includes('refuerzo')) return { label: 'Refuerzo', cls: 'ocasional', rank: 3 };
@@ -8365,12 +8414,21 @@ window.renderEmployeeProfile = () => {
                     currDate.setDate(currDate.getDate() + 1);
                 }
             }
-            const exclusionText = excludedDays > 0 ? ` · ${excludedDays} no computables por baja/IT` : '';
+            const opStatus = window.getVacationOperationalStatus(ev, {
+                todayISO: window.isoDate(new Date()),
+                totalDays: totalDays + excludedDays,
+                computables: totalDays,
+                noComputables: excludedDays
+            });
+            const textDuracion = excludedDays > 0
+                ? `${totalDays} días computables · <span style="color:#ef4444;">${excludedDays} no computables por baja/IT</span>`
+                : `${totalDays} días naturales`;
+            
             return {
                 fecha: ev.fecha_inicio,
                 main: `<strong>${escapeHtml(window.employeeProfileDateRangeLabel(ev.fecha_inicio, ev.fecha_fin || ev.fecha_inicio))}</strong>`,
-                secondary: `${totalDays} días naturales${exclusionText}${ev.isGroup ? ' · agrupado' : ''} · ${refDate.getFullYear()}`,
-                badge: escapeHtml(ev.estado || 'activo')
+                secondary: `${textDuracion}${ev.isGroup ? ' · agrupado' : ''} · ${refDate.getFullYear()}`,
+                badge: opStatus.label
             };
         });
         tabContent = `<div style="display:grid; grid-template-columns:1.1fr 0.9fr; gap:18px;"><section class="emp-card glass" style="padding:20px; border-radius:18px; border:1px solid var(--border);"><h3 style="margin:0 0 14px; font-size:0.9rem; font-weight:800;">Vacaciones ${refDate.getFullYear()}</h3>${renderRowsTable(vacRows, 'No hay vacaciones registradas en el año en curso.')}</section><section class="emp-card glass" style="padding:20px; border-radius:18px; border:1px solid var(--border);"><h3 style="margin:0 0 14px; font-size:0.9rem; font-weight:800;">Saldo vacacional</h3><div style="display:grid; gap:10px;">${window.renderEmployeeProfileField(['Derecho anual', model.vacaciones.applies ? `${model.vacaciones.derechoAnual} dias` : 'No aplica'])}${window.renderEmployeeProfileField(['Consumidas', model.vacaciones.applies ? `${model.vacaciones.usadas} dias` : 'No aplica'])}${window.renderEmployeeProfileField(['Total planificado año', model.vacaciones.applies ? `${model.vacaciones.planificadas} dias` : 'No aplica'])}${window.renderEmployeeProfileField(['Futuras / Pendientes', model.vacaciones.applies ? `${model.vacaciones.previstas} dias` : 'No aplica'])}${window.renderEmployeeProfileField(['Ajustes', model.vacaciones.applies ? `${model.vacaciones.saldo >= 0 ? '+' : ''}${model.vacaciones.saldo} dias` : 'No aplica'])}${window.renderEmployeeProfileField([summaryBalanceLabel, vacationBalanceLabel])}</div></section></div>`;
