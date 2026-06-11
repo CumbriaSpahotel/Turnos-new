@@ -2835,6 +2835,8 @@ window.renderEmployeeProfileField = ([label, value, key, type = 'text']) => {
 
 window.employeeStatusMeta = (status) => {
     const s = String(status || 'Activo').toLowerCase();
+    if (s.includes('baja empresa') || s.includes('inactivo')) return { label: 'Baja empresa', cls: 'baja-definitiva' };
+    if (s.includes('baja laboral') || s.includes('baja medica')) return { label: 'Baja laboral', cls: 'baja' };
     if (s.includes('baja')) return { label: 'Baja', cls: 'baja' };
     if (s.includes('vaca')) return { label: 'Vacaciones', cls: 'vacaciones' };
     if (s.includes('exced')) return { label: 'Excedencia', cls: 'excedencia' };
@@ -4899,6 +4901,8 @@ window.employeeExtractShift = (cell = {}) => {
 window.employeeStatusMeta = (estado) => {
     const key = window.employeeNorm(estado);
     if (key.includes('vac')) return { label: 'Vacaciones', cls: 'vacaciones', rank: 4 };
+    if (key.includes('baja empresa') || key.includes('inactivo')) return { label: 'Baja empresa', cls: 'baja-definitiva', rank: 6 };
+    if (key.includes('baja laboral') || key.includes('baja medica')) return { label: 'Baja laboral', cls: 'baja', rank: 5 };
     if (key.includes('baja') || key.includes('perm')) return { label: 'Baja', cls: 'baja', rank: 5 };
     return { label: 'Activo', cls: 'activo', rank: 1 };
 };
@@ -4961,9 +4965,12 @@ window.buildEmployeeLineModel = (empleado) => {
     const configuredRole = window.employeeConfiguredRole ? window.employeeConfiguredRole(profile) : 'titular';
     const rolOperativo = hasExplicitRefuerzo ? 'refuerzo' : (isSubstitute ? 'sustituto' : configuredRole);
 
-    let estado = profile.activo === false || window.employeeNorm(profile.estado_empresa).includes('baja') ? 'Baja' : 'Activo';
-    if (todayShift?.cls === 'v' || activeAbsences.some(ev => /VAC/i.test(ev.tipo || ''))) estado = 'Vacaciones';
-    else if (todayShift?.cls === 'b' || activeAbsences.some(ev => /BAJA|PERM/i.test(ev.tipo || ''))) estado = 'Baja';
+    const isTerminated = profile.activo === false || window.employeeNorm(profile.estado_empresa).includes('baja') || window.employeeNorm(profile.estado || '').includes('baja');
+    let estado = isTerminated ? 'Baja empresa' : 'Activo';
+    if (!isTerminated) {
+        if (todayShift?.cls === 'v' || activeAbsences.some(ev => /VAC/i.test(ev.tipo || ''))) estado = 'Vacaciones';
+        else if (todayShift?.cls === 'b' || activeAbsences.some(ev => /BAJA|PERM/i.test(ev.tipo || ''))) estado = 'Baja laboral';
+    }
 
     const bajas = (stats.b || 0) + (stats.p || 0);
     const ajusteVac = Number(profile.ajuste_vacaciones_dias || 0);
@@ -5038,7 +5045,7 @@ window.renderEmployeeLineRows = () => {
     let lines = [...window._employeeLineModels].filter(line => {
         if (filters.hotel !== 'all' && line.hotel !== filters.hotel) return false;
         if (filters.estado !== 'all') {
-            if (filters.estado === 'operativo' && line.estado === 'Baja') return false;
+            if (filters.estado === 'operativo' && (line.estado === 'Baja laboral' || line.estado === 'Baja empresa' || line.estado === 'Baja')) return false;
             if (filters.estado === 'apoyo' && line.tipoEmpleado !== 'apoyo') return false;
             if (filters.estado === 'ocasional' && line.tipoEmpleado !== 'ocasional') return false;
             if (filters.estado === 'sustituto' && line.rolOperativo !== 'sustituto') return false;
@@ -5058,7 +5065,7 @@ window.renderEmployeeLineRows = () => {
     };
     lines.sort(sorters[filters.sort] || sorters.operativo);
     const hotels = window._employeeLineHotels || [];
-    const stateOptions = ['operativo', 'Activo', 'Vacaciones', 'Baja', 'apoyo', 'ocasional', 'sustituto', 'refuerzo', 'all'];
+    const stateOptions = ['operativo', 'Activo', 'Vacaciones', 'Baja laboral', 'Baja empresa', 'apoyo', 'ocasional', 'sustituto', 'refuerzo', 'all'];
     area.innerHTML = `
         <div class="employees-dashboard line-mode" style="display:grid; gap:12px; margin-bottom:14px; border:1px solid rgba(29,78,216,.18); border-radius:18px; padding:16px; background:linear-gradient(120deg, rgba(15,23,42,.94), rgba(29,78,216,.92)); box-shadow:0 10px 24px rgba(15,23,42,.18);">
             <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap;">
