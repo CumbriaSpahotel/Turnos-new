@@ -65,17 +65,15 @@ require(adminPath);
 async function run() {
     await global.window.populateEmployees();
     const models = global.window._employeeLineModels;
-    const targets = models.filter(m => m.nombre.includes('Antonio') || m.nombre.includes('Gustavo') || m.nombre.includes('Natalio'));
     console.log('--- MODELS ---');
-    targets.forEach(t => {
-        console.log(JSON.stringify({
+    models.forEach(t => {
+        console.log({
             id: t.id,
             nombre: t.nombre,
-            tipo: t.tipo,
-            tipoEmpleado: t.tipoEmpleado,
-            rolOperativo: t.rolOperativo,
-            estado: t.estado
-        }, null, 2));
+            turnoHoy: t.turnoHoy,
+            proximoTurno: t.proximoTurno,
+            historyLength: t.resumen30d
+        });
     });
 }
 run().catch(console.error);

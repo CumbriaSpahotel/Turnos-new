@@ -7309,15 +7309,6 @@ window.buildEmployeeProfileModel = (empId, refISO) => {
 
     if (Array.isArray(window._employeeProfileBaseRows) && window._employeeProfileBaseRows.length > 0 && window.buildIndices) {
         const baseRowsFlat = window._employeeProfileBaseRows
-            .filter(row => {
-                const rowKeys = [
-                    window.normalizeId(row.empleado_id),
-                    window.normalizeId(row.empleadoId),
-                    window.normalizeId(row.nombre),
-                    window.normalizeId(row.displayName)
-                ].filter(Boolean);
-                return rowKeys.some(key => employeeKeys.has(key));
-            })
             .map(row => ({
                 empleadoId: row.empleado_id || row.empleadoId || profile.id,
                 fecha: row.fecha,
@@ -7338,13 +7329,6 @@ window.buildEmployeeProfileModel = (empId, refISO) => {
             if (excelSource && window.buildIndices) {
                 const baseRowsFlat = [];
                 Object.values(excelSource).flat().forEach(sRow => {
-                    const rowKeys = [
-                        window.normalizeId(sRow.empleadoId),
-                        window.normalizeId(sRow.displayName),
-                        window.normalizeId(sRow.nombre),
-                        window.normalizeId(sRow.id_interno)
-                    ].filter(Boolean);
-                    if (!rowKeys.some(key => employeeKeys.has(key))) return;
                     const fechasSemana = window.getFechasSemana ? window.getFechasSemana(sRow.weekStart || sRow.week_start) : [];
                     (sRow.values || sRow.turnos || []).forEach((turno, idx) => {
                         const fecha = fechasSemana[idx];
@@ -7357,15 +7341,6 @@ window.buildEmployeeProfileModel = (empId, refISO) => {
             }
             if (!baseIndex && Array.isArray(window._lastRawTurnosBase) && window._lastRawTurnosBase.length > 0 && window.buildIndices) {
                 const baseRowsFlat = window._lastRawTurnosBase
-                    .filter(row => {
-                        const rowKeys = [
-                            window.normalizeId(row.empleado_id),
-                            window.normalizeId(row.empleadoId),
-                            window.normalizeId(row.nombre),
-                            window.normalizeId(row.displayName)
-                        ].filter(Boolean);
-                        return rowKeys.some(key => employeeKeys.has(key));
-                    })
                     .map(row => ({
                         empleadoId: row.empleado_id || row.empleadoId || profile.id,
                         fecha: row.fecha,
@@ -7428,7 +7403,13 @@ window.buildEmployeeProfileModel = (empId, refISO) => {
         const end = String(ev.fecha_fin || start || '').slice(0, 10);
         return start && end && start <= monthEndISO && end >= monthStartISO;
     });
-    const isVacationEvent = (ev) => window.normalizeTipo ? window.normalizeTipo(ev.tipo) === 'VAC' : String(ev.tipo || '').toUpperCase().includes('VAC');
+    const isVacationEvent = ev => {
+        if (!/VAC|VACACIONES/i.test(String(ev.tipo || ''))) return false;
+        if (typeof window.isTitularOfAbsence === 'function') {
+            return window.isTitularOfAbsence(ev, emp.id);
+        }
+        return false;
+    };
     const dedupeVacationPeriods = (items) => {
         const byPeriod = new Map();
         (items || []).forEach(ev => {
@@ -7445,9 +7426,12 @@ window.buildEmployeeProfileModel = (empId, refISO) => {
     };
     const yearGroupedVacs = dedupeVacationPeriods(yearGroupedEvents.filter(isVacationEvent));
     const groupedVacs = dedupeVacationPeriods(periodGroupedEvents.filter(isVacationEvent));
-    const isLeavePermissionEvent = (ev) => {
-        const tipo = window.normalizeTipo ? window.normalizeTipo(ev.tipo) : String(ev.tipo || '').toUpperCase();
-        return ['BAJA', 'IT', 'PERM', 'PERMISO', 'FORMACION'].includes(tipo);
+    const isLeavePermissionEvent = ev => {
+        if (!/BAJA|IT|PERM|PERMISO/i.test(String(ev.tipo || ''))) return false;
+        if (typeof window.isTitularOfAbsence === 'function') {
+            return window.isTitularOfAbsence(ev, emp.id);
+        }
+        return false;
     };
     const availableYears = Array.from(new Set([
         new Date().getFullYear() - 1,
@@ -7460,22 +7444,35 @@ window.buildEmployeeProfileModel = (empId, refISO) => {
             return [startYear, endYear].filter(Number.isFinite);
         })
     ])).sort((a, b) => a - b);
-    const usadas = groupedVacs
-        .filter(ev => (ev.fecha_inicio || '') < todayISO)
-        .reduce((acc, ev) => {
-            const endUsed = (ev.fecha_fin || ev.fecha_inicio) >= todayISO ? window.addIsoDays(todayISO, -1) : (ev.fecha_fin || ev.fecha_inicio);
-            if (!endUsed || endUsed < ev.fecha_inicio) return acc;
-            const s = new Date(`${ev.fecha_inicio}T12:00:00`);
-            const e = new Date(`${endUsed}T12:00:00`);
-            return acc + Math.max(0, Math.round((e - s) / 86400000) + 1);
-        }, 0);
-    const previstas = groupedVacs
-        .reduce((acc, ev) => {
-            const startVac = ev.fecha_inicio < todayISO ? todayISO : ev.fecha_inicio;
-            const s = new Date(`${startVac}T12:00:00`);
-            const e = new Date(`${(ev.fecha_fin || ev.fecha_inicio)}T12:00:00`);
-            return acc + Math.max(0, Math.round((e - s) / 86400000) + 1);
-        }, 0);
+
+    const usedVacationDays = new Set();
+    const plannedVacationDays = new Set();
+    const annualVacationDays = new Set();
+
+    yearGroupedVacs.forEach(ev => {
+        const start = ev.fecha_inicio;
+        const end = ev.fecha_fin || ev.fecha_inicio || start;
+        if (!start) return;
+
+        let currDate = new Date(`${start}T12:00:00`);
+        const endDate = new Date(`${end}T12:00:00`);
+        while (currDate <= endDate) {
+            const dateStr = window.isoDate(currDate);
+            const dateYear = Number(dateStr.slice(0, 4));
+            if (dateYear === refDate.getFullYear()) {
+                annualVacationDays.add(dateStr);
+                if (dateStr <= todayISO) {
+                    usedVacationDays.add(dateStr);
+                } else {
+                    plannedVacationDays.add(dateStr);
+                }
+            }
+            currDate.setDate(currDate.getDate() + 1);
+        }
+    });
+
+    const usadas = usedVacationDays.size;
+    const previstas = plannedVacationDays.size;
 
     const ajuste = Number(emp.ajuste_vacaciones_dias || 0);
     const derechoAnual = Number(emp.vacaciones_anuales || 44);
@@ -7518,10 +7515,15 @@ window.buildEmployeeProfileModel = (empId, refISO) => {
             return start <= todayISO && todayISO <= end;
         })
             ? 'sustituto'
-            : activeTodayEvents.some(ev => /VAC|BAJA|IT|PERM/i.test(String(ev.tipo || '')))
+            : activeTodayEvents.some(ev => isVacationEvent(ev) || isLeavePermissionEvent(ev))
                 ? 'ausente'
                 : configuredRole;
-    const activeIncident = activeTodayEvents.find(ev => /VAC|BAJA|IT|PERM|REFUERZO|SUSTITUCION|COBERTURA|CAMBIO|INTERCAMBIO/i.test(String(ev.tipo || ''))) || null;
+    const activeIncident = activeTodayEvents.find(ev => {
+        const tipo = String(ev.tipo || '');
+        if (/VAC/i.test(tipo)) return isVacationEvent(ev);
+        if (/BAJA|IT|PERM/i.test(tipo)) return isLeavePermissionEvent(ev);
+        return /REFUERZO|SUSTITUCION|COBERTURA|CAMBIO|INTERCAMBIO/i.test(tipo);
+    }) || null;
     const futureWorkingDays = monthDays.filter(day => day.fecha > todayISO && ['M', 'T', 'N'].includes(window.employeeProfileShiftCodeMeta(day.turno || day.detalle?.turno).code));
     const nextShiftDay = futureWorkingDays[0] || null;
     const futureAssignedDays = monthDays.filter(day => day.fecha > todayISO && window.employeeProfileShiftCodeMeta(day.turnoBase || day.detalle?.turnoBase).code !== '—');
@@ -7540,11 +7542,7 @@ window.buildEmployeeProfileModel = (empId, refISO) => {
         return ['M', 'T', 'N', 'D'].includes(baseCode) && finalCode === '—';
     }).length;
     const rawTypeField = profile.tipo_personal || profile.tipo || profile.contrato || profile.tipo_trabajador || '';
-    const annualVacPlanned = yearGroupedVacs.reduce((acc, ev) => {
-        const s = new Date(`${ev.fecha_inicio}T12:00:00`);
-        const e = new Date(`${(ev.fecha_fin || ev.fecha_inicio)}T12:00:00`);
-        return acc + Math.max(0, Math.round((e - s) / 86400000) + 1);
-    }, 0);
+    const annualVacPlanned = annualVacationDays.size;
     const annualChanges = yearGroupedEvents.filter(ev => /CAMBIO|INTERCAMBIO/.test(String(ev.tipo || '').toUpperCase())).length;
     const annualRefuerzos = yearGroupedEvents.filter(ev => window.isExplicitRefuerzoEvent(ev)).length;
     const annualBajas = yearGroupedEvents.filter(ev => /BAJA|IT|PERM|PERMISO/.test(String(ev.tipo || '').toUpperCase())).length;
