@@ -383,9 +383,9 @@ window.renderVacations = async () => {
               <td style="padding:12px;text-align:center;">
                 <div style="font-weight:600;">${sameDay?fmtD(p.start):`${fmtD(p.start)} — ${fmtD(p.end)}`}</div>
                 <div style="font-size:0.6rem;color:var(--text-dim);margin-top:3px;font-weight:700;">
-                    ${p.diasNoComputablesBaja > 0 
-                        ? \`\${p.diasComputables} días computables · <span style="color:#ef4444;">\${p.diasNoComputablesBaja} no computables por baja/IT</span>\`
-                        : \`\${d} día\${d!==1?'s':''} natural\${d!==1?'es':''}\`
+                    ${p.diasNoComputablesBaja > 0
+                        ? `${p.diasComputables} días computables · <span style="color:#ef4444;">${p.diasNoComputablesBaja} no computables por baja/IT</span>`
+                        : `${d} día${d!==1?'s':''} natural${d!==1?'es':''}`
                     }
                 </div>
               </td>
