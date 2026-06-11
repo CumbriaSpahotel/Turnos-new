@@ -7433,6 +7433,13 @@ window.buildEmployeeProfileModel = (empId, refISO) => {
         }
         return false;
     };
+    const isSickLeaveEvent = ev => {
+        if (!/BAJA|IT/i.test(String(ev.tipo || ''))) return false;
+        if (typeof window.isTitularOfAbsence === 'function') {
+            return window.isTitularOfAbsence(ev, emp.id);
+        }
+        return false;
+    };
     const availableYears = Array.from(new Set([
         new Date().getFullYear() - 1,
         new Date().getFullYear(),
@@ -7444,6 +7451,25 @@ window.buildEmployeeProfileModel = (empId, refISO) => {
             return [startYear, endYear].filter(Number.isFinite);
         })
     ])).sort((a, b) => a - b);
+
+    const yearSickLeaveDates = new Set();
+    const activeSickLeaves = yearGroupedEvents.filter(isSickLeaveEvent);
+    activeSickLeaves.forEach(ev => {
+        const start = ev.fecha_inicio;
+        const end = ev.fecha_fin || ev.fecha_inicio || start;
+        if (!start) return;
+
+        let currDate = new Date(`${start}T12:00:00`);
+        const endDate = new Date(`${end}T12:00:00`);
+        while (currDate <= endDate) {
+            const dateStr = window.isoDate(currDate);
+            const dateYear = Number(dateStr.slice(0, 4));
+            if (dateYear === refDate.getFullYear()) {
+                yearSickLeaveDates.add(dateStr);
+            }
+            currDate.setDate(currDate.getDate() + 1);
+        }
+    });
 
     const usedVacationDays = new Set();
     const plannedVacationDays = new Set();
@@ -7460,11 +7486,13 @@ window.buildEmployeeProfileModel = (empId, refISO) => {
             const dateStr = window.isoDate(currDate);
             const dateYear = Number(dateStr.slice(0, 4));
             if (dateYear === refDate.getFullYear()) {
-                annualVacationDays.add(dateStr);
-                if (dateStr <= todayISO) {
-                    usedVacationDays.add(dateStr);
-                } else {
-                    plannedVacationDays.add(dateStr);
+                if (!yearSickLeaveDates.has(dateStr)) {
+                    annualVacationDays.add(dateStr);
+                    if (dateStr <= todayISO) {
+                        usedVacationDays.add(dateStr);
+                    } else {
+                        plannedVacationDays.add(dateStr);
+                    }
                 }
             }
             currDate.setDate(currDate.getDate() + 1);
@@ -7593,6 +7621,7 @@ window.buildEmployeeProfileModel = (empId, refISO) => {
 
     return {
         emp,
+        sickLeaveDates: yearSickLeaveDates,
         hoy,
         hotelActual,
         calendario,
@@ -7970,7 +7999,35 @@ window.renderEmployeeProfile = () => {
         const tableRows = monthRows.map(day => { const finalMeta = window.employeeProfileShiftCodeMeta(day.turno || day.detalle?.turno); const baseMeta = window.employeeProfileShiftCodeMeta(day.turnoBase || day.detalle?.turnoBase); return { fecha: day.fecha, main: `<strong>${escapeHtml(day.diaSemana || new Date(`${day.fecha}T12:00:00`).toLocaleDateString('es-ES', { weekday: 'short' }))}</strong> · ${escapeHtml(emp.hotel || model.hotelActual || 'No informado')}`, secondary: `Base: ${escapeHtml(baseMeta.code)} · Resuelto: ${escapeHtml(finalMeta.code)}${day.cambio ? ' ðŸ”„' : ''}${finalMeta.code === 'N' ? ' ðŸŒ™' : ''}${day.incidencia ? ` · ${escapeHtml(window.employeeProfileEventLabel(day.incidencia))}` : ''}`, badge: escapeHtml(day.detalle?.origen || day.incidencia?.tipo || 'base') }; });
         tabContent = `<div style="display:grid; grid-template-columns:1.2fr 0.9fr; gap:18px; align-items:start;"><section class="emp-card glass" style="padding:20px; border-radius:18px; border:1px solid var(--border);"><div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;"><div><h3 style="margin:0; font-size:0.9rem; font-weight:800;">Turnos del periodo</h3><div style="font-size:0.72rem; color:var(--text-dim); font-weight:700; margin-top:4px;">Navegacion mensual</div></div><div style="display:flex; gap:8px;"><button onclick="window.moveEmployeeProfilePeriod(-1)" class="btn-premium" aria-label="Mes anterior" title="Mes anterior" style="padding:8px 12px; min-width:118px; border-radius:12px; font-weight:800;"><i class="fas fa-chevron-left" style="margin-right:8px;"></i>Anterior</button><button onclick="window.moveEmployeeProfilePeriod(1)" class="btn-premium" aria-label="Mes siguiente" title="Mes siguiente" style="padding:8px 12px; min-width:118px; border-radius:12px; font-weight:800;">Siguiente<i class="fas fa-chevron-right" style="margin-left:8px;"></i></button></div></div><div style="margin-bottom:12px; font-size:0.8rem; color:var(--accent); font-weight:800; text-transform:capitalize;">${titlePeriod}</div>${renderRowsTable(tableRows, 'No hay turnos para este periodo.')}</section><section class="emp-card glass" style="padding:20px; border-radius:18px; border:1px solid var(--border);"><h3 style="margin:0 0 14px; font-size:0.9rem; font-weight:800;">Calendario</h3>${window.renderEmployeeProfileCalendar(model)}</section></div>`;
     } else if (currentTab === 'vacations') {
-        const vacRows = (model.yearGroupedVacs || []).sort((a, b) => String(a.fecha_inicio || '').localeCompare(String(b.fecha_inicio || ''))).map(ev => { const days = Math.max(1, Math.round((new Date(`${ev.fecha_fin || ev.fecha_inicio}T12:00:00`) - new Date(`${ev.fecha_inicio}T12:00:00`)) / 86400000) + 1); return { fecha: ev.fecha_inicio, main: `<strong>${escapeHtml(window.employeeProfileDateRangeLabel(ev.fecha_inicio, ev.fecha_fin || ev.fecha_inicio))}</strong>`, secondary: `${days} días naturales${ev.isGroup ? ' · agrupado' : ''} · ${refDate.getFullYear()}`, badge: escapeHtml(ev.estado || 'activo') }; });
+        const vacRows = (model.yearGroupedVacs || []).sort((a, b) => String(a.fecha_inicio || '').localeCompare(String(b.fecha_inicio || ''))).map(ev => {
+            const start = ev.fecha_inicio;
+            const end = ev.fecha_fin || ev.fecha_inicio || start;
+            let totalDays = 0;
+            let excludedDays = 0;
+            if (start) {
+                let currDate = new Date(`${start}T12:00:00`);
+                const endDate = new Date(`${end}T12:00:00`);
+                while (currDate <= endDate) {
+                    const dateStr = window.isoDate(currDate);
+                    const dateYear = Number(dateStr.slice(0, 4));
+                    if (dateYear === refDate.getFullYear()) {
+                        if (model.sickLeaveDates?.has(dateStr)) {
+                            excludedDays++;
+                        } else {
+                            totalDays++;
+                        }
+                    }
+                    currDate.setDate(currDate.getDate() + 1);
+                }
+            }
+            const exclusionText = excludedDays > 0 ? ` · ${excludedDays} no computables por baja/IT` : '';
+            return {
+                fecha: ev.fecha_inicio,
+                main: `<strong>${escapeHtml(window.employeeProfileDateRangeLabel(ev.fecha_inicio, ev.fecha_fin || ev.fecha_inicio))}</strong>`,
+                secondary: `${totalDays} días naturales${exclusionText}${ev.isGroup ? ' · agrupado' : ''} · ${refDate.getFullYear()}`,
+                badge: escapeHtml(ev.estado || 'activo')
+            };
+        });
         tabContent = `<div style="display:grid; grid-template-columns:1.1fr 0.9fr; gap:18px;"><section class="emp-card glass" style="padding:20px; border-radius:18px; border:1px solid var(--border);"><h3 style="margin:0 0 14px; font-size:0.9rem; font-weight:800;">Vacaciones ${refDate.getFullYear()}</h3>${renderRowsTable(vacRows, 'No hay vacaciones registradas en el año en curso.')}</section><section class="emp-card glass" style="padding:20px; border-radius:18px; border:1px solid var(--border);"><h3 style="margin:0 0 14px; font-size:0.9rem; font-weight:800;">Saldo vacacional</h3><div style="display:grid; gap:10px;">${window.renderEmployeeProfileField(['Derecho anual', model.vacaciones.applies ? `${model.vacaciones.derechoAnual} dias` : 'No aplica'])}${window.renderEmployeeProfileField(['Consumidas', model.vacaciones.applies ? `${model.vacaciones.usadas} dias` : 'No aplica'])}${window.renderEmployeeProfileField(['Previstas aï¿½o', model.vacaciones.applies ? `${model.annualKpis.vacacionesPlanificadas} dias` : 'No aplica'])}${window.renderEmployeeProfileField(['Previstas futuras', model.vacaciones.applies ? `${model.vacaciones.previstas} dias` : 'No aplica'])}${window.renderEmployeeProfileField(['Ajustes', model.vacaciones.applies ? `${model.vacaciones.saldo >= 0 ? '+' : ''}${model.vacaciones.saldo} dias` : 'No aplica'])}${window.renderEmployeeProfileField(['Saldo neto', vacationBalanceLabel])}</div></section></div>`;
     } else if (currentTab === 'leaves') {
         const selectedYear = refDate.getFullYear();
