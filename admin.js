@@ -728,10 +728,10 @@ window.renderVacations = async () => {
                                 <td style="padding:1rem; text-align:center;">
                                     ${p.opStatus.label === 'Anulada' ? '<span style="color:var(--text-dim); font-size:0.6rem;">—</span>' : (
                                         p.diasNoComputablesBaja === p.days && p.days > 0
-                                        ? \`<span style="background:rgba(239,68,68,0.1); color:#ef4444; padding:4px 10px; border-radius:8px; font-weight:800; font-size:0.6rem;">SUSPENDIDA POR BAJA</span>\`
+                                        ? '<span style="background:rgba(239,68,68,0.1); color:#ef4444; padding:4px 10px; border-radius:8px; font-weight:800; font-size:0.6rem;">SUSPENDIDA POR BAJA</span>'
                                         : p.diasNoComputablesBaja > 0 
-                                            ? \`<span style="background:rgba(245,158,11,0.1); color:#f59e0b; padding:4px 10px; border-radius:8px; font-weight:800; font-size:0.6rem;">PARCIAL BAJA/IT</span><br><span style="color:var(--text-dim); font-size:0.6rem; margin-top:4px; display:inline-block;">\${p.end >= todayKey ? (p.start <= todayKey ? 'EN CURSO' : 'PRÓXIMA/FUTURA') : 'FINALIZADA'}</span>\`
-                                            : \`<span style="color:var(--text-dim); font-size:0.6rem;">\${p.end >= todayKey ? (p.start <= todayKey ? 'EN CURSO' : 'PRÓXIMA/FUTURA') : 'FINALIZADA'}</span>\`
+                                            ? '<span style="background:rgba(245,158,11,0.1); color:#f59e0b; padding:4px 10px; border-radius:8px; font-weight:800; font-size:0.6rem;">PARCIAL BAJA/IT</span><br><span style="color:var(--text-dim); font-size:0.6rem; margin-top:4px; display:inline-block;">' + (p.end >= todayKey ? (p.start <= todayKey ? 'EN CURSO' : 'PRÓXIMA/FUTURA') : 'FINALIZADA') + '</span>'
+                                            : '<span style="color:var(--text-dim); font-size:0.6rem;">' + (p.end >= todayKey ? (p.start <= todayKey ? 'EN CURSO' : 'PRÓXIMA/FUTURA') : 'FINALIZADA') + '</span>'
                                     )}
                                 </td>
                                 <td style="padding:1rem; text-align:center;">
