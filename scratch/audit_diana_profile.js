@@ -56,6 +56,9 @@ async function run() {
     model.yearGroupedVacs.forEach(ev => {
         console.log(`- ID: ${ev.id}, Tipo: ${ev.tipo}, Start: ${ev.fecha_inicio}, End: ${ev.fecha_fin}, isGroup: ${ev.isGroup}`);
     });
+    process.exit(0);
 }
-
-run().catch(console.error);
+run().catch(e => {
+    console.error(e);
+    process.exit(1);
+});

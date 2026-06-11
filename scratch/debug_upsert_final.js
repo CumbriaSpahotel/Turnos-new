@@ -82,4 +82,9 @@ async function run() {
         await supabase.from('empleados').delete().eq('id', 'TEST_DUMMY_ID');
     }
 }
-run();
+run().then(() => {
+    process.exit(0);
+}).catch(e => {
+    console.error(e);
+    process.exit(1);
+});

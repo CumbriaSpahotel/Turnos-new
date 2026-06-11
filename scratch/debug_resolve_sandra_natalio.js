@@ -148,6 +148,9 @@ async function run() {
             console.log(`    - ID: ${ev.id}, Tipo: ${ev.tipo}, Origin: ${ev.empleado_id}, Destination: ${ev.empleado_destino_id}, isTitular: ${global.window.isTitularOfAbsence(ev, natalio.id)}`);
         });
     }
+    process.exit(0);
 }
-
-run().catch(console.error);
+run().catch(e => {
+    console.error(e);
+    process.exit(1);
+});

@@ -75,5 +75,9 @@ async function run() {
             historyLength: t.resumen30d
         });
     });
+    process.exit(0);
 }
-run().catch(console.error);
+run().catch(e => {
+    console.error(e);
+    process.exit(1);
+});
