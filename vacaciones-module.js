@@ -101,6 +101,22 @@ window.renderVacations = async () => {
       if(ev.empleado_destino_id) ev.empleado_destino_id = resolveEmpId(ev.empleado_destino_id, employees);
     });
 
+    // Construir fechas de baja
+    const bajaFechasPorEmp = {};
+    allEventos.forEach(ev => {
+        if (String(ev.tipo || '').toUpperCase().includes('BAJA') && !ESTADO_EXCLUIDO.test(ev.estado || '')) {
+            const titularId = resolveEmpId(ev.empleado_id, employees);
+            if (typeof window.isTitularOfAbsence === 'function' && window.isTitularOfAbsence(ev, titularId)) {
+                if (!bajaFechasPorEmp[titularId]) bajaFechasPorEmp[titularId] = new Set();
+                const bStart = new Date(ev.fecha_inicio + 'T12:00:00');
+                const bEnd = new Date((ev.fecha_fin || ev.fecha_inicio) + 'T12:00:00');
+                for (let d = new Date(bStart); d <= bEnd; d.setDate(d.getDate() + 1)) {
+                    bajaFechasPorEmp[titularId].add(d.toISOString().split('T')[0]);
+                }
+            }
+        }
+    });
+
     // Group into periods
     const groupedVacs = window.groupConsecutiveEvents(vacEventos);
 
@@ -130,15 +146,60 @@ window.renderVacations = async () => {
           existing.sustituto = g.empleado_destino_id||g.payload?.sustituto;
         }
         existing.days = Math.max(1, diffDays(existing.start, existing.end));
+        
+        let diasNoComputablesBaja = 0;
+        const setBajas = bajaFechasPorEmp[empId];
+        if (setBajas) {
+            const pStart = new Date(existing.start + 'T12:00:00');
+            const pEnd = new Date(existing.end + 'T12:00:00');
+            for (let d = new Date(pStart); d <= pEnd; d.setDate(d.getDate() + 1)) {
+                if (setBajas.has(d.toISOString().split('T')[0])) diasNoComputablesBaja++;
+            }
+        }
+        existing.diasNoComputablesBaja = diasNoComputablesBaja;
+        existing.diasComputables = existing.days - diasNoComputablesBaja;
+        
+        if (typeof window.getVacationOperationalStatus === 'function') {
+            existing.opStatus = window.getVacationOperationalStatus({ estado: existing.estado, fecha_inicio: existing.start, fecha_fin: existing.end }, {
+                todayISO: hoy,
+                totalDays: existing.days,
+                computables: existing.diasComputables,
+                noComputables: existing.diasNoComputablesBaja
+            });
+        }
       } else {
+        const days = Math.max(1, diffDays(gStart, gEnd));
+        let diasNoComputablesBaja = 0;
+        const setBajas = bajaFechasPorEmp[empId];
+        if (setBajas) {
+            const pStart = new Date(gStart + 'T12:00:00');
+            const pEnd = new Date(gEnd + 'T12:00:00');
+            for (let d = new Date(pStart); d <= pEnd; d.setDate(d.getDate() + 1)) {
+                if (setBajas.has(d.toISOString().split('T')[0])) diasNoComputablesBaja++;
+            }
+        }
+        const diasComputables = days - diasNoComputablesBaja;
+        let opStatus = { label: 'Activo', cls: 'activo' };
+        if (typeof window.getVacationOperationalStatus === 'function') {
+            opStatus = window.getVacationOperationalStatus({ estado: g.estado || 'activo', fecha_inicio: gStart, fecha_fin: gEnd }, {
+                todayISO: hoy,
+                totalDays: days,
+                computables: diasComputables,
+                noComputables: diasNoComputablesBaja
+            });
+        }
+
         mergedGroups.push({
           id: g.id, ids: g.ids||[g.id], isGroup: g.isGroup||false,
           empId, hotel,
           start: gStart, end: gEnd,
-          days: Math.max(1, diffDays(gStart, gEnd)),
+          days: days,
+          diasNoComputablesBaja,
+          diasComputables,
           sustituto: g.empleado_destino_id||g.payload?.sustituto||'',
           estado: g.estado||'activo',
-          tipo: (g.tipo||'').split(' ')[0]
+          tipo: (g.tipo||'').split(' ')[0],
+          opStatus
         });
       }
     });
@@ -147,8 +208,9 @@ window.renderVacations = async () => {
     // Primary filters (without employee — to compute available employees)
     let primaryFiltered = allPeriods.filter(p => {
       if(hotel!=='all'&&p.hotel!==hotel)return false;
-      if(status==='pending')return p.end>=hoy;
-      if(status==='past')return p.end<hoy;
+      if(status==='pending') return p.opStatus ? ['Pendiente', 'En curso'].includes(p.opStatus.label) : p.end>=hoy;
+      if(status==='past') return p.opStatus ? ['Consumida', 'No computable baja/IT'].includes(p.opStatus.label) && p.end<hoy : p.end<hoy;
+      if(status==='cancelled') return p.opStatus && p.opStatus.label === 'Anulada';
       return true;
     });
 
@@ -170,6 +232,8 @@ window.renderVacations = async () => {
     // ── KPI CALCULATIONS ──
     const uniqueEmps = new Set(visible.map(p=>p.empId)).size;
     const totalDias = visible.reduce((s,p)=>s+p.days,0);
+    const totalComputables = visible.reduce((s,p)=>s+(p.diasComputables||0),0);
+    const totalNoComputables = visible.reduce((s,p)=>s+(p.diasNoComputablesBaja||0),0);
     const sinSust = visible.filter(p=>!p.sustituto).length;
 
     // Actualmente de vacaciones
@@ -246,6 +310,7 @@ window.renderVacations = async () => {
           <select id="vacStatus" class="btn-premium" onchange="window.renderVacations()">
             <option value="pending"${status==='pending'?' selected':''}>Pendientes / Actuales</option>
             <option value="past"${status==='past'?' selected':''}>Finalizadas</option>
+            <option value="cancelled"${status==='cancelled'?' selected':''}>Anuladas</option>
             <option value="all"${status==='all'?' selected':''}>Todas</option>
           </select>
           <button class="btn-premium" onclick="window.renderVacations()" style="padding:8px 14px;font-size:0.7rem;">↻ Refrescar</button>
@@ -256,7 +321,7 @@ window.renderVacations = async () => {
       </section>
 
       <!-- KPIs -->
-      <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:12px;margin-bottom:14px;">
+      <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(130px, 1fr));gap:12px;margin-bottom:14px;">
         <div class="glass-panel" style="padding:14px;border:1px solid var(--border);border-radius:14px;">
           <div style="font-size:0.65rem;color:var(--text-dim);font-weight:800;text-transform:uppercase;">Periodos filtrados</div>
           <div style="font-size:1.6rem;font-weight:900;margin-top:4px;">${visible.length}</div>
@@ -274,12 +339,16 @@ window.renderVacations = async () => {
           <div style="margin-top:6px;">${proxKPIHtml}</div>
         </div>
         <div class="glass-panel" style="padding:14px;border:1px solid var(--border);border-radius:14px;">
-          <div style="font-size:0.65rem;color:var(--text-dim);font-weight:800;text-transform:uppercase;">Sin sustituto</div>
-          <div style="font-size:1.6rem;font-weight:900;margin-top:4px;color:${sinSust>0?'#ef4444':'var(--text)'};">${sinSust}</div>
+          <div style="font-size:0.65rem;color:var(--text-dim);font-weight:800;text-transform:uppercase;">Días naturales brutos</div>
+          <div style="font-size:1.6rem;font-weight:900;margin-top:4px;">${totalDias}</div>
         </div>
         <div class="glass-panel" style="padding:14px;border:1px solid var(--border);border-radius:14px;">
-          <div style="font-size:0.65rem;color:var(--text-dim);font-weight:800;text-transform:uppercase;">Días naturales</div>
-          <div style="font-size:1.6rem;font-weight:900;margin-top:4px;">${totalDias}</div>
+          <div style="font-size:0.65rem;color:var(--text-dim);font-weight:800;text-transform:uppercase;">Días computables</div>
+          <div style="font-size:1.6rem;font-weight:900;margin-top:4px;color:#10b981;">${totalComputables}</div>
+        </div>
+        <div class="glass-panel" style="padding:14px;border:1px solid var(--border);border-radius:14px;">
+          <div style="font-size:0.65rem;color:var(--text-dim);font-weight:800;text-transform:uppercase;">No computables baja</div>
+          <div style="font-size:1.6rem;font-weight:900;margin-top:4px;color:#ef4444;">${totalNoComputables}</div>
         </div>
       </div>
 
@@ -300,16 +369,35 @@ window.renderVacations = async () => {
             const d=p.days;
             const sustTxt=p.sustituto?empLabel(p.sustituto,employees):null;
             const est=(p.estado||'activo').toLowerCase();
+            const opStatus = p.opStatus || { label: est, cls: 'activo' };
+            const getOpColor = (cls) => ({ 'vacaciones': '#10b981', 'baja-definitiva': '#6b7280', 'baja': '#ef4444', 'excedencia': '#f59e0b', 'fijo': '#3b82f6', 'activo': '#10b981', 'pendiente': '#f59e0b' }[cls] || '#10b981');
+            const getOpBg = (cls) => ({ 'vacaciones': 'rgba(16,185,129,0.1)', 'baja-definitiva': 'rgba(107,114,128,0.1)', 'baja': 'rgba(239,68,68,0.1)', 'excedencia': 'rgba(245,158,11,0.1)', 'fijo': 'rgba(59,130,246,0.1)', 'activo': 'rgba(16,185,129,0.1)', 'pendiente': 'rgba(245,158,11,0.1)' }[cls] || 'rgba(16,185,129,0.1)');
+
             return`<tr style="border-top:1px solid var(--border);">
               <td style="padding:12px;font-weight:700;">${empLabel(p.empId,employees)}</td>
               <td style="padding:12px;font-size:0.85rem;color:var(--text-dim);">${p.hotel}</td>
               <td style="padding:12px;font-size:0.85rem;">${sustTxt||'<span style="color:#f59e0b;font-weight:700;font-size:0.75rem;">Sin sustituto</span>'}</td>
-              <td style="padding:12px;text-align:center;"><span style="background:${ESTADO_BG[est]||ESTADO_BG.activo};color:${ESTADO_COLOR[est]||ESTADO_COLOR.activo};padding:4px 10px;border-radius:8px;font-weight:800;font-size:0.6rem;">${est.toUpperCase()}</span></td>
+              <td style="padding:12px;text-align:center;">
+                  <span style="background:${getOpBg(opStatus.cls)};color:${getOpColor(opStatus.cls)};padding:4px 10px;border-radius:8px;font-weight:800;font-size:0.6rem;text-transform:uppercase;">${opStatus.label}</span>
+              </td>
               <td style="padding:12px;text-align:center;">
                 <div style="font-weight:600;">${sameDay?fmtD(p.start):`${fmtD(p.start)} — ${fmtD(p.end)}`}</div>
-                <div style="font-size:0.6rem;color:var(--text-dim);margin-top:3px;font-weight:700;">${d} día${d!==1?'s':''} natural${d!==1?'es':''}</div>
+                <div style="font-size:0.6rem;color:var(--text-dim);margin-top:3px;font-weight:700;">
+                    ${p.diasNoComputablesBaja > 0 
+                        ? \`\${p.diasComputables} días computables · <span style="color:#ef4444;">\${p.diasNoComputablesBaja} no computables por baja/IT</span>\`
+                        : \`\${d} día\${d!==1?'s':''} natural\${d!==1?'es':''}\`
+                    }
+                </div>
               </td>
-              <td style="padding:12px;text-align:center;"><span style="background:${sitBg};color:${sitColor};padding:4px 10px;border-radius:8px;font-weight:800;font-size:0.6rem;">${sitLabel.toUpperCase()}</span></td>
+              <td style="padding:12px;text-align:center;">
+                  ${opStatus.label === 'Anulada' ? '<span style="color:var(--text-dim);font-size:0.6rem;">—</span>' : (
+                      p.diasNoComputablesBaja === p.days && p.days > 0
+                      ? '<span style="background:rgba(239,68,68,0.1);color:#ef4444;padding:4px 10px;border-radius:8px;font-weight:800;font-size:0.6rem;">SUSPENDIDA POR BAJA</span>'
+                      : p.diasNoComputablesBaja > 0 
+                          ? '<span style="background:rgba(245,158,11,0.1);color:#f59e0b;padding:4px 10px;border-radius:8px;font-weight:800;font-size:0.6rem;">PARCIAL BAJA/IT</span><br><span style="color:var(--text-dim);font-size:0.6rem;margin-top:4px;display:inline-block;">' + (p.end >= hoy ? (p.start <= hoy ? 'EN CURSO' : 'PRÓXIMA/FUTURA') : 'FINALIZADA') + '</span>'
+                          : '<span style="color:var(--text-dim);font-size:0.6rem;">' + (p.end >= hoy ? (p.start <= hoy ? 'EN CURSO' : 'PRÓXIMA/FUTURA') : 'FINALIZADA') + '</span>'
+                  )}
+              </td>
               <td style="padding:12px;text-align:center;white-space:nowrap;">
                 <button class="btn-premium" onclick="window.editVacationByIndex(${idx})" style="padding:5px 10px;font-size:0.65rem;margin:2px;">Gestionar</button>
                 <button class="btn-premium" onclick="window.cancelVacationGroup(${idx})" style="padding:5px 10px;font-size:0.65rem;color:var(--danger);margin:2px;">Anular</button>
