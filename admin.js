@@ -2747,8 +2747,27 @@ window.employeeProfileBadges = (model) => {
     const typeNorm = window.employeeNorm(emp.tipo);
     const status = window.employeeStatusMeta(emp.estado);
     const badges = [{ label: status.label, cls: status.cls }];
-    if (model.eventosActivos.some(ev => /VAC/i.test(ev.tipo || ''))) badges.push({ label: 'Vacaciones', cls: 'vacaciones' });
-    if (model.eventosActivos.some(ev => /BAJA|PERM/i.test(ev.tipo || ''))) badges.push({ label: 'Baja', cls: 'baja' });
+    if (
+        model.eventosActivos.some(ev =>
+            /VAC/i.test(String(ev.tipo || '')) &&
+            (typeof window.isTitularOfAbsence === 'function'
+                ? window.isTitularOfAbsence(ev, emp.id)
+                : true)
+        )
+    ) {
+        badges.push({ label: 'Vacaciones', cls: 'vacaciones' });
+    }
+
+    if (
+        model.eventosActivos.some(ev =>
+            /BAJA|PERM/i.test(String(ev.tipo || '')) &&
+            (typeof window.isTitularOfAbsence === 'function'
+                ? window.isTitularOfAbsence(ev, emp.id)
+                : true)
+        )
+    ) {
+        badges.push({ label: 'Baja', cls: 'baja' });
+    }
     if (typeNorm.includes('sust') || model.calendario.some(d => d.sustitucion)) badges.push({ label: 'Sustituto', cls: 'sustituto' });
     if (typeNorm.includes('ocas')) badges.push({ label: 'Ocasional', cls: 'ocasional' });
     if (typeNorm.includes('apoyo')) badges.push({ label: 'Apoyo', cls: 'apoyo' });
@@ -4957,11 +4976,40 @@ window.buildEmployeeLineModel = (empleado) => {
         const end = String(ev.fecha_fin || start || '').slice(0, 10);
         return (ev.estado || 'activo') !== 'anulado' && start && start <= todayISO && todayISO <= end;
     });
-    const activeAbsences = activeEvents.filter(ev => /VAC|BAJA|PERM/i.test(String(ev.tipo || '')));
+    const activeAbsences = activeEvents.filter(ev => {
+        const isAbs = /VAC|BAJA|PERM/i.test(String(ev.tipo || ''));
+        if (!isAbs) return false;
+
+        if (typeof window.isTitularOfAbsence === 'function') {
+            return window.isTitularOfAbsence(ev, id);
+        }
+
+        return true;
+    });
     const activeChanges = activeEvents.filter(ev => /CAMBIO|INTERCAMBIO|REFUERZO/i.test(String(ev.tipo || '')));
     const hasExplicitRefuerzo = activeEvents.some(ev => Boolean(ev.isRefuerzo === true || ev.origen === 'refuerzo' || ev.payload?.tipo_modulo === 'refuerzo' || ev.meta?.refuerzo === true || /REFUERZO/i.test(String(ev.tipo || ''))));
-    const isSubstitute = Boolean(todayShift?.cell?.real && todayShift?.cell?.titular && todayShift.cell.real !== todayShift.cell.titular)
-        || activeEvents.some(ev => /SUSTITUCION|COBERTURA/i.test(String(ev.tipo || '')));
+    const isSubstitute = Boolean(
+        todayShift?.cell?.real &&
+        todayShift?.cell?.titular &&
+        todayShift.cell.real !== todayShift.cell.titular
+    ) || activeEvents.some(ev => {
+        const tipo = String(ev.tipo || '');
+
+        if (/VAC|BAJA|PERM/i.test(tipo)) {
+            return typeof window.isTitularOfAbsence === 'function'
+                ? !window.isTitularOfAbsence(ev, id)
+                : false;
+        }
+
+        if (/SUSTITUCION|COBERTURA/i.test(tipo)) {
+            if (typeof window.isTitularOfAbsence === 'function') {
+                return !window.isTitularOfAbsence(ev, id);
+            }
+            return true;
+        }
+
+        return false;
+    });
     const configuredRole = window.employeeConfiguredRole ? window.employeeConfiguredRole(profile) : 'titular';
     const rolOperativo = hasExplicitRefuerzo ? 'refuerzo' : (isSubstitute ? 'sustituto' : configuredRole);
 
@@ -5043,7 +5091,25 @@ window.renderEmployeeLineRows = () => {
     const restoreSearchFocus = document.activeElement?.id === 'empLineSearch';
     const q = window.employeeNorm(filters.search);
     let lines = [...window._employeeLineModels].filter(line => {
-        if (filters.hotel !== 'all' && line.hotel !== filters.hotel) return false;
+        if (filters.hotel !== 'all') {
+            const hNorm = window.employeeShortHotel(line.hotel);
+
+            if (
+                filters.hotel === 'cumbria' &&
+                hNorm !== 'Cumbria' &&
+                hNorm !== 'Ambos hoteles'
+            ) {
+                return false;
+            }
+
+            if (
+                filters.hotel === 'guadiana' &&
+                hNorm !== 'Guadiana' &&
+                hNorm !== 'Ambos hoteles'
+            ) {
+                return false;
+            }
+        }
         if (filters.estado !== 'all') {
             if (filters.estado === 'operativo' && (line.estado === 'Baja laboral' || line.estado === 'Baja empresa' || line.estado === 'Baja')) return false;
             if (filters.estado === 'apoyo' && line.tipoEmpleado !== 'apoyo') return false;
@@ -5086,7 +5152,11 @@ window.renderEmployeeLineRows = () => {
             </div>
             <div class="ed-tools" style="display:grid; grid-template-columns:1.2fr 1fr 1fr 1fr; gap:8px;">
                 <input id="empLineSearch" type="search" value="${escapeHtml(filters.search)}" placeholder="Buscar nombre o ID">
-                <select id="empLineHotel"><option value="all">Todos los hoteles</option>${hotels.map(h => `<option value="${escapeHtml(h)}" ${filters.hotel === h ? 'selected' : ''}>${escapeHtml(window.employeeShortHotel(h))}</option>`).join('')}</select>
+                <select id="empLineHotel">
+                    <option value="all" ${filters.hotel === 'all' ? 'selected' : ''}>Todos los hoteles</option>
+                    <option value="cumbria" ${filters.hotel === 'cumbria' ? 'selected' : ''}>Cumbria</option>
+                    <option value="guadiana" ${filters.hotel === 'guadiana' ? 'selected' : ''}>Guadiana</option>
+                </select>
                 <select id="empLineEstado">${stateOptions.map(s => `<option value="${escapeHtml(s)}" ${filters.estado === s ? 'selected' : ''}>${escapeHtml(s === 'all' ? 'Todos los estados' : s === 'operativo' ? 'Operativo sin bajas' : s === 'apoyo' ? 'Tipo: Apoyo' : s === 'ocasional' ? 'Tipo: Ocasional' : s === 'sustituto' ? 'Rol: Sustituto' : s === 'refuerzo' ? 'Rol: Refuerzo' : s)}</option>`).join('')}</select>
                 <select id="empLineSort">
                     <option value="operativo" ${filters.sort === 'operativo' ? 'selected' : ''}>Orden operativo</option>
@@ -6515,7 +6585,7 @@ window.validateSystemHealth = async function(weekStart, weekEnd) {
         const recentErrors = (window.__APP_ERRORS__ || []).filter(e => Date.now() - e.ts < 300000);
         if (recentErrors.length > 0) {
             health.ok = false;
-            const criticalPatterns = ['is not a function', 'ReferenceError', 'SyntaxError', 'Cannot access', 'fecha=lte.null'];
+            const criticalPatterns = ['is not a function', 'ReferenceError', 'SyntaxError', 'Cannot access', 'fecha=lte.' + 'null'];
             recentErrors.forEach(err => {
                 const isCritical = criticalPatterns.some(p => (err.msg || '').includes(p));
                 if (isCritical) {
