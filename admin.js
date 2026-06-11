@@ -23,6 +23,95 @@ window.fmtDateLegacy = (dateStr) => {
     return `${parts[2]}/${parts[1]}/${parts[0]}`;
 };
 
+// Overrides for substitute identification, hotel wildcards and coverage resolutions
+window.getEmployeeKeys = (empId) => {
+    const norm = window.normalizeId ? window.normalizeId(empId) : String(empId || '').trim().toLowerCase();
+    const keys = new Set([norm]);
+    const emp = (window.empleadosGlobales || []).find(e => 
+        (window.normalizeId ? window.normalizeId(e.id) : String(e.id || '').trim().toLowerCase()) === norm || 
+        (window.normalizeId ? window.normalizeId(e.nombre) : String(e.nombre || '').trim().toLowerCase()) === norm ||
+        (window.normalizeId ? window.normalizeId(e.id_interno) : String(e.id_interno || '').trim().toLowerCase()) === norm
+    );
+    if (emp) {
+        if (emp.id) keys.add(window.normalizeId ? window.normalizeId(emp.id) : String(emp.id || '').trim().toLowerCase());
+        if (emp.nombre) keys.add(window.normalizeId ? window.normalizeId(emp.nombre) : String(emp.nombre || '').trim().toLowerCase());
+        if (emp.id_interno) keys.add(window.normalizeId ? window.normalizeId(emp.id_interno) : String(emp.id_interno || '').trim().toLowerCase());
+    }
+    return Array.from(keys);
+};
+
+const origEventoPerteneceAHotel = window.eventoPerteneceAHotel;
+window.eventoPerteneceAHotel = (evento, hotel) => {
+    const rowHotel = window.normalizeId ? window.normalizeId(hotel) : String(hotel || '').trim().toLowerCase();
+    if (rowHotel === 'ambos hoteles' || rowHotel === 'ambos') return true;
+    if (origEventoPerteneceAHotel) {
+        return origEventoPerteneceAHotel(evento, hotel);
+    }
+    const eventHotel = window.normalizeId ? window.normalizeId(window.getEventoHotel ? window.getEventoHotel(evento) : (evento.hotel || evento.hotel_id)) : String(evento.hotel || evento.hotel_id || '').trim().toLowerCase();
+    if (!eventHotel) return true;
+    return eventHotel === rowHotel;
+};
+
+window.eventoPerteneceAEmpleado = (evento, empleadoId, context = {}) => {
+    const targetKeys = window.getEmployeeKeys(empleadoId);
+    if (targetKeys.length === 0) return false;
+    if (context.hotel && !window.eventoPerteneceAHotel(evento, context.hotel)) return false;
+    
+    const candidatesTitular = window.getEventOriginCandidates ? window.getEventOriginCandidates(evento) : [evento.empleado_id];
+    const candidatesDestino = window.getEventDestinationCandidates ? window.getEventDestinationCandidates(evento) : [evento.empleado_destino_id];
+    const normId = window.normalizeId || ((v) => String(v || '').trim().toLowerCase());
+    const candidates = [...new Set([...candidatesTitular, ...candidatesDestino])].map(c => normId(c).replace(/^#/, ''));
+    
+    return targetKeys.some(k => candidates.includes(k));
+};
+
+window.isTitularOfAbsence = (evento, empleadoId, context = {}) => {
+    const targetKeys = window.getEmployeeKeys(empleadoId);
+    if (targetKeys.length === 0) return false;
+    
+    const candidatesTitular = (window.getEventOriginCandidates ? window.getEventOriginCandidates(evento) : [evento.empleado_id]).map(c => (window.normalizeId ? window.normalizeId(c) : String(c || '').trim().toLowerCase()).replace(/^#/, ''));
+    
+    return targetKeys.some(k => candidatesTitular.includes(k));
+};
+
+const origResolveEmployeeDay = window.resolveEmployeeDay;
+window.resolveEmployeeDay = (options) => {
+    if (!origResolveEmployeeDay) return null;
+    const res = origResolveEmployeeDay(options);
+    if (res && (!res.turno || res.turno === '—')) {
+        const empId = window.normalizeId ? window.normalizeId(options.empleadoId) : String(options.empleadoId || '').trim().toLowerCase();
+        const date = window.normalizeDate ? window.normalizeDate(options.fecha) : String(options.fecha || '').slice(0, 10);
+        const eventos = options.eventos || [];
+        const activeEvents = eventos.filter(ev => {
+            if ((window.normalizeEstado ? window.normalizeEstado(ev.estado) : String(ev.estado || '').toLowerCase()) === 'anulado') return false;
+            if (window.eventoAplicaEnFecha && !window.eventoAplicaEnFecha(ev, date)) return false;
+            if (window.eventoPerteneceAEmpleado(ev, empId, { hotel: options.hotel })) return true;
+            return false;
+        });
+        
+        const covEvent = activeEvents.find(ev => {
+            const tipo = window.normalizeTipo ? window.normalizeTipo(ev.tipo) : String(ev.tipo || '').toUpperCase();
+            if (['VAC', 'BAJA', 'PERMISO', 'PERM', 'SUSTITUCION', 'COBERTURA'].includes(tipo)) {
+                return !window.isTitularOfAbsence(ev, empId);
+            }
+            return false;
+        });
+        
+        if (covEvent) {
+            const explicitTurn = covEvent.turno || covEvent.shift || covEvent.label || covEvent.codigo || 
+                                 covEvent.tipoTurno || covEvent.nombre_turno || covEvent.horario ||
+                                 covEvent.payload?.turno || covEvent.payload?.shift || covEvent.payload?.label || 
+                                 covEvent.payload?.codigo || covEvent.payload?.tipoTurno || covEvent.payload?.horario;
+            if (explicitTurn) {
+                res.turno = explicitTurn;
+                res.turnoFinal = explicitTurn;
+                res.estadoFinal = 'NORMAL';
+            }
+        }
+    }
+    return res;
+};
+
 window._previewMode = 'weekly';
 window._previewDate = window.isoDate(new Date()); 
 
