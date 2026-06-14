@@ -5899,7 +5899,7 @@ window.hasPendingPublicationChanges = async function({ weekStart, weekEnd, hotel
             // Buscar ultimo snapshot publicado para este hotel/semana
             const snapRes = await window.TurnosDB.client
                 .from('publicaciones_cuadrante')
-                .select('id, semana_inicio, hotel, created_at, version, estado, snapshot')
+                .select('id, semana_inicio, hotel, created_at, version, estado, snapshot_json')
                 .eq('estado', 'activo')
                 .eq('hotel', hotel)
                 .eq('semana_inicio', weekStart)
@@ -5913,22 +5913,33 @@ window.hasPendingPublicationChanges = async function({ weekStart, weekEnd, hotel
 
             if (snapshots) {
                 const newSnap = snapshots.find(s => s.hotel_nombre === hotel || s.hotel_id === hotel);
+                // El snapshot se guarda en la columna snapshot_json
+                const savedSnap = lastSnap?.snapshot_json;
                 if (!lastSnap) {
                     // No hay snapshot previo → siempre hay algo nuevo que publicar
                     snapshotDiff = true;
                     pendingCount = newSnap ? (newSnap.rows || []).length : 1;
-                } else if (newSnap && lastSnap.snapshot) {
-                    // Comparar filas del nuevo snapshot con el publicado
-                    // Comparamos solo turno+empleado_id+fecha para evitar falsos positivos por metadata
-                    const extractKey = row => `${row.empleado_id || row.employee_id}|${row.fecha}|${row.turno || row.code || ''}`;
-                    const oldKeys = new Set((lastSnap.snapshot.rows || []).map(extractKey));
-                    const newKeys = (newSnap.rows || []).map(extractKey);
-                    const diff = newKeys.filter(k => !oldKeys.has(k));
-                    if (diff.length > 0) {
+                } else if (newSnap && savedSnap) {
+                    // Comparar turnos por empleado. Formato guardado:
+                    // row.empleado_id + row.dias[fecha].code
+                    const buildFingerprint = (rows) => {
+                        const fp = {};
+                        (rows || []).forEach(row => {
+                            const empId = row.empleado_id || row.employee_id || row.nombre || '';
+                            if (!empId) return;
+                            const daysCodes = Object.entries(row.dias || {}).map(([f, d]) => `${f}:${d.code || d.turno || ''}`).sort().join(',');
+                            fp[empId] = daysCodes;
+                        });
+                        return fp;
+                    };
+                    const oldFP = buildFingerprint(savedSnap.rows || []);
+                    const newFP = buildFingerprint(newSnap.rows || []);
+                    const changes = Object.keys(newFP).filter(id => newFP[id] !== oldFP[id]);
+                    if (changes.length > 0) {
                         snapshotDiff = true;
-                        pendingCount = diff.length;
+                        pendingCount = changes.length;
                     }
-                } else if (newSnap && !lastSnap.snapshot) {
+                } else if (newSnap && !savedSnap) {
                     // Snapshot existe pero no tiene datos guardados → publicar de nuevo
                     snapshotDiff = true;
                     pendingCount = (newSnap.rows || []).length;
