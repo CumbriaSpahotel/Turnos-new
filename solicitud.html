@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
@@ -580,7 +580,7 @@
 
         function isFixedOrSupportEmployee(emp) {
             const type = normalizeEmployeeText(`${emp.tipo_personal || ''} ${emp.contrato || ''} ${emp.tipo || ''}`);
-            return type.includes('fijo') || type.includes('apoyo');
+            return type.includes('fijo') || type.includes('apoyo') || type.includes('sustituto') || type.includes('temporal') || type.includes('eventual') || type.includes('cobertura');
         }
 
         async function loadEmployees() {
