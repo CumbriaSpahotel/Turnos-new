@@ -5893,12 +5893,8 @@ window.getExcelDiff = () => {
 window.hasPendingPublicationChanges = async function({ weekStart, weekEnd, hotels, snapshots }) {
     const result = { hasChanges: false, count: 0, events: [], reason: '', details: [] };
     try {
-        const ACTIVE_STATES = ['activo','activa','aprobado','aprobada','pendiente'];
-        const allEvents = await window.TurnosDB.fetchEventos(weekStart, weekEnd);
-        const activeEvents = (allEvents || []).filter(e =>
-            ACTIVE_STATES.includes(String(e.estado || '').toLowerCase())
-        );
         const hotelsToCheck = Array.isArray(hotels) ? hotels : (hotels ? [hotels] : []);
+
         for (const hotel of hotelsToCheck) {
             // Buscar ultimo snapshot publicado para este hotel/semana
             const snapRes = await window.TurnosDB.client
@@ -5910,62 +5906,68 @@ window.hasPendingPublicationChanges = async function({ weekStart, weekEnd, hotel
                 .order('version', { ascending: false })
                 .limit(1);
             const lastSnap = snapRes.data?.[0];
-            const lastPubDate = lastSnap?.created_at ? new Date(lastSnap.created_at) : null;
-            
-            // Comparar Snapshot con el nuevo generado (si se proporcionó)
+
+            // MÉTODO PRINCIPAL: comparar el snapshot generado ahora con el publicado
             let snapshotDiff = false;
-            if (snapshots && lastSnap && lastSnap.snapshot) {
+            let pendingCount = 0;
+
+            if (snapshots) {
                 const newSnap = snapshots.find(s => s.hotel_nombre === hotel || s.hotel_id === hotel);
-                if (newSnap) {
-                    const oldRowsStr = JSON.stringify(lastSnap.snapshot.rows || []);
-                    const newRowsStr = JSON.stringify(newSnap.rows || []);
-                    if (oldRowsStr !== newRowsStr) {
+                if (!lastSnap) {
+                    // No hay snapshot previo → siempre hay algo nuevo que publicar
+                    snapshotDiff = true;
+                    pendingCount = newSnap ? (newSnap.rows || []).length : 1;
+                } else if (newSnap && lastSnap.snapshot) {
+                    // Comparar filas del nuevo snapshot con el publicado
+                    // Comparamos solo turno+empleado_id+fecha para evitar falsos positivos por metadata
+                    const extractKey = row => `${row.empleado_id || row.employee_id}|${row.fecha}|${row.turno || row.code || ''}`;
+                    const oldKeys = new Set((lastSnap.snapshot.rows || []).map(extractKey));
+                    const newKeys = (newSnap.rows || []).map(extractKey);
+                    const diff = newKeys.filter(k => !oldKeys.has(k));
+                    if (diff.length > 0) {
                         snapshotDiff = true;
+                        pendingCount = diff.length;
                     }
+                } else if (newSnap && !lastSnap.snapshot) {
+                    // Snapshot existe pero no tiene datos guardados → publicar de nuevo
+                    snapshotDiff = true;
+                    pendingCount = (newSnap.rows || []).length;
                 }
-            } else if (snapshots && !lastSnap) {
-                snapshotDiff = true; // No hay snapshot previo, es nuevo
+            } else {
+                // Sin snapshots generados, usar el método antiguo de eventos activos
+                const ACTIVE_STATES = ['activo','activa','aprobado','aprobada','pendiente'];
+                const allEvents = await window.TurnosDB.fetchEventos(weekStart, weekEnd);
+                const hotelEvents = (allEvents || []).filter(e => {
+                    if (!ACTIVE_STATES.includes(String(e.estado || '').toLowerCase())) return false;
+                    const evHotel = String(e.hotel_origen || e.hotel_id || '').trim();
+                    return !evHotel || evHotel === hotel;
+                });
+                const lastPubDate = lastSnap?.created_at ? new Date(lastSnap.created_at) : null;
+                const pendingEvents = lastPubDate
+                    ? hotelEvents.filter(e => { const d = e.updated_at || e.created_at; return d && new Date(d) > lastPubDate; })
+                    : hotelEvents;
+                if (pendingEvents.length > 0) {
+                    snapshotDiff = true;
+                    pendingCount = pendingEvents.length;
+                    result.events.push(...pendingEvents);
+                }
             }
 
-            // Eventos activos de este hotel o sin hotel especifico
-            const hotelEvents = activeEvents.filter(e => {
-                const evHotel = String(e.hotel_origen || e.hotel_id || '').trim();
-                return !evHotel || evHotel === hotel;
-            });
-            // Eventos posteriores al ultimo snapshot
-            let pendingEvents = hotelEvents;
-            if (lastPubDate) {
-                pendingEvents = hotelEvents.filter(e => {
-                    const evDate = e.updated_at || e.created_at;
-                    return evDate && new Date(evDate) > lastPubDate;
-                });
-            }
-            // Tambien contar si hay diff de Excel
-            const excelDiff = window.getExcelDiff ? window.getExcelDiff().length : 0;
-            const hotelPending = pendingEvents.length + excelDiff + (snapshotDiff ? 1 : 0);
             result.details.push({
                 hotel,
                 lastSnapshotId: lastSnap?.id || null,
                 lastSnapshotDate: lastSnap?.created_at || null,
                 lastSnapshotVersion: lastSnap?.version || null,
-                activeEventsTotal: hotelEvents.length,
-                pendingAfterSnapshot: pendingEvents.length,
-                excelDiff,
                 snapshotDiff,
-                hasPending: hotelPending > 0
+                pendingCount,
+                hasPending: snapshotDiff
             });
-            if (hotelPending > 0) {
+            if (snapshotDiff) {
                 result.hasChanges = true;
-                result.count += hotelPending;
-                result.events.push(...pendingEvents);
+                result.count += pendingCount;
             }
         }
-        // Si no se especificaron hoteles, contar todos los eventos activos sin filtro
-        if (hotelsToCheck.length === 0) {
-            result.hasChanges = activeEvents.length > 0;
-            result.count = activeEvents.length;
-            result.events = activeEvents;
-        }
+
         result.reason = result.hasChanges
             ? `${result.count} cambio(s) pendiente(s) de publicar`
             : 'No hay cambios pendientes de publicacion';
@@ -6832,6 +6834,42 @@ window.getGlobalPendingPublicationStatus = async function() {
                     eventIds: newerEvts.map(e => e.id)
                 });
             }
+        }
+
+        // SEGUNDA PASADA: detectar semanas en la tabla 'turnos' sin snapshot publicado
+        // Esto captura los turnos cargados por el Modo Excel que aún no tienen cuadrante publicado
+        try {
+            const turnosRes = await window.TurnosDB.client
+                .from('turnos')
+                .select('hotel_id, fecha')
+                .gte('fecha', rangeStart)
+                .lte('fecha', rangeEnd);
+            const turnosData = turnosRes.data || [];
+
+            // Agrupar turnos por hotel+semana
+            const turnosGrouped = new Map();
+            turnosData.forEach(t => {
+                const weekStart = getMonday(t.fecha);
+                const key = (t.hotel_id || 'UNKNOWN') + '::' + weekStart;
+                if (!turnosGrouped.has(key)) turnosGrouped.set(key, { hotel: t.hotel_id, weekStart, count: 0 });
+                turnosGrouped.get(key).count++;
+            });
+
+            for (const [key, group] of turnosGrouped) {
+                // Si ya procesamos este hotel+semana via eventos, saltar
+                if (grouped.has(key)) continue;
+                // Si ya hay un snapshot publicado para esta semana, no contar
+                if (snapMap.has(key)) continue;
+                // No hay snapshot → semana sin publicar
+                result.totalPendingChanges += 1;
+                result.byHotelWeek.push({
+                    hotel: group.hotel, weekStart: group.weekStart,
+                    snapshotExists: false, pendingCount: group.count,
+                    isOutdated: false, source: 'turnos_sin_snapshot'
+                });
+            }
+        } catch (turnosErr) {
+            console.warn('[GLOBAL_STATUS] No se pudo revisar turnos sin snapshot:', turnosErr.message);
         }
 
         console.log('[GLOBAL_PENDING_PUBLICATION_STATUS]', {
