@@ -5890,7 +5890,7 @@ window.getExcelDiff = () => {
 
 // hasPendingPublicationChanges: compara eventos activos vs ultimo snapshot publicado.
 // Devuelve {hasChanges, count, reason, lastSnapshotDate} por hotel/semana.
-window.hasPendingPublicationChanges = async function({ weekStart, weekEnd, hotels }) {
+window.hasPendingPublicationChanges = async function({ weekStart, weekEnd, hotels, snapshots }) {
     const result = { hasChanges: false, count: 0, events: [], reason: '', details: [] };
     try {
         const ACTIVE_STATES = ['activo','activa','aprobado','aprobada','pendiente'];
@@ -5903,7 +5903,7 @@ window.hasPendingPublicationChanges = async function({ weekStart, weekEnd, hotel
             // Buscar ultimo snapshot publicado para este hotel/semana
             const snapRes = await window.TurnosDB.client
                 .from('publicaciones_cuadrante')
-                .select('id, semana_inicio, hotel, created_at, version, estado')
+                .select('id, semana_inicio, hotel, created_at, version, estado, snapshot')
                 .eq('estado', 'activo')
                 .eq('hotel', hotel)
                 .eq('semana_inicio', weekStart)
@@ -5911,6 +5911,22 @@ window.hasPendingPublicationChanges = async function({ weekStart, weekEnd, hotel
                 .limit(1);
             const lastSnap = snapRes.data?.[0];
             const lastPubDate = lastSnap?.created_at ? new Date(lastSnap.created_at) : null;
+            
+            // Comparar Snapshot con el nuevo generado (si se proporcionó)
+            let snapshotDiff = false;
+            if (snapshots && lastSnap && lastSnap.snapshot) {
+                const newSnap = snapshots.find(s => s.hotel_nombre === hotel || s.hotel_id === hotel);
+                if (newSnap) {
+                    const oldRowsStr = JSON.stringify(lastSnap.snapshot.rows || []);
+                    const newRowsStr = JSON.stringify(newSnap.rows || []);
+                    if (oldRowsStr !== newRowsStr) {
+                        snapshotDiff = true;
+                    }
+                }
+            } else if (snapshots && !lastSnap) {
+                snapshotDiff = true; // No hay snapshot previo, es nuevo
+            }
+
             // Eventos activos de este hotel o sin hotel especifico
             const hotelEvents = activeEvents.filter(e => {
                 const evHotel = String(e.hotel_origen || e.hotel_id || '').trim();
@@ -5926,7 +5942,7 @@ window.hasPendingPublicationChanges = async function({ weekStart, weekEnd, hotel
             }
             // Tambien contar si hay diff de Excel
             const excelDiff = window.getExcelDiff ? window.getExcelDiff().length : 0;
-            const hotelPending = pendingEvents.length + excelDiff;
+            const hotelPending = pendingEvents.length + excelDiff + (snapshotDiff ? 1 : 0);
             result.details.push({
                 hotel,
                 lastSnapshotId: lastSnap?.id || null,
@@ -5935,6 +5951,7 @@ window.hasPendingPublicationChanges = async function({ weekStart, weekEnd, hotel
                 activeEventsTotal: hotelEvents.length,
                 pendingAfterSnapshot: pendingEvents.length,
                 excelDiff,
+                snapshotDiff,
                 hasPending: hotelPending > 0
             });
             if (hotelPending > 0) {
@@ -5998,7 +6015,8 @@ window.showPublishPreview = async () => {
     const hotelsInPreview = snapshots.map(s => s.hotel_nombre || s.hotel_id);
     const pendingResult = await window.hasPendingPublicationChanges({
         weekStart, weekEnd,
-        hotels: hotelsInPreview
+        hotels: hotelsInPreview,
+        snapshots: snapshots
     });
 
     // 3. Validar Snapshot (Bloqueante)
