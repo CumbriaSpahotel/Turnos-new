@@ -3606,7 +3606,13 @@ window.createPuestosPreviewModel = ({
         }
         
         dates.forEach((date, idx) => {
-            const turno = sRow.values[idx] || null;
+            const turnoExcel = sRow.values[idx] || null;
+            
+            // PRIORIZAR SUPABASE: Si existe un turno en la base de datos, sobrescribe al Excel.
+            const normSrowEmpId = window.normalizeId(sRow.empleadoId);
+            const overrideDbRow = (rows || []).find(r => window.normalizeId(r.empleado_id) === normSrowEmpId && r.fecha === date);
+            const turno = overrideDbRow ? overrideDbRow.turno : turnoExcel;
+
             baseRowsFlat.push({
                 empleadoId: sRow.empleadoId,
                 fecha: date,
