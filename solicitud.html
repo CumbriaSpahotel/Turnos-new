@@ -927,13 +927,61 @@
             const solId = $("#solicitante").value;
             const compSelect = $("#companero");
             if (!hotel || !solId || !date || !compSelect) return;
-            const candidates = _emps.filter(e =>
+            
+            let candidates = _emps.filter(e =>
                 e.id !== solId &&
                 employeeBelongsToHotel(e, hotel) &&
                 isActiveEmployee(e) &&
                 isTitularEmployee(e) &&
                 isFixedOrSupportEmployee(e)
             );
+
+            try {
+                const weekStart = window.getWeekStartISO ? window.getWeekStartISO(date) : date;
+                const d = new Date(`${weekStart}T12:00:00`);
+                d.setDate(d.getDate() + 6);
+                const weekEnd = d.toISOString().slice(0, 10);
+                
+                const { rows, eventos } = await window.TurnosDB.fetchRangoCalculado(weekStart, weekEnd);
+                let workingEmpIds = new Set();
+                
+                (rows || []).forEach(r => {
+                    if (r.turno && r.turno !== '-' && r.turno !== '—') {
+                        workingEmpIds.add(String(r.empleado_id).toLowerCase());
+                    }
+                });
+                
+                (eventos || []).forEach(ev => {
+                    if (ev.empleado_destino_id) workingEmpIds.add(String(ev.empleado_destino_id).toLowerCase());
+                    if (ev.sustituto_id) workingEmpIds.add(String(ev.sustituto_id).toLowerCase());
+                    if (ev.sustituto) workingEmpIds.add(String(ev.sustituto).toLowerCase());
+                    if (ev.empleado_id) workingEmpIds.add(String(ev.empleado_id).toLowerCase());
+                    if (ev.titular_id) workingEmpIds.add(String(ev.titular_id).toLowerCase());
+                });
+
+                if (workingEmpIds.size > 0) {
+                    candidates = _emps.filter(e => {
+                        if (e.id === solId) return false;
+                        if (!employeeBelongsToHotel(e, hotel)) return false;
+                        if (!isActiveEmployee(e)) return false;
+                        
+                        const empIdLower = String(e.id).toLowerCase();
+                        const empNameLower = String(e.nombre || '').toLowerCase();
+                        let isWorking = workingEmpIds.has(empIdLower);
+                        if (!isWorking) {
+                           for(let wId of workingEmpIds) {
+                               if(wId === empNameLower || empNameLower.includes(wId) || wId.includes(empNameLower)) {
+                                   isWorking = true; break;
+                               }
+                           }
+                        }
+                        return isWorking;
+                    });
+                }
+            } catch (err) {
+                console.warn("Error consultando cuadrante, usando fallback", err);
+            }
+
             if (!candidates.length) {
                 compSelect.innerHTML = '<option value="">No hay compañeros disponibles</option>';
                 return;
