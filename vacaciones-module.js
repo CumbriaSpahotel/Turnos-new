@@ -101,21 +101,7 @@ window.renderVacations = async () => {
       if(ev.empleado_destino_id) ev.empleado_destino_id = resolveEmpId(ev.empleado_destino_id, employees);
     });
 
-    // Construir fechas de baja
-    const bajaFechasPorEmp = {};
-    allEventos.forEach(ev => {
-        if (String(ev.tipo || '').toUpperCase().includes('BAJA') && !ESTADO_EXCLUIDO.test(ev.estado || '')) {
-            const titularId = resolveEmpId(ev.empleado_id, employees);
-            if (typeof window.isTitularOfAbsence === 'function' && window.isTitularOfAbsence(ev, titularId)) {
-                if (!bajaFechasPorEmp[titularId]) bajaFechasPorEmp[titularId] = new Set();
-                const bStart = new Date(ev.fecha_inicio + 'T12:00:00');
-                const bEnd = new Date((ev.fecha_fin || ev.fecha_inicio) + 'T12:00:00');
-                for (let d = new Date(bStart); d <= bEnd; d.setDate(d.getDate() + 1)) {
-                    bajaFechasPorEmp[titularId].add(d.toISOString().split('T')[0]);
-                }
-            }
-        }
-    });
+    // (Se ha eliminado la logica antigua de bajaFechasPorEmp a favor de INTERRUPCION_VAC)
 
     // Group into periods
     const groupedVacs = window.groupConsecutiveEvents(vacEventos);
@@ -147,17 +133,18 @@ window.renderVacations = async () => {
         }
         existing.days = Math.max(1, diffDays(existing.start, existing.end));
         
-        let diasNoComputablesBaja = 0;
-        const setBajas = bajaFechasPorEmp[empId];
-        if (setBajas) {
-            const pStart = new Date(existing.start + 'T12:00:00');
-            const pEnd = new Date(existing.end + 'T12:00:00');
-            for (let d = new Date(pStart); d <= pEnd; d.setDate(d.getDate() + 1)) {
-                if (setBajas.has(d.toISOString().split('T')[0])) diasNoComputablesBaja++;
-            }
-        }
-        existing.diasNoComputablesBaja = diasNoComputablesBaja;
-        existing.diasComputables = existing.days - diasNoComputablesBaja;
+        // Buscar eventos INTERRUPCION_VAC activos donde vacaciones_evento_id coincida con esta VAC
+        const interrupcionesDeEstaVac = allEventos.filter(e => 
+            String(e.tipo||'').toUpperCase() === 'INTERRUPCION_VAC' && 
+            existing.ids.includes(e.vacaciones_evento_id) && 
+            !ESTADO_EXCLUIDO.test(e.estado||'')
+        );
+        const setInterrumpidos = new Set();
+        interrupcionesDeEstaVac.forEach(intEv => setInterrumpidos.add(intEv.fecha_inicio));
+        
+        existing.diasInterrumpidos = setInterrumpidos.size;
+        existing.diasNoComputablesBaja = existing.diasInterrumpidos; // backward compat
+        existing.diasComputables = existing.days - existing.diasInterrumpidos;
         
         if (typeof window.getVacationOperationalStatus === 'function') {
             existing.opStatus = window.getVacationOperationalStatus({ estado: existing.estado, fecha_inicio: existing.start, fecha_fin: existing.end }, {
@@ -169,16 +156,18 @@ window.renderVacations = async () => {
         }
       } else {
         const days = Math.max(1, diffDays(gStart, gEnd));
-        let diasNoComputablesBaja = 0;
-        const setBajas = bajaFechasPorEmp[empId];
-        if (setBajas) {
-            const pStart = new Date(gStart + 'T12:00:00');
-            const pEnd = new Date(gEnd + 'T12:00:00');
-            for (let d = new Date(pStart); d <= pEnd; d.setDate(d.getDate() + 1)) {
-                if (setBajas.has(d.toISOString().split('T')[0])) diasNoComputablesBaja++;
-            }
-        }
-        const diasComputables = days - diasNoComputablesBaja;
+        const gIds = g.ids || [g.id];
+        const interrupcionesDeEstaVac = allEventos.filter(e => 
+            String(e.tipo||'').toUpperCase() === 'INTERRUPCION_VAC' && 
+            gIds.includes(e.vacaciones_evento_id) && 
+            !ESTADO_EXCLUIDO.test(e.estado||'')
+        );
+        const setInterrumpidos = new Set();
+        interrupcionesDeEstaVac.forEach(intEv => setInterrumpidos.add(intEv.fecha_inicio));
+        
+        const diasInterrumpidos = setInterrumpidos.size;
+        let diasNoComputablesBaja = diasInterrumpidos; // backward compat
+        const diasComputables = days - diasInterrumpidos;
         let opStatus = { label: 'Activo', cls: 'activo' };
         if (typeof window.getVacationOperationalStatus === 'function') {
             opStatus = window.getVacationOperationalStatus({ estado: g.estado || 'activo', fecha_inicio: gStart, fecha_fin: gEnd }, {
@@ -195,6 +184,7 @@ window.renderVacations = async () => {
           start: gStart, end: gEnd,
           days: days,
           diasNoComputablesBaja,
+          diasInterrumpidos: diasNoComputablesBaja,
           diasComputables,
           sustituto: g.empleado_destino_id||g.payload?.sustituto||'',
           estado: g.estado||'activo',

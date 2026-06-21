@@ -284,6 +284,30 @@ window.TurnosDB = {
         }
     },
 
+    async registrarBajaConInterrupcion(params) {
+        const { data, error } = await window.supabase.rpc('registrar_baja_con_interrupcion', params);
+        if (error) throw error;
+        if (window.localforage) await window.localforage.clear();
+        this.updateUISyncStatus('ok');
+        return data;
+    },
+
+    async anularBajaConInterrupcion(id, usuario) {
+        const { data, error } = await window.supabase.rpc('anular_baja_con_interrupcion', { p_baja_id: id, p_modificado_por: usuario });
+        if (error) throw error;
+        if (window.localforage) await window.localforage.clear();
+        this.updateUISyncStatus('ok');
+        return data;
+    },
+
+    async anularVacacionesConInterrupciones(id, usuario) {
+        const { data, error } = await window.supabase.rpc('anular_vacaciones_con_interrupciones', { p_vac_id: id, p_modificado_por: usuario });
+        if (error) throw error;
+        if (window.localforage) await window.localforage.clear();
+        this.updateUISyncStatus('ok');
+        return data;
+    },
+
     async anularEventosPeticion(peticionId) {
         // Marcamos como anulados los eventos vinculados a esta petición
         const client = window.supabase;

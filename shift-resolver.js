@@ -137,6 +137,7 @@ console.log("[ShiftResolver] Iniciando carga v5.0...");
             .replace(/_+$/, '');
         
         if (v.startsWith('VAC')) return 'VAC'; 
+        if (v.includes('INTERRUP')) return 'INTERRUPCION_VAC';
         if (v.includes('BAJA') || v.includes('IT') || v.includes('INCAPACIDAD') || v.startsWith('BM')) return 'BAJA';
         if (v.startsWith('PERM')) return 'PERM'; 
         if (v === 'CT' || v === 'CAMBIO_TURNO' || v === 'CAMBIO_DE_TURNO' || v === 'CAMBIO_DE_TURNOS') return 'CAMBIO_TURNO';
@@ -399,6 +400,7 @@ tipo=${normalized.tipo}`);
     };
 
     const PRIORITY_RANK = {
+        INTERRUPCION_VAC: 0,
         BAJA: 1,
         IT: 1,
         PERMISO: 2,
@@ -459,7 +461,13 @@ tipo=${normalized.tipo}`);
             incidenciaCubierta: null,
             origen: 'BASE',
             icon: '',
-            icons: []
+            icons: [],
+            ausenciaSuprimida: null,
+            interrupcionVacId: null,
+            tipoAusenciaCubierta: null,
+            turnoOrigenEmpleadoId: null,
+            turnoOrigenEventoId: null,
+            trazabilidad: []
         };
 
 
@@ -498,7 +506,22 @@ tipo=${normalized.tipo}`);
 
         eventosActivos.sort((a, b) => (PRIORITY_RANK[window.normalizeTipo(a.tipo)] || 99) - (PRIORITY_RANK[window.normalizeTipo(b.tipo)] || 99));
 
+        // 1. Verificar si existe INTERRUPCION_VAC para el empleado en esta fecha
+        const interrupcionActiva = eventosActivos.find(ev => 
+            window.normalizeTipo(ev.tipo) === 'INTERRUPCION_VAC' && 
+            window.eventoPerteneceAEmpleado(ev, empId) &&
+            window.eventoAplicaEnFecha(ev, date)
+        );
+
+        let ausenciaSuprimida = null;
+        if (interrupcionActiva) {
+            ausenciaSuprimida = { tipo: 'VAC', eventoId: interrupcionActiva.vacaciones_evento_id };
+        }
+
         for (const ev of eventosActivos) {
+            // Si este evento es la vacacion suprimida, lo ignoramos
+            if (ausenciaSuprimida && ev.id === ausenciaSuprimida.eventoId) continue;
+
             const tipo = window.normalizeTipo(ev.tipo);
             
             if (isDiagTarget && (tipo === 'INTERCAMBIO_TURNO' || tipo === 'CAMBIO_TURNO')) {
@@ -661,6 +684,24 @@ tipo=${normalized.tipo}`);
             }
         }
         
+        // 3. Resultado Final: si hay interrupcion, sobrescribimos
+        if (interrupcionActiva) {
+            const snap = interrupcionActiva.payload?.turnoSnapshot;
+            if (snap && snap.turno) {
+                result.turno = snap.turno;
+                result.turnoBase = snap.turno;
+                result.incidencia = null; // Anula la posible incidencia de "VAC"
+                result.origen = 'INTERRUPCION_VAC';
+                result.tipoAusenciaCubierta = snap.tipoAusenciaCubierta || 'BAJA';
+                result.sustituyeA = snap.empleadoAusenteId;
+                result.turnoOrigenEmpleadoId = snap.empleadoOrigenTurnoId;
+                result.turnoOrigenEventoId = snap.eventoOrigenTurnoId;
+                result.ausenciaSuprimida = ausenciaSuprimida;
+                result.interrupcionVacId = interrupcionActiva.id;
+                result.trazabilidad = [interrupcionActiva.vacaciones_evento_id, interrupcionActiva.incidencia_origen_id].filter(Boolean);
+            }
+        }
+
         result.turnoFinal = result.turno;
         result.isModified = result.cambio;
         result.isAbsence = !!result.incidencia;

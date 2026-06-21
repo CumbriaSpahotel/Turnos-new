@@ -347,3 +347,215 @@ ON public.publicaciones_cuadrante (estado);
 ALTER TABLE public.publicaciones_cuadrante ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "allow all" ON public.publicaciones_cuadrante;
 CREATE POLICY "allow all" ON public.publicaciones_cuadrante FOR ALL USING (true);
+
+-- ============================================================================
+-- V12.6: SUSTITUCIONES ENCADENADAS E INTERRUPCION PARCIAL DE VACACIONES
+-- ============================================================================
+
+-- Referencias funcionales (nullable)
+ALTER TABLE eventos_cuadrante ADD COLUMN IF NOT EXISTS vacaciones_evento_id uuid REFERENCES eventos_cuadrante(id);
+ALTER TABLE eventos_cuadrante ADD COLUMN IF NOT EXISTS incidencia_origen_id uuid REFERENCES eventos_cuadrante(id);
+
+-- Índice único parcial para evitar duplicados de interrupciones activas
+CREATE UNIQUE INDEX IF NOT EXISTS uniq_interrupcion_vac_activa 
+ON eventos_cuadrante (empleado_id, fecha_inicio, vacaciones_evento_id, incidencia_origen_id) 
+WHERE tipo = 'INTERRUPCION_VAC' AND estado = 'activo';
+
+-- RPC: registrar_baja_con_interrupcion
+CREATE OR REPLACE FUNCTION registrar_baja_con_interrupcion(
+  p_hotel                text,
+  p_baja_payload         jsonb,
+  p_interrupciones       jsonb,
+  p_modificado_por       text,
+  p_version_expected     integer DEFAULT NULL
+) RETURNS jsonb
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_baja_id   uuid;
+  v_inter_obj jsonb;
+  v_count_upserted int := 0;
+  v_count_anulados int := 0;
+  v_old_version int;
+BEGIN
+  -- Verificar versión y concurrencia
+  IF (p_baja_payload->>'id') IS NOT NULL THEN
+    IF p_version_expected IS NULL THEN
+       RAISE EXCEPTION 'p_version_expected es obligatorio para editar.';
+    END IF;
+
+    SELECT COALESCE((payload->>'version')::int, 1) INTO v_old_version 
+    FROM eventos_cuadrante WHERE id = (p_baja_payload->>'id')::uuid FOR UPDATE;
+    
+    IF v_old_version IS NULL THEN
+       RAISE EXCEPTION 'Evento de baja no encontrado';
+    END IF;
+    IF v_old_version != p_version_expected THEN
+       RAISE EXCEPTION 'CONCURRENCY_ERROR: La baja ha sido modificada por otro usuario.';
+    END IF;
+
+    UPDATE eventos_cuadrante
+    SET tipo=p_baja_payload->>'tipo',
+        empleado_id=p_baja_payload->>'empleado_id',
+        empleado_destino_id=p_baja_payload->>'empleado_destino_id',
+        hotel_origen=p_hotel,
+        fecha_inicio=(p_baja_payload->>'fecha_inicio')::date,
+        fecha_fin=(p_baja_payload->>'fecha_fin')::date,
+        estado=COALESCE(p_baja_payload->>'estado','activo'),
+        observaciones=p_baja_payload->>'observaciones',
+        payload=jsonb_set(
+            COALESCE(payload, '{}'::jsonb) || COALESCE(p_baja_payload->'payload', '{}'::jsonb),
+            '{version}',
+            to_jsonb(v_old_version + 1),
+            true
+        ),
+        updated_by=p_modificado_por,
+        updated_at=now()
+    WHERE id=(p_baja_payload->>'id')::uuid
+    RETURNING id INTO v_baja_id;
+  ELSE
+    INSERT INTO eventos_cuadrante(tipo, empleado_id, empleado_destino_id, hotel_origen,
+        fecha_inicio, fecha_fin, estado, observaciones, payload, updated_by, updated_at)
+    VALUES (
+        p_baja_payload->>'tipo', p_baja_payload->>'empleado_id', p_baja_payload->>'empleado_destino_id',
+        p_hotel,
+        (p_baja_payload->>'fecha_inicio')::date, (p_baja_payload->>'fecha_fin')::date,
+        COALESCE(p_baja_payload->>'estado','activo'), p_baja_payload->>'observaciones',
+        jsonb_set(COALESCE(p_baja_payload->'payload','{}'::jsonb), '{version}', '1', true),
+        p_modificado_por, now()
+    )
+    RETURNING id INTO v_baja_id;
+  END IF;
+
+  -- Anular interrupciones obsoletas comparando clave funcional (NO por ID)
+  WITH anular AS (
+      UPDATE eventos_cuadrante
+      SET estado = 'anulado',
+          payload = jsonb_set(COALESCE(payload, '{}'::jsonb), '{estado_operativo}', '"revertida"', true),
+          updated_at = now(),
+          updated_by = p_modificado_por
+      WHERE tipo = 'INTERRUPCION_VAC'
+        AND incidencia_origen_id = v_baja_id
+        AND estado = 'activo'
+        AND NOT EXISTS (
+            SELECT 1 FROM jsonb_array_elements(p_interrupciones) val
+            WHERE val->>'empleado_id' = eventos_cuadrante.empleado_id
+              AND (val->>'fecha')::date = eventos_cuadrante.fecha_inicio
+              AND (val->>'vacaciones_evento_id')::uuid = eventos_cuadrante.vacaciones_evento_id
+        )
+      RETURNING id
+  )
+  SELECT count(*) INTO v_count_anulados FROM anular;
+
+  -- Insert / Update de interrupciones diarias.
+  IF jsonb_array_length(p_interrupciones) > 0 THEN
+    FOR v_inter_obj IN SELECT * FROM jsonb_array_elements(p_interrupciones)
+    LOOP
+      INSERT INTO eventos_cuadrante (
+        id, tipo, estado, empleado_id, fecha_inicio, fecha_fin,
+        vacaciones_evento_id, incidencia_origen_id, hotel_origen, payload, updated_by, updated_at
+      ) VALUES (
+        gen_random_uuid(),
+        'INTERRUPCION_VAC', 'activo',
+        v_inter_obj->>'empleado_id', (v_inter_obj->>'fecha')::date, (v_inter_obj->>'fecha')::date,
+        (v_inter_obj->>'vacaciones_evento_id')::uuid, v_baja_id, p_hotel,
+        v_inter_obj->'payload', p_modificado_por, now()
+      )
+      ON CONFLICT (empleado_id, fecha_inicio, vacaciones_evento_id, incidencia_origen_id) 
+      WHERE tipo = 'INTERRUPCION_VAC' AND estado = 'activo'
+      DO UPDATE SET
+        payload = jsonb_set(
+            COALESCE(eventos_cuadrante.payload, '{}'::jsonb) || COALESCE(EXCLUDED.payload, '{}'::jsonb),
+            '{version}',
+            to_jsonb(COALESCE((eventos_cuadrante.payload->>'version')::int, 1) + 1),
+            true
+        ),
+        updated_by = EXCLUDED.updated_by,
+        updated_at = now();
+        
+      v_count_upserted := v_count_upserted + 1;
+    END LOOP;
+  END IF;
+
+  RETURN jsonb_build_object(
+      'baja_id', v_baja_id, 
+      'upserted_interrupciones', v_count_upserted,
+      'anuladas_interrupciones', v_count_anulados
+  );
+END;
+$$;
+
+-- RPC: anular_baja_con_interrupcion
+CREATE OR REPLACE FUNCTION anular_baja_con_interrupcion(
+  p_baja_id uuid,
+  p_modificado_por text
+) RETURNS jsonb
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_count_anulados int := 0;
+BEGIN
+  -- 1. Anular la baja
+  UPDATE eventos_cuadrante
+  SET estado = 'anulado',
+      updated_by = p_modificado_por,
+      updated_at = now()
+  WHERE id = p_baja_id;
+
+  -- 2. Anular sus interrupciones
+  WITH anular AS (
+      UPDATE eventos_cuadrante
+      SET estado = 'anulado',
+          payload = jsonb_set(COALESCE(payload, '{}'::jsonb), '{estado_operativo}', '"revertida"', true),
+          updated_by = p_modificado_por,
+          updated_at = now()
+      WHERE tipo = 'INTERRUPCION_VAC'
+        AND incidencia_origen_id = p_baja_id
+        AND estado = 'activo'
+      RETURNING id
+  )
+  SELECT count(*) INTO v_count_anulados FROM anular;
+
+  RETURN jsonb_build_object('status', 'ok', 'anuladas_interrupciones', v_count_anulados);
+END;
+$$;
+
+-- RPC: anular_vacaciones_con_interrupciones
+CREATE OR REPLACE FUNCTION anular_vacaciones_con_interrupciones(
+  p_vac_id uuid,
+  p_modificado_por text
+) RETURNS jsonb
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_count_anulados int := 0;
+BEGIN
+  UPDATE eventos_cuadrante
+  SET estado = 'anulado',
+      updated_by = p_modificado_por,
+      updated_at = now()
+  WHERE id = p_vac_id;
+
+  WITH anular AS (
+      UPDATE eventos_cuadrante
+      SET estado = 'anulado',
+          payload = jsonb_set(COALESCE(payload, '{}'::jsonb), '{estado_operativo}', '"huerfana"', true),
+          updated_by = p_modificado_por,
+          updated_at = now()
+      WHERE tipo = 'INTERRUPCION_VAC'
+        AND vacaciones_evento_id = p_vac_id
+        AND estado = 'activo'
+      RETURNING id
+  )
+  SELECT count(*) INTO v_count_anulados FROM anular;
+
+  RETURN jsonb_build_object('status', 'ok', 'anuladas_interrupciones', v_count_anulados);
+END;
+$$;
+

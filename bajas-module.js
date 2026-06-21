@@ -298,21 +298,101 @@ window.saveBajaPermiso=async()=>{
   if(sustId&&sustId===empId){status.innerHTML='<span style="color:var(--danger);">El sustituto no puede ser el mismo empleado.</span>';return;}
   if(!sustId){warn.textContent='⚠ Este periodo deja turnos sin cobertura (sin sustituto).';warn.style.display='block';}
   try{
-    btn.disabled=true;btn.textContent='Guardando...';
-    if(_editingBaja&&_editingBaja.id){
-      // Update existing
-      await window.TurnosDB.upsertEvento({id:_editingBaja.id,tipo,empleado_id:empId,hotel_origen:hotel,fecha_inicio:start,fecha_fin:end,empleado_destino_id:sustId||null,estado,observaciones:obs,payload:{tipo_modulo:'bajas_permisos',creado_desde:'admin_bajas_permisos'}});
-    }else{
-      // Create new
-      await window.TurnosDB.upsertEvento({tipo,empleado_id:empId,hotel_origen:hotel,fecha_inicio:start,fecha_fin:end,empleado_destino_id:sustId||null,estado,observaciones:obs,payload:{tipo_modulo:'bajas_permisos',creado_desde:'admin_bajas_permisos'}});
+    btn.disabled=true;btn.textContent='Validando y guardando...';
+    
+    const todosLosEventos = await window.TurnosDB.fetchEventos();
+    
+    let interrupciones = [];
+    if(sustId) {
+        const startDate = new Date(start + 'T12:00:00');
+        const endDate = new Date(end + 'T12:00:00');
+        
+        for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
+            const fStr = d.toISOString().split('T')[0];
+            
+            const eventosSustituto = todosLosEventos.filter(e => 
+                window.eventoPerteneceAEmpleado(e, sustId) && 
+                window.eventoAplicaEnFecha(e, fStr) &&
+                !/^(anulad|rechazad|cancelad)/i.test(e.estado||'')
+            );
+            
+            const tieneBajaPermiso = eventosSustituto.find(e => ['BAJA','PERMISO','PERM','FORMACION','IT'].includes(tipoNorm(e.tipo)) && window.isTitularOfAbsence(e, sustId));
+            if (tieneBajaPermiso) {
+                throw new Error(`El sustituto seleccionado está de ${tieneBajaPermiso.tipo} el día ${fStr}. No puede cubrir esta baja.`);
+            }
+            
+            const vacActiva = eventosSustituto.find(e => tipoNorm(e.tipo).startsWith('VAC') && window.isTitularOfAbsence(e, sustId));
+            if (vacActiva) {
+                const res = window.resolveEmployeeDay({
+                    empleadoId: empId,
+                    fecha: fStr,
+                    eventos: todosLosEventos,
+                    baseIndex: window.TurnosDB?.baseIndex || {}
+                });
+                
+                if (!res.turno || res.turno === '—' || res.turno === '-') {
+                    throw new Error(`El empleado titular no tiene un turno resoluble el día ${fStr}. Asigne un turno base antes de crear la baja con interrupción.`);
+                }
+                
+                const turnoSnapshot = {
+                    fecha: fStr,
+                    empleadoAusenteId: empId,
+                    empleadoSustitutoId: sustId,
+                    turno: res.turno,
+                    origen: res.origen,
+                    empleadoOrigenTurnoId: res.turnoOrigenEmpleadoId || res.sustituyeA || empId,
+                    eventoOrigenTurnoId: res.turnoOrigenEventoId || res.evento_id || null,
+                    tipoAusenciaCubierta: 'BAJA'
+                };
+                
+                interrupciones.push({
+                    fecha: fStr,
+                    empleado_id: sustId,
+                    vacaciones_evento_id: vacActiva.id,
+                    payload: { turnoSnapshot, estado_operativo: 'activa' }
+                });
+            }
+        }
     }
+
+    const payloadBase = { tipo_modulo: 'bajas_permisos', creado_desde: 'admin_bajas_permisos' };
+    let expectedVersion = null;
+    let bajaId = null;
+
+    if(_editingBaja && _editingBaja.id) {
+        bajaId = _editingBaja.id;
+        expectedVersion = _editingBaja.payload?.version ? parseInt(_editingBaja.payload.version) : 1;
+    }
+
+    const p_baja_payload = {
+        id: bajaId,
+        tipo,
+        empleado_id: empId,
+        empleado_destino_id: sustId || null,
+        fecha_inicio: start,
+        fecha_fin: end,
+        estado,
+        observaciones: obs,
+        payload: payloadBase
+    };
+
+    const username = window.currentUser?.email || 'admin_bajas';
+
+    await window.TurnosDB.registrarBajaConInterrupcion({
+        p_hotel: hotel,
+        p_baja_payload: p_baja_payload,
+        p_interrupciones: interrupciones,
+        p_modificado_por: username,
+        p_version_expected: expectedVersion
+    });
+
     status.innerHTML='<span style="color:#10b981;">✓ Guardado correctamente</span>';
     if(window.addLog)window.addLog(`Baja/Permiso ${_editingBaja?'actualizado':'creado'}: ${tipo} - ${empId}`,'info');
     _bajasInitialized=false;
     await window.TurnosDB.fetchEventos();
     setTimeout(()=>{window.closeBajaPermisoModal();window.renderBajas();},800);
   }catch(e){
-    status.innerHTML=`<span style="color:var(--danger);">Error: ${e.message}</span>`;
+    status.innerHTML=`<span style="color:var(--danger);font-size:0.85rem;">Error: ${e.message}</span>`;
   }finally{btn.disabled=false;btn.textContent=_editingBaja?'Actualizar':'Guardar';}
 };
 
@@ -345,8 +425,9 @@ window.cancelBajaPermisoGroup=async(idx)=>{
   const msg=`Vas a anular ${d} día${d!==1?'s':''} de ${TIPO_LABEL[tipoNorm(g.tipo)]||g.tipo} de ${label} del ${fmtD(g.fecha_inicio)} al ${fmtD(g.fecha_fin||g.fecha_inicio)}.\n\n¿Continuar?`;
   if(!confirm(msg))return;
   try{
+    const username = window.currentUser?.email || 'admin_bajas';
     const ids=g.ids||[g.id];
-    for(const id of ids){await window.TurnosDB.anularBajaPermiso(id,'Anulado desde módulo Bajas/Permisos');}
+    for(const id of ids){await window.TurnosDB.anularBajaConInterrupcion(id, username);}
     if(window.addLog)window.addLog(`Baja/Permiso anulado: ${g.tipo} - ${g.empleado_id} (${ids.length} eventos)`,'warn');
     _bajasInitialized=false;await window.renderBajas();
   }catch(e){alert('Error al anular: '+e.message);}
@@ -360,7 +441,8 @@ window.anularBajaPermisoAction=async()=>{
   const msg=`Vas a anular ${d} día${d!==1?'s':''} de ${_editingBaja.tipo} de ${_editingBaja.empleado_id}.\n\n¿Continuar?`;
   if(!confirm(msg))return;
   try{
-    for(const id of ids){await window.TurnosDB.anularBajaPermiso(id,'Anulado desde modal Bajas/Permisos');}
+    const username = window.currentUser?.email || 'admin_bajas';
+    for(const id of ids){await window.TurnosDB.anularBajaConInterrupcion(id, username);}
     if(window.addLog)window.addLog(`Baja/Permiso anulado desde modal: ${_editingBaja.tipo}`,'warn');
     _bajasInitialized=false;window.closeBajaPermisoModal();await window.renderBajas();
   }catch(e){alert('Error: '+e.message);}
