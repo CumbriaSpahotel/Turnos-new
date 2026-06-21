@@ -1,7 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 
-// 1. Mock window and environment
+// Mock window and environment
 global.window = {
     normalizeId: (id) => String(id || '').trim().toLowerCase()
 };
@@ -9,33 +9,103 @@ global.window = {
 const resolverCode = fs.readFileSync(path.join(__dirname, '../shift-resolver.js'), 'utf8');
 eval(resolverCode);
 
-// 2. Setup Data
-const dateStr = '2026-06-19';
-
-// Base Turnos Index (Federico has M-F shifts, Sandra has M-F shifts)
-const baseIndex = {
-    'emp-0013': { '2026-06-19': { code: 'M', origen: 'BASE' } }, // Federico
-    'emp-0017': { '2026-06-19': { code: 'T', origen: 'BASE' } }  // Sandra
-};
-
+// Base Turnos Index
+const porEmpleadoFecha = new Map();
+porEmpleadoFecha.set('emp-0013_2026-06-19', 'N'); // Federico (Tiene Noche)
+const baseIndex = { porEmpleadoFecha };
 window.TurnosDB = { baseIndex };
 
-// Events
 const events = [
     {
         id: 'EV-VAC-FED',
         tipo: 'VAC',
-        empleado_id: 'EMP-0013',
+        empleado_id: 'EMP-0013', // Federico
         empleado_destino_id: 'EMP-0017', // Sandra sustituye a Federico
         fecha_inicio: '2026-06-15',
         fecha_fin: '2026-06-21',
+        hotel_origen: 'Sercotel Guadiana',
         estado: 'activo'
-    },
+    }
+];
+
+window.eventoAplicaEnFecha = (ev, fecha) => {
+    return ev.fecha_inicio <= fecha && (ev.fecha_fin || ev.fecha_inicio) >= fecha;
+};
+window.eventoPerteneceAEmpleado = (ev, empId) => {
+    const id = window.normalizeId(empId);
+    return window.normalizeId(ev.empleado_id) === id || window.normalizeId(ev.empleado_destino_id) === id;
+};
+window.getTurnoBaseDeEmpleado = (empId, fecha, baseIdx) => {
+    return baseIdx?.porEmpleadoFecha?.get(`${window.normalizeId(empId)}_${fecha}`);
+};
+
+const hotel = 'Sercotel Guadiana';
+const empId = 'EMP-0017'; // Sandra
+const sustId = 'EMP-0013'; // Federico
+const fStr = '2026-06-19';
+const todosLosEventos = events; // eventos ANTES de crear la baja
+
+// SIMULAR ALGORITMO DE bajas-module.js
+const normEmpId = window.normalizeId(empId);
+const bIdx = baseIndex;
+
+// Nivel 1
+let res = window.resolveEmployeeDay({
+    empleadoId: empId,
+    fecha: fStr,
+    eventos: todosLosEventos,
+    baseIndex: bIdx,
+    hotel: hotel
+});
+
+let turnoEfectivo = res && res.turno && res.turno !== '—' && res.turno !== '-' ? res.turno : null;
+let empleadoOrigenTurnoId = res?.turnoOrigenEmpleadoId || res?.sustituyeA || empId;
+let eventoOrigenTurnoId = res?.turnoOrigenEventoId || res?.evento_id || null;
+let origenTxt = res?.origen || 'sustitucion_vacaciones';
+
+// Nivel 2
+if (!turnoEfectivo) {
+    const coberturaActiva = todosLosEventos.find(e => 
+        window.normalizeId(e.empleado_destino_id) === normEmpId &&
+        window.eventoAplicaEnFecha(e, fStr) &&
+        !/^(anulad|rechazad|cancelad)/i.test(e.estado||'') &&
+        (e.hotel_origen || e.hotel_id || hotel) === hotel
+    );
+    
+    if (coberturaActiva) {
+        const evtTitular = coberturaActiva.empleado_id;
+        turnoEfectivo = window.getTurnoBaseDeEmpleado(evtTitular, fStr, bIdx);
+        empleadoOrigenTurnoId = evtTitular;
+        eventoOrigenTurnoId = coberturaActiva.id;
+        origenTxt = 'sustitucion_vacaciones';
+    }
+}
+
+// Nivel 3
+if (!turnoEfectivo) {
+    turnoEfectivo = window.getTurnoBaseDeEmpleado(empId, fStr, bIdx);
+    empleadoOrigenTurnoId = empId;
+    eventoOrigenTurnoId = null;
+    origenTxt = 'BASE';
+}
+
+if (!turnoEfectivo || turnoEfectivo === '—' || turnoEfectivo === '-') {
+    console.error("FAIL: El empleado titular no tiene un turno resoluble. (Nivel 4 error)");
+} else {
+    console.log("ALGORITMO 4-NIVELES EXITOSO:");
+    console.log("Turno Efectivo:", turnoEfectivo);
+    console.log("Origen:", origenTxt);
+    console.log("Empleado Origen:", empleadoOrigenTurnoId);
+}
+
+// Ahora simulamos el estado final con la baja y la interrupción
+const eventsFinales = [
+    ...events,
     {
         id: 'EV-BAJA-SAN',
         tipo: 'BAJA',
-        empleado_id: 'EMP-0017',
-        empleado_destino_id: 'EMP-0013', // Federico cubre a Sandra
+        empleado_id: 'EMP-0017', // Sandra causa BAJA
+        empleado_destino_id: 'EMP-0013', // Federico cubre la baja
         fecha_inicio: '2026-06-19',
         fecha_fin: '2026-06-20',
         estado: 'activo'
@@ -52,61 +122,41 @@ const events = [
         payload: {
             estado_operativo: 'activa',
             turnoSnapshot: {
-                fecha: '2026-06-19',
-                empleadoAusenteId: 'EMP-0017',
-                empleadoSustitutoId: 'EMP-0013',
-                turno: 'M', // Federico recupera el turno que Sandra le iba a cubrir (Sandra le iba a hacer la M, así que Federico vuelve a hacer su M... Espera, Sandra estaba cubriendo a Federico. El turno original de Federico era M.)
-                origen: 'VAC-REVERTIDO',
-                empleadoOrigenTurnoId: 'EMP-0013',
-                eventoOrigenTurnoId: 'EV-VAC-FED',
+                fecha: fStr,
+                empleadoAusenteId: empId,
+                empleadoSustitutoId: sustId,
+                turno: turnoEfectivo,
+                origen: origenTxt,
+                empleadoOrigenTurnoId: empleadoOrigenTurnoId,
+                eventoOrigenTurnoId: eventoOrigenTurnoId,
                 tipoAusenciaCubierta: 'BAJA'
             }
         }
     }
 ];
 
-// Helper to provide events per date
-window.eventoAplicaEnFecha = (ev, fecha) => {
-    return ev.fecha_inicio <= fecha && (ev.fecha_fin || ev.fecha_inicio) >= fecha;
-};
-window.eventoPerteneceAEmpleado = (ev, empId) => {
-    const id = window.normalizeId(empId);
-    return window.normalizeId(ev.empleado_id) === id || window.normalizeId(ev.empleado_destino_id) === id;
-};
-
-window.getEmployeeTurnoBase = (empId, fecha, defaultIndex) => {
-    const id = window.normalizeId(empId);
-    return defaultIndex?.[id]?.[fecha];
-};
-
-// Test Federico
+// Test Federico y Sandra con estado final
 const resFed = window.resolveEmployeeDay({
     empleadoId: 'EMP-0013',
-    fecha: dateStr,
-    eventos: events,
+    fecha: '2026-06-19',
+    eventos: eventsFinales,
     baseIndex: baseIndex
 });
-
-console.log("Federico's resolution:", JSON.stringify(resFed, null, 2));
-
-// Test Sandra
 const resSan = window.resolveEmployeeDay({
     empleadoId: 'EMP-0017',
-    fecha: dateStr,
-    eventos: events,
+    fecha: '2026-06-19',
+    eventos: eventsFinales,
     baseIndex: baseIndex
 });
 
-console.log("Sandra's resolution:", JSON.stringify(resSan, null, 2));
-
-if (resFed.turno === 'M' && resFed.origen === 'INTERRUPCION_VAC') {
-    console.log("SUCCESS: Federico is covering Sandra's baja with his interrupted vacation snapshot.");
+if (resFed.turno === 'N' && resFed.origen === 'INTERRUPCION_VAC' && window.normalizeId(resFed.coversEmployeeId) === 'emp-0017') {
+    console.log("SUCCESS: Federico is covering Sandra's baja with Noche.");
 } else {
-    console.error("FAIL: Federico resolution is incorrect.");
+    console.error("FAIL: Federico resolution is incorrect.", { turno: resFed.turno, origen: resFed.origen, covers: resFed.coversEmployeeId });
 }
 
-if (resSan.incidencia === 'BAJA') {
-    console.log("SUCCESS: Sandra is absent due to baja.");
+if (resSan.incidencia === 'BAJA' && resSan.coveredByEmployeeId === 'emp-0013') {
+    console.log("SUCCESS: Sandra is absent due to baja covered by Federico.");
 } else {
     console.error("FAIL: Sandra resolution is incorrect.");
 }

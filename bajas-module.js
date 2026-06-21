@@ -323,14 +323,59 @@ window.saveBajaPermiso=async()=>{
             
             const vacActiva = eventosSustituto.find(e => tipoNorm(e.tipo).startsWith('VAC') && window.isTitularOfAbsence(e, sustId));
             if (vacActiva) {
-                const res = window.resolveEmployeeDay({
+                // Algoritmo de recuperación de turno de 4 niveles
+                const eventosAntesDeGuardar = todosLosEventos.filter(e => e.id !== bajaId);
+                const normEmpId = window.normalizeId ? window.normalizeId(empId) : empId.toLowerCase();
+                const bIdx = window.TurnosDB?.baseIndex || {};
+
+                // Nivel 1: turno efectivo de Sandra (titular de la baja) ANTES de la baja
+                let res = window.resolveEmployeeDay({
                     empleadoId: empId,
                     fecha: fStr,
-                    eventos: todosLosEventos,
-                    baseIndex: window.TurnosDB?.baseIndex || {}
+                    eventos: eventosAntesDeGuardar,
+                    baseIndex: bIdx,
+                    hotel: hotel
                 });
                 
-                if (!res.turno || res.turno === '—' || res.turno === '-') {
+                let turnoEfectivo = res && res.turno && res.turno !== '—' && res.turno !== '-' ? res.turno : null;
+                let empleadoOrigenTurnoId = res?.turnoOrigenEmpleadoId || res?.sustituyeA || empId;
+                let eventoOrigenTurnoId = res?.turnoOrigenEventoId || res?.evento_id || null;
+                let origenTxt = res?.origen || 'sustitucion_vacaciones';
+
+                // Nivel 2: cobertura activa de Sandra (ej. ella era sustituta de Federico)
+                if (!turnoEfectivo) {
+                    const coberturaActiva = eventosAntesDeGuardar.find(e => 
+                        (window.normalizeId ? window.normalizeId(e.empleado_destino_id) : (e.empleado_destino_id||'').toLowerCase()) === normEmpId &&
+                        window.eventoAplicaEnFecha(e, fStr) &&
+                        !/^(anulad|rechazad|cancelad)/i.test(e.estado||'') &&
+                        (e.hotel_origen || e.hotel_id || hotel) === hotel
+                    );
+                    
+                    if (coberturaActiva) {
+                        const evtTitular = coberturaActiva.empleado_id;
+                        turnoEfectivo = window.getTurnoBaseDeEmpleado ? window.getTurnoBaseDeEmpleado(evtTitular, fStr, bIdx) : null;
+                        if (!turnoEfectivo && typeof window.getEmployeeTurnoBase === 'function') {
+                            turnoEfectivo = window.getEmployeeTurnoBase(evtTitular, fStr, bIdx);
+                        }
+                        empleadoOrigenTurnoId = evtTitular;
+                        eventoOrigenTurnoId = coberturaActiva.id;
+                        origenTxt = 'sustitucion_vacaciones';
+                    }
+                }
+
+                // Nivel 3: turno directo de Sandra
+                if (!turnoEfectivo) {
+                    turnoEfectivo = window.getTurnoBaseDeEmpleado ? window.getTurnoBaseDeEmpleado(empId, fStr, bIdx) : null;
+                    if (!turnoEfectivo && typeof window.getEmployeeTurnoBase === 'function') {
+                        turnoEfectivo = window.getEmployeeTurnoBase(empId, fStr, bIdx);
+                    }
+                    empleadoOrigenTurnoId = empId;
+                    eventoOrigenTurnoId = null;
+                    origenTxt = 'BASE';
+                }
+
+                // Nivel 4: Selección manual obligatoria
+                if (!turnoEfectivo || turnoEfectivo === '—' || turnoEfectivo === '-') {
                     throw new Error(`El empleado titular no tiene un turno resoluble el día ${fStr}. Asigne un turno base antes de crear la baja con interrupción.`);
                 }
                 
@@ -338,10 +383,10 @@ window.saveBajaPermiso=async()=>{
                     fecha: fStr,
                     empleadoAusenteId: empId,
                     empleadoSustitutoId: sustId,
-                    turno: res.turno,
-                    origen: res.origen,
-                    empleadoOrigenTurnoId: res.turnoOrigenEmpleadoId || res.sustituyeA || empId,
-                    eventoOrigenTurnoId: res.turnoOrigenEventoId || res.evento_id || null,
+                    turno: turnoEfectivo,
+                    origen: origenTxt,
+                    empleadoOrigenTurnoId: empleadoOrigenTurnoId,
+                    eventoOrigenTurnoId: eventoOrigenTurnoId,
                     tipoAusenciaCubierta: 'BAJA'
                 };
                 
