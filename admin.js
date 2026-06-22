@@ -6517,6 +6517,16 @@ window.buildPublicationSnapshotPreview = async (weekStart, hotelName = 'all') =>
                     const type = String(cell.type || '').toUpperCase();
                     const expectedCodes = { 'VAC': 'VAC', 'BAJA': 'BAJA', 'PERMISO': 'PERM', 'PERM': 'PERM' };
                     const expected = expectedCodes[tipoEv];
+                    
+                    const hasInterrupcion = events.some(e => 
+                        window.normalizeTipo(e.tipo) === 'INTERRUPCION_VAC' &&
+                        window.normalizeEstado(e.estado) !== 'anulado' &&
+                        (window.eventoPerteneceAEmpleado ? window.eventoPerteneceAEmpleado(e, ev.empleado_id) : e.empleado_id === ev.empleado_id) &&
+                        (window.eventoAplicaEnFecha ? window.eventoAplicaEnFecha(e, d) : (e.fecha_inicio <= d && (!e.fecha_fin || e.fecha_fin >= d)))
+                    );
+
+                    if (hasInterrupcion) return;
+
                     if (!(expected && (code === expected || code.startsWith(expected) || type === expected))) {
                         errors.push('[BLOQUEO] Evento ' + tipoEv + ' no renderizado para ' + row.nombreVisible + ' el ' + d);
                     }
