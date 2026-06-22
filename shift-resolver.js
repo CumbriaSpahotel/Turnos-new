@@ -515,7 +515,8 @@ tipo=${normalized.tipo}`);
 
         let ausenciaSuprimida = null;
         if (interrupcionActiva) {
-            ausenciaSuprimida = { tipo: 'VAC', eventoId: interrupcionActiva.vacaciones_evento_id };
+            const vacId = interrupcionActiva.vacaciones_evento_id || interrupcionActiva.payload?.vacaciones_evento_id;
+            ausenciaSuprimida = { tipo: 'VAC', eventoId: vacId };
         }
 
         for (const ev of eventosActivos) {
@@ -698,7 +699,10 @@ tipo=${normalized.tipo}`);
                 result.turnoOrigenEventoId = snap.eventoOrigenTurnoId;
                 result.ausenciaSuprimida = ausenciaSuprimida;
                 result.interrupcionVacId = interrupcionActiva.id;
-                result.trazabilidad = [interrupcionActiva.vacaciones_evento_id, interrupcionActiva.incidencia_origen_id].filter(Boolean);
+                
+                const vacId = interrupcionActiva.vacaciones_evento_id || interrupcionActiva.payload?.vacaciones_evento_id;
+                const incId = interrupcionActiva.incidencia_origen_id || interrupcionActiva.payload?.incidencia_origen_id;
+                result.trazabilidad = [vacId, incId].filter(Boolean);
             }
         }
 

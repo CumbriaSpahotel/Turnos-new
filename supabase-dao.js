@@ -330,15 +330,15 @@ window.TurnosDB = {
 
             // 2. Interrupciones activas actuales
             const { data: actInter, error: errInt } = await client.from('eventos_cuadrante')
-                .select('id, empleado_id, fecha_inicio, vacaciones_evento_id')
+                .select('id, empleado_id, fecha_inicio, payload')
                 .eq('tipo', 'INTERRUPCION_VAC')
-                .eq('incidencia_origen_id', bajaId)
+                .eq('payload->>incidencia_origen_id', bajaId)
                 .eq('estado', 'activo');
             if (errInt) throw errInt;
 
             // 3. Anular las obsoletas
             const nuevasClaves = p_interrupciones.map(i => `${i.empleado_id}_${i.fecha}_${i.vacaciones_evento_id}`);
-            const aAnular = (actInter || []).filter(i => !nuevasClaves.includes(`${i.empleado_id}_${i.fecha_inicio}_${i.vacaciones_evento_id}`));
+            const aAnular = (actInter || []).filter(i => !nuevasClaves.includes(`${i.empleado_id}_${i.fecha_inicio}_${i.payload?.vacaciones_evento_id}`));
             
             for (const an of aAnular) {
                 await client.from('eventos_cuadrante').update({ estado: 'anulado', updated_at: new Date().toISOString(), updated_by: p_modificado_por }).eq('id', an.id);
@@ -346,12 +346,17 @@ window.TurnosDB = {
 
             // 4. Insertar/Actualizar nuevas
             for (const inter of p_interrupciones) {
-                const exist = (actInter || []).find(i => `${i.empleado_id}_${i.fecha_inicio}_${i.vacaciones_evento_id}` === `${inter.empleado_id}_${inter.fecha}_${inter.vacaciones_evento_id}`);
+                const exist = (actInter || []).find(i => `${i.empleado_id}_${i.fecha_inicio}_${i.payload?.vacaciones_evento_id}` === `${inter.empleado_id}_${inter.fecha}_${inter.vacaciones_evento_id}`);
                 const interPayload = {
                     tipo: 'INTERRUPCION_VAC', estado: 'activo',
                     empleado_id: inter.empleado_id, fecha_inicio: inter.fecha, fecha_fin: inter.fecha,
-                    vacaciones_evento_id: inter.vacaciones_evento_id, incidencia_origen_id: bajaId,
-                    hotel_origen: p_hotel, payload: inter.payload, updated_by: p_modificado_por, updated_at: new Date().toISOString()
+                    hotel_origen: p_hotel, 
+                    payload: {
+                        ...(inter.payload || {}),
+                        vacaciones_evento_id: inter.vacaciones_evento_id,
+                        incidencia_origen_id: bajaId
+                    },
+                    updated_by: p_modificado_por, updated_at: new Date().toISOString()
                 };
                 if (exist) {
                     await client.from('eventos_cuadrante').update(interPayload).eq('id', exist.id);
@@ -379,7 +384,7 @@ window.TurnosDB = {
         // Fallback JS
         const client = window.supabase;
         await client.from('eventos_cuadrante').update({ estado: 'anulado', updated_by: usuario, updated_at: new Date().toISOString() }).eq('id', id);
-        await client.from('eventos_cuadrante').update({ estado: 'anulado', updated_by: usuario, updated_at: new Date().toISOString() }).eq('incidencia_origen_id', id).eq('tipo', 'INTERRUPCION_VAC');
+        await client.from('eventos_cuadrante').update({ estado: 'anulado', updated_by: usuario, updated_at: new Date().toISOString() }).eq('payload->>incidencia_origen_id', id).eq('tipo', 'INTERRUPCION_VAC');
         if (window.localforage) await window.localforage.clear();
         this.updateUISyncStatus('ok');
         return true;
@@ -400,7 +405,7 @@ window.TurnosDB = {
         // Fallback JS
         const client = window.supabase;
         await client.from('eventos_cuadrante').update({ estado: 'anulado', updated_by: usuario, updated_at: new Date().toISOString() }).eq('id', id);
-        await client.from('eventos_cuadrante').update({ estado: 'anulado', updated_by: usuario, updated_at: new Date().toISOString() }).eq('vacaciones_evento_id', id).eq('tipo', 'INTERRUPCION_VAC');
+        await client.from('eventos_cuadrante').update({ estado: 'anulado', updated_by: usuario, updated_at: new Date().toISOString() }).eq('payload->>vacaciones_evento_id', id).eq('tipo', 'INTERRUPCION_VAC');
         if (window.localforage) await window.localforage.clear();
         this.updateUISyncStatus('ok');
         return true;
