@@ -7909,7 +7909,7 @@ window.buildEmployeeProfileModel = (empId, refISO) => {
     ])).sort((a, b) => a - b);
 
     const yearSickLeaveDates = new Set();
-    const activeSickLeaves = yearGroupedEvents.filter(isSickLeaveEvent);
+    const activeSickLeaves = yearGroupedEvents.filter(ev => isSickLeaveEvent(ev) || ev.tipo === 'INTERRUPCION_VAC');
     activeSickLeaves.forEach(ev => {
         const start = ev.fecha_inicio;
         const end = ev.fecha_fin || ev.fecha_inicio || start;

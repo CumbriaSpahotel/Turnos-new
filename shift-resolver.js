@@ -703,6 +703,22 @@ tipo=${normalized.tipo}`);
                 const vacId = interrupcionActiva.vacaciones_evento_id || interrupcionActiva.payload?.vacaciones_evento_id;
                 const incId = interrupcionActiva.incidencia_origen_id || interrupcionActiva.payload?.incidencia_origen_id;
                 result.trazabilidad = [vacId, incId].filter(Boolean);
+
+                // Eliminar el icono de vacaciones 🏖️ de la lista de iconos, ya que la vacación está suspendida
+                if (result.icons && result.icons.includes('\u{1F3D6}\u{FE0F}')) {
+                    result.icons = result.icons.filter(i => i !== '\u{1F3D6}\u{FE0F}');
+                    if (result.icon === '\u{1F3D6}\u{FE0F}') result.icon = null;
+                }
+
+                // Si la ausencia cubierta es una baja o permiso, aplicar el icono de sustituto 📌
+                const esBajaOPermiso = ['BAJA', 'PERM', 'IT'].includes(result.tipoAusenciaCubierta);
+                const coverShift = window.normalizeShiftValue(result.turno);
+                const esTrabajo = coverShift && coverShift !== 'D' && coverShift !== 'VAC';
+                
+                if (esBajaOPermiso && esTrabajo) {
+                    result.icon = '\u{1F4CC}';
+                    result.icons = [...new Set([...(result.icons || []), '\u{1F4CC}'])];
+                }
             }
         }
 
