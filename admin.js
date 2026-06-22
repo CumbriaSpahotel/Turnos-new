@@ -7728,15 +7728,32 @@ window.loadEmployeeProfileBaseRows = async (empId, refISO) => {
     }
     window._employeeProfileBaseRows = Array.isArray(rows) ? rows : [];
 
-    // Cargar todos los eventos del año seleccionado para el drawer
+    // Cargar eventos del año seleccionado y del año del mes actual
     try {
-        const yearStart = `${refDate.getFullYear()}-01-01`;
-        const yearEnd = `${refDate.getFullYear()}-12-31`;
-        const yearEvents = await window.TurnosDB.fetchEventos(yearStart, yearEnd);
+        const year1 = refDate.getFullYear();
+        const year2 = window._employeeProfileYear || year1;
+        
+        let yearEvents = [];
+        if (year1 === year2) {
+            yearEvents = await window.TurnosDB.fetchEventos(`${year1}-01-01`, `${year1}-12-31`);
+        } else {
+            const [evts1, evts2] = await Promise.all([
+                window.TurnosDB.fetchEventos(`${year1}-01-01`, `${year1}-12-31`).catch(err => { console.error(err); return null; }),
+                window.TurnosDB.fetchEventos(`${year2}-01-01`, `${year2}-12-31`).catch(err => { console.error(err); return null; })
+            ]);
+            if (evts1 === null || evts2 === null) {
+                // Point 10: Fallo parcial
+                console.error('[loadEmployeeProfileBaseRows] Fallo parcial en consulta múltiple.');
+                // Mantenemos la caché anterior válida sin corromper el modelo
+                throw new Error("FETCH_PARTIAL_FAILURE");
+            }
+            yearEvents = [...(Array.isArray(evts1) ? evts1 : []), ...(Array.isArray(evts2) ? evts2 : [])];
+        }
         window._employeeProfileYearEvents = Array.isArray(yearEvents) ? yearEvents : [];
     } catch (e) {
         console.warn('[loadEmployeeProfileBaseRows] Error cargando eventos anuales:', e);
-        window._employeeProfileYearEvents = [];
+        // Si hay error, conservamos la caché anterior si existe, o array vacío
+        window._employeeProfileYearEvents = window._employeeProfileYearEvents || [];
     }
 
     return window._employeeProfileBaseRows;
@@ -7768,12 +7785,20 @@ window.buildEmployeeProfileModel = (empId, refISO) => {
         ...(window._employeeProfileYearEvents || [])
     ];
     const eventsById = new Map();
+    const rawEventsWithoutId = [];
     rawEvents.forEach(ev => {
         if (!ev) return;
-        const key = ev.id || `${ev.tipo}_${ev.empleado_id || ''}_${ev.empleado_destino_id || ev.sustituto_id || ''}_${ev.fecha_inicio || ''}_${ev.fecha_fin || ''}`;
-        eventsById.set(key, ev);
+        const id = ev.id || ev.evento_id;
+        if (id !== null && id !== undefined && String(id).trim() !== '') {
+            const key = String(id).trim();
+            if (!eventsById.has(key)) {
+                eventsById.set(key, ev);
+            }
+        } else {
+            rawEventsWithoutId.push(ev);
+        }
     });
-    const eventos = Array.from(eventsById.values());
+    const eventos = [...Array.from(eventsById.values()), ...rawEventsWithoutId];
     let baseIndex = null;
     const employeeKeys = new Set([
         window.normalizeId(profile.id),
@@ -7863,10 +7888,37 @@ window.buildEmployeeProfileModel = (empId, refISO) => {
     });
     const todayISO = window.isoDate(new Date());
     const groupedEvents = window.groupConsecutiveEvents ? window.groupConsecutiveEvents(eventosActivos) : eventosActivos;
-    const yearStartISO = `${refDate.getFullYear()}-01-01`;
-    const yearEndISO = `${refDate.getFullYear()}-12-31`;
+
+    const baseYears = [
+        new Date().getFullYear() - 1,
+        new Date().getFullYear(),
+        new Date().getFullYear() + 1,
+        refDate.getFullYear()
+    ];
+    if (window._lastEmployeeProfileId === emp.id && window._employeeProfileYear) {
+        baseYears.push(window._employeeProfileYear);
+    }
+    
+    const availableYears = Array.from(new Set([
+        ...baseYears,
+        ...groupedEvents.flatMap(ev => {
+            const startYear = Number(String(ev.fecha_inicio || '').slice(0, 4));
+            const endYear = Number(String(ev.fecha_fin || ev.fecha_inicio || '').slice(0, 4));
+            return [startYear, endYear].filter(Number.isFinite);
+        })
+    ])).sort((a, b) => a - b);
+
+    let selectedYear = window._employeeProfileYear || refDate.getFullYear();
+    if (!availableYears.includes(selectedYear)) {
+        selectedYear = availableYears.includes(new Date().getFullYear()) ? new Date().getFullYear() : availableYears[availableYears.length - 1];
+    }
+    window._employeeProfileYear = selectedYear;
+
+    const yearStartISO = `${selectedYear}-01-01`;
+    const yearEndISO = `${selectedYear}-12-31`;
     const monthStartISO = window.isoDate(new Date(refDate.getFullYear(), refDate.getMonth(), 1));
     const monthEndISO = window.isoDate(new Date(refDate.getFullYear(), refDate.getMonth() + 1, 0));
+    
     const yearGroupedEvents = groupedEvents.filter(ev => {
         const start = String(ev.fecha_inicio || '').slice(0, 10);
         const end = String(ev.fecha_fin || start || '').slice(0, 10);
@@ -7940,17 +7992,6 @@ window.buildEmployeeProfileModel = (empId, refISO) => {
         }
         return false;
     };
-    const availableYears = Array.from(new Set([
-        new Date().getFullYear() - 1,
-        new Date().getFullYear(),
-        new Date().getFullYear() + 1,
-        refDate.getFullYear(),
-        ...groupedEvents.flatMap(ev => {
-            const startYear = Number(String(ev.fecha_inicio || '').slice(0, 4));
-            const endYear = Number(String(ev.fecha_fin || ev.fecha_inicio || '').slice(0, 4));
-            return [startYear, endYear].filter(Number.isFinite);
-        })
-    ])).sort((a, b) => a - b);
 
     const yearSickLeaveDates = new Set();
     const activeSickLeaves = yearGroupedEvents.filter(ev => isSickLeaveEvent(ev) || ev.tipo === 'INTERRUPCION_VAC');
@@ -7964,7 +8005,7 @@ window.buildEmployeeProfileModel = (empId, refISO) => {
         while (currDate <= endDate) {
             const dateStr = window.isoDate(currDate);
             const dateYear = Number(dateStr.slice(0, 4));
-            if (dateYear === refDate.getFullYear()) {
+            if (dateYear === selectedYear) {
                 yearSickLeaveDates.add(dateStr);
             }
             currDate.setDate(currDate.getDate() + 1);
@@ -8337,6 +8378,7 @@ window.saveNewEmployeeInline = async (event) => {
     }
 };
 window.openEmpDrawer = async (id) => {
+    window._lastEmployeeProfileId = window._employeeProfileId;
     window._employeeProfileId = id;
     window._employeeProfileTab = 'summary';
     window._employeeProfileDate = window.isoDate(new Date());
@@ -8361,14 +8403,20 @@ window.moveEmployeeProfilePeriod = async (months) => {
     const d = new Date(window._employeeProfileDate + 'T12:00:00');
     d.setMonth(d.getMonth() + months);
     window._employeeProfileDate = window.isoDate(d);
+    
+    const newYear = d.getFullYear();
+    if (window._employeeProfileYear && window._employeeProfileYear !== newYear) {
+        window._employeeProfileYear = newYear;
+    }
+
     await window.loadEmployeeProfileBaseRows(window._employeeProfileId, window._employeeProfileDate);
     window.renderEmployeeProfile();
 };
 
-window.setEmployeeProfileYear = async (year) => {
+window.setEmployeeProfileGlobalYear = async (year) => {
     const parsedYear = Number(year);
     if (!Number.isFinite(parsedYear)) return;
-    window._employeeProfileDate = `${parsedYear}-01-01`;
+    window._employeeProfileYear = parsedYear;
     if (window._employeeProfileId && window.loadEmployeeProfileBaseRows) {
         await window.loadEmployeeProfileBaseRows(window._employeeProfileId, window._employeeProfileDate);
     }
@@ -8485,13 +8533,21 @@ window.renderEmployeeProfile = () => {
         ['reinforcements', 'Refuerzos'],
         ['history', 'Historial']
     ];
+
+    const selectedYear = window._employeeProfileYear || refDate.getFullYear();
+    const years = (model.availableYears || [selectedYear]).filter(Number.isFinite);
+    const globalYearTabs = `<div class="emp-year-tabs" style="display:flex; gap:8px; padding:0 28px 12px; overflow-x:auto; border-bottom:1px solid var(--border);">
+        ${years.map(year => `<button type="button" class="emp-year-tab ${year === selectedYear ? 'active' : ''}" onclick="window.setEmployeeProfileGlobalYear(${year})" style="padding:6px 12px; border-radius:12px; border:1px solid var(--border); background:${year === selectedYear ? 'var(--accent)' : 'transparent'}; color:${year === selectedYear ? 'white' : 'var(--text)'}; font-weight:700; cursor:pointer; font-size:0.8rem; white-space:nowrap;">${year}</button>`).join('')}
+    </div>`;
+
     if (drawerHeader) {
         drawerHeader.innerHTML = `
             <div class="emp-drawer-topbar" style="display:flex; align-items:center; justify-content:space-between; gap:16px; padding:18px 28px 12px;">
                 <h3 id="drawerTitle" style="margin:0; font-size:0.98rem; font-weight:800; color:var(--text);">Detalle Empleado</h3>
                 <button class="btn-close-drawer" onclick="window.closeEmpDrawer()" aria-label="Cerrar" style="margin-left:auto;">&times;</button>
             </div>
-            <div class="emp-tabs-nav" style="display:flex; gap:10px; border-bottom:1px solid var(--border); padding:0 28px 12px; flex-wrap:wrap;">
+            ${globalYearTabs}
+            <div class="emp-tabs-nav" style="display:flex; gap:10px; border-bottom:1px solid var(--border); padding:12px 28px 12px; flex-wrap:wrap;">
                 ${tabs.map(([key, label]) => `<button class="emp-tab-btn ${currentTab === key ? 'active' : ''}" onclick="window.setEmployeeProfileTab('${key}')" style="background:none; border:none; padding:8px 4px; color:var(--text-dim); font-weight:700; cursor:pointer; font-size:0.83rem;">${label}</button>`).join('')}
             </div>
         `;
@@ -8581,8 +8637,8 @@ window.renderEmployeeProfile = () => {
             };
         });
         const totalDays = leaveEventsYear.reduce((acc, ev) => acc + countNaturalDays(ev), 0);
-        const yearTabs = `<div class="emp-year-tabs">${years.map(year => `<button type="button" class="emp-year-tab ${year === selectedYear ? 'active' : ''}" onclick="window.setEmployeeProfileYear(${year})">${year}</button>`).join('')}</div>`;
-        tabContent = `<section class="emp-card glass emp-year-card" style="padding:20px; border-radius:18px; border:1px solid var(--border);"><div class="emp-year-header"><div><h3 style="margin:0 0 6px; font-size:0.9rem; font-weight:800;">Bajas / Permisos ${selectedYear}</h3><div class="emp-year-subtitle">Mostrando todo el año natural, del 01/01/${selectedYear} al 31/12/${selectedYear}.</div></div>${yearTabs}</div><div class="emp-leave-summary"><span><strong>${leaveEventsYear.length}</strong> registros</span><span><strong>${totalDays}</strong> días naturales</span></div>${renderRowsTable(leaveRows, `No hay bajas ni permisos registrados en ${selectedYear}.`)}</section>`;
+        // Selector local removido visualmente, ahora se usa el global
+        tabContent = `<section class="emp-card glass emp-year-card" style="padding:20px; border-radius:18px; border:1px solid var(--border);"><div class="emp-year-header"><div><h3 style="margin:0 0 6px; font-size:0.9rem; font-weight:800;">Bajas / Permisos ${selectedYear}</h3><div class="emp-year-subtitle">Mostrando todo el año natural, del 01/01/${selectedYear} al 31/12/${selectedYear}.</div></div></div><div class="emp-leave-summary"><span><strong>${leaveEventsYear.length}</strong> registros</span><span><strong>${totalDays}</strong> días naturales</span></div>${renderRowsTable(leaveRows, `No hay bajas ni permisos registrados en ${selectedYear}.`)}</section>`;
     } else if (currentTab === 'changes') {
         const changeRows = model.cambioEvents.map(ev => ({ fecha: ev.fecha_inicio, main: `<strong>${escapeHtml(window.employeeProfileEventLabel(ev))}</strong> · ${escapeHtml(window.employeeProfileDateRangeLabel(ev.fecha_inicio, ev.fecha_fin || ev.fecha_inicio))}`, secondary: `${escapeHtml(window.employeeProfileActorLabel(ev))} · ${escapeHtml(ev.observaciones || 'Sin observaciones')} · origen ${escapeHtml(window.employeeProfileReadableSource(ev))}`, badge: `${escapeHtml(ev.estado || 'activo')} 🔄` }));
         tabContent = `<section class="emp-card glass" style="padding:20px; border-radius:18px; border:1px solid var(--border);"><h3 style="margin:0 0 14px; font-size:0.9rem; font-weight:800;">Cambios de turno</h3>${renderRowsTable(changeRows, 'No hay cambios de turno en este periodo.')}</section>`;
@@ -8594,17 +8650,72 @@ window.renderEmployeeProfile = () => {
         const refRows = model.explicitRefuerzoEvents.map(ev => ({ fecha: ev.fecha_inicio, main: `<strong>${escapeHtml(window.employeeProfileDateRangeLabel(ev.fecha_inicio, ev.fecha_fin || ev.fecha_inicio))}</strong> · ${escapeHtml(window.getEventoHotel ? window.getEventoHotel(ev) : (ev.hotel || ev.hotel_origen || ev.hotel_destino || emp.hotel || 'No informado'))}`, secondary: `Turno ${escapeHtml(ev.turno || ev.payload?.turno || 'No informado')} · origen ${escapeHtml(window.employeeProfileReadableSource(ev))}`, badge: escapeHtml(ev.id || ev.evento_id || 'sin id') }));
         tabContent = `<section class="emp-card glass" style="padding:20px; border-radius:18px; border:1px solid var(--border);"><h3 style="margin:0 0 14px; font-size:0.9rem; font-weight:800;">Refuerzos explícitos</h3>${renderRowsTable(refRows, 'No hay refuerzos explícitos para este empleado en el periodo.')}</section>`;
     } else if (currentTab === 'history') {
-        const selectedYear = refDate.getFullYear();
-        const years = (model.availableYears || [selectedYear]).filter(Number.isFinite);
-        const yearTabs = `<div class="emp-year-tabs">${years.map(year => `<button type="button" class="emp-year-tab ${year === selectedYear ? 'active' : ''}" onclick="window.setEmployeeProfileYear(${year})">${year}</button>`).join('')}</div>`;
         const historyRows = (model.yearGroupedEvents || model.groupedEvents || []).slice().sort((a, b) => String(b.fecha_inicio || '').localeCompare(String(a.fecha_inicio || ''))).map(ev => ({ fecha: ev.fecha_inicio, main: `<strong>${escapeHtml(window.employeeProfileEventLabel(ev))}</strong> · ${escapeHtml(window.employeeProfileDateRangeLabel(ev.fecha_inicio, ev.fecha_fin || ev.fecha_inicio))}`, secondary: `${escapeHtml(window.employeeProfileActorLabel(ev))} · ${escapeHtml(ev.observaciones || 'Sin observaciones')} · origen ${escapeHtml(window.employeeProfileReadableSource(ev))}`, badge: escapeHtml(ev.estado || 'activo') }));
-        tabContent = `<section class="emp-card glass emp-year-card" style="padding:20px; border-radius:18px; border:1px solid var(--border);"><div class="emp-year-header"><div><h3 style="margin:0 0 6px; font-size:0.9rem; font-weight:800;">Historial ${selectedYear}</h3><div class="emp-year-subtitle">Mostrando todo el año natural, del 01/01/${selectedYear} al 31/12/${selectedYear}.</div></div>${yearTabs}</div>${renderRowsTable(historyRows, 'No hay histórico de eventos para este empleado en el año seleccionado.')}</section>`;
+        tabContent = `<section class="emp-card glass emp-year-card" style="padding:20px; border-radius:18px; border:1px solid var(--border);"><div class="emp-year-header"><div><h3 style="margin:0 0 6px; font-size:0.9rem; font-weight:800;">Historial ${selectedYear}</h3><div class="emp-year-subtitle">Mostrando todo el año natural, del 01/01/${selectedYear} al 31/12/${selectedYear}.</div></div></div>${renderRowsTable(historyRows, 'No hay histórico de eventos para este empleado en el año seleccionado.')}</section>`;
     }
     body.innerHTML = `<div class="employee-profile-container" style="padding:10px;">${headerHTML}${kpiHTML}<div class="emp-content-area" style="min-height:400px;">${tabContent}</div><div style="margin-top:24px; padding-top:14px; border-top:1px solid var(--border); font-size:0.66rem; color:var(--text-dim); display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap;"><span>ID técnico: ${escapeHtml(emp.id || 'N/A')}</span><span>UUID: ${escapeHtml(emp.uuid || 'N/A')}</span><span>Tipo estructural: ${escapeHtml(model.structuralType || 'fijo')}</span></div></div>`;
     } catch (e) {
         console.error('[EMP PROFILE RENDER ERROR]', e);
         body.innerHTML = `<div class="employee-profile-container" style="padding:24px;"><section class="emp-card glass" style="padding:20px; border-radius:18px; border:1px solid var(--border);"><h3 style="margin:0 0 8px; font-size:0.95rem; font-weight:900; color:#dc2626;">No se pudo cargar la ficha</h3><div style="font-size:0.8rem; color:var(--text-dim); font-weight:700;">${escapeHtml(e.message || String(e))}</div></section></div>`;
     }
+};
+
+window._experimental_calculateCarryOver = (emp, groupedEvents, targetYear) => {
+    if (!window.ENABLE_EXPERIMENTAL_VACATION_CARRYOVER) {
+        return {
+            ok: false,
+            canCalculateCarryOver: false,
+            reason: "FEATURE_DISABLED"
+        };
+    }
+
+    // Función de diagnóstico aislada
+    const result = {
+        ok: false,
+        targetYear,
+        canCalculateCarryOver: false,
+        reason: "MISSING_HISTORICAL_ENTITLEMENT_DATA",
+        missingData: ["fecha_alta", "derecho_vacaciones_por_anio", "anio_aplicacion_ajuste"],
+        currentYearCalculation: null
+    };
+    
+    if (!emp || !groupedEvents) return result;
+    
+    const vacEvents = groupedEvents.filter(ev => {
+        if (!/VAC|VACACIONES/i.test(String(ev.tipo || ''))) return false;
+        if (typeof window.isTitularOfAbsence === 'function') return window.isTitularOfAbsence(ev, emp.id);
+        return false;
+    });
+    
+    const yearVacs = vacEvents.filter(ev => {
+        const start = String(ev.fecha_inicio || '').slice(0,4);
+        return start === String(targetYear);
+    });
+    
+    let disfrutadas = 0;
+    yearVacs.forEach(ev => {
+        const s = new Date(ev.fecha_inicio + 'T12:00:00');
+        const e = new Date((ev.fecha_fin || ev.fecha_inicio) + 'T12:00:00');
+        disfrutadas += Math.max(1, Math.round((e - s) / 864e5) + 1);
+    });
+    
+    const derechoAnual = Number(emp.vacaciones_anuales || 44);
+    const ajuste = Number(emp.ajuste_vacaciones_dias || 0);
+    
+    result.currentYearCalculation = {
+        derechoAnual,
+        ajuste,
+        planificadas: disfrutadas,
+        disfrutadas,
+        interrumpidas: 0,
+        anuladas: 0
+    };
+    
+    if (window.ENABLE_EXPERIMENTAL_VACATION_CARRYOVER) {
+        console.log('[Experimental CarryOver Diagnostic]', result);
+    }
+    
+    return result;
 };
 
 window.saveEmployeeProfileInline = async (event) => {
