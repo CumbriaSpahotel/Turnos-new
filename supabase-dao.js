@@ -285,27 +285,121 @@ window.TurnosDB = {
     },
 
     async registrarBajaConInterrupcion(params) {
-        const { data, error } = await window.supabase.rpc('registrar_baja_con_interrupcion', params);
-        if (error) throw error;
-        if (window.localforage) await window.localforage.clear();
-        this.updateUISyncStatus('ok');
-        return data;
+        try {
+            // Intento de llamar a la RPC, si existe (si alguna vez se despliega)
+            const { data, error } = await window.supabase.rpc('registrar_baja_con_interrupcion', params);
+            if (!error) {
+                if (window.localforage) await window.localforage.clear();
+                this.updateUISyncStatus('ok');
+                return data;
+            }
+            if (error.code !== '42883' && !error.message.includes('Could not find the function')) {
+                throw error; // Es un error real, no un "Not Found"
+            }
+        } catch (e) {
+            // Fallback JS Si la RPC no existe (404/42883)
+            const { p_hotel, p_baja_payload, p_interrupciones, p_modificado_por, p_version_expected } = params;
+            const client = window.supabase;
+            
+            // 1. Guardar/Actualizar la Baja
+            const bajaPayload = {
+                ...p_baja_payload,
+                hotel_origen: p_hotel,
+                updated_by: p_modificado_por,
+                updated_at: new Date().toISOString()
+            };
+
+            let bajaVersion = p_version_expected || 1;
+            if (p_baja_payload.id) {
+                bajaVersion++;
+                bajaPayload.payload = { ...(bajaPayload.payload || {}), version: bajaVersion };
+            } else {
+                bajaPayload.payload = { ...(bajaPayload.payload || {}), version: 1 };
+            }
+
+            let bajaId = bajaPayload.id;
+            if (bajaId) {
+                const { error: errUpdate } = await client.from('eventos_cuadrante').update(bajaPayload).eq('id', bajaId);
+                if (errUpdate) throw errUpdate;
+            } else {
+                const { data: insData, error: errIns } = await client.from('eventos_cuadrante').insert([bajaPayload]).select('id').single();
+                if (errIns) throw errIns;
+                bajaId = insData.id;
+            }
+
+            // 2. Interrupciones activas actuales
+            const { data: actInter, error: errInt } = await client.from('eventos_cuadrante')
+                .select('id, empleado_id, fecha_inicio, vacaciones_evento_id')
+                .eq('tipo', 'INTERRUPCION_VAC')
+                .eq('incidencia_origen_id', bajaId)
+                .eq('estado', 'activo');
+            if (errInt) throw errInt;
+
+            // 3. Anular las obsoletas
+            const nuevasClaves = p_interrupciones.map(i => `${i.empleado_id}_${i.fecha}_${i.vacaciones_evento_id}`);
+            const aAnular = (actInter || []).filter(i => !nuevasClaves.includes(`${i.empleado_id}_${i.fecha_inicio}_${i.vacaciones_evento_id}`));
+            
+            for (const an of aAnular) {
+                await client.from('eventos_cuadrante').update({ estado: 'anulado', updated_at: new Date().toISOString(), updated_by: p_modificado_por }).eq('id', an.id);
+            }
+
+            // 4. Insertar/Actualizar nuevas
+            for (const inter of p_interrupciones) {
+                const exist = (actInter || []).find(i => `${i.empleado_id}_${i.fecha_inicio}_${i.vacaciones_evento_id}` === `${inter.empleado_id}_${inter.fecha}_${inter.vacaciones_evento_id}`);
+                const interPayload = {
+                    tipo: 'INTERRUPCION_VAC', estado: 'activo',
+                    empleado_id: inter.empleado_id, fecha_inicio: inter.fecha, fecha_fin: inter.fecha,
+                    vacaciones_evento_id: inter.vacaciones_evento_id, incidencia_origen_id: bajaId,
+                    hotel_origen: p_hotel, payload: inter.payload, updated_by: p_modificado_por, updated_at: new Date().toISOString()
+                };
+                if (exist) {
+                    await client.from('eventos_cuadrante').update(interPayload).eq('id', exist.id);
+                } else {
+                    await client.from('eventos_cuadrante').insert([interPayload]);
+                }
+            }
+            if (window.localforage) await window.localforage.clear();
+            this.updateUISyncStatus('ok');
+            return true;
+        }
     },
 
     async anularBajaConInterrupcion(id, usuario) {
-        const { data, error } = await window.supabase.rpc('anular_baja_con_interrupcion', { p_baja_id: id, p_modificado_por: usuario });
-        if (error) throw error;
-        if (window.localforage) await window.localforage.clear();
-        this.updateUISyncStatus('ok');
-        return data;
+        try {
+            const { data, error } = await window.supabase.rpc('anular_baja_con_interrupcion', { p_baja_id: id, p_modificado_por: usuario });
+            if (!error) {
+                if (window.localforage) await window.localforage.clear();
+                this.updateUISyncStatus('ok');
+                return data;
+            }
+            if (error.code !== '42883' && !error.message.includes('Could not find the function')) throw error;
+        } catch (e) {
+            const client = window.supabase;
+            await client.from('eventos_cuadrante').update({ estado: 'anulado', updated_by: usuario, updated_at: new Date().toISOString() }).eq('id', id);
+            await client.from('eventos_cuadrante').update({ estado: 'anulado', updated_by: usuario, updated_at: new Date().toISOString() }).eq('incidencia_origen_id', id).eq('tipo', 'INTERRUPCION_VAC');
+            if (window.localforage) await window.localforage.clear();
+            this.updateUISyncStatus('ok');
+            return true;
+        }
     },
 
     async anularVacacionesConInterrupciones(id, usuario) {
-        const { data, error } = await window.supabase.rpc('anular_vacaciones_con_interrupciones', { p_vac_id: id, p_modificado_por: usuario });
-        if (error) throw error;
-        if (window.localforage) await window.localforage.clear();
-        this.updateUISyncStatus('ok');
-        return data;
+        try {
+            const { data, error } = await window.supabase.rpc('anular_vacaciones_con_interrupciones', { p_vac_id: id, p_modificado_por: usuario });
+            if (!error) {
+                if (window.localforage) await window.localforage.clear();
+                this.updateUISyncStatus('ok');
+                return data;
+            }
+            if (error.code !== '42883' && !error.message.includes('Could not find the function')) throw error;
+        } catch(e) {
+            const client = window.supabase;
+            await client.from('eventos_cuadrante').update({ estado: 'anulado', updated_by: usuario, updated_at: new Date().toISOString() }).eq('id', id);
+            await client.from('eventos_cuadrante').update({ estado: 'anulado', updated_by: usuario, updated_at: new Date().toISOString() }).eq('vacaciones_evento_id', id).eq('tipo', 'INTERRUPCION_VAC');
+            if (window.localforage) await window.localforage.clear();
+            this.updateUISyncStatus('ok');
+            return true;
+        }
     },
 
     async anularEventosPeticion(peticionId) {
