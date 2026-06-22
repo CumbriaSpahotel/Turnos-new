@@ -380,8 +380,8 @@
 
     const shortByClass = { m: "M", t: "T", n: "N", d: "D" };
 
-    if (visualClass === "b") return "Baja 🩺";
-    if (visualClass === "perm") return "Permiso 🗓️";
+    if (visualClass === "b" || visualClass === "baja") return "Baja 🩺";
+    if (visualClass === "perm" || visualClass === "permiso") return "Permiso 🗓️";
     if (visualClass === "p") return "🔀 T/P";
 
     if (shortByClass[visualClass]) {
