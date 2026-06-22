@@ -7532,6 +7532,39 @@ window.resolveEmployeeCanonicalId = (rawId, employees = window.empleadosGlobales
     return found ? found.id : rawId;
 };
 
+window.getEmployeeName = (rawId, employees = window.empleadosGlobales || []) => {
+    if (!rawId) return rawId;
+    const norm = window.normalizeId || ((value) => String(value || '').trim().toLowerCase());
+    const rawKey = norm(rawId);
+    const found = (employees || []).find(emp => [
+        emp?.id,
+        emp?.nombre,
+        emp?.id_interno,
+        emp?.uuid,
+        emp?.legacy_id
+    ].map(norm).filter(Boolean).includes(rawKey));
+    return found ? (found.nombre || found.displayName || found.id) : rawId;
+};
+
+window.getEmployeeLabel = (rawId, employees = window.empleadosGlobales || []) => {
+    if (!rawId) return rawId;
+    const norm = window.normalizeId || ((value) => String(value || '').trim().toLowerCase());
+    const rawKey = norm(rawId);
+    const found = (employees || []).find(emp => [
+        emp?.id,
+        emp?.nombre,
+        emp?.id_interno,
+        emp?.uuid,
+        emp?.legacy_id
+    ].map(norm).filter(Boolean).includes(rawKey));
+    if (!found) return rawId;
+    const name = found.nombre || found.displayName;
+    if (found.id_interno && name && found.id_interno !== name && found.id !== name) {
+        return `${rawId} (${name})`;
+    }
+    return name || found.id || rawId;
+};
+
 window.eventAffectsEmployeeProfile = (ev, profile, identityKeys = window.getEmployeeIdentityKeys(profile)) => {
     if (!ev || !profile) return false;
     if (window.eventHasEmployeeIdentity(ev, identityKeys) || window.eventHasDestinationIdentity(ev, identityKeys)) return true;
@@ -8543,11 +8576,11 @@ window.renderEmployeeProfile = () => {
         const yearTabs = `<div class="emp-year-tabs">${years.map(year => `<button type="button" class="emp-year-tab ${year === selectedYear ? 'active' : ''}" onclick="window.setEmployeeProfileYear(${year})">${year}</button>`).join('')}</div>`;
         tabContent = `<section class="emp-card glass emp-year-card" style="padding:20px; border-radius:18px; border:1px solid var(--border);"><div class="emp-year-header"><div><h3 style="margin:0 0 6px; font-size:0.9rem; font-weight:800;">Bajas / Permisos ${selectedYear}</h3><div class="emp-year-subtitle">Mostrando todo el año natural, del 01/01/${selectedYear} al 31/12/${selectedYear}.</div></div>${yearTabs}</div><div class="emp-leave-summary"><span><strong>${leaveEventsYear.length}</strong> registros</span><span><strong>${totalDays}</strong> días naturales</span></div>${renderRowsTable(leaveRows, `No hay bajas ni permisos registrados en ${selectedYear}.`)}</section>`;
     } else if (currentTab === 'changes') {
-        const changeRows = model.cambioEvents.map(ev => ({ fecha: ev.fecha_inicio, main: `<strong>${escapeHtml(window.employeeProfileEventLabel(ev))}</strong> · ${escapeHtml(window.employeeProfileDateRangeLabel(ev.fecha_inicio, ev.fecha_fin || ev.fecha_inicio))}`, secondary: `${escapeHtml(ev.observaciones || 'Sin observaciones')} · origen ${escapeHtml(window.employeeProfileReadableSource(ev))}`, badge: `${escapeHtml(ev.estado || 'activo')} ðŸ”„` }));
+        const changeRows = model.cambioEvents.map(ev => ({ fecha: ev.fecha_inicio, main: `<strong>${escapeHtml(window.employeeProfileEventLabel(ev))}</strong> · ${escapeHtml(window.employeeProfileDateRangeLabel(ev.fecha_inicio, ev.fecha_fin || ev.fecha_inicio))}`, secondary: `${escapeHtml(window.employeeProfileActorLabel(ev))} · ${escapeHtml(ev.observaciones || 'Sin observaciones')} · origen ${escapeHtml(window.employeeProfileReadableSource(ev))}`, badge: `${escapeHtml(ev.estado || 'activo')} 🔄` }));
         tabContent = `<section class="emp-card glass" style="padding:20px; border-radius:18px; border:1px solid var(--border);"><h3 style="margin:0 0 14px; font-size:0.9rem; font-weight:800;">Cambios de turno</h3>${renderRowsTable(changeRows, 'No hay cambios de turno en este periodo.')}</section>`;
     } else if (currentTab === 'substitutions') {
-        const doneRows = model.substitutionsDone.map(ev => ({ fecha: ev.fecha_inicio, main: `<strong>${escapeHtml(window.employeeProfileEventLabel(ev))}</strong> · cubre a ${escapeHtml(ev.empleado_id || 'No informado')}`, secondary: `${escapeHtml(window.employeeProfileDateRangeLabel(ev.fecha_inicio, ev.fecha_fin || ev.fecha_inicio))} · hotel ${escapeHtml(window.getEventoHotel ? window.getEventoHotel(ev) : (ev.hotel || ev.hotel_origen || ev.hotel_destino || emp.hotel || 'No informado'))}`, badge: escapeHtml(ev.id || ev.evento_id || 'sin id') }));
-        const receivedRows = model.substitutionsReceived.map(ev => ({ fecha: ev.fecha_inicio, main: `<strong>${escapeHtml(window.employeeProfileEventLabel(ev))}</strong> · sustituye ${escapeHtml(ev.empleado_destino_id || ev.sustituto_id || ev.payload?.sustituto || 'No informado')}`, secondary: `${escapeHtml(window.employeeProfileDateRangeLabel(ev.fecha_inicio, ev.fecha_fin || ev.fecha_inicio))} · motivo ${escapeHtml(ev.observaciones || 'Sin observaciones')}`, badge: escapeHtml(ev.id || ev.evento_id || 'sin id') }));
+        const doneRows = model.substitutionsDone.map(ev => ({ fecha: ev.fecha_inicio, main: `<strong>${escapeHtml(window.employeeProfileEventLabel(ev))}</strong> · cubre a ${escapeHtml(window.getEmployeeLabel(ev.empleado_id) || 'No informado')}`, secondary: `${escapeHtml(window.employeeProfileDateRangeLabel(ev.fecha_inicio, ev.fecha_fin || ev.fecha_inicio))} · hotel ${escapeHtml(window.getEventoHotel ? window.getEventoHotel(ev) : (ev.hotel || ev.hotel_origen || ev.hotel_destino || emp.hotel || 'No informado'))}`, badge: escapeHtml(ev.id || ev.evento_id || 'sin id') }));
+        const receivedRows = model.substitutionsReceived.map(ev => ({ fecha: ev.fecha_inicio, main: `<strong>${escapeHtml(window.employeeProfileEventLabel(ev))}</strong> · sustituye a ${escapeHtml(window.getEmployeeLabel(ev.empleado_destino_id || ev.sustituto_id || ev.payload?.sustituto) || 'No informado')}`, secondary: `${escapeHtml(window.employeeProfileDateRangeLabel(ev.fecha_inicio, ev.fecha_fin || ev.fecha_inicio))} · motivo ${escapeHtml(ev.observaciones || 'Sin observaciones')}`, badge: escapeHtml(ev.id || ev.evento_id || 'sin id') }));
         tabContent = `<div style="display:grid; grid-template-columns:1fr 1fr; gap:18px;"><section class="emp-card glass" style="padding:20px; border-radius:18px; border:1px solid var(--border);"><h3 style="margin:0 0 14px; font-size:0.9rem; font-weight:800;">Sustituciones realizadas</h3>${renderRowsTable(doneRows, 'No ha realizado sustituciones en este periodo.')}</section><section class="emp-card glass" style="padding:20px; border-radius:18px; border:1px solid var(--border);"><h3 style="margin:0 0 14px; font-size:0.9rem; font-weight:800;">Sustituciones recibidas</h3>${renderRowsTable(receivedRows, 'No ha recibido sustituciones en este periodo.')}</section></div>`;
     } else if (currentTab === 'reinforcements') {
         const refRows = model.explicitRefuerzoEvents.map(ev => ({ fecha: ev.fecha_inicio, main: `<strong>${escapeHtml(window.employeeProfileDateRangeLabel(ev.fecha_inicio, ev.fecha_fin || ev.fecha_inicio))}</strong> · ${escapeHtml(window.getEventoHotel ? window.getEventoHotel(ev) : (ev.hotel || ev.hotel_origen || ev.hotel_destino || emp.hotel || 'No informado'))}`, secondary: `Turno ${escapeHtml(ev.turno || ev.payload?.turno || 'No informado')} · origen ${escapeHtml(window.employeeProfileReadableSource(ev))}`, badge: escapeHtml(ev.id || ev.evento_id || 'sin id') }));
