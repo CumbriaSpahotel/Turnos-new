@@ -285,21 +285,22 @@ window.TurnosDB = {
     },
 
     async registrarBajaConInterrupcion(params) {
-        try {
-            // Intento de llamar a la RPC, si existe (si alguna vez se despliega)
-            const { data, error } = await window.supabase.rpc('registrar_baja_con_interrupcion', params);
-            if (!error) {
-                if (window.localforage) await window.localforage.clear();
-                this.updateUISyncStatus('ok');
-                return data;
-            }
-            if (error.code !== '42883' && !error.message.includes('Could not find the function')) {
-                throw error; // Es un error real, no un "Not Found"
-            }
-        } catch (e) {
-            // Fallback JS Si la RPC no existe (404/42883)
-            const { p_hotel, p_baja_payload, p_interrupciones, p_modificado_por, p_version_expected } = params;
-            const client = window.supabase;
+        // Intento de llamar a la RPC, si existe
+        const { data, error } = await window.supabase.rpc('registrar_baja_con_interrupcion', params);
+        if (!error) {
+            if (window.localforage) await window.localforage.clear();
+            this.updateUISyncStatus('ok');
+            return data;
+        }
+        
+        // Si el error NO es porque falte la función (404/42883), lanzarlo como error real
+        if (error.code !== '42883' && !(error.message || '').includes('Could not find the function')) {
+            throw error;
+        }
+
+        // Fallback JS Si la RPC no existe (404/42883)
+        const { p_hotel, p_baja_payload, p_interrupciones, p_modificado_por, p_version_expected } = params;
+        const client = window.supabase;
             
             // 1. Guardar/Actualizar la Baja
             const bajaPayload = {
@@ -358,48 +359,51 @@ window.TurnosDB = {
                     await client.from('eventos_cuadrante').insert([interPayload]);
                 }
             }
-            if (window.localforage) await window.localforage.clear();
-            this.updateUISyncStatus('ok');
-            return true;
-        }
+        if (window.localforage) await window.localforage.clear();
+        this.updateUISyncStatus('ok');
+        return true;
     },
 
     async anularBajaConInterrupcion(id, usuario) {
-        try {
-            const { data, error } = await window.supabase.rpc('anular_baja_con_interrupcion', { p_baja_id: id, p_modificado_por: usuario });
-            if (!error) {
-                if (window.localforage) await window.localforage.clear();
-                this.updateUISyncStatus('ok');
-                return data;
-            }
-            if (error.code !== '42883' && !error.message.includes('Could not find the function')) throw error;
-        } catch (e) {
-            const client = window.supabase;
-            await client.from('eventos_cuadrante').update({ estado: 'anulado', updated_by: usuario, updated_at: new Date().toISOString() }).eq('id', id);
-            await client.from('eventos_cuadrante').update({ estado: 'anulado', updated_by: usuario, updated_at: new Date().toISOString() }).eq('incidencia_origen_id', id).eq('tipo', 'INTERRUPCION_VAC');
+        const { data, error } = await window.supabase.rpc('anular_baja_con_interrupcion', { p_baja_id: id, p_modificado_por: usuario });
+        if (!error) {
             if (window.localforage) await window.localforage.clear();
             this.updateUISyncStatus('ok');
-            return true;
+            return data;
         }
+        
+        if (error.code !== '42883' && !(error.message || '').includes('Could not find the function')) {
+            throw error;
+        }
+
+        // Fallback JS
+        const client = window.supabase;
+        await client.from('eventos_cuadrante').update({ estado: 'anulado', updated_by: usuario, updated_at: new Date().toISOString() }).eq('id', id);
+        await client.from('eventos_cuadrante').update({ estado: 'anulado', updated_by: usuario, updated_at: new Date().toISOString() }).eq('incidencia_origen_id', id).eq('tipo', 'INTERRUPCION_VAC');
+        if (window.localforage) await window.localforage.clear();
+        this.updateUISyncStatus('ok');
+        return true;
     },
 
     async anularVacacionesConInterrupciones(id, usuario) {
-        try {
-            const { data, error } = await window.supabase.rpc('anular_vacaciones_con_interrupciones', { p_vac_id: id, p_modificado_por: usuario });
-            if (!error) {
-                if (window.localforage) await window.localforage.clear();
-                this.updateUISyncStatus('ok');
-                return data;
-            }
-            if (error.code !== '42883' && !error.message.includes('Could not find the function')) throw error;
-        } catch(e) {
-            const client = window.supabase;
-            await client.from('eventos_cuadrante').update({ estado: 'anulado', updated_by: usuario, updated_at: new Date().toISOString() }).eq('id', id);
-            await client.from('eventos_cuadrante').update({ estado: 'anulado', updated_by: usuario, updated_at: new Date().toISOString() }).eq('vacaciones_evento_id', id).eq('tipo', 'INTERRUPCION_VAC');
+        const { data, error } = await window.supabase.rpc('anular_vacaciones_con_interrupciones', { p_vac_id: id, p_modificado_por: usuario });
+        if (!error) {
             if (window.localforage) await window.localforage.clear();
             this.updateUISyncStatus('ok');
-            return true;
+            return data;
         }
+        
+        if (error.code !== '42883' && !(error.message || '').includes('Could not find the function')) {
+            throw error;
+        }
+
+        // Fallback JS
+        const client = window.supabase;
+        await client.from('eventos_cuadrante').update({ estado: 'anulado', updated_by: usuario, updated_at: new Date().toISOString() }).eq('id', id);
+        await client.from('eventos_cuadrante').update({ estado: 'anulado', updated_by: usuario, updated_at: new Date().toISOString() }).eq('vacaciones_evento_id', id).eq('tipo', 'INTERRUPCION_VAC');
+        if (window.localforage) await window.localforage.clear();
+        this.updateUISyncStatus('ok');
+        return true;
     },
 
     async anularEventosPeticion(peticionId) {
