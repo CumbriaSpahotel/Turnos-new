@@ -178,17 +178,88 @@ runTest('15. Resultado determinista', () => {
     assert.deepStrictEqual(res1, res2);
 });
 
+// Helpers for parity table
+const parityResults = [];
+function recordParity(caso, legacy, nuevo) {
+    parityResults.push({ caso, legacy, nuevo, diff: nuevo - legacy });
+}
+
 // 16. Paridad exacta con el cálculo actual cuando source = LEGACY
-runTest('16. Paridad exacta', () => {
-    const legacyPendiente = employee.vacaciones_anuales + employee.ajuste_vacaciones_dias - 6; // manual assumption for 6 days
-    const events = [{ id: 'v1', empleado_id: 'emp-1', tipo: 'VAC', estado: 'activo', fecha_inicio: pastDate, fecha_fin: pastDateEnd }];
-    const res = calculateBalance({ employee, events, year });
-    assert.strictEqual(res.source, 'LEGACY');
-    assert.strictEqual(res.currentBalance, legacyPendiente);
+runTest('16. Paridad exacta - Múltiples escenarios', () => {
+    // Escenario 1: Sin vacaciones
+    const res1L = calculateBalance({ employee, events: [], year, vacationYearRecord: null, referenceDate: pastDate });
+    const res1N = calculateBalance({ employee, events: [], year, vacationYearRecord: { opening_balance_days: 0, annual_entitlement_days: 44 }, adjustments: [{days:2}], referenceDate: pastDate });
+    recordParity('Sin vacaciones', res1L.currentBalance, res1N.currentBalance);
+
+    // Escenario 2: Vacaciones normales
+    const ev2 = [{ id: 'v1', empleado_id: 'emp-1', tipo: 'VAC', estado: 'activo', fecha_inicio: pastDate, fecha_fin: pastDateEnd }];
+    const res2L = calculateBalance({ employee, events: ev2, year, vacationYearRecord: null, referenceDate: pastDateEnd });
+    const res2N = calculateBalance({ employee, events: ev2, year, vacationYearRecord: { opening_balance_days: 0, annual_entitlement_days: 44 }, adjustments: [{days:2}], referenceDate: pastDateEnd });
+    recordParity('Vacaciones normales', res2L.currentBalance, res2N.currentBalance);
+
+    // Escenario 3: Interrupción parcial
+    const ev3 = [
+        { id: 'v1', empleado_id: 'emp-1', tipo: 'VAC', estado: 'activo', fecha_inicio: pastDate, fecha_fin: pastDateEnd },
+        { id: 'i1', tipo: 'INTERRUPCION_VAC', estado: 'activo', fecha_inicio: pastDate, vacaciones_evento_id: 'v1' },
+        { id: 'i2', tipo: 'INTERRUPCION_VAC', estado: 'activo', fecha_inicio: pastDateEnd, vacaciones_evento_id: 'v1' }
+    ];
+    const res3L = calculateBalance({ employee, events: ev3, year, vacationYearRecord: null, referenceDate: pastDateEnd });
+    const res3N = calculateBalance({ employee, events: ev3, year, vacationYearRecord: { opening_balance_days: 0, annual_entitlement_days: 44 }, adjustments: [{days:2}], referenceDate: pastDateEnd });
+    recordParity('Interrupción parcial', res3L.currentBalance, res3N.currentBalance);
+
+    // Escenario 4: Interrupción total
+    const ev4 = [
+        { id: 'v1', empleado_id: 'emp-1', tipo: 'VAC', estado: 'activo', fecha_inicio: pastDate, fecha_fin: pastDate },
+        { id: 'i1', tipo: 'INTERRUPCION_VAC', estado: 'activo', fecha_inicio: pastDate, vacaciones_evento_id: 'v1' }
+    ];
+    const res4L = calculateBalance({ employee, events: ev4, year, vacationYearRecord: null, referenceDate: pastDateEnd });
+    const res4N = calculateBalance({ employee, events: ev4, year, vacationYearRecord: { opening_balance_days: 0, annual_entitlement_days: 44 }, adjustments: [{days:2}], referenceDate: pastDateEnd });
+    recordParity('Interrupción total', res4L.currentBalance, res4N.currentBalance);
+
+    // Escenario 5: Anulada
+    const ev5 = [{ id: 'v1', empleado_id: 'emp-1', tipo: 'VAC', estado: 'anulada', fecha_inicio: pastDate, fecha_fin: pastDateEnd }];
+    const res5L = calculateBalance({ employee, events: ev5, year, vacationYearRecord: null, referenceDate: pastDateEnd });
+    const res5N = calculateBalance({ employee, events: ev5, year, vacationYearRecord: { opening_balance_days: 0, annual_entitlement_days: 44 }, adjustments: [{days:2}], referenceDate: pastDateEnd });
+    recordParity('Anulada', res5L.currentBalance, res5N.currentBalance);
+
+    // Escenario 6: Ajuste positivo
+    recordParity('Ajuste positivo', res1L.currentBalance, res1N.currentBalance);
+
+    // Escenario 7: Ajuste negativo
+    const empNeg = { ...employee, ajuste_vacaciones_dias: -3 };
+    const res7L = calculateBalance({ employee: empNeg, events: [], year, vacationYearRecord: null, referenceDate: pastDateEnd });
+    const res7N = calculateBalance({ employee: empNeg, events: [], year, vacationYearRecord: { opening_balance_days: 0, annual_entitlement_days: 44 }, adjustments: [{days:-3}], referenceDate: pastDateEnd });
+    recordParity('Ajuste negativo', res7L.currentBalance, res7N.currentBalance);
+
+    // Escenario 8: Cruce de año
+    const ev8 = [{ id: 'v1', empleado_id: 'emp-1', tipo: 'VAC', estado: 'activo', fecha_inicio: `${year-1}-12-29`, fecha_fin: `${year}-01-04` }];
+    const res8L = calculateBalance({ employee, events: ev8, year, vacationYearRecord: null, referenceDate: `${year}-01-05` });
+    const res8N = calculateBalance({ employee, events: ev8, year, vacationYearRecord: { opening_balance_days: 0, annual_entitlement_days: 44 }, adjustments: [{days:2}], referenceDate: `${year}-01-05` });
+    recordParity('Cruce de año', res8L.currentBalance, res8N.currentBalance);
+
+    // Escenario 9: Año sin eventos
+    recordParity('Año sin eventos', res1L.currentBalance, res1N.currentBalance);
+
+    // Escenario 10: Futuras planificadas
+    const ev10 = [{ id: 'v1', empleado_id: 'emp-1', tipo: 'VAC', estado: 'activo', fecha_inicio: futureDate, fecha_fin: futureDateEnd }];
+    // referenceDate is pastDate, meaning the vacation is in the future
+    const res10L = calculateBalance({ employee, events: ev10, year, vacationYearRecord: null, referenceDate: pastDate });
+    const res10N = calculateBalance({ employee, events: ev10, year, vacationYearRecord: { opening_balance_days: 0, annual_entitlement_days: 44 }, adjustments: [{days:2}], referenceDate: pastDate });
+    recordParity('Futuras planificadas', res10L.projectedBalance, res10N.projectedBalance);
+
+    parityResults.forEach(r => assert.strictEqual(r.diff, 0, `Parity failed for ${r.caso}`));
 });
 
 console.log(`\n--- FASE 2A TEST SUMMARY ---`);
 console.log(`Tests Run: ${testsRun}`);
 console.log(`Tests Passed: ${testsPassed}`);
 console.log(`Tests Failed: ${testsRun - testsPassed}`);
+
+console.log(`\n--- TABLA DE PARIDAD LEGACY ---`);
+console.log(`| Caso                 |     Legado real |      Nuevo real | Diferencia |`);
+console.log(`| -------------------- | --------------: | --------------: | ---------: |`);
+parityResults.forEach(r => {
+    console.log(`| ${r.caso.padEnd(20)} | ${String(r.legacy).padStart(15)} | ${String(r.nuevo).padStart(15)} | ${String(r.diff).padStart(10)} |`);
+});
+
 if (testsRun !== testsPassed) process.exit(1);

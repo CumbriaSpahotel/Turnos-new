@@ -583,6 +583,7 @@
         // REGLA MAESTRA: Admin Preview NUNCA muestra controles
         if (context?.view === 'admin-preview' || context?.view === 'admin') return false;
 
+        const employeeId = String(employee.empleado_id || employee.id || employee.employeeId || '').trim().toLowerCase();
         const name = String(employee.nombre || employee.nombreVisible || employee.name || employee.empleado || '').trim().toLowerCase();
         const type = String(employee.tipo || employee.tipo_personal || employee.tipoPersonal || '').trim().toLowerCase();
         const role = String(employee.rol || employee.rol_operativo || '').trim().toLowerCase();
@@ -604,8 +605,10 @@
             }
         };
 
-        // 1. Exclusiones permanentes (Apoyo, Ocasional, Dirección, VACANTE, Sergio)
-        if (name.includes('vacante') || name === '¿?' || name.includes('sin asignar') || name === 'sergio' || name === 'sergio sánchez') {
+        // 1. Exclusiones permanentes (Apoyo, Ocasional, Dirección y VACANTE).
+        // EMP-0010 (Sergio) es fijo titular y debe computar; no excluir por nombre de pila.
+        const isSergioDireccion = employeeId === 'emp-0004' || normalizeText(name) === 'sergio sanchez';
+        if (name.includes('vacante') || name === '¿?' || name.includes('sin asignar') || isSergioDireccion) {
             logVisibility(false, 'excluded_placeholder_or_direction_by_name');
             return false;
         }

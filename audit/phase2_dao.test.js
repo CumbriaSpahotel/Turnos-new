@@ -57,6 +57,35 @@ async function runAll() {
         assert.deepStrictEqual(res.data, []);
     });
 
+    // 4. distinguish empty valid from FEATURE_DISABLED
+    await runTest('4. Valid empty result is distinct from FEATURE_DISABLED', async () => {
+        sandbox.window.ENABLE_EXPERIMENTAL_VACATION_CARRYOVER = true;
+        const res = await dao.fetchVacationYears('emp-1');
+        assert.strictEqual(res.ok, true);
+        assert.notStrictEqual(res.code, 'FEATURE_DISABLED');
+        assert.deepStrictEqual(res.data, []);
+    });
+
+    // 5. Supabase error returns ok: false, not empty array
+    await runTest('5. Supabase error is exposed properly', async () => {
+        sandbox.window.ENABLE_EXPERIMENTAL_VACATION_CARRYOVER = true;
+        // Mock error
+        const originalSupabase = sandbox.window.supabase;
+        sandbox.window.supabase = {
+            from: () => ({ select: () => ({ eq: () => ({ order: async () => ({ data: null, error: new Error('Mock error') }) }) }) })
+        };
+        const res = await dao.fetchVacationYears('emp-1');
+        assert.strictEqual(res.ok, false);
+        assert.strictEqual(res.error, 'Mock error');
+        sandbox.window.supabase = originalSupabase; // restore
+    });
+
+    // 6. Readonly confirmation (no mutation methods)
+    await runTest('6. No mutation methods exposed for Phase 2A', () => {
+        assert.strictEqual(typeof dao.saveVacationAdjustment, 'undefined');
+        assert.strictEqual(typeof dao.closeVacationYear, 'undefined');
+    });
+
     console.log(`\n--- FASE 2A DAO TEST SUMMARY ---`);
     console.log(`Tests Run: ${testsRun}`);
     console.log(`Tests Passed: ${testsPassed}`);
