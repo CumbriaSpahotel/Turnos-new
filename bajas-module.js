@@ -403,7 +403,13 @@ window.saveBajaPermiso=async()=>{
 
                 // Nivel 4: Selección manual obligatoria
                 if (!turnoEfectivo || turnoEfectivo === '—' || turnoEfectivo === '-') {
-                    throw new Error(`El empleado titular no tiene un turno resoluble el día ${fStr}. Asigne un turno base antes de crear la baja con interrupción.`);
+                    const manual = prompt(`No se ha podido resolver automáticamente el turno que Sandra cubría de Federico el día ${fStr}.\n\nPor favor, introduzca el turno operativo manual (ej. M, T, N, D):`);
+                    if (manual && manual.trim() !== '') {
+                        turnoEfectivo = manual.trim().toUpperCase();
+                        origenTxt = 'MANUAL';
+                    } else {
+                        throw new Error(`El empleado titular no tiene un turno resoluble el día ${fStr}. Asigne un turno base antes de crear la baja con interrupción o introdúzcalo manualmente.`);
+                    }
                 }
                 
                 const turnoSnapshot = {
