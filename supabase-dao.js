@@ -1555,6 +1555,47 @@ window.TurnosDB = {
             console.error("DAO Error (getPublishedCoverage):", err);
             return { ok: false, lastDate: null, hotel, error: err.message };
         }
+    },
+
+    // ---------------------------------------------------------
+    // FASE 2A: MÉTODOS DAO (SOLO LECTURA, INACTIVOS POR DEFECTO)
+    // ---------------------------------------------------------
+    async fetchVacationYears(employeeId) {
+        if (!window.ENABLE_EXPERIMENTAL_VACATION_CARRYOVER) {
+            return { ok: false, enabled: false, code: "FEATURE_DISABLED", data: [] };
+        }
+        const client = window.supabase;
+        try {
+            const { data, error } = await client
+                .from('employee_vacation_years')
+                .select('*')
+                .eq('employee_id', employeeId)
+                .order('year', { ascending: true });
+            if (error) throw error;
+            return { ok: true, enabled: true, data: data || [] };
+        } catch (err) {
+            console.error("DAO Error (fetchVacationYears):", err);
+            return { ok: false, enabled: true, error: err.message, data: [] };
+        }
+    },
+
+    async fetchVacationAdjustments(vacationYearId) {
+        if (!window.ENABLE_EXPERIMENTAL_VACATION_CARRYOVER) {
+            return { ok: false, enabled: false, code: "FEATURE_DISABLED", data: [] };
+        }
+        const client = window.supabase;
+        try {
+            const { data, error } = await client
+                .from('employee_vacation_adjustments')
+                .select('*')
+                .eq('employee_vacation_year_id', vacationYearId)
+                .order('created_at', { ascending: true });
+            if (error) throw error;
+            return { ok: true, enabled: true, data: data || [] };
+        } catch (err) {
+            console.error("DAO Error (fetchVacationAdjustments):", err);
+            return { ok: false, enabled: true, error: err.message, data: [] };
+        }
     }
 };
 

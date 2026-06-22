@@ -453,6 +453,117 @@ window.cancelVacationGroup = async (idx) => {
     }
   }
 };
+// Fase 2A: Cálculo puro de saldo vacacional (Modo Inactivo)
+window.calculateEmployeeVacationBalance = function({ employee, events, year, vacationYearRecord, adjustments, referenceDate }) {
+    const isLegacy = !vacationYearRecord;
+    const openingBalance = isLegacy ? 0 : Number(vacationYearRecord.opening_balance_days || 0);
+    const annualEntitlement = isLegacy ? Number(employee.vacaciones_anuales || 44) : Number(vacationYearRecord.annual_entitlement_days || 44);
+    
+    // Si es legacy, usa ajuste estático de ficha. Si es histórico, usa sumatoria de ajustes vigentes de la tabla separada.
+    const adjustmentsTotal = isLegacy 
+        ? Number(employee.ajuste_vacaciones_dias || 0)
+        : (adjustments || []).filter(a => !a.reversed_at).reduce((acc, a) => acc + Number(a.days || 0), 0);
+
+    const yearStart = `${year}-01-01`;
+    const yearEnd = `${year}-12-31`;
+    // Explicit referenceDate to ensure determinism
+    const hoy = referenceDate || new Date().toISOString().split('T')[0];
+
+    // Normalización local de IDs
+    const normStr = s => String(s||'').trim().toLowerCase();
+    const isEventOfEmployee = ev => {
+        const id1 = normStr(ev.empleado_id);
+        const empId = normStr(employee.id);
+        const empNombre = normStr(employee.nombre);
+        return id1 === empId || id1 === empNombre;
+    };
+
+    const vacEvents = (events || []).filter(ev => 
+        String(ev.tipo||'').toUpperCase().startsWith('VAC') && 
+        isEventOfEmployee(ev)
+    );
+    
+    const interrupciones = (events || []).filter(ev => 
+        String(ev.tipo||'').toUpperCase() === 'INTERRUPCION_VAC' && 
+        !ESTADO_EXCLUIDO.test(ev.estado||'')
+    );
+
+    let enjoyedDays = 0;
+    let plannedFutureDays = 0;
+    let interruptedDays = 0;
+    let cancelledDays = 0;
+
+    // Diferencia de fechas con límite en el año solicitado
+    const getIntersectedDays = (startStr, endStr) => {
+        const s = startStr < yearStart ? yearStart : startStr;
+        const e = endStr > yearEnd ? yearEnd : endStr;
+        if (s > e) return 0;
+        return Math.round((new Date(e+'T12:00:00') - new Date(s+'T12:00:00')) / 864e5) + 1;
+    };
+
+    vacEvents.forEach(ev => {
+        const start = ev.fecha_inicio;
+        const end = ev.fecha_fin || start;
+        
+        // Ignorar si el evento cae completamente fuera del año
+        if (start > yearEnd || end < yearStart) return;
+
+        const isCancelled = ESTADO_EXCLUIDO.test(ev.estado||'');
+        const intersectedDays = getIntersectedDays(start, end);
+
+        if (isCancelled) {
+            cancelledDays += intersectedDays;
+            return;
+        }
+
+        // Buscar interrupciones vigentes asociadas a este evento VAC
+        // En la BBDD las interrupciones se ligan por vacaciones_evento_id
+        const myInterrupciones = interrupciones.filter(intEv => 
+            intEv.payload?.vacaciones_evento_id === ev.id || 
+            intEv.vacaciones_evento_id === ev.id // fallback property
+        );
+
+        const setInterrumpidosAnio = new Set();
+        myInterrupciones.forEach(intEv => {
+            const intStart = intEv.fecha_inicio;
+            // Solo contamos la interrupción si cae dentro de los límites del año
+            if (intStart >= yearStart && intStart <= yearEnd) {
+                setInterrumpidosAnio.add(intStart);
+            }
+        });
+
+        const intDaysThisYear = setInterrumpidosAnio.size;
+        interruptedDays += intDaysThisYear;
+        
+        const computablesThisYear = intersectedDays - intDaysThisYear;
+
+        // Determinar si es disfrutado o planificado
+        // Disfrutado: si ya ha comenzado. Planificado: si empieza en el futuro (después de hoy).
+        if (start <= hoy) {
+            enjoyedDays += computablesThisYear;
+        } else {
+            plannedFutureDays += computablesThisYear;
+        }
+    });
+
+    const currentBalance = openingBalance + annualEntitlement + adjustmentsTotal - enjoyedDays;
+    const projectedBalance = currentBalance - plannedFutureDays;
+
+    return {
+        source: isLegacy ? "LEGACY" : "HISTORICAL_RECORD",
+        year,
+        openingBalance,
+        annualEntitlement,
+        adjustmentsTotal,
+        enjoyedDays,
+        plannedFutureDays,
+        interruptedDays,
+        cancelledDays,
+        currentBalance,
+        projectedBalance,
+        warnings: [] // Espacio para alertas lógicas en Fase 2B
+    };
+};
 
 console.log('[VACACIONES MODULE] Loaded v1.1');
 })();
