@@ -3056,7 +3056,8 @@ window.renderEmployeeProfileCalendar = (model) => {
                     
                     let statusClass = '';
                     if (day.incidencia) {
-                        const type = window.normalizeTipo(day.incidencia.tipo);
+                        const incStr = typeof day.incidencia === 'string' ? day.incidencia : (day.incidencia.tipo || '');
+                        const type = window.normalizeTipo(incStr);
                         if (type === 'VAC') statusClass = 'vac';
                         else if (type === 'BAJA' || type === 'IT') statusClass = 'baja';
                         else statusClass = 'event';
