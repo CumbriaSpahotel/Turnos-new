@@ -345,17 +345,28 @@ window.saveBajaPermiso=async()=>{
                 let origenTxt = res?.origen || 'sustitucion_vacaciones';
 
                 // Nivel 2: cobertura activa de Sandra (ej. ella era sustituta de Federico)
+                // No filtramos por hotel_origen porque puede almacenar ID distinto al nombre del selector
                 if (!turnoEfectivo) {
                     const coberturaActiva = eventosAntesDeGuardar.find(e => 
                         (window.normalizeId ? window.normalizeId(e.empleado_destino_id) : (e.empleado_destino_id||'').toLowerCase()) === normEmpId &&
                         window.eventoAplicaEnFecha(e, fStr) &&
-                        !/^(anulad|rechazad|cancelad)/i.test(e.estado||'') &&
-                        (e.hotel_origen || e.hotel_id || hotel) === hotel
+                        !/^(anulad|rechazad|cancelad)/i.test(e.estado||'')
                     );
                     
                     if (coberturaActiva) {
                         const evtTitular = coberturaActiva.empleado_id;
-                        turnoEfectivo = window.getTurnoBaseDeEmpleado ? window.getTurnoBaseDeEmpleado(evtTitular, fStr, bIdx) : null;
+                        // Intentar por turno efectivo del titular (captura cambios/intercambios)
+                        const resTitular = window.resolveEmployeeDay({
+                            empleadoId: evtTitular,
+                            fecha: fStr,
+                            eventos: eventosAntesDeGuardar,
+                            baseIndex: bIdx,
+                            hotel: hotel
+                        });
+                        turnoEfectivo = resTitular?.turno && resTitular.turno !== '—' && resTitular.turno !== '-' ? resTitular.turno : null;
+                        if (!turnoEfectivo) {
+                            turnoEfectivo = window.getTurnoBaseDeEmpleado ? window.getTurnoBaseDeEmpleado(evtTitular, fStr, bIdx) : null;
+                        }
                         if (!turnoEfectivo && typeof window.getEmployeeTurnoBase === 'function') {
                             turnoEfectivo = window.getEmployeeTurnoBase(evtTitular, fStr, bIdx);
                         }
@@ -375,6 +386,20 @@ window.saveBajaPermiso=async()=>{
                     eventoOrigenTurnoId = null;
                     origenTxt = 'BASE';
                 }
+
+                // Diagnóstico: log en consola del navegador para depuración
+                console.warn('[BAJAS:INTERRUPCION_VAC]', {
+                    fecha: fStr, empId, sustId, hotel,
+                    nivel1_turno: res?.turno, nivel1_origen: res?.origen, nivel1_sustituyeA: res?.sustituyeA,
+                    turnoEfectivo, empleadoOrigenTurnoId, eventoOrigenTurnoId,
+                    bIdxType: typeof bIdx, bIdxHasPorEmpFecha: !!bIdx?.porEmpleadoFecha,
+                    vacActivaId: vacActiva?.id,
+                    eventosCount: eventosAntesDeGuardar.length,
+                    coberturasCandidatas: eventosAntesDeGuardar.filter(e =>
+                        (window.normalizeId ? window.normalizeId(e.empleado_destino_id) : (e.empleado_destino_id||'').toLowerCase()) === normEmpId &&
+                        window.eventoAplicaEnFecha(e, fStr)
+                    ).map(e => ({ id: e.id, tipo: e.tipo, dest: e.empleado_destino_id, orig: e.empleado_id, hotel_origen: e.hotel_origen, estado: e.estado }))
+                });
 
                 // Nivel 4: Selección manual obligatoria
                 if (!turnoEfectivo || turnoEfectivo === '—' || turnoEfectivo === '-') {
