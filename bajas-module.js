@@ -302,6 +302,8 @@ window.saveBajaPermiso=async()=>{
     
     const todosLosEventos = await window.TurnosDB.fetchEventos();
     
+    // Determinar bajaId antes del bucle para poder filtrar el evento en edición
+    const bajaId = _editingBaja?.id || null;
     let interrupciones = [];
     if(sustId) {
         const startDate = new Date(start + 'T12:00:00');
@@ -402,10 +404,8 @@ window.saveBajaPermiso=async()=>{
 
     const payloadBase = { tipo_modulo: 'bajas_permisos', creado_desde: 'admin_bajas_permisos' };
     let expectedVersion = null;
-    let bajaId = null;
 
     if(_editingBaja && _editingBaja.id) {
-        bajaId = _editingBaja.id;
         expectedVersion = _editingBaja.payload?.version ? parseInt(_editingBaja.payload.version) : 1;
     }
 
