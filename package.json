@@ -3,6 +3,10 @@
     "regression-check": "node scripts/regression-check.js"
   },
   "dependencies": {
-    "@supabase/supabase-js": "^2.105.3"
+    "@supabase/supabase-js": "^2.108.2",
+    "dotenv": "^17.4.2"
+  },
+  "devDependencies": {
+    "pg": "^8.22.0"
   }
 }

@@ -1,0 +1,6 @@
+
+# Migration Working Dir
+migrations/data/
+
+.env
+node_modules/
