@@ -263,6 +263,10 @@ window.TurnosDB = {
                 updated_at: new Date().toISOString()
             };
 
+            if (payload.id === null || payload.id === undefined) {
+                delete payload.id;
+            }
+
             const { data, error } = await client
                 .from('eventos_cuadrante')
                 .upsert(payload)
@@ -309,6 +313,10 @@ window.TurnosDB = {
                 updated_by: p_modificado_por,
                 updated_at: new Date().toISOString()
             };
+
+            if (bajaPayload.id === null || bajaPayload.id === undefined) {
+                delete bajaPayload.id;
+            }
 
             let bajaVersion = p_version_expected || 1;
             if (p_baja_payload.id) {

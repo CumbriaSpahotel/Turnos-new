@@ -441,7 +441,6 @@ window.saveBajaPermiso=async()=>{
     }
 
     const p_baja_payload = {
-        id: bajaId,
         tipo,
         empleado_id: empId,
         empleado_destino_id: sustId || null,
@@ -451,6 +450,10 @@ window.saveBajaPermiso=async()=>{
         observaciones: obs,
         payload: payloadBase
     };
+
+    if (bajaId) {
+        p_baja_payload.id = bajaId;
+    }
 
     const username = window.currentUser?.email || 'admin_bajas';
 
