@@ -6528,6 +6528,19 @@ window.buildPublicationSnapshotPreview = async (weekStart, hotelName = 'all') =>
 
                     if (hasInterrupcion) return;
 
+                    const hasHigherPriorityAbsence = events.some(e => {
+                        const t = window.normalizeTipo(e.tipo);
+                        const r = { 'BAJA': 1, 'IT': 1, 'PERMISO': 2, 'PERM': 2, 'VAC': 3 };
+                        const currentRank = r[tipoEv] || 99;
+                        const otherRank = r[t] || 99;
+                        return otherRank < currentRank &&
+                            window.normalizeEstado(e.estado) !== 'anulado' &&
+                            (window.eventoPerteneceAEmpleado ? window.eventoPerteneceAEmpleado(e, ev.empleado_id) : e.empleado_id === ev.empleado_id) &&
+                            (window.eventoAplicaEnFecha ? window.eventoAplicaEnFecha(e, d) : (e.fecha_inicio <= d && (!e.fecha_fin || e.fecha_fin >= d)));
+                    });
+
+                    if (hasHigherPriorityAbsence) return;
+
                     if (!(expected && (code === expected || code.startsWith(expected) || type === expected))) {
                         errors.push('[BLOQUEO] Evento ' + tipoEv + ' no renderizado para ' + row.nombreVisible + ' el ' + d);
                     }
