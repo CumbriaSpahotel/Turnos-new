@@ -261,11 +261,14 @@ tipo=${normalized.tipo}`);
     window.isTitularOfAbsence = (evento, empleadoId, context = {}) => {
         const target = window.normalizeId(empleadoId);
         if (!target) return false;
+        const baseIndex = context.baseIndex || context;
+        const targetAlias = (baseIndex && baseIndex.aliasesEmpleado) ? (baseIndex.aliasesEmpleado.get(target) || target) : target;
         const candidatosTitular = window.getEventOriginCandidates(evento).map(window.normalizeId);
         const normalizedTarget = context.resolveId ? context.resolveId(target) : target;
         return candidatosTitular.some(c => {
+            const cAlias = (baseIndex && baseIndex.aliasesEmpleado) ? (baseIndex.aliasesEmpleado.get(c) || c) : c;
             const normalizedC = context.resolveId ? context.resolveId(c) : c;
-            return normalizedC === normalizedTarget;
+            return normalizedC === normalizedTarget || cAlias === targetAlias || c === target || c === targetAlias;
         });
     };
 
@@ -273,13 +276,17 @@ tipo=${normalized.tipo}`);
         const target = window.normalizeId(empleadoId);
         if (!target) return false;
         if (context.hotel && !window.eventoPerteneceAHotel(evento, context.hotel)) return false;
-        const tipo = window.normalizeTipo(evento.tipo);
+        const baseIndex = context.baseIndex || context;
+        const targetAlias = (baseIndex && baseIndex.aliasesEmpleado) ? (baseIndex.aliasesEmpleado.get(target) || target) : target;
         const candidatosTitular = window.getEventOriginCandidates(evento).map(window.normalizeId);
         const candidatosDestino = window.getEventDestinationCandidates(evento).map(window.normalizeId);
         const candidatos = [...new Set([...candidatosTitular, ...candidatosDestino])];
         const strippedTarget = target.replace(/^(vacante|placeholder)-?/, '');
-        if (candidatos.includes(target) || candidatos.includes(strippedTarget)) return true;
-        return false;
+        const strippedTargetAlias = (baseIndex && baseIndex.aliasesEmpleado) ? (baseIndex.aliasesEmpleado.get(strippedTarget) || strippedTarget) : strippedTarget;
+        return candidatos.some(c => {
+            const cAlias = (baseIndex && baseIndex.aliasesEmpleado) ? (baseIndex.aliasesEmpleado.get(c) || c) : c;
+            return cAlias === targetAlias || cAlias === strippedTargetAlias || c === target || c === strippedTarget || c === targetAlias;
+        });
     };
 
     window.getOtroEmpleadoDelCambio = (evento, empleadoId) => {
@@ -386,7 +393,7 @@ tipo=${normalized.tipo}`);
         const ev = events.find(e => 
             window.normalizeEstado(e.estado) !== 'anulado' &&
             window.eventoAplicaEnFecha(e, date) &&
-            window.isTitularOfAbsence(e, normId) &&
+            window.isTitularOfAbsence(e, normId, context) &&
             ['VAC', 'BAJA', 'PERMISO', 'PERM', 'FORMACION', 'IT', 'SUSTITUCION', 'COBERTURA'].includes(window.normalizeTipo(e.tipo)) &&
             (window.getEventDestinationRaw(e))
         );
@@ -489,11 +496,11 @@ tipo=${normalized.tipo}`);
         const eventosActivos = eventos.filter(ev => {
             if (window.normalizeEstado(ev.estado) === 'anulado') return false;
             if (!window.eventoAplicaEnFecha(ev, date)) return false;
-            if (window.eventoPerteneceAEmpleado(ev, empId, { hotel })) return true;
+            if (window.eventoPerteneceAEmpleado(ev, empId, context)) return true;
             const tipo = window.normalizeTipo(ev.tipo);
             if (['INTERCAMBIO_TURNO', 'CAMBIO_TURNO', 'CT'].includes(tipo)) {
                 // Caso sustituto: el evento pertenece a un titular que esta cubierto por este empleado
-                if (titularesSubstituidos.some(tId => window.eventoPerteneceAEmpleado(ev, tId, { hotel }))) return true;
+                if (titularesSubstituidos.some(tId => window.eventoPerteneceAEmpleado(ev, tId, context))) return true;
                 // Caso placeholder: la fila '¿?' recibe intercambios cuyo destino es un nombre no-placeholder
                 if (isPlaceholderRow) {
                     const destCandidates = window.getEventDestinationCandidates(ev).map(window.normalizeId);
@@ -509,7 +516,7 @@ tipo=${normalized.tipo}`);
         // 1. Verificar si existe INTERRUPCION_VAC para el empleado en esta fecha
         const interrupcionActiva = eventosActivos.find(ev => 
             window.normalizeTipo(ev.tipo) === 'INTERRUPCION_VAC' && 
-            window.eventoPerteneceAEmpleado(ev, empId) &&
+            window.eventoPerteneceAEmpleado(ev, empId, context) &&
             window.eventoAplicaEnFecha(ev, date)
         );
 
@@ -539,7 +546,7 @@ tipo=${normalized.tipo}`);
                 });
             }
 
-            if (['VAC', 'BAJA', 'PERMISO', 'PERM', 'FORMACION', 'FORM'].includes(tipo) && window.isTitularOfAbsence(ev, empId)) {
+            if (['VAC', 'BAJA', 'PERMISO', 'PERM', 'FORMACION', 'FORM'].includes(tipo) && window.isTitularOfAbsence(ev, empId, context)) {
                 result.incidencia = tipo;
                 result.turno = null;
                 result.origen = tipo;
@@ -550,7 +557,7 @@ tipo=${normalized.tipo}`);
                 break;
             }
 
-            if (['VAC', 'BAJA', 'PERMISO', 'PERM', 'SUSTITUCION', 'COBERTURA'].includes(tipo) && !window.isTitularOfAbsence(ev, empId)) {
+            if (['VAC', 'BAJA', 'PERMISO', 'PERM', 'SUSTITUCION', 'COBERTURA'].includes(tipo) && !window.isTitularOfAbsence(ev, empId, context)) {
                 const tId = window.normalizeId(window.getEventOriginRaw(ev));
                 result.sustituyeA = tId;
                 result.incidenciaCubierta = tipo;
@@ -588,12 +595,21 @@ tipo=${normalized.tipo}`);
                 const finalA = (resolvedA === resolvedB && requestedA !== requestedB) ? requestedA : resolvedA;
                 const finalB = (resolvedA === resolvedB && requestedA !== requestedB) ? requestedB : resolvedB;
 
-                const strippedEmpId = empId.replace(/^(vacante|placeholder)-?/, '');
-                const isOrigin = empId === finalA || strippedEmpId === finalA;
+                const getAliasOrId = (id) => {
+                    const norm = window.normalizeId(id);
+                    return (baseIndex && baseIndex.aliasesEmpleado) ? (baseIndex.aliasesEmpleado.get(norm) || norm) : norm;
+                };
+
+                const aliasEmp = getAliasOrId(empId);
+                const aliasStripped = getAliasOrId(empId.replace(/^(vacante|placeholder)-?/, ''));
+                const aliasA = getAliasOrId(finalA);
+                const aliasB = getAliasOrId(finalB);
+
+                const isOrigin = aliasEmp === aliasA || aliasStripped === aliasA;
                 // Alias: la fila '¿?' actua como 'Proximamente' si ese es el destino del intercambio
                 const isPlaceholder = empId === '¿?' || empId === '?';
                 const isDestinationByAlias = isPlaceholder && finalB && !['¿?', '?', '', 'null', 'undefined'].includes(finalB);
-                const isDestination = empId === finalB || strippedEmpId === finalB || isDestinationByAlias;
+                const isDestination = aliasEmp === aliasB || aliasStripped === aliasB || isDestinationByAlias;
                 const tOrigRaw = normEv.turnoOrigen;
                 const tDestRaw = normEv.turnoDestino;
                 const hasValidOriginShift = window.isValidShiftValue(tOrigRaw);
