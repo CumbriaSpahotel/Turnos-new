@@ -2039,7 +2039,7 @@ window.ensureChangeEditModal = () => {
         <form id="changeEditForm" onsubmit="window.saveChangeEdit(event)" style="width:min(760px, calc(100vw - 40px)); max-height:calc(100vh - 48px); overflow:auto; background:#fff; border:1px solid #dbe6f3; border-radius:22px; box-shadow:0 24px 70px rgba(15,23,42,0.28);">
             <div style="display:flex; align-items:center; justify-content:space-between; gap:14px; padding:22px 26px; border-bottom:1px solid #e2e8f0;">
                 <div>
-                    <h3 style="margin:0; font-size:1.05rem; font-weight:900; color:#0f172a;">Editar cambio operativo</h3>
+                    <h3 id="changeEditTitle" style="margin:0; font-size:1.05rem; font-weight:900; color:#0f172a;">Editar cambio operativo</h3>
                     <p id="changeEditId" style="margin:5px 0 0; font-size:0.72rem; color:#64748b; font-weight:700;"></p>
                 </div>
                 <button type="button" onclick="window.closeChangeEditModal()" style="width:42px; height:42px; border-radius:14px; border:1px solid #dbe6f3; background:#fff; color:#334155; font-size:1.3rem; cursor:pointer;">&times;</button>
@@ -2051,12 +2051,31 @@ window.ensureChangeEditModal = () => {
                 <label style="display:grid; gap:7px; font-size:0.68rem; color:#64748b; font-weight:900; text-transform:uppercase;">Hotel
                     <select id="edit-change-hotel" style="height:48px; border:1px solid #d5e1ef; border-radius:14px; padding:0 14px; font-size:0.95rem; font-weight:700;"></select>
                 </label>
-                <label style="display:grid; gap:7px; font-size:0.68rem; color:#64748b; font-weight:900; text-transform:uppercase;">Solicitante
-                    <input id="edit-change-employee" type="text" required style="height:48px; border:1px solid #d5e1ef; border-radius:14px; padding:0 14px; font-size:0.95rem; font-weight:700;">
-                </label>
-                <label style="display:grid; gap:7px; font-size:0.68rem; color:#64748b; font-weight:900; text-transform:uppercase;">Compa&ntilde;ero
-                    <input id="edit-change-target" type="text" style="height:48px; border:1px solid #d5e1ef; border-radius:14px; padding:0 14px; font-size:0.95rem; font-weight:700;">
-                </label>
+                
+                <div style="display:grid; gap:7px; font-size:0.68rem; color:#64748b; font-weight:900; text-transform:uppercase;">
+                    <span>Solicitante (Origen)</span>
+                    <div style="display:flex; gap:8px;">
+                        <select id="edit-change-employee-type" onchange="window.toggleEmployeeInput('employee')" style="height:48px; border:1px solid #d5e1ef; border-radius:14px; padding:0 10px; font-size:0.8rem; font-weight:700; width:110px; background:#fff; cursor:pointer;">
+                            <option value="plantilla">Plantilla</option>
+                            <option value="manual">Manual</option>
+                        </select>
+                        <select id="edit-change-employee-select" style="height:48px; border:1px solid #d5e1ef; border-radius:14px; padding:0 14px; font-size:0.95rem; font-weight:700; flex:1; background:#fff;"></select>
+                        <input id="edit-change-employee-text" type="text" style="height:48px; border:1px solid #d5e1ef; border-radius:14px; padding:0 14px; font-size:0.95rem; font-weight:700; flex:1; display:none;" placeholder="Nombre manual...">
+                    </div>
+                </div>
+
+                <div style="display:grid; gap:7px; font-size:0.68rem; color:#64748b; font-weight:900; text-transform:uppercase;">
+                    <span>Compañero (Sustituye)</span>
+                    <div style="display:flex; gap:8px;">
+                        <select id="edit-change-target-type" onchange="window.toggleEmployeeInput('target')" style="height:48px; border:1px solid #d5e1ef; border-radius:14px; padding:0 10px; font-size:0.8rem; font-weight:700; width:110px; background:#fff; cursor:pointer;">
+                            <option value="plantilla">Plantilla</option>
+                            <option value="manual">Manual/Externo</option>
+                        </select>
+                        <select id="edit-change-target-select" style="height:48px; border:1px solid #d5e1ef; border-radius:14px; padding:0 14px; font-size:0.95rem; font-weight:700; flex:1; background:#fff;"></select>
+                        <input id="edit-change-target-text" type="text" style="height:48px; border:1px solid #d5e1ef; border-radius:14px; padding:0 14px; font-size:0.95rem; font-weight:700; flex:1; display:none;" placeholder="Nombre manual...">
+                    </div>
+                </div>
+
                 <label style="display:grid; gap:7px; font-size:0.68rem; color:#64748b; font-weight:900; text-transform:uppercase;">Turno original
                     <select id="edit-change-origin" style="height:48px; border:1px solid #d5e1ef; border-radius:14px; padding:0 14px; font-size:0.95rem; font-weight:700;">
                         <option value="">—</option><option value="Mañana">Mañana</option><option value="Tarde">Tarde</option><option value="Noche">Noche</option><option value="Descanso">Descanso</option>
@@ -2090,6 +2109,19 @@ window.ensureChangeEditModal = () => {
     document.body.appendChild(modal);
 };
 
+window.toggleEmployeeInput = (prefix) => {
+    const type = document.getElementById(`edit-change-${prefix}-type`).value;
+    const selectEl = document.getElementById(`edit-change-${prefix}-select`);
+    const textEl = document.getElementById(`edit-change-${prefix}-text`);
+    if (type === 'plantilla') {
+        if (selectEl) selectEl.style.display = '';
+        if (textEl) { textEl.style.display = 'none'; textEl.required = false; }
+    } else {
+        if (selectEl) selectEl.style.display = 'none';
+        if (textEl) { textEl.style.display = ''; textEl.required = (prefix === 'employee'); }
+    }
+};
+
 window.closeChangeEditModal = () => {
     const modal = document.getElementById('changeEditModal');
     if (modal) modal.style.display = 'none';
@@ -2099,16 +2131,36 @@ window.closeChangeEditModal = () => {
 window.editChange = async (id) => {
     try {
         window.ensureChangeEditModal();
-        const [eventos, hotels] = await Promise.all([
+        const [eventos, hotels, emps] = await Promise.all([
             window.TurnosDB.fetchEventos(),
-            window.TurnosDB.getHotels()
+            window.TurnosDB.getHotels(),
+            window.empleadosGlobales || window.TurnosDB.getEmpleados()
         ]);
+        if (emps && emps.length > 0) {
+            window.empleadosGlobales = emps;
+        }
         const ev = (eventos || []).find(item => String(item.id) === String(id));
         if (!ev) throw new Error('No se encontro el cambio seleccionado');
         window._editingChangeEvent = ev;
 
+        const titleLabel = document.getElementById('changeEditTitle');
+        if (titleLabel) titleLabel.textContent = 'Editar cambio operativo';
+
         const hotelSelect = document.getElementById('edit-change-hotel');
         hotelSelect.innerHTML = `<option value="">Sin hotel</option>${(hotels || []).map(h => `<option value="${escapeHtml(h)}">${escapeHtml(h)}</option>`).join('')}`;
+
+        // Populate employee selects
+        const empsSorted = [...(emps || [])].sort((a,b) => (a.nombre || '').localeCompare(b.nombre || ''));
+        const buildOptions = (list) => {
+            return `<option value="">Seleccionar...</option>` + list.map(e => {
+                const idInt = e.id_interno ? ` [${e.id_interno}]` : '';
+                return `<option value="${e.id}">${e.nombre}${idInt}</option>`;
+            }).join('');
+        };
+        const empSelect = document.getElementById('edit-change-employee-select');
+        const targetSelect = document.getElementById('edit-change-target-select');
+        if (empSelect) empSelect.innerHTML = buildOptions(empsSorted);
+        if (targetSelect) targetSelect.innerHTML = buildOptions(empsSorted);
 
         const setValue = (fieldId, value) => {
             const field = document.getElementById(fieldId);
@@ -2124,13 +2176,52 @@ window.editChange = async (id) => {
         };
         setValue('edit-change-date', ev.fecha_inicio || '');
         setValue('edit-change-hotel', ev.hotel_origen || ev.hotel_destino || '');
-        setValue('edit-change-employee', ev.empleado_id || '');
-        setValue('edit-change-target', ev.empleado_destino_id || '');
         setValue('edit-change-origin', toShiftSelectValue(ev.turno_original || ev.payload?.origen || ''));
         setValue('edit-change-dest', toShiftSelectValue(ev.turno_nuevo || ev.payload?.destino || ''));
         setValue('edit-change-type', ev.tipo || 'INTERCAMBIO_TURNO');
         setValue('edit-change-status', ev.estado || 'activo');
         setValue('edit-change-obs', ev.observaciones || '');
+
+        const findEmployeeInPlantilla = (empId) => {
+            if (!empId) return null;
+            const keys = window.getEmployeeKeys ? window.getEmployeeKeys(empId) : [String(empId).trim().toLowerCase()];
+            return (emps || []).find(e => {
+                const eId = String(e.id || '').trim().toLowerCase();
+                const eNombre = String(e.nombre || '').trim().toLowerCase();
+                const eIdInt = String(e.id_interno || '').trim().toLowerCase();
+                return keys.includes(eId) || keys.includes(eNombre) || keys.includes(eIdInt);
+            });
+        };
+
+        // Populate Solicitante (Origen) value
+        const matchEmp = findEmployeeInPlantilla(ev.empleado_id);
+        if (matchEmp) {
+            document.getElementById('edit-change-employee-type').value = 'plantilla';
+            document.getElementById('edit-change-employee-select').value = matchEmp.id;
+            document.getElementById('edit-change-employee-select').style.display = '';
+            document.getElementById('edit-change-employee-text').style.display = 'none';
+            document.getElementById('edit-change-employee-text').value = '';
+        } else {
+            document.getElementById('edit-change-employee-type').value = 'manual';
+            document.getElementById('edit-change-employee-select').style.display = 'none';
+            document.getElementById('edit-change-employee-text').style.display = '';
+            document.getElementById('edit-change-employee-text').value = ev.empleado_id || '';
+        }
+
+        // Populate Compañero (Sustituye) value
+        const matchTarget = findEmployeeInPlantilla(ev.empleado_destino_id);
+        if (matchTarget) {
+            document.getElementById('edit-change-target-type').value = 'plantilla';
+            document.getElementById('edit-change-target-select').value = matchTarget.id;
+            document.getElementById('edit-change-target-select').style.display = '';
+            document.getElementById('edit-change-target-text').style.display = 'none';
+            document.getElementById('edit-change-target-text').value = '';
+        } else {
+            document.getElementById('edit-change-target-type').value = 'manual';
+            document.getElementById('edit-change-target-select').style.display = 'none';
+            document.getElementById('edit-change-target-text').style.display = '';
+            document.getElementById('edit-change-target-text').value = ev.empleado_destino_id || '';
+        }
 
         const idLabel = document.getElementById('changeEditId');
         if (idLabel) idLabel.textContent = `ID protegido: ${ev.id}`;
@@ -2142,8 +2233,7 @@ window.editChange = async (id) => {
 
 window.saveChangeEdit = async (event) => {
     event.preventDefault();
-    const original = window._editingChangeEvent;
-    if (!original) return;
+    const original = window._editingChangeEvent || {};
     const btn = document.getElementById('btnSaveChangeEdit');
     try {
         if (btn) {
@@ -2152,13 +2242,23 @@ window.saveChangeEdit = async (event) => {
         }
         const fecha = document.getElementById('edit-change-date')?.value;
         const hotel = document.getElementById('edit-change-hotel')?.value || null;
-        const empleado = document.getElementById('edit-change-employee')?.value?.trim();
-        const companero = document.getElementById('edit-change-target')?.value?.trim() || null;
+
+        const empType = document.getElementById('edit-change-employee-type').value;
+        const empleado = empType === 'plantilla' 
+            ? document.getElementById('edit-change-employee-select').value 
+            : document.getElementById('edit-change-employee-text').value.trim();
+
+        const targetType = document.getElementById('edit-change-target-type').value;
+        const companero = targetType === 'plantilla' 
+            ? document.getElementById('edit-change-target-select').value 
+            : (document.getElementById('edit-change-target-text').value.trim() || null);
+
         const turnoOriginal = document.getElementById('edit-change-origin')?.value || null;
         const turnoNuevo = document.getElementById('edit-change-dest')?.value || null;
         const tipo = document.getElementById('edit-change-type')?.value || original.tipo || 'INTERCAMBIO_TURNO';
         const estado = document.getElementById('edit-change-status')?.value || 'activo';
         const observaciones = document.getElementById('edit-change-obs')?.value?.trim() || null;
+        
         if (!fecha || !empleado) throw new Error('Fecha y solicitante son obligatorios');
 
         await window.TurnosDB.upsertEvento({
@@ -2208,8 +2308,76 @@ window.anularChange = async (id) => {
     } catch (err) { alert("Error al anular: " + err.message); }
 };
 
-window.openNewChangeModal = () => {
-    window.open('solicitud.html', '_blank');
+window.openNewChangeModal = async () => {
+    try {
+        window.ensureChangeEditModal();
+        const [hotels, emps] = await Promise.all([
+            window.TurnosDB.getHotels(),
+            window.empleadosGlobales || window.TurnosDB.getEmpleados()
+        ]);
+        if (emps && emps.length > 0) {
+            window.empleadosGlobales = emps;
+        }
+
+        window._editingChangeEvent = null;
+
+        const titleLabel = document.getElementById('changeEditTitle');
+        if (titleLabel) titleLabel.textContent = 'Añadir cambio operativo';
+
+        const idLabel = document.getElementById('changeEditId');
+        if (idLabel) idLabel.textContent = 'Registro manual de cambio';
+
+        // Hotel select
+        const hotelSelect = document.getElementById('edit-change-hotel');
+        const selectedHotel = document.getElementById('chHotel')?.value || 'all';
+        hotelSelect.innerHTML = `<option value="">Sin hotel</option>${(hotels || []).map(h => `<option value="${escapeHtml(h)}" ${h === selectedHotel && selectedHotel !== 'all' ? 'selected' : ''}>${escapeHtml(h)}</option>`).join('')}`;
+
+        // Populate employee selects
+        const empsSorted = [...(emps || [])].sort((a,b) => (a.nombre || '').localeCompare(b.nombre || ''));
+        const buildOptions = (list) => {
+            return `<option value="">Seleccionar...</option>` + list.map(e => {
+                const idInt = e.id_interno ? ` [${e.id_interno}]` : '';
+                return `<option value="${e.id}">${e.nombre}${idInt}</option>`;
+            }).join('');
+        };
+        const empSelect = document.getElementById('edit-change-employee-select');
+        const targetSelect = document.getElementById('edit-change-target-select');
+        if (empSelect) empSelect.innerHTML = buildOptions(empsSorted);
+        if (targetSelect) targetSelect.innerHTML = buildOptions(empsSorted);
+
+        // Default date
+        const dateVal = document.getElementById('chRange')?.value || '';
+        let defaultDate = window.isoDate ? window.isoDate(new Date()) : new Date().toISOString().split('T')[0];
+        if (dateVal.includes(' a ')) {
+            defaultDate = dateVal.split(' a ')[0].trim();
+        }
+        const dateInput = document.getElementById('edit-change-date');
+        if (dateInput) dateInput.value = defaultDate;
+
+        // Reset types to plantilla
+        document.getElementById('edit-change-employee-type').value = 'plantilla';
+        document.getElementById('edit-change-employee-select').style.display = '';
+        document.getElementById('edit-change-employee-text').style.display = 'none';
+        document.getElementById('edit-change-employee-text').value = '';
+        document.getElementById('edit-change-employee-select').value = '';
+
+        document.getElementById('edit-change-target-type').value = 'plantilla';
+        document.getElementById('edit-change-target-select').style.display = '';
+        document.getElementById('edit-change-target-text').style.display = 'none';
+        document.getElementById('edit-change-target-text').value = '';
+        document.getElementById('edit-change-target-select').value = '';
+
+        // Reset other fields
+        document.getElementById('edit-change-origin').value = '';
+        document.getElementById('edit-change-dest').value = '';
+        document.getElementById('edit-change-type').value = 'INTERCAMBIO_TURNO';
+        document.getElementById('edit-change-status').value = 'activo';
+        document.getElementById('edit-change-obs').value = '';
+
+        document.getElementById('changeEditModal').style.display = 'flex';
+    } catch (err) {
+        alert('No se pudo abrir el modal: ' + err.message);
+    }
 };
 
 // ==========================================
