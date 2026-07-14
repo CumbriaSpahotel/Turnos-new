@@ -465,6 +465,10 @@
             } catch (err) { alert("Error al anular: " + err.message); }
         },
 
+        openNewChangeModal: () => {
+            window.open('solicitud.html', '_blank');
+        },
+
         refresh: () => CambiosModule.renderChanges()
     };
 
@@ -478,5 +482,6 @@
     window.saveChangeEdit = CambiosModule.saveChangeEdit;
     window.anularChange = CambiosModule.anularChange;
     window.closeChangeEditModal = CambiosModule.closeChangeEditModal;
+    window.openNewChangeModal = CambiosModule.openNewChangeModal;
 
 })();

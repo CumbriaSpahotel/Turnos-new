@@ -2208,6 +2208,10 @@ window.anularChange = async (id) => {
     } catch (err) { alert("Error al anular: " + err.message); }
 };
 
+window.openNewChangeModal = () => {
+    window.open('solicitud.html', '_blank');
+};
+
 // ==========================================
 // MÃ“DULO: SOLICITUDES (RESTAURADO)
 // ==========================================
