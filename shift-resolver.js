@@ -184,12 +184,16 @@ console.log("[ShiftResolver] Iniciando carga v5.0...");
 
     window.getEventOriginCandidates = (evento = {}) => {
         const p = evento.payload || {};
+        const tipo = String(evento.tipo || '').toUpperCase();
+        const esCambioPuntual = ['CAMBIO_TURNO', 'CT'].includes(tipo);
         return [
             evento.empleado_id, evento.empleado_a_id, evento.origen_id,
             evento.empleado, evento.empleado_nombre, evento.nombre,
-            evento.titular, evento.titular_id, evento.id_empleado, evento.solicitante, evento.origen,
+            evento.titular, evento.titular_id, evento.id_empleado, evento.solicitante,
+            esCambioPuntual ? null : evento.origen,
             evento.participante_a, p.empleado_id, p.solicitante,
-            p.solicitante_id, p.titular, p.titular_id, p.origen
+            p.solicitante_id, p.titular, p.titular_id,
+            esCambioPuntual ? null : p.origen
         ].filter(Boolean);
     };
 
@@ -197,15 +201,19 @@ console.log("[ShiftResolver] Iniciando carga v5.0...");
 
     window.getEventDestinationCandidates = (evento = {}) => {
         const p = evento.payload || {};
+        const tipo = String(evento.tipo || '').toUpperCase();
+        const esCambioPuntual = ['CAMBIO_TURNO', 'CT'].includes(tipo);
         return [
             evento.empleado_destino_id, evento.empleado_b_id, evento.destino_id,
-            evento.destino, evento.sustituto_id, evento.empleado_destino, evento.empleado_destino_nombre,
+            esCambioPuntual ? null : evento.destino,
+            evento.sustituto_id, evento.empleado_destino, evento.empleado_destino_nombre,
             evento.sustituto, evento.sustituto_nombre, evento.participante_b,
-            evento.companero, evento['compañero'], evento.participante_destino, evento.destinatario, p.empleado_destino_id,
-            p.empleado_b_id, p.destino_id, p.destino, p.sustituto_id, p.empleado_destino,
-            p.empleado_destino_nombre, p.sustituto, p.sustituto_nombre,
-            p.participante_b, p.participante_destino, p.companero, p['compa\u00f1ero'],
-            p.companero_id, p.destinatario, p.destinatario_id
+            evento.companero, evento['compañero'], evento.participante_destino, evento.destinatario,
+            p.empleado_destino_id, p.empleado_b_id, p.destino_id,
+            esCambioPuntual ? null : p.destino,
+            p.sustituto_id, p.empleado_destino, p.empleado_destino_nombre,
+            p.sustituto, p.sustituto_nombre, p.participante_b, p.participante_destino,
+            p.companero, p['compa\u00f1ero'], p.companero_id, p.destinatario, p.destinatario_id
         ].filter(Boolean);
     };
 
