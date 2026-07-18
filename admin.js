@@ -3889,6 +3889,7 @@ window.createPuestosPreviewModel = ({
     // 2. CONSTRUIR ÍNDICE GLOBAL (con visibilidad de sustituciones)
     const { baseIndex } = window.buildIndices(employees, eventos, baseRowsFlat);
     baseIndex.ausenciaSustitucionMap = ausenciaSustitucionMap;
+    window._lastBaseIndex = baseIndex;
 
     const puestos = Array.from(puestosMap.values()).sort((a, b) => {
         const valA = a.rowIndex === null || a.rowIndex === undefined ? 99999 : a.rowIndex;
@@ -6209,8 +6210,14 @@ window.hasPendingPublicationChanges = async function({ weekStart, weekEnd, hotel
                     snapshotDiff = true;
                     pendingCount = newSnap ? (newSnap.rows || []).length : 1;
                 } else if (newSnap && savedSnap) {
+                    const employees = (window.empleadosGlobales && window.empleadosGlobales.length)
+                        ? window.empleadosGlobales
+                        : await window.TurnosDB.getEmpleados();
+                    const { baseIndex } = window.buildIndices(employees);
+                    
                     const uCtx = window.ShiftResolver.createIdentityContext({
-                        baseIndex: window._lastBaseIndex || {}
+                        baseIndex,
+                        employees
                     });
                     const context = {
                         resolveEmployeeId: (id) => window.ShiftResolver.getCanonicalEmployeeId(id, uCtx)
@@ -7056,14 +7063,18 @@ window.getGlobalPendingPublicationStatus = async function() {
     };
     try {
         const today = window.isoDate ? window.isoDate(new Date()) : new Date().toISOString().split('T')[0];
-        // Rango ampliado: hoy - 60d -> hoy + 365d
-        const rangeStart = window.addIsoDays ? window.addIsoDays(today, -60) : today;
+        // Rango ampliado: hoy - 90d -> hoy + 365d
+        const rangeStart = window.addIsoDays ? window.addIsoDays(today, -90) : today;
         const rangeEnd   = window.addIsoDays ? window.addIsoDays(today, 365) : today;
 
         // 1. Fetch all active events in the broad range
         const ACTIVE_STATES = ['activo','activa','aprobado','aprobada','pendiente'];
         const evtsAll = await window.TurnosDB.fetchEventos(rangeStart, rangeEnd);
-        const activeEvts = (evtsAll || []).filter(e => ACTIVE_STATES.includes((e.estado||'').toLowerCase()));
+        const activeEvts = (evtsAll || []).filter(e => {
+            if (!ACTIVE_STATES.includes((e.estado||'').toLowerCase())) return false;
+            const evtDate = e.fecha_inicio || e.fecha || today;
+            return evtDate >= rangeStart && evtDate <= rangeEnd;
+        });
 
         // 2. Fetch all active snapshots in the same range
         let snapshotsAll = [];
