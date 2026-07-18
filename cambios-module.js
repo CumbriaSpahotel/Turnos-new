@@ -116,6 +116,7 @@
                         for (const item of pendingSyncMap.values()) {
                             await window.TurnosDB.actualizarEstadoPeticion(item.req.id, 'aprobada');
                         }
+                        if (window.invalidatePreviewSnapshotCache) window.invalidatePreviewSnapshotCache('requests-approved');
                         events = await window.TurnosDB.fetchEventos();
                     } finally {
                         window._syncingApprovedChangeRequests = false;
@@ -526,6 +527,7 @@
                         edited_at: new Date().toISOString()
                     }
                 });
+                if (window.invalidatePreviewSnapshotCache) window.invalidatePreviewSnapshotCache('change-saved');
 
                 CambiosModule.closeChangeEditModal();
                 await CambiosModule.renderChanges();
@@ -547,6 +549,7 @@
                 const peticionId = evento?.payload?.peticion_id;
                 await window.TurnosDB.anularEvento(id);
                 if (peticionId) await window.TurnosDB.actualizarEstadoPeticion(peticionId, 'anulada');
+                if (window.invalidatePreviewSnapshotCache) window.invalidatePreviewSnapshotCache('change-annulled');
                 alert("Cambio anulado correctamente.");
                 CambiosModule.renderChanges();
             } catch (err) { alert("Error al anular: " + err.message); }

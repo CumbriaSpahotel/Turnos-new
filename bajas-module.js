@@ -306,6 +306,8 @@ window.saveBajaPermiso=async()=>{
     const bajaId = _editingBaja?.id || null;
     let interrupciones = [];
     if(sustId) {
+        const baseIndex = window._lastBaseIndex || window.TurnosDB?.baseIndex || {};
+        const uCtx = window.ShiftResolver?.createIdentityContext ? window.ShiftResolver.createIdentityContext({ baseIndex }) : {};
         const startDate = new Date(start + 'T12:00:00');
         const endDate = new Date(end + 'T12:00:00');
         
@@ -313,17 +315,17 @@ window.saveBajaPermiso=async()=>{
             const fStr = d.toISOString().split('T')[0];
             
             const eventosSustituto = todosLosEventos.filter(e => 
-                window.eventoPerteneceAEmpleado(e, sustId) && 
+                window.eventoPerteneceAEmpleado(e, sustId, uCtx) && 
                 window.eventoAplicaEnFecha(e, fStr) &&
                 !/^(anulad|rechazad|cancelad)/i.test(e.estado||'')
             );
             
-            const tieneBajaPermiso = eventosSustituto.find(e => ['BAJA','PERMISO','PERM','FORMACION','IT'].includes(tipoNorm(e.tipo)) && window.isTitularOfAbsence(e, sustId));
+            const tieneBajaPermiso = eventosSustituto.find(e => ['BAJA','PERMISO','PERM','FORMACION','IT'].includes(tipoNorm(e.tipo)) && window.isTitularOfAbsence(e, sustId, uCtx));
             if (tieneBajaPermiso) {
                 throw new Error(`El sustituto seleccionado está de ${tieneBajaPermiso.tipo} el día ${fStr}. No puede cubrir esta baja.`);
             }
             
-            const vacActiva = eventosSustituto.find(e => tipoNorm(e.tipo).startsWith('VAC') && window.isTitularOfAbsence(e, sustId));
+            const vacActiva = eventosSustituto.find(e => tipoNorm(e.tipo).startsWith('VAC') && window.isTitularOfAbsence(e, sustId, uCtx));
             if (vacActiva) {
                 // Algoritmo de recuperación de turno de 4 niveles
                 const eventosAntesDeGuardar = todosLosEventos.filter(e => e.id !== bajaId);
@@ -464,6 +466,7 @@ window.saveBajaPermiso=async()=>{
         p_modificado_por: username,
         p_version_expected: expectedVersion
     });
+    if (window.invalidatePreviewSnapshotCache) window.invalidatePreviewSnapshotCache('baja-saved');
 
     status.innerHTML='<span style="color:#10b981;">✓ Guardado correctamente</span>';
     if(window.addLog)window.addLog(`Baja/Permiso ${_editingBaja?'actualizado':'creado'}: ${tipo} - ${empId}`,'info');
@@ -507,6 +510,7 @@ window.cancelBajaPermisoGroup=async(idx)=>{
     const username = window.currentUser?.email || 'admin_bajas';
     const ids=g.ids||[g.id];
     for(const id of ids){await window.TurnosDB.anularBajaConInterrupcion(id, username);}
+    if (window.invalidatePreviewSnapshotCache) window.invalidatePreviewSnapshotCache('baja-annulled');
     if(window.addLog)window.addLog(`Baja/Permiso anulado: ${g.tipo} - ${g.empleado_id} (${ids.length} eventos)`,'warn');
     _bajasInitialized=false;await window.renderBajas();
   }catch(e){alert('Error al anular: '+e.message);}
@@ -522,6 +526,7 @@ window.anularBajaPermisoAction=async()=>{
   try{
     const username = window.currentUser?.email || 'admin_bajas';
     for(const id of ids){await window.TurnosDB.anularBajaConInterrupcion(id, username);}
+    if (window.invalidatePreviewSnapshotCache) window.invalidatePreviewSnapshotCache('baja-annulled');
     if(window.addLog)window.addLog(`Baja/Permiso anulado desde modal: ${_editingBaja.tipo}`,'warn');
     _bajasInitialized=false;window.closeBajaPermisoModal();await window.renderBajas();
   }catch(e){alert('Error: '+e.message);}

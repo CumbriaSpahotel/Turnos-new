@@ -1,26 +1,27 @@
 const { createClient } = require('@supabase/supabase-js');
-const fs = require('fs');
+const SUPABASE_URL = "https://drvmxranbpumianmlzqr.supabase.co";
+const SUPABASE_ANON_KEY = "sb_publishable_MEpdfeO_ZGkMkg0_eKZKnQ_QCJxDrfZ";
 
-// Read supabase config
-const adminJs = fs.readFileSync('admin.html', 'utf-8');
-const supabaseUrlMatch = adminJs.match(/https:\/\/[a-z0-9]+\.supabase\.co/);
-const supabaseKeyMatch = adminJs.match(/eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9\.[a-zA-Z0-9_-]+\.[a-zA-Z0-9_-]+/);
+const client = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-const supabaseUrl = supabaseUrlMatch ? supabaseUrlMatch[0] : '';
-// Keys might be in another file or config
-console.log('URL:', supabaseUrl);
-
-// Let's search for supabase-config.js
-let configContent = '';
-if (fs.existsSync('supabase-config.js')) {
-    configContent = fs.readFileSync('supabase-config.js', 'utf-8');
-} else if (fs.existsSync('supabase.js')) {
-    configContent = fs.readFileSync('supabase.js', 'utf-8');
+async function run() {
+    const { data: events, error } = await client
+        .from('eventos_cuadrante')
+        .select('*')
+        .lte('fecha_inicio', '2026-05-17')
+        .gte('fecha_fin', '2026-05-11');
+        
+    if (error) {
+        console.error(error);
+        return;
+    }
+    
+    console.log(`Found ${events.length} events:`);
+    events.forEach(e => {
+        console.log(`ID: ${e.id}, Tipo: ${e.tipo}, Empleado: ${e.empleado_id}, Destino/Sustituto: ${e.empleado_destino_id || e.sustituto_id || e.sustituto || e.payload?.sustituto || e.payload?.sustituto_id}, Estado: ${e.estado}`);
+        console.log(`  Dates: ${e.fecha_inicio} to ${e.fecha_fin}`);
+        console.log(`  Hotel Origen: ${e.hotel_origen || e.hotel_id || e.hotel}, Hotel Destino: ${e.hotel_destino}`);
+    });
 }
-console.log('Config length:', configContent.length);
 
-// Let's write a direct query using window.supabase if we run it in browser, or via node.
-// We can just use the key if we find it.
-const keyMatches = configContent.match(/'(eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9\.[a-zA-Z0-9_-]+\.[a-zA-Z0-9_-]+)'/);
-const key = keyMatches ? keyMatches[1] : '';
-console.log('Key found:', !!key);
+run();

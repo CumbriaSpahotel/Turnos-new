@@ -442,6 +442,7 @@ window.cancelVacationGroup = async (idx) => {
   try {
     const ids = p.ids||[p.id];
     for(const id of ids){ await window.TurnosDB.anularEvento(id); }
+    if (window.invalidatePreviewSnapshotCache) window.invalidatePreviewSnapshotCache('vacation-cancelled');
     if(window.addLog) window.addLog(`Vacaciones anuladas: ${label} (${ids.length} eventos)`,'warn');
     await window.renderVacations();
   } catch(e) {

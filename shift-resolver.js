@@ -266,36 +266,111 @@ tipo=${normalized.tipo}`);
         return normalized;
     };
 
-    window.isTitularOfAbsence = (evento, empleadoId, context = {}) => {
-        const target = window.normalizeId(empleadoId);
-        if (!target) return false;
-        const baseIndex = context.baseIndex || context;
-        const targetAlias = (baseIndex && baseIndex.aliasesEmpleado) ? (baseIndex.aliasesEmpleado.get(target) || target) : target;
-        const candidatosTitular = window.getEventOriginCandidates(evento).map(window.normalizeId);
-        const normalizedTarget = context.resolveId ? context.resolveId(target) : target;
+    window.ShiftResolver = window.ShiftResolver || {};
+
+    window.ShiftResolver.getCanonicalEmployeeId = (employeeOrId, context = {}) => {
+        if (employeeOrId === null || employeeOrId === undefined || employeeOrId === '') {
+            return null;
+        }
+        let idRaw = '';
+        if (typeof employeeOrId === 'object') {
+            idRaw = employeeOrId.id || employeeOrId.employee_id || employeeOrId.empleado_id || employeeOrId.nombre || '';
+        } else {
+            idRaw = String(employeeOrId).trim();
+        }
+        if (!idRaw) return null;
+        
+        const norm = window.normalizeId ? window.normalizeId(idRaw) : idRaw.toLowerCase().trim();
+        if (!norm || norm === '-' || norm === '—') return null;
+
+        // 2. Resolve via context.resolveId
+        if (context.resolveId) {
+            const res = context.resolveId(norm);
+            if (res) return window.normalizeId ? window.normalizeId(res) : res.toLowerCase().trim();
+        }
+
+        // 3. Resolve via baseIndex.aliasesEmpleado
+        const baseIndex = context.baseIndex || (context.aliasesEmpleado ? context : null);
+        if (baseIndex && baseIndex.aliasesEmpleado) {
+            if (baseIndex.aliasesEmpleado.has(norm)) {
+                const canonicalVal = baseIndex.aliasesEmpleado.get(norm);
+                return window.normalizeId ? window.normalizeId(canonicalVal) : canonicalVal.toLowerCase().trim();
+            }
+        }
+
+        // 4. Resolve via global employees array (exact match)
+        const employees = context.getEmployees ? context.getEmployees() : (window.empleadosGlobales || []);
+        if (employees && employees.length > 0) {
+            const normId = (val) => {
+                if (!val) return '';
+                return window.normalizeId ? window.normalizeId(val) : String(val).toLowerCase().trim();
+            };
+            const found = employees.find(e => 
+                normId(e.id) === norm || 
+                normId(e.nombre) === norm || 
+                normId(e.id_interno) === norm
+            );
+            if (found) return normId(found.id);
+            
+            // If employees list is loaded but no match is found:
+            if (norm.startsWith('emp-') || norm.startsWith('vacante-') || norm.startsWith('placeholder-')) {
+                return norm;
+            }
+            
+            console.warn('[IDENTITY_RESOLUTION_FAILED] Unknown employee identity raw:', idRaw, 'normalized:', norm);
+            return null;
+        }
+
+        // If employees list is NOT loaded yet, fallback to norm if it looks like an ID
+        if (norm.startsWith('emp-') || norm.startsWith('vacante-') || norm.startsWith('placeholder-')) {
+            return norm;
+        }
+        
+        return null;
+    };
+
+    window.ShiftResolver.createIdentityContext = (opts = {}) => {
+        const baseIndex = opts.baseIndex || (opts.aliasesEmpleado ? opts : null);
+        const employees = opts.employees || null;
+        return {
+            baseIndex,
+            getEmployees: () => employees || window.empleadosGlobales || []
+        };
+    };
+
+    window.ShiftResolver.isTitularOfAbsence = (evento, empleadoId, context = {}) => {
+        const uCtx = window.ShiftResolver.createIdentityContext(context.baseIndex || context);
+        const targetCanonical = window.ShiftResolver.getCanonicalEmployeeId(empleadoId, uCtx);
+        if (!targetCanonical) return false;
+        
+        const candidatosTitular = window.getEventOriginCandidates(evento);
         return candidatosTitular.some(c => {
-            const cAlias = (baseIndex && baseIndex.aliasesEmpleado) ? (baseIndex.aliasesEmpleado.get(c) || c) : c;
-            const normalizedC = context.resolveId ? context.resolveId(c) : c;
-            return normalizedC === normalizedTarget || cAlias === targetAlias || c === target || c === targetAlias;
+            const cCanonical = window.ShiftResolver.getCanonicalEmployeeId(c, uCtx);
+            return cCanonical === targetCanonical;
         });
     };
 
-    window.eventoPerteneceAEmpleado = (evento, empleadoId, context = {}) => {
-        const target = window.normalizeId(empleadoId);
-        if (!target) return false;
+    window.ShiftResolver.eventoPerteneceAEmpleado = (evento, empleadoId, context = {}) => {
+        const uCtx = window.ShiftResolver.createIdentityContext(context.baseIndex || context);
+        const targetCanonical = window.ShiftResolver.getCanonicalEmployeeId(empleadoId, uCtx);
+        if (!targetCanonical) return false;
         if (context.hotel && !window.eventoPerteneceAHotel(evento, context.hotel)) return false;
-        const baseIndex = context.baseIndex || context;
-        const targetAlias = (baseIndex && baseIndex.aliasesEmpleado) ? (baseIndex.aliasesEmpleado.get(target) || target) : target;
-        const candidatosTitular = window.getEventOriginCandidates(evento).map(window.normalizeId);
-        const candidatosDestino = window.getEventDestinationCandidates(evento).map(window.normalizeId);
+        
+        const strippedTarget = targetCanonical.replace(/^(vacante|placeholder)-?/, '');
+        
+        const candidatosTitular = window.getEventOriginCandidates(evento);
+        const candidatosDestino = window.getEventDestinationCandidates(evento);
         const candidatos = [...new Set([...candidatosTitular, ...candidatosDestino])];
-        const strippedTarget = target.replace(/^(vacante|placeholder)-?/, '');
-        const strippedTargetAlias = (baseIndex && baseIndex.aliasesEmpleado) ? (baseIndex.aliasesEmpleado.get(strippedTarget) || strippedTarget) : strippedTarget;
+        
         return candidatos.some(c => {
-            const cAlias = (baseIndex && baseIndex.aliasesEmpleado) ? (baseIndex.aliasesEmpleado.get(c) || c) : c;
-            return cAlias === targetAlias || cAlias === strippedTargetAlias || c === target || c === strippedTarget || c === targetAlias;
+            const cCanonical = window.ShiftResolver.getCanonicalEmployeeId(c, uCtx);
+            const strippedC = cCanonical ? cCanonical.replace(/^(vacante|placeholder)-?/, '') : '';
+            return cCanonical === targetCanonical || strippedC === strippedTarget;
         });
     };
+
+    window.isTitularOfAbsence = (...args) => window.ShiftResolver.isTitularOfAbsence(...args);
+    window.eventoPerteneceAEmpleado = (...args) => window.ShiftResolver.eventoPerteneceAEmpleado(...args);
 
     window.getOtroEmpleadoDelCambio = (evento, empleadoId) => {
         const target = window.normalizeId(empleadoId);
@@ -828,7 +903,11 @@ tipo=${normalized.tipo}`);
     window.ShiftResolver = {
         resolveEmployeeDay: window.resolveEmployeeDay,
         buildIndices: window.buildIndices,
-        clearCache: () => _cache.clear()
+        clearCache: () => _cache.clear(),
+        getCanonicalEmployeeId: window.ShiftResolver.getCanonicalEmployeeId,
+        createIdentityContext: window.ShiftResolver.createIdentityContext,
+        isTitularOfAbsence: window.ShiftResolver.isTitularOfAbsence,
+        eventoPerteneceAEmpleado: window.ShiftResolver.eventoPerteneceAEmpleado
     };
     window.resolverTurnoFinal = window.resolveEmployeeDay;
 

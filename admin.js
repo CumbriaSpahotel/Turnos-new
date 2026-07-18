@@ -16,6 +16,17 @@ window.isoDate = (date) => {
     const day = String(d.getDate()).padStart(2, '0');
     return `${y}-${m}-${day}`;
 };
+window._previewCacheRevision = 1;
+window._lastRenderedPreviewSnapshotSource = null;
+
+window.invalidatePreviewSnapshotCache = (reason) => {
+    window._previewCacheRevision++;
+    if (window.DEBUG_MODE) {
+        console.log(`[CACHE_INVALIDATION] Cache invalidated. Reason: ${reason}. New revision: ${window._previewCacheRevision}`);
+    }
+    window._lastRenderedPreviewSnapshotSource = null;
+};
+
 window.fmtDateLegacy = (dateStr) => {
     if (!dateStr) return '—';
     const parts = String(dateStr).split('-');
@@ -52,27 +63,21 @@ window.eventoPerteneceAHotel = (evento, hotel) => {
     return eventHotel === rowHotel;
 };
 
-window.eventoPerteneceAEmpleado = (evento, empleadoId, context = {}) => {
-    const targetKeys = window.getEmployeeKeys(empleadoId);
-    if (targetKeys.length === 0) return false;
-    if (context.hotel && !window.eventoPerteneceAHotel(evento, context.hotel)) return false;
-    
-    const candidatesTitular = window.getEventOriginCandidates ? window.getEventOriginCandidates(evento) : [evento.empleado_id];
-    const candidatesDestino = window.getEventDestinationCandidates ? window.getEventDestinationCandidates(evento) : [evento.empleado_destino_id];
-    const normId = window.normalizeId || ((v) => String(v || '').trim().toLowerCase());
-    const candidates = [...new Set([...candidatesTitular, ...candidatesDestino])].map(c => normId(c).replace(/^#/, ''));
-    
-    return targetKeys.some(k => candidates.includes(k));
-};
+if (!window.eventoPerteneceAEmpleado) {
+    window.eventoPerteneceAEmpleado = (evento, empleadoId, context = {}) => {
+        return window.ShiftResolver?.eventoPerteneceAEmpleado
+            ? window.ShiftResolver.eventoPerteneceAEmpleado(evento, empleadoId, context)
+            : false;
+    };
+}
 
-window.isTitularOfAbsence = (evento, empleadoId, context = {}) => {
-    const targetKeys = window.getEmployeeKeys(empleadoId);
-    if (targetKeys.length === 0) return false;
-    
-    const candidatesTitular = (window.getEventOriginCandidates ? window.getEventOriginCandidates(evento) : [evento.empleado_id]).map(c => (window.normalizeId ? window.normalizeId(c) : String(c || '').trim().toLowerCase()).replace(/^#/, ''));
-    
-    return targetKeys.some(k => candidatesTitular.includes(k));
-};
+if (!window.isTitularOfAbsence) {
+    window.isTitularOfAbsence = (evento, empleadoId, context = {}) => {
+        return window.ShiftResolver?.isTitularOfAbsence
+            ? window.ShiftResolver.isTitularOfAbsence(evento, empleadoId, context)
+            : false;
+    };
+}
 
 const origResolveEmployeeDay = window.resolveEmployeeDay;
 window.resolveEmployeeDay = (options) => {
@@ -82,17 +87,23 @@ window.resolveEmployeeDay = (options) => {
         const empId = window.normalizeId ? window.normalizeId(options.empleadoId) : String(options.empleadoId || '').trim().toLowerCase();
         const date = window.normalizeDate ? window.normalizeDate(options.fecha) : String(options.fecha || '').slice(0, 10);
         const eventos = options.eventos || [];
+        const baseIndex = options.baseIndex || {};
+        const uCtx = window.ShiftResolver?.createIdentityContext 
+            ? window.ShiftResolver.createIdentityContext({ baseIndex }) 
+            : { baseIndex };
+        uCtx.hotel = options.hotel;
+
         const activeEvents = eventos.filter(ev => {
             if ((window.normalizeEstado ? window.normalizeEstado(ev.estado) : String(ev.estado || '').toLowerCase()) === 'anulado') return false;
             if (window.eventoAplicaEnFecha && !window.eventoAplicaEnFecha(ev, date)) return false;
-            if (window.eventoPerteneceAEmpleado(ev, empId, { hotel: options.hotel })) return true;
+            if (window.eventoPerteneceAEmpleado(ev, empId, uCtx)) return true;
             return false;
         });
         
         const covEvent = activeEvents.find(ev => {
             const tipo = window.normalizeTipo ? window.normalizeTipo(ev.tipo) : String(ev.tipo || '').toUpperCase();
             if (['VAC', 'BAJA', 'PERMISO', 'PERM', 'SUSTITUCION', 'COBERTURA'].includes(tipo)) {
-                return !window.isTitularOfAbsence(ev, empId);
+                return !window.isTitularOfAbsence(ev, empId, uCtx);
             }
             return false;
         });
@@ -838,6 +849,7 @@ window.saveVacation = async (e) => {
         }
 
         await window.TurnosDB.upsertEvento(payload);
+        if (window.invalidatePreviewSnapshotCache) window.invalidatePreviewSnapshotCache('vacation-saved');
         
         statusBox.innerHTML = '<span style="color:#10b981;">âœ“ Vacaciones guardadas</span>';
         window.resetVacationForm();
@@ -3995,21 +4007,28 @@ window.createPuestosPreviewModel = ({
         const operationalRows = [];
         const absentRows = [];
         const extraRefuerzoRows = [];
-        const assignedNorms = new Set(); // Empleados ya colocados en puestos operativos
+        const assignedNorms = new Set(); // IDs canónicos colocados en puestos operativos
         
+        const uCtx = window.ShiftResolver.createIdentityContext({ baseIndex });
+
         // 1. PRE-PROCESAR ESTADO DE LA SEMANA
         const weekStatus = new Map(); // normTitular -> { tipo, sustitutoId, ... }
-        const substitutesMap = new Map(); // normSustituto -> { normTitular, ... } (para saber quién cubre a quién)
+        const substitutesMap = new Map(); // normSustituto -> { normTitular, ... }
+        const activeSubstitutes = new Map(); // canonicalSust -> { normSust, rawSust, normTitular, ev }
         
+        const weekStart = dates[0] || '';
+        const weekEnd = dates[6] || '';
+
         eventos.forEach(ev => {
             const tipo = window.normalizeTipo(ev.tipo);
             if (!['VAC', 'BAJA', 'PERM', 'PERMISO', 'FORMACION'].includes(tipo)) return;
             if (window.normalizeEstado(ev.estado) === 'anulado') return;
             if (window.eventoPerteneceAHotel && !window.eventoPerteneceAHotel(ev, hotel)) return;
 
-            const fi = window.normalizeDate(ev.fecha_inicio);
-            const ff = window.normalizeDate(ev.fecha_fin || ev.fecha_inicio);
-            if (!dates.some(d => d >= fi && d <= ff)) return;
+            const eventStart = window.normalizeDate(ev.fecha_inicio);
+            const eventEnd = window.normalizeDate(ev.fecha_fin || ev.fecha_inicio);
+            // Explicit intersection check:
+            if (!(eventStart <= weekEnd && eventEnd >= weekStart)) return;
 
             const tId = ev.empleado_id || ev.titular_id || ev.participante_a || ev.empleado;
             if (!tId) return;
@@ -4021,6 +4040,18 @@ window.createPuestosPreviewModel = ({
             }
             const normS = resolveId(sRaw);
             
+            if (normS) {
+                const canonicalSust = window.ShiftResolver.getCanonicalEmployeeId(normS, uCtx);
+                if (canonicalSust) {
+                    activeSubstitutes.set(canonicalSust, {
+                        normSust: normS,
+                        rawSust: sRaw,
+                        normTitular: normT,
+                        ev: ev
+                    });
+                }
+            }
+
             const existing = weekStatus.get(normT);
             if (existing && existing.sustitutoId && !sRaw) return;
 
@@ -4074,7 +4105,8 @@ window.createPuestosPreviewModel = ({
                 }
 
                 const normOcc = resolveId(occupantId);
-                if (isSustitucion && assignedNorms.has(normOcc)) {
+                const canonicalOcc = window.ShiftResolver.getCanonicalEmployeeId(normOcc, uCtx);
+                if (isSustitucion && canonicalOcc && assignedNorms.has(canonicalOcc)) {
                     return;
                 }
 
@@ -4094,12 +4126,13 @@ window.createPuestosPreviewModel = ({
                     titularOriginalId: r.empleadoId,
                     evento_id: status.event_id
                 });
-                if (occupantId && !isVacante) assignedNorms.add(normOcc);
+                if (occupantId && !isVacante && canonicalOcc) assignedNorms.add(canonicalOcc);
 
             } 
             // CASO B: TITULAR ESTÁ PRESENTE
             else {
-if (!assignedNorms.has(normTitular)) {
+                const canonicalTitular = window.ShiftResolver.getCanonicalEmployeeId(normTitular, uCtx);
+                if (canonicalTitular && !assignedNorms.has(canonicalTitular)) {
                     const titularName = getDisplayName(r.empleadoId, r);
                     operationalRows.push({
                         ...r,
@@ -4112,8 +4145,50 @@ if (!assignedNorms.has(normTitular)) {
                         rowType: 'operativo',
                         titularOriginal: titularName
                     });
-                    assignedNorms.add(normTitular);
+                    assignedNorms.add(canonicalTitular);
                 }
+            }
+        });
+
+        // 2.5 AÑADIR FILAS DE SUSTITUTOS ADICIONALES QUE NO TIENEN PUESTO OPERATIVO EN LA BASE Y NO HAN SIDO AGREGADOS
+        activeSubstitutes.forEach((sub, canonicalSust) => {
+            if (!assignedNorms.has(canonicalSust)) {
+                // Check if they are already in Excel template base rows
+                const alreadyInExcel = sourceRows.some(r => {
+                    const cId = window.ShiftResolver.getCanonicalEmployeeId(resolveId(r.empleadoId), uCtx);
+                    return cId === canonicalSust;
+                });
+                if (alreadyInExcel) return;
+
+                const empProfile = employees.find(e => {
+                    const cId = window.ShiftResolver.getCanonicalEmployeeId(e.id, uCtx);
+                    return cId === canonicalSust;
+                });
+                const displayName = empProfile?.nombre || getDisplayName(sub.rawSust);
+                const titularProfile = employees.find(e => {
+                    const cId = window.ShiftResolver.getCanonicalEmployeeId(e.id, uCtx);
+                    return cId === window.ShiftResolver.getCanonicalEmployeeId(sub.normTitular, uCtx);
+                });
+                const titularName = titularProfile?.nombre || getDisplayName(sub.normTitular);
+                const v9Order = window.getV9ExcelOrder(hotel, firstDate, sub.normSust) || empProfile?.orden || empProfile?.display_order || 999;
+                
+                operationalRows.push({
+                    empleadoId: sub.normSust,
+                    employee_id: sub.normSust,
+                    nombre: displayName,
+                    nombreVisible: displayName,
+                    displayName: displayName,
+                    rowIndex: v9Order,
+                    puestoOrden: v9Order,
+                    rowType: 'operativo',
+                    weekStart: firstDate,
+                    values: new Array(dates.length).fill(null),
+                    isSubstituteRow: true,
+                    titularOriginal: titularName,
+                    titularOriginalId: sub.normTitular,
+                    evento_id: sub.ev.id
+                });
+                assignedNorms.add(canonicalSust);
             }
         });
 
@@ -4130,8 +4205,9 @@ if (!assignedNorms.has(normTitular)) {
 
             const empId = ev.empleado_id;
             if (!empId) return;
-            const normEmpId = window.normalizeId(empId);
-            if (assignedNorms.has(normEmpId)) return;
+            const normEmpId = resolveId(empId);
+            const canonicalEmp = window.ShiftResolver.getCanonicalEmployeeId(normEmpId, uCtx);
+            if (canonicalEmp && assignedNorms.has(canonicalEmp)) return;
 
             const empName = getDisplayName(empId);
             extraRefuerzoRows.push({ 
@@ -4143,12 +4219,50 @@ if (!assignedNorms.has(normTitular)) {
                 origenOrden: 'refuerzo_explicito',
                 evento_id: ev.id
             });
-            assignedNorms.add(normEmpId);
+            if (canonicalEmp) assignedNorms.add(canonicalEmp);
         });
 
-        operationalRows.sort((a, b) => a.puestoOrden - b.puestoOrden);
-        absentRows.sort((a, b) => a.puestoOrden - b.puestoOrden);
-        extraRefuerzoRows.sort((a, b) => (a.nombre || '').localeCompare(b.nombre || ''));
+        // Sort rows deterministically:
+        operationalRows.sort((a, b) => {
+            const isSubA = a.isSubstituteRow ? 1 : 0;
+            const isSubB = b.isSubstituteRow ? 1 : 0;
+            if (isSubA !== isSubB) return isSubA - isSubB;
+            
+            const ordenA = Number.isFinite(a.puestoOrden) ? a.puestoOrden : Number.MAX_SAFE_INTEGER;
+            const ordenB = Number.isFinite(b.puestoOrden) ? b.puestoOrden : Number.MAX_SAFE_INTEGER;
+            if (ordenA !== ordenB) return ordenA - ordenB;
+
+            const rolA = String(a.rol || a.puesto || '').toLowerCase();
+            const rolB = String(b.rol || b.puesto || '').toLowerCase();
+            const cmpRol = rolA.localeCompare(rolB);
+            if (cmpRol !== 0) return cmpRol;
+
+            const canonicalA = window.ShiftResolver.getCanonicalEmployeeId(a.employee_id, uCtx) || '';
+            const canonicalB = window.ShiftResolver.getCanonicalEmployeeId(b.employee_id, uCtx) || '';
+            const cmpId = canonicalA.localeCompare(canonicalB);
+            if (cmpId !== 0) return cmpId;
+
+            const nameA = window.normalizeId(a.nombre || '');
+            const nameB = window.normalizeId(b.nombre || '');
+            return nameA.localeCompare(nameB);
+        });
+
+        absentRows.sort((a, b) => {
+            const ordenA = Number.isFinite(a.puestoOrden) ? a.puestoOrden : Number.MAX_SAFE_INTEGER;
+            const ordenB = Number.isFinite(b.puestoOrden) ? b.puestoOrden : Number.MAX_SAFE_INTEGER;
+            if (ordenA !== ordenB) return ordenA - ordenB;
+
+            const canonicalA = window.ShiftResolver.getCanonicalEmployeeId(a.employee_id, uCtx) || '';
+            const canonicalB = window.ShiftResolver.getCanonicalEmployeeId(b.employee_id, uCtx) || '';
+            return canonicalA.localeCompare(canonicalB);
+        });
+
+        extraRefuerzoRows.sort((a, b) => {
+            const canonicalA = window.ShiftResolver.getCanonicalEmployeeId(a.employee_id, uCtx) || '';
+            const canonicalB = window.ShiftResolver.getCanonicalEmployeeId(b.employee_id, uCtx) || '';
+            if (canonicalA !== canonicalB) return canonicalA.localeCompare(canonicalB);
+            return (a.nombre || '').localeCompare(b.nombre || '');
+        });
 
         return [...operationalRows, ...absentRows, ...extraRefuerzoRows].filter(r => {
             const validId = r.employee_id && !String(r.employee_id).includes('---') && !String(r.employee_id).includes('___');
@@ -4700,6 +4814,8 @@ window.renderPreview = async () => {
         window._lastRenderedPreviewSnapshotSource = {
             semana_inicio: '',
             semana_fin: '',
+            revision: window._previewCacheRevision,
+            hotelName: hotelSel,
             hoteles: []
         };
         let start, end;
@@ -6093,24 +6209,25 @@ window.hasPendingPublicationChanges = async function({ weekStart, weekEnd, hotel
                     snapshotDiff = true;
                     pendingCount = newSnap ? (newSnap.rows || []).length : 1;
                 } else if (newSnap && savedSnap) {
-                    // Comparar turnos por empleado. Formato guardado:
-                    // row.empleado_id + row.dias[fecha].code
-                    const buildFingerprint = (rows) => {
-                        const fp = {};
-                        (rows || []).forEach(row => {
-                            const empId = row.empleado_id || row.employee_id || row.nombre || '';
-                            if (!empId) return;
-                            const daysCodes = Object.entries(row.dias || {}).map(([f, d]) => `${f}:${d.code || d.turno || ''}`).sort().join(',');
-                            fp[empId] = daysCodes;
-                        });
-                        return fp;
+                    const uCtx = window.ShiftResolver.createIdentityContext({
+                        baseIndex: window._lastBaseIndex || {}
+                    });
+                    const context = {
+                        resolveEmployeeId: (id) => window.ShiftResolver.getCanonicalEmployeeId(id, uCtx)
                     };
-                    const oldFP = buildFingerprint(savedSnap.rows || []);
-                    const newFP = buildFingerprint(newSnap.rows || []);
-                    const changes = Object.keys(newFP).filter(id => newFP[id] !== oldFP[id]);
-                    if (changes.length > 0) {
+                    const normNew = window.PublicationSnapshot.normalizePublishedSchedule(newSnap, context);
+                    const normSaved = window.PublicationSnapshot.normalizePublishedSchedule(savedSnap, context);
+                    
+                    if (normNew.complete && normSaved.complete) {
+                        const diffs = window.PublicationSnapshot.diffPublishedSchedules(newSnap, savedSnap, context);
+                        if (diffs.length > 0) {
+                            snapshotDiff = true;
+                            pendingCount = diffs.length;
+                        }
+                    } else {
+                        console.warn('[PENDING_CHECK_INCOMPLETE] One or both snapshots are incomplete. newSnap complete:', normNew.complete, 'savedSnap complete:', normSaved.complete);
                         snapshotDiff = true;
-                        pendingCount = changes.length;
+                        pendingCount = 1;
                     }
                 } else if (newSnap && !savedSnap) {
                     // Snapshot existe pero no tiene datos guardados → publicar de nuevo
@@ -6397,6 +6514,7 @@ window.publishToSupabase = async () => {
 
         // 4. Actualizar estado local
         window._adminExcelBaseOriginalRows = window.cloneExcelRows(window._adminExcelEditableRows);
+        if (window.invalidatePreviewSnapshotCache) window.invalidatePreviewSnapshotCache('publication_completed');
         
         alert('Publicación completada con éxito.');
         document.getElementById('publishPreviewModal')?.classList.remove('open');
@@ -6463,7 +6581,12 @@ window.buildPublicationSnapshotPreview = async (weekStart, hotelName = 'all') =>
         for (const hName of hotelsToProcess) {
             // Intentar recuperar del cache del render actual
             let hotelData = null;
-            if (cache && cache.hoteles && cache.semana_inicio === weekStart) {
+            const isCacheValid = cache && 
+                                 cache.hoteles && 
+                                 cache.semana_inicio === weekStart && 
+                                 cache.hotelName === hotelName &&
+                                 cache.revision === window._previewCacheRevision;
+            if (isCacheValid) {
                 const found = cache.hoteles.find(h => h.hotel === hName);
                 if (found) hotelData = found.empleados;
             }
@@ -6903,6 +7026,7 @@ window.revertirPublicacion = async (logId) => {
 
         await window.TurnosDB.bulkUpsert(revertData);
         await window.TurnosDB.updateLog(logId, { revertida: true, estado: 'revertido' });
+        if (window.invalidatePreviewSnapshotCache) window.invalidatePreviewSnapshotCache('rollback');
 
         window.addLog(`Reversión completada: ${revertData.length} turnos restaurados.`, 'ok');
         alert('Publicación revertida con éxito.');
