@@ -7093,7 +7093,7 @@ window.getGlobalPendingPublicationStatus = async function() {
             if (window.TurnosDB && window.TurnosDB.client) {
                 const snapRes = await window.TurnosDB.client
                     .from('publicaciones_cuadrante')
-                    .select('id,hotel,semana_inicio,semana_fin,created_at,version,estado')
+                    .select('id,hotel,semana_inicio,semana_fin,created_at,version,estado,snapshot_json')
                     .eq('estado', 'activo')
                     .gte('semana_fin', rangeStart)
                     .lte('semana_inicio', rangeEnd)
@@ -7102,11 +7102,31 @@ window.getGlobalPendingPublicationStatus = async function() {
             }
         } catch(se) { console.warn('[GLOBAL_STATUS] snapshot fetch error:', se.message); }
 
-        // Build map: canonicalHotel::semanaInicio → latest snapshot
+        // Helper para validar que el contenido del snapshot corresponda realmente a la semana
+        const isSnapshotContentValid = (s) => {
+            if (!s) return false;
+            if (!s.snapshot_json) return true; // fallback por si no tiene json completo
+            const rows = s.snapshot_json.rows || s.snapshot_json.cuadrante || [];
+            if (!Array.isArray(rows) || rows.length === 0) return false;
+            const weekStart = s.semana_inicio;
+            const weekEnd = s.semana_fin || (window.addIsoDays ? window.addIsoDays(weekStart, 6) : weekStart);
+            return rows.some(r => {
+                const dias = r.dias || {};
+                const keys = Object.keys(dias);
+                return keys.some(k => k >= weekStart && k <= weekEnd);
+            });
+        };
+
+        // Build map: canonicalHotel::semanaInicio → latest valid snapshot
         const snapMap = new Map();
         const hotelLatestEnd = new Map(); // canonicalHotel -> max semana_fin
 
         snapshotsAll.forEach(s => {
+            if (!isSnapshotContentValid(s)) {
+                console.warn('[GLOBAL_STATUS] Ignorando snapshot con fechas invalidas/corruptas:', s.id, s.hotel, s.semana_inicio);
+                return;
+            }
+
             const h = normHotel(s.hotel);
             const key = h + '::' + s.semana_inicio;
             if (!snapMap.has(key)) snapMap.set(key, s); // already sorted desc
@@ -7608,10 +7628,22 @@ window.renderDashboard = async () => {
 
         if ($('#stat-published-until')) {
             const pubDate = window.__lastGlobalStatus ? window.__lastGlobalStatus.globalPublishedUntil : null;
-            const formattedPub = pubDate
-                ? (window.formatDateES ? window.formatDateES(pubDate) : pubDate)
-                : 'Sin cobertura';
-            $('#stat-published-until').textContent = formattedPub;
+            let formattedPub = 'Sin cobertura';
+            if (pubDate) {
+                const parts = String(pubDate).split('-');
+                if (parts.length === 3) {
+                    const monthsShort = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+                    const monthIdx = parseInt(parts[1], 10) - 1;
+                    const monthStr = monthsShort[monthIdx] || parts[1];
+                    formattedPub = `${parts[2].padStart(2, '0')} ${monthStr} ${parts[0]}`;
+                } else {
+                    formattedPub = pubDate;
+                }
+            }
+            const el = $('#stat-published-until');
+            el.textContent = formattedPub;
+            el.style.fontSize = '1.1rem';
+            el.style.whiteSpace = 'nowrap';
         }
 
         if ($('#stat-critical-count')) {
