@@ -7059,13 +7059,24 @@ window.getGlobalPendingPublicationStatus = async function() {
         totalOutdatedSnapshots: 0,
         pendingEvents: [],
         outdatedSnapshots: [],
-        byHotelWeek: []
+        byHotelWeek: [],
+        globalPublishedUntil: null
     };
     try {
         const today = window.isoDate ? window.isoDate(new Date()) : new Date().toISOString().split('T')[0];
         // Rango ampliado: hoy - 90d -> hoy + 365d
         const rangeStart = window.addIsoDays ? window.addIsoDays(today, -90) : today;
         const rangeEnd   = window.addIsoDays ? window.addIsoDays(today, 365) : today;
+
+        const normHotel = (h) => {
+            if (window.TurnosRules && window.TurnosRules.normalizeHotelName) {
+                return window.TurnosRules.normalizeHotelName(h);
+            }
+            const raw = String(h || '').trim().toLowerCase();
+            if (raw === 'cumbria' || raw === 'cumbria spahotel' || raw === 'cumbria spa&hotel') return 'Cumbria Spa&Hotel';
+            if (raw === 'guadiana' || raw === 'sercotel' || raw === 'sercotel guadiana') return 'Sercotel Guadiana';
+            return h || 'UNKNOWN';
+        };
 
         // 1. Fetch all active events in the broad range
         const ACTIVE_STATES = ['activo','activa','aprobado','aprobada','pendiente'];
@@ -7091,12 +7102,27 @@ window.getGlobalPendingPublicationStatus = async function() {
             }
         } catch(se) { console.warn('[GLOBAL_STATUS] snapshot fetch error:', se.message); }
 
-        // Build map: hotel::semanaInicio → latest snapshot
+        // Build map: canonicalHotel::semanaInicio → latest snapshot
         const snapMap = new Map();
+        const hotelLatestEnd = new Map(); // canonicalHotel -> max semana_fin
+
         snapshotsAll.forEach(s => {
-            const key = s.hotel + '::' + s.semana_inicio;
+            const h = normHotel(s.hotel);
+            const key = h + '::' + s.semana_inicio;
             if (!snapMap.has(key)) snapMap.set(key, s); // already sorted desc
+
+            const curMax = hotelLatestEnd.get(h) || '';
+            if (s.semana_fin && s.semana_fin > curMax) {
+                hotelLatestEnd.set(h, s.semana_fin);
+            }
         });
+
+        // Calcular cobertura global publicada (mínimo de semanas finales entre hoteles con snapshot)
+        const activeHotels = ['Cumbria Spa&Hotel', 'Sercotel Guadiana'];
+        const coverageDates = activeHotels.map(h => hotelLatestEnd.get(h)).filter(Boolean);
+        if (coverageDates.length > 0) {
+            result.globalPublishedUntil = coverageDates.reduce((min, d) => d < min ? d : min, coverageDates[0]);
+        }
 
         // Helper: get Monday for a date
         const getMonday = (dateStr) => {
@@ -7111,41 +7137,24 @@ window.getGlobalPendingPublicationStatus = async function() {
             return d.toISOString().split('T')[0];
         };
 
-        // 3. Group events by hotel+week and check against snapshot
+        const currentWeekStart = getMonday(today);
+
+        // 3. Group events by canonicalHotel+week and check against snapshot
         const grouped = new Map();
         activeEvts.forEach(e => {
             const evtDate = e.fecha_inicio || e.fecha || today;
-            const hotel = e.hotel_origen || e.hotel_id || e.hotel || 'UNKNOWN';
+            const hotel = normHotel(e.hotel_origen || e.hotel_id || e.hotel);
             const weekStart = getMonday(evtDate);
             const key = hotel + '::' + weekStart;
             if (!grouped.has(key)) grouped.set(key, { hotel, weekStart, events: [] });
             grouped.get(key).events.push(e);
         });
 
-        // Case Audit: October 2026 Target
-        const octTargetWeek = '2026-10-19';
-        const octTargetHotel = 'Sercotel Guadiana';
-        const octTargetKey = octTargetHotel + '::' + octTargetWeek;
-        const octGroup = grouped.get(octTargetKey);
-        const octSnap = snapMap.get(octTargetKey);
-        
-        console.log('[OCTOBER_TARGET_GLOBAL_AUDIT]', {
-            foundEvent: !!octGroup,
-            hotel: octTargetHotel,
-            weekStart: octTargetWeek,
-            eventCount: octGroup ? octGroup.events.length : 0,
-            snapshotExiste: !!octSnap,
-            snapshotVersion: octSnap ? octSnap.version : 'NONE',
-            snapshotFechaPublicacion: octSnap ? octSnap.created_at : 'NONE',
-            rangeStart,
-            rangeEnd
-        });
-
         for (const [key, group] of grouped) {
             const snap = snapMap.get(key);
             if (!snap) {
                 // No snapshot at all for this hotel+week
-                result.totalPendingChanges += group.events.length;
+                result.totalPendingChanges += 1;
                 result.pendingEvents.push(...group.events);
                 result.byHotelWeek.push({
                     hotel: group.hotel, weekStart: group.weekStart,
@@ -7160,7 +7169,7 @@ window.getGlobalPendingPublicationStatus = async function() {
                 return d && new Date(d) > snapDate;
             });
             if (newerEvts.length > 0) {
-                result.totalPendingChanges += newerEvts.length;
+                result.totalPendingChanges += 1;
                 result.totalOutdatedSnapshots++;
                 result.pendingEvents.push(...newerEvts);
                 result.outdatedSnapshots.push({
@@ -7178,8 +7187,7 @@ window.getGlobalPendingPublicationStatus = async function() {
             }
         }
 
-        // SEGUNDA PASADA: detectar semanas en la tabla 'turnos' sin snapshot publicado
-        // Esto captura los turnos cargados por el Modo Excel que aún no tienen cuadrante publicado
+        // SEGUNDA PASADA: detectar semanas en la tabla 'turnos' sin snapshot publicado (semana actual o futuras)
         try {
             const turnosRes = await window.TurnosDB.client
                 .from('turnos')
@@ -7188,12 +7196,16 @@ window.getGlobalPendingPublicationStatus = async function() {
                 .lte('fecha', rangeEnd);
             const turnosData = turnosRes.data || [];
 
-            // Agrupar turnos por hotel+semana
+            // Agrupar turnos por canonicalHotel+semana
             const turnosGrouped = new Map();
             turnosData.forEach(t => {
                 const weekStart = getMonday(t.fecha);
-                const key = (t.hotel_id || 'UNKNOWN') + '::' + weekStart;
-                if (!turnosGrouped.has(key)) turnosGrouped.set(key, { hotel: t.hotel_id, weekStart, count: 0 });
+                // Solo evaluar la semana actual o futuras
+                if (weekStart < currentWeekStart) return;
+
+                const hotel = normHotel(t.hotel_id);
+                const key = hotel + '::' + weekStart;
+                if (!turnosGrouped.has(key)) turnosGrouped.set(key, { hotel, weekStart, count: 0 });
                 turnosGrouped.get(key).count++;
             });
 
@@ -7202,7 +7214,7 @@ window.getGlobalPendingPublicationStatus = async function() {
                 if (grouped.has(key)) continue;
                 // Si ya hay un snapshot publicado para esta semana, no contar
                 if (snapMap.has(key)) continue;
-                // No hay snapshot → semana sin publicar
+                // No hay snapshot → combinacion unica hotel/semana sin publicar
                 result.totalPendingChanges += 1;
                 result.byHotelWeek.push({
                     hotel: group.hotel, weekStart: group.weekStart,
@@ -7218,6 +7230,7 @@ window.getGlobalPendingPublicationStatus = async function() {
             totalPendingChanges: result.totalPendingChanges,
             totalOutdatedSnapshots: result.totalOutdatedSnapshots,
             pendingEventsCount: result.pendingEvents.length,
+            globalPublishedUntil: result.globalPublishedUntil,
             outdatedSnapshots: result.outdatedSnapshots.map(os => ({
                 hotel: os.hotel,
                 weekStart: os.weekStart,
@@ -7225,15 +7238,6 @@ window.getGlobalPendingPublicationStatus = async function() {
                 eventIds: os.eventIds,
                 snapshotPublishedAt: os.snapshotDate
             }))
-        });
-        console.log('[PANEL_BOOT_GLOBAL_AUDIT]', {
-            loadedFromPanel: true,
-            usedPreviewCache: false,
-            queriedSupabase: true,
-            eventsLoaded: activeEvts.length,
-            snapshotsLoaded: snapshotsAll.length,
-            pendingChanges: result.totalPendingChanges,
-            outdatedSnapshots: result.totalOutdatedSnapshots
         });
     } catch(err) {
         console.error('[GLOBAL_STATUS] Error:', err.message);
@@ -7507,7 +7511,6 @@ window.renderDashboard = async () => {
             });
         }
 
-
         // --- HEALTH CHECK GLOBAL: autonomous, no dependency on _previewDate ---
         const globalStatus = await window.getGlobalPendingPublicationStatus();
         // Store on window so KPI counter can use the same result
@@ -7523,10 +7526,15 @@ window.renderDashboard = async () => {
             });
             counts.critical++;
         });
-        // Weeks with events but NO snapshot at all
+
+        // Weeks with events/turnos but NO snapshot at all
         (globalStatus.byHotelWeek || []).filter(b => !b.snapshotExists).forEach(b => {
-            allRisks.push({ severity: 'warning', type: 'NO_SNAPSHOT', title: 'Sin Snapshot Publicado',
-                desc: `${b.hotel} semana ${b.weekStart} tiene ${b.pendingCount} evento(s) activo(s) sin snapshot publicado.`,
+            const formattedWeek = window.formatDateES ? window.formatDateES(b.weekStart) : b.weekStart;
+            allRisks.push({
+                severity: 'warning',
+                type: 'NO_SNAPSHOT',
+                title: 'Semana sin publicar',
+                desc: `${b.hotel} (Semana del ${formattedWeek}) tiene turnos cargados pero aún no se han publicado a los empleados.`,
                 action: { fn: `window.goToRiskPreview('${b.hotel}', '${b.weekStart}')`, label: 'Ir a Vista Previa' }
             });
             counts.warning++;
@@ -7565,7 +7573,9 @@ window.renderDashboard = async () => {
             } else {
                 riskContainer.innerHTML = allRisks.map(r => `
                     <div class="alert-card severity-${r.severity}">
-                        <div class="alert-icon"><i class="fas ${r.type === 'SIN_ID' ? 'fa-id-card' : (r.type === 'JORNADA' ? 'fa-tired' : 'fa-exclamation-triangle')}"></i></div>
+                        <div class="alert-icon">
+                            <i class="fas ${r.severity === 'critical' ? 'fa-exclamation-triangle' : (r.severity === 'warning' ? 'fa-exclamation-circle' : 'fa-info-circle')}"></i>
+                        </div>
                         <div class="alert-content">
                             <div class="alert-title">${escapeHtml(r.title)}</div>
                             <div class="alert-desc">${escapeHtml(r.desc)}</div>
@@ -7589,6 +7599,14 @@ window.renderDashboard = async () => {
             const _finalCount = (window.__lastGlobalStatus) ? window.__lastGlobalStatus.totalPendingChanges : 0;
             $('#stat-pending-publish').textContent = _finalCount;
             $('#stat-pending-publish').style.color = _finalCount > 0 ? '#ef4444' : 'inherit';
+        }
+
+        if ($('#stat-published-until')) {
+            const pubDate = window.__lastGlobalStatus ? window.__lastGlobalStatus.globalPublishedUntil : null;
+            const formattedPub = pubDate
+                ? (window.formatDateES ? window.formatDateES(pubDate) : pubDate)
+                : 'Sin cobertura';
+            $('#stat-published-until').textContent = formattedPub;
         }
 
         if ($('#stat-critical-count')) {
