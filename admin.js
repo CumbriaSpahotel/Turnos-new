@@ -7111,17 +7111,22 @@ window.getGlobalPendingPublicationStatus = async function() {
             const key = h + '::' + s.semana_inicio;
             if (!snapMap.has(key)) snapMap.set(key, s); // already sorted desc
 
+            const endDate = s.semana_fin || (window.addIsoDays ? window.addIsoDays(s.semana_inicio, 6) : s.semana_inicio);
             const curMax = hotelLatestEnd.get(h) || '';
-            if (s.semana_fin && s.semana_fin > curMax) {
-                hotelLatestEnd.set(h, s.semana_fin);
+            if (endDate && endDate > curMax) {
+                hotelLatestEnd.set(h, endDate);
             }
         });
 
-        // Calcular cobertura global publicada (mínimo de semanas finales entre hoteles con snapshot)
+        // Calcular cobertura global publicada (mínimo de semanas finales entre TODOS los hoteles activos)
+        // Si algún hotel no tiene ningún snapshot publicado, la cobertura global es null ("Sin cobertura")
         const activeHotels = ['Cumbria Spa&Hotel', 'Sercotel Guadiana'];
-        const coverageDates = activeHotels.map(h => hotelLatestEnd.get(h)).filter(Boolean);
-        if (coverageDates.length > 0) {
+        const hasAllCoverage = activeHotels.every(h => hotelLatestEnd.has(h));
+        if (hasAllCoverage && activeHotels.length > 0) {
+            const coverageDates = activeHotels.map(h => hotelLatestEnd.get(h));
             result.globalPublishedUntil = coverageDates.reduce((min, d) => d < min ? d : min, coverageDates[0]);
+        } else {
+            result.globalPublishedUntil = null;
         }
 
         // Helper: get Monday for a date
