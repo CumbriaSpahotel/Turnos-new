@@ -844,6 +844,17 @@ window.saveVacation = async (e) => {
             return;
         }
 
+        if (payload.empleado_destino_id) {
+            const allEmps = window.empleadosGlobales || [];
+            const subEmp = allEmps.find(emp => emp.id === payload.empleado_destino_id || emp.nombre === payload.empleado_destino_id);
+            if (subEmp && window.TurnosRules?.isEmployeeTerminated && window.TurnosRules.isEmployeeTerminated(subEmp, payload.fecha_fin)) {
+                alert(`El sustituto seleccionado (${subEmp.nombre || subEmp.id}) cesó en la empresa con fecha ${subEmp.fecha_baja}. No se le pueden asignar sustituciones en fechas posteriores a su cese.`);
+                btn.disabled = false;
+                btn.textContent = 'Guardar';
+                return;
+            }
+        }
+
         if (_editingVacationPeriod?.id) {
             await window.TurnosDB.anularEvento(_editingVacationPeriod.id);
         }
@@ -2502,8 +2513,29 @@ window.renderRequests = async () => {
 };
 
 window.handleRequestAction = async (id, newState) => {
-    if (!confirm(`Â¿Estás seguro de marcar como ${newState}?`)) return;
+    if (!confirm(`¿Estás seguro de marcar como ${newState}?`)) return;
     try {
+        if (newState === 'aprobada') {
+            const allReqs = await window.TurnosDB.fetchPeticiones().catch(() => []);
+            const req = allReqs.find(r => String(r.id) === String(id));
+            if (req) {
+                const emps = window.empleadosGlobales || await window.TurnosDB.getEmpleados().catch(() => []);
+                const solEmp = emps.find(e => window.normalizeId(e.id || e.nombre) === window.normalizeId(req.solicitante));
+                const compEmp = emps.find(e => window.normalizeId(e.id || e.nombre) === window.normalizeId(req.companero));
+                const fechas = req.fechas || [];
+                for (const f of fechas) {
+                    const targetDate = f.fecha || f.fecha_inicio;
+                    if (solEmp && window.TurnosRules?.isEmployeeTerminated && window.TurnosRules.isEmployeeTerminated(solEmp, targetDate)) {
+                        alert(`No se puede aprobar la solicitud: El solicitante ${solEmp.nombre || solEmp.id} cesó en la empresa el ${solEmp.fecha_baja}.`);
+                        return;
+                    }
+                    if (compEmp && window.TurnosRules?.isEmployeeTerminated && window.TurnosRules.isEmployeeTerminated(compEmp, targetDate)) {
+                        alert(`No se puede aprobar la solicitud: El compañero ${compEmp.nombre || compEmp.id} cesó en la empresa el ${compEmp.fecha_baja}.`);
+                        return;
+                    }
+                }
+            }
+        }
         await window.TurnosDB.actualizarEstadoPeticion(id, newState);
         alert('Solicitud actualizada.');
         window.renderRequests();
@@ -5345,11 +5377,14 @@ window.isGhostEmployeeRecord = (profile = {}, stats = {}) => {
     return false;
 };
 
-window.isEmployeeTerminated = (profile = {}) => {
+window.isEmployeeTerminated = (profile = {}, evalDate = null) => {
+    if (window.TurnosRules && typeof window.TurnosRules.isEmployeeTerminated === 'function') {
+        return window.TurnosRules.isEmployeeTerminated(profile, evalDate);
+    }
     if (!profile) return false;
     const isExcedencia = window.employeeNorm && (window.employeeNorm(profile.estado_empresa || '').includes('excedencia') || window.employeeNorm(profile.estado || '').includes('excedencia'));
     if (isExcedencia) return false;
-    
+    if (profile.fecha_baja && evalDate) return String(evalDate).trim().slice(0, 10) > String(profile.fecha_baja).trim().slice(0, 10);
     if (profile.activo === false) return true;
     if (window.employeeNorm && profile.estado_empresa && window.employeeNorm(profile.estado_empresa).includes('baja')) return true;
     if (profile.estado && String(profile.estado).toLowerCase().includes('inactivo')) return true;
@@ -5580,7 +5615,7 @@ window.buildEmployeeLineModel = (empleado) => {
     const rolOperativo = hasExplicitRefuerzo ? 'refuerzo' : (isSubstitute ? 'sustituto' : configuredRole);
 
     const isExcedencia = window.employeeNorm(profile.estado_empresa || '').includes('excedencia') || window.employeeNorm(profile.estado || '').includes('excedencia');
-    const isTerminated = window.isEmployeeTerminated(profile);
+    const isTerminated = window.isEmployeeTerminated(profile, refISO);
     let estado = isExcedencia ? 'Excedencia' : (isTerminated ? 'Baja empresa' : 'Activo');
     if (!isTerminated && !isExcedencia) {
         if (todayShift?.cls === 'v' || activeAbsences.some(ev => /VAC/i.test(ev.tipo || ''))) estado = 'Vacaciones';
@@ -8675,6 +8710,8 @@ window.openNewEmployeeDrawer = () => {
                         <small>Marca ambos si el empleado trabaja en los dos hoteles.</small>
                     </fieldset>
                     <label><span>Estado laboral</span><select id="new-emp-estado"><option value="Activo" selected>Activo</option><option value="Baja">Baja</option><option value="Excedencia">Excedencia</option></select></label>
+                    <label><span>Fecha de cese / baja</span><input id="new-emp-fecha-baja" type="date" onchange="if(!this.value){ const m=document.getElementById('new-emp-motivo-baja'); if(m){ m.value=''; m.disabled=true; } } else { const m=document.getElementById('new-emp-motivo-baja'); if(m) m.disabled=false; }"><small>&Uacute;ltimo d&iacute;a activo inclusive</small></label>
+                    <label><span>Motivo de cese</span><input id="new-emp-motivo-baja" type="text" placeholder="Ej. Fin de contrato, desestimaci&oacute;n..." disabled></label>
                     <label><span>Email</span><input id="new-emp-email" type="email"></label>
                     <label><span>Tel&eacute;fono</span><input id="new-emp-telefono" type="text"></label>
                     <div id="supportReducedNotice" class="emp-support-note span-2" hidden>Personal de apoyo/ocasional: ficha reducida. No computa vacaciones ni descansos pendientes.</div>
@@ -8851,6 +8888,8 @@ window.renderEmployeeProfileEditForm = (emp, model) => {
                 <label><span>Estado laboral</span><select id="edit-emp-estado">
                     ${['Activo', 'Baja', 'Excedencia'].map(estado => `<option value="${estado}" ${currentEstado === estado ? 'selected' : ''}>${estado}</option>`).join('')}
                 </select></label>
+                <label><span>Fecha de cese / baja</span><input id="edit-emp-fecha-baja" type="date" value="${escapeHtml(emp.fecha_baja ? String(emp.fecha_baja).slice(0, 10) : '')}" onchange="if(!this.value){ const m=document.getElementById('edit-emp-motivo-baja'); if(m){ m.value=''; m.disabled=true; } } else { const m=document.getElementById('edit-emp-motivo-baja'); if(m) m.disabled=false; }"><small>&Uacute;ltimo d&iacute;a activo inclusive</small></label>
+                <label><span>Motivo de cese</span><input id="edit-emp-motivo-baja" type="text" placeholder="Ej. Fin de contrato, desestimaci&oacute;n..." value="${escapeHtml(emp.motivo_baja || '')}" ${emp.fecha_baja ? '' : 'disabled'}></label>
                 <label><span>Email</span><input id="edit-emp-email" type="email" value="${escapeHtml(emp.email || '')}"></label>
                 <label><span>Tel&eacute;fono</span><input id="edit-emp-telefono" type="text" value="${escapeHtml(emp.telefono || '')}"></label>
                 <div id="supportReducedNotice" class="emp-support-note span-2" ${isReducedSupport ? '' : 'hidden'}>Personal de apoyo/ocasional: ficha reducida. No computa vacaciones ni descansos pendientes.</div>
@@ -9114,6 +9153,9 @@ window.saveEmployeeProfileInline = async (event) => {
     const hotelesAsignados = Array.from(document.querySelectorAll('input[name="edit-emp-hoteles"]:checked')).map(input => input.value);
     if (hotel && !hotelesAsignados.includes(hotel)) hotelesAsignados.unshift(hotel);
     const isReducedSupport = ['apoyo', 'ocasional'].includes(String(tipo).toLowerCase());
+    const rawFechaBajaEdit = $('#edit-emp-fecha-baja')?.value?.trim() || null;
+    const rawMotivoBajaEdit = rawFechaBajaEdit ? ($('#edit-emp-motivo-baja')?.value?.trim() || null) : null;
+
     const payload = {
         id: empId,
         nombre: $('#edit-emp-nombre')?.value?.trim() || empId,
@@ -9132,6 +9174,8 @@ window.saveEmployeeProfileInline = async (event) => {
         estado: estado,
         estado_empresa: estado,
         activo: estado === 'Activo',
+        fecha_baja: rawFechaBajaEdit,
+        motivo_baja: rawMotivoBajaEdit,
         vacaciones_anuales: isReducedSupport ? null : Number(document.getElementById('edit-emp-vac-anuales')?.value || 44),
         ajuste_vacaciones_dias: isReducedSupport ? 0 : Number(document.getElementById('edit-emp-vac-ajuste')?.value || 0),
         observaciones: $('#edit-emp-observaciones')?.value?.trim() || null

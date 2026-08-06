@@ -41,12 +41,12 @@ console.log("[ShiftResolver] Iniciando carga v5.0...");
                norm.includes('___');
     };
 
-    window.getEmployeeStructuralType = (emp) => {
+    window.getEmployeeStructuralType = (emp, evalDate = null) => {
         if (!emp) return 'fijo';
 
         const idNorm = window.normalizeId(emp.id || emp.nombre || '');
         if (!idNorm || idNorm.includes('vacante') || idNorm.includes('placeholder') || idNorm.includes('sin asignar') || idNorm.includes('---') || emp.isVacante === true || emp.placeholder === true) return 'placeholder';
-        if (emp.activo === false || window.normalizeId(emp.estado_empresa || emp.estado || '').includes('baja')) return 'baja_empresa';
+        if (window.TurnosRules?.isEmployeeTerminated ? window.TurnosRules.isEmployeeTerminated(emp, evalDate) : (emp.activo === false || window.normalizeId(emp.estado_empresa || emp.estado || '').includes('baja'))) return 'baja_empresa';
 
         if (emp.tipo_trabajador === 'apoyo' || emp.es_apoyo === true || emp.apoyo === true) return 'apoyo';
         if (emp.occasional === true || emp.eventual === true) return 'ocasional';
@@ -839,6 +839,17 @@ tipo=${normalized.tipo}`);
         if (result.turno && result.turno !== '—' && result.turno !== 'D') {
             result.isAbsence = false;
         }
+
+        const empProfile = (context.empleadosGlobales || window.empleadosGlobales || []).find(e => window.normalizeId(e.id) === empId || window.normalizeId(e.nombre) === empId);
+        const isTerminatedOnDate = window.TurnosRules?.isEmployeeTerminated ? window.TurnosRules.isEmployeeTerminated(empProfile, date) : false;
+        if (isTerminatedOnDate && result.turno && result.turno !== '—' && result.turno !== 'D') {
+            result.esConflictoCese = true;
+            result.conflictoLabel = "Baja empresa — turno pendiente de revisión";
+            result.isConflict = true;
+            result.conflictReason = "Baja empresa — turno pendiente de revisión";
+            result.icons = [...new Set([...(result.icons || []), '⚠️'])];
+        }
+
         return result;
     };
 

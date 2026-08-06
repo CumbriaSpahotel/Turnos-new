@@ -672,6 +672,26 @@
         return false;
     };
 
+    const isEmployeeTerminated = (profile = {}, evalDate = null) => {
+        if (!profile) return false;
+        const norm = (s) => String(s || '').trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+        const isExcedencia = norm(profile.estado_empresa || '').includes('excedencia') || norm(profile.estado || '').includes('excedencia');
+        if (isExcedencia) return false;
+
+        const rawFechaBaja = profile.fecha_baja ? String(profile.fecha_baja).trim().slice(0, 10) : null;
+
+        if (rawFechaBaja) {
+            const targetDate = evalDate ? String(evalDate).trim().slice(0, 10) : (window.isoDate ? window.isoDate(new Date()) : new Date().toISOString().slice(0, 10));
+            return targetDate > rawFechaBaja;
+        }
+
+        if (profile.activo === false) return true;
+        const estadoEmpresa = norm(profile.estado_empresa || profile.estado || '');
+        if (estadoEmpresa.includes('baja') || estadoEmpresa.includes('inactivo')) return true;
+
+        return false;
+    };
+
     window.TurnosRules = {
         normalizeText,
         shiftKey,
@@ -689,10 +709,13 @@
         buildHotelOptions,
         getPublicCellDisplay,
         groupConsecutiveEvents,
+        isEmployeeTerminated,
         definitions
     };
     window.groupConsecutiveEvents = groupConsecutiveEvents; // Alias para compatibilidad modular
+    window.isEmployeeTerminated = isEmployeeTerminated; // Alias global centralizado
 })();
+
 
 
 

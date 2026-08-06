@@ -296,6 +296,14 @@ window.saveBajaPermiso=async()=>{
   if(!end){status.innerHTML='<span style="color:var(--danger);">Fecha fin obligatoria.</span>';return;}
   if(end<start){status.innerHTML='<span style="color:var(--danger);">Fecha fin no puede ser anterior a inicio.</span>';return;}
   if(sustId&&sustId===empId){status.innerHTML='<span style="color:var(--danger);">El sustituto no puede ser el mismo empleado.</span>';return;}
+  if(sustId){
+      const allEmps = window.empleadosGlobales || [];
+      const sustEmp = allEmps.find(e => (window.normalizeId ? window.normalizeId(e.id) : String(e.id).toLowerCase()) === (window.normalizeId ? window.normalizeId(sustId) : String(sustId).toLowerCase()));
+      if (sustEmp && window.TurnosRules?.isEmployeeTerminated && window.TurnosRules.isEmployeeTerminated(sustEmp, end)) {
+          status.innerHTML = `<span style="color:var(--danger);">El sustituto ${sustEmp.nombre || sustId} cesó en la empresa con fecha ${sustEmp.fecha_baja}. No puede cubrir ausencias posteriores a su cese.</span>`;
+          return;
+      }
+  }
   if(!sustId){warn.textContent='⚠ Este periodo deja turnos sin cobertura (sin sustituto).';warn.style.display='block';}
   try{
     btn.disabled=true;btn.textContent='Validando y guardando...';
