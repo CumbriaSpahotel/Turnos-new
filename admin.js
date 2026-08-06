@@ -3820,10 +3820,65 @@ window.createPuestosPreviewModel = ({
         );
     };
 
-    // B) Construir mapa de sustituciones por ausencia (VAC, BAJA, PERMISO, FORMACION)
-    eventos.forEach(ev => {
+    // --- EVENTOS VIRTUALES DE CESE (BAJA EMPRESA) ---
+    const virtualCeseEventos = [];
+    if (dates.length > 0) {
+        const firstDate = dates[0];
+        const lastDate = dates[dates.length - 1];
+        
+        employees.forEach(emp => {
+            if (!emp) return;
+            const normEmp = resolveId(emp.id);
+            
+            // Si ya tiene un evento en eventos (VAC, IT...), preferimos no duplicar
+            const tieneEventoValido = eventos.some(ev => {
+                const t = window.normalizeTipo(ev.tipo);
+                const isAbs = ['VAC', 'BAJA', 'PERM', 'PERMISO', 'FORMACION'].includes(t);
+                const isAct = window.normalizeEstado(ev.estado) !== 'anulado';
+                const matchEmp = window.normalizeId(ev.empleado_id) === normEmp || window.normalizeId(ev.nombre) === normEmp;
+                return isAbs && isAct && matchEmp;
+            });
+            if (tieneEventoValido) return;
+
+            const isTerminated = window.TurnosRules?.isEmployeeTerminated
+                ? window.TurnosRules.isEmployeeTerminated(emp, firstDate)
+                : false;
+
+            if (isTerminated) {
+                // Buscar sustituto/vacacionista disponible
+                const evHotel = window.normalizeId(emp.hotel_id || hotel);
+                const vacacionista = employees.find(e => {
+                    if (window.normalizeId(e.id) === window.normalizeId(emp.id) || window.normalizeId(e.nombre) === window.normalizeId(emp.id)) return false;
+                    const tipoNorm = String(e.tipo_personal || e.tipo || e.contrato || '').toLowerCase();
+                    const puestoNorm = String(e.puesto || '').toLowerCase();
+                    const esVacacionista = tipoNorm.includes('sustituto') || puestoNorm.includes('vacac');
+                    if (!esVacacionista) return false;
+                    const hoteles = String(e.hoteles_asignados || e.hotel_id || '').toLowerCase();
+                    const matchHotel = hoteles.includes(evHotel) || window.normalizeId(e.hotel_id) === evHotel;
+                    return matchHotel;
+                });
+
+                virtualCeseEventos.push({
+                    id: 'cese-' + emp.id,
+                    tipo: 'BAJA_EMPRESA',
+                    estado: 'activo',
+                    empleado_id: emp.id,
+                    empleado_destino_id: vacacionista ? vacacionista.id : null,
+                    fecha_inicio: firstDate,
+                    fecha_fin: lastDate,
+                    hotel_origen: emp.hotel_id || hotel,
+                    observaciones: 'Cese de contrato / Baja de empresa'
+                });
+            }
+        });
+    }
+
+    const eventosCalculados = [...eventos, ...virtualCeseEventos];
+
+    // B) Construir mapa de sustituciones por ausencia (VAC, BAJA, PERMISO, FORMACION, BAJA_EMPRESA)
+    eventosCalculados.forEach(ev => {
         const tipo = window.normalizeTipo(ev.tipo);
-        if (!['VAC', 'BAJA', 'PERM', 'PERMISO', 'FORMACION'].includes(tipo)) return;
+        if (!['VAC', 'BAJA', 'PERM', 'PERMISO', 'FORMACION', 'BAJA_EMPRESA'].includes(tipo)) return;
         if (window.normalizeEstado(ev.estado) === 'anulado') return;
         if (window.eventoPerteneceAHotel && !window.eventoPerteneceAHotel(ev, hotel)) return;
 
@@ -3858,7 +3913,8 @@ window.createPuestosPreviewModel = ({
     });
 
     // 2. CONSTRUIR ÍNDICE GLOBAL (con visibilidad de sustituciones)
-    const { baseIndex } = window.buildIndices(employees, eventos, baseRowsFlat);
+    const { baseIndex } = window.buildIndices(employees, eventosCalculados, baseRowsFlat);
+
     baseIndex.ausenciaSustitucionMap = ausenciaSustitucionMap;
     window._lastBaseIndex = baseIndex;
 
@@ -3887,11 +3943,12 @@ window.createPuestosPreviewModel = ({
             hotel,
             fecha,
             turnoBase: asig.turno_base,
-            eventos,
+            eventos: eventosCalculados,
             baseIndex,
-            allEvents: eventos,
+            allEvents: eventosCalculados,
             resolveId: resolveId
         });
+
 
         return {
             turno: res.turno,
@@ -3924,9 +3981,9 @@ window.createPuestosPreviewModel = ({
             hotel,
             fecha,
             turnoBase,
-            eventos,
+            eventos: eventosCalculados,
             baseIndex,
-            allEvents: eventos,
+            allEvents: eventosCalculados,
             resolveId: resolveId
         });
     };
@@ -3948,11 +4005,12 @@ window.createPuestosPreviewModel = ({
                         hotel,
                         fecha,
                         turnoBase,
-                        eventos,
+                        eventos: eventosCalculados,
                         baseIndex,
-                        allEvents: eventos,
+                        allEvents: eventosCalculados,
                         resolveId: resolveId
                     });
+
 
                     // CESE DE EMPRESA: Si el empleado está dado de baja, respetar el '—' sin sobreescribir con el turno base del titular
                     if (res.esBajaEmpresa) {
@@ -3997,9 +4055,9 @@ window.createPuestosPreviewModel = ({
         const weekStart = dates[0] || '';
         const weekEnd = dates[6] || '';
 
-        eventos.forEach(ev => {
+        eventosCalculados.forEach(ev => {
             const tipo = window.normalizeTipo(ev.tipo);
-            if (!['VAC', 'BAJA', 'PERM', 'PERMISO', 'FORMACION'].includes(tipo)) return;
+            if (!['VAC', 'BAJA', 'PERM', 'PERMISO', 'FORMACION', 'BAJA_EMPRESA'].includes(tipo)) return;
             if (window.normalizeEstado(ev.estado) === 'anulado') return;
             if (window.eventoPerteneceAHotel && !window.eventoPerteneceAHotel(ev, hotel)) return;
 
@@ -4072,29 +4130,59 @@ window.createPuestosPreviewModel = ({
             if (normS) substitutesMap.set(normS, statusData);
         });
 
+
         // 2. PROCESAR FILAS EXCEL (ESTRUCTURA BASE)
         sourceRows.forEach(r => {
             if (!r.empleadoId || String(r.empleadoId).trim() === '') return;
             if (String(r.empleadoId || '').includes('---') || String(r.empleadoId || '').includes('___')) return;
             
             const normTitular = resolveId(r.empleadoId);
+
+            // FILTRO DE PERTENENCIA A HOTEL: Si este empleado de la fila de Excel base
+            // pertenece a otro hotel en la plantilla de Supabase, y no es de tipo 'sustituto' o 'apoyo',
+            // y no tiene este hotel asignado en sus hoteles_asignados, lo omitimos.
+            const empProfile = employees.find(e =>
+                window.normalizeId(e.id) === normTitular ||
+                window.normalizeId(e.nombre) === normTitular ||
+                window.normalizeId(e.id_interno) === normTitular
+            );
+            if (empProfile) {
+                const empHotelId = window.normalizeId(empProfile.hotel_id);
+                const currentHotelId = window.normalizeId(hotel);
+                if (empHotelId && empHotelId !== currentHotelId) {
+                    const tipoNorm = String(empProfile.tipo_personal || empProfile.tipo || empProfile.contrato || '').toLowerCase();
+                    const puestoNorm = String(empProfile.puesto || '').toLowerCase();
+                    const esMovil = tipoNorm.includes('sustituto') || tipoNorm.includes('apoyo') || puestoNorm.includes('vacac');
+                    
+                    const hotelesAsignados = String(empProfile.hoteles_asignados || '').toLowerCase();
+                    const tieneAsignadoEsteHotel = hotelesAsignados.includes(currentHotelId);
+
+                    if (!esMovil && !tieneAsignadoEsteHotel) {
+                        return;
+                    }
+                }
+            }
+
             const v9Order = window.getV9ExcelOrder(hotel, r.week_start || firstDate, r.empleadoId) || 500;
             const status = weekStatus.get(normTitular);
+
 
             // CASO A: TITULAR ESTÁ AUSENTE
             if (status) {
                 const titularName = getDisplayName(r.empleadoId, r);
-                absentRows.push({
-                    ...r,
-                    employee_id: r.empleadoId,
-                    nombre: titularName,
-                    nombreVisible: titularName,
-                    isAbsentInformative: true,
-                    rowType: 'ausencia_informativa',
-                    puestoOrden: v9Order + 1000,
-                    evento_id: status.event_id,
-                    titularOriginalId: r.empleadoId
-                });
+                if (status.tipo !== 'BAJA_EMPRESA') {
+                    absentRows.push({
+                        ...r,
+                        employee_id: r.empleadoId,
+                        nombre: titularName,
+                        nombreVisible: titularName,
+                        isAbsentInformative: true,
+                        rowType: 'ausencia_informativa',
+                        puestoOrden: v9Order + 1000,
+                        evento_id: status.event_id,
+                        titularOriginalId: r.empleadoId
+                    });
+                }
 
                 let occupantId = null;
                 let isSustitucion = false;
@@ -4137,6 +4225,12 @@ window.createPuestosPreviewModel = ({
             else {
                 const canonicalTitular = window.ShiftResolver.getCanonicalEmployeeId(normTitular, uCtx);
                 if (canonicalTitular && !assignedNorms.has(canonicalTitular)) {
+                    // --- PRIORIDAD SUSTITUTO: Si este titular presente es un sustituto activo esta semana, omitir su fila base
+                    // para permitir que ocupe de forma exclusiva la posición del titular al que sustituye ---
+                    if (activeSubstitutes.has(canonicalTitular)) {
+                        return;
+                    }
+
                     // --- CESE CHECK: Si el empleado está dado de baja en TODOS los días de la semana, ocultar la fila ---
                     const empProfile = employees.find(e =>
                         window.normalizeId(e.id) === window.normalizeId(r.empleadoId) ||
