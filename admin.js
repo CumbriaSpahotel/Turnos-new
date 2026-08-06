@@ -3845,37 +3845,97 @@ window.createPuestosPreviewModel = ({
                 : false;
 
             if (isTerminated) {
-                // Buscar sustituto/vacacionista disponible
-                const evHotel = window.normalizeId(emp.hotel_id || hotel);
-                const vacacionista = employees.find(e => {
-                    if (window.normalizeId(e.id) === window.normalizeId(emp.id) || window.normalizeId(e.nombre) === window.normalizeId(emp.id)) return false;
-                    const tipoNorm = String(e.tipo_personal || e.tipo || e.contrato || '').toLowerCase();
-                    const puestoNorm = String(e.puesto || '').toLowerCase();
-                    const esVacacionista = tipoNorm.includes('sustituto') || puestoNorm.includes('vacac');
-                    if (!esVacacionista) return false;
-                    const hoteles = String(e.hoteles_asignados || e.hotel_id || '').toLowerCase();
-                    const matchHotel = hoteles.includes(evHotel) || window.normalizeId(e.hotel_id) === evHotel;
-                    return matchHotel;
-                });
-
                 virtualCeseEventos.push({
                     id: 'cese-' + emp.id,
                     tipo: 'BAJA_EMPRESA',
                     estado: 'activo',
                     empleado_id: emp.id,
-                    empleado_destino_id: vacacionista ? vacacionista.id : null,
+                    empleado_destino_id: null,
                     fecha_inicio: firstDate,
                     fecha_fin: lastDate,
                     hotel_origen: emp.hotel_id || hotel,
                     observaciones: 'Cese de contrato / Baja de empresa'
                 });
             }
+
         });
     }
 
     const eventosCalculados = [...eventos, ...virtualCeseEventos];
 
+    // --- RESOLUCIÓN AUTOMÁTICA DE VACACIONISTAS PARA EVENTOS SIN SUSTITUTO ---
+    const yaAsignadasSust = new Set();
+    eventosCalculados.forEach(ev => {
+        const tipo = window.normalizeTipo(ev.tipo);
+        if (!['VAC', 'BAJA', 'PERM', 'PERMISO', 'FORMACION'].includes(tipo)) return;
+        
+        // Obtener sustituto
+        let sRaw = ev.empleado_destino_id || ev.sustituto_id || ev.sustituto || ev.payload?.sustituto_id || ev.payload?.sustituto || ev.participante_b || ev.destino_id;
+        
+        // VALIDACIÓN CESE: Si el sustituto está dado de baja (cesado) en las fechas del evento, anular la sustitución
+        if (sRaw) {
+            const normS = resolveId(sRaw);
+            const sustProfile = employees.find(e => window.normalizeId(e.id) === normS || window.normalizeId(e.nombre) === normS);
+            const isSustTerminated = sustProfile && window.TurnosRules?.isEmployeeTerminated
+                ? window.TurnosRules.isEmployeeTerminated(sustProfile, ev.fecha_inicio)
+                : false;
+            if (isSustTerminated) {
+                sRaw = null;
+                ev.empleado_destino_id = null; // Anular en el objeto de evento para los siguientes pasos
+                if (ev.payload) {
+                    ev.payload.sustituto_id = null;
+                    ev.payload.sustituto = null;
+                    ev.payload.sustituto_nombre = null;
+                }
+            }
+        }
+
+        if (sRaw) {
+            const normS = resolveId(sRaw);
+            const canonicalSust = window.ShiftResolver?.getCanonicalEmployeeId ? window.ShiftResolver.getCanonicalEmployeeId(normS, { baseIndex: { aliasesEmpleado: new Map() } }) : normS;
+            if (canonicalSust) yaAsignadasSust.add(canonicalSust);
+        }
+    });
+
+
+    // Ahora asignamos automáticamente a las ausencias que no tienen
+    eventosCalculados.forEach(ev => {
+        const tipo = window.normalizeTipo(ev.tipo);
+        if (!['VAC', 'BAJA', 'PERM', 'PERMISO', 'FORMACION'].includes(tipo)) return;
+        if (window.normalizeEstado(ev.estado) === 'anulado') return;
+        if (window.eventoPerteneceAHotel && !window.eventoPerteneceAHotel(ev, hotel)) return;
+        
+        const sRaw = ev.empleado_destino_id || ev.sustituto_id || ev.sustituto || ev.payload?.sustituto_id || ev.payload?.sustituto || ev.participante_b || ev.destino_id;
+        if (!sRaw) {
+            const evHotel = window.normalizeId(ev.hotel_origen || ev.hotel || hotel);
+            const tId = ev.empleado_id || ev.titular_id || ev.participante_a || ev.empleado;
+            if (!tId) return;
+
+            const vacacionista = employees.find(e => {
+                if (window.normalizeId(e.id) === window.normalizeId(tId) || window.normalizeId(e.nombre) === window.normalizeId(tId)) return false;
+                const tipoNorm = String(e.tipo_personal || e.tipo || e.contrato || '').toLowerCase();
+                const puestoNorm = String(e.puesto || '').toLowerCase();
+                const esVacacionista = tipoNorm.includes('sustituto') || puestoNorm.includes('vacac');
+                if (!esVacacionista) return false;
+                
+                const hoteles = String(e.hoteles_asignados || e.hotel_id || '').toLowerCase();
+                const matchHotel = hoteles.includes(evHotel) || window.normalizeId(e.hotel_id) === evHotel;
+                if (!matchHotel) return false;
+
+                const cId = window.ShiftResolver?.getCanonicalEmployeeId ? window.ShiftResolver.getCanonicalEmployeeId(window.normalizeId(e.id), { baseIndex: { aliasesEmpleado: new Map() } }) : window.normalizeId(e.id);
+                return !yaAsignadasSust.has(cId);
+            });
+
+            if (vacacionista) {
+                ev.empleado_destino_id = vacacionista.id;
+                const canonicalSust = window.ShiftResolver?.getCanonicalEmployeeId ? window.ShiftResolver.getCanonicalEmployeeId(window.normalizeId(vacacionista.id), { baseIndex: { aliasesEmpleado: new Map() } }) : window.normalizeId(vacacionista.id);
+                yaAsignadasSust.add(canonicalSust);
+            }
+        }
+    });
+
     // B) Construir mapa de sustituciones por ausencia (VAC, BAJA, PERMISO, FORMACION, BAJA_EMPRESA)
+
     eventosCalculados.forEach(ev => {
         const tipo = window.normalizeTipo(ev.tipo);
         if (!['VAC', 'BAJA', 'PERM', 'PERMISO', 'FORMACION', 'BAJA_EMPRESA'].includes(tipo)) return;
@@ -4075,32 +4135,8 @@ window.createPuestosPreviewModel = ({
                 sRaw = ev.empleado_destino_id || ev.sustituto_id || ev.sustituto || ev.payload?.sustituto_id || ev.payload?.sustituto || ev.participante_b || ev.destino_id;
             }
 
-            // REGLA AUTOMÁTICA DE VACACIONISTA: si el evento no tiene sustituta explícita,
-            // buscar un empleado de tipo 'sustituto' o puesto 'vacaciones' en el mismo hotel
-            if (!sRaw && (tipo === 'VAC' || tipo === 'BAJA' || tipo === 'PERM' || tipo === 'PERMISO')) {
-                const evHotel = window.normalizeId(ev.hotel_origen || ev.hotel || hotel);
-                // Intentar obtener la vacacionista ya asignada a esta semana (si ya fue registrada previamente)
-                const yaAsignada = new Set([...activeSubstitutes.keys()]);
-                const vacacionista = employees.find(e => {
-                    // No es el mismo titular
-                    if (window.normalizeId(e.id) === window.normalizeId(tId) || window.normalizeId(e.nombre) === window.normalizeId(tId)) return false;
-                    // Tipo sustituto o puesto vacaciones
-                    const tipoNorm = String(e.tipo_personal || e.tipo || e.contrato || '').toLowerCase();
-                    const puestoNorm = String(e.puesto || '').toLowerCase();
-                    const esVacacionista = tipoNorm.includes('sustituto') || puestoNorm.includes('vacac');
-                    if (!esVacacionista) return false;
-                    // Mismo hotel o multihotel
-                    const hoteles = String(e.hoteles_asignados || e.hotel_id || '').toLowerCase();
-                    const matchHotel = hoteles.includes(evHotel) || window.normalizeId(e.hotel_id) === evHotel;
-                    if (!matchHotel) return false;
-                    // No está ya ocupando otra posición en activeSubstitutes para esta semana
-                    const cId = window.ShiftResolver?.getCanonicalEmployeeId(window.normalizeId(e.id), uCtx);
-                    return !yaAsignada.has(cId);
-                });
-                if (vacacionista) sRaw = vacacionista.id;
-            }
-
             const normS = resolveId(sRaw);
+
             
             if (normS) {
                 const canonicalSust = window.ShiftResolver.getCanonicalEmployeeId(normS, uCtx);

@@ -138,7 +138,9 @@ console.log("[ShiftResolver] Iniciando carga v5.0...");
         
         if (v.startsWith('VAC')) return 'VAC'; 
         if (v.includes('INTERRUP')) return 'INTERRUPCION_VAC';
+        if (v.includes('BAJA_EMPRESA') || v.includes('CESE')) return 'BAJA_EMPRESA';
         if (v.includes('BAJA') || v.includes('IT') || v.includes('INCAPACIDAD') || v.startsWith('BM')) return 'BAJA';
+
         if (v.startsWith('PERM')) return 'PERM'; 
         if (v === 'CT' || v === 'CAMBIO_TURNO' || v === 'CAMBIO_DE_TURNO' || v === 'CAMBIO_DE_TURNOS') return 'CAMBIO_TURNO';
         if (v === 'INTERCAMBIO' || v === 'INTERCAMBIO_TURNO' || v === 'INTERCAMBIO_DE_TURNO' || v === 'INTERCAMBIO_DE_TURNOS') return 'INTERCAMBIO_TURNO';

@@ -269,7 +269,8 @@
         );
 
         // Exclusiones explícitas (prioridad absoluta)
-        if (upAbs.includes('VAC') || upAbs.includes('FORMACION')) return false;
+        if (upAbs.includes('VAC') || upAbs.includes('FORMACION') || upAbs.includes('BAJA_EMPRESA') || upAbs.includes('EMPRESA') || upAbs.includes('CESE')) return false;
+
 
         // 2. Determinar si el turno es válido para llevar pin (M, T, N, D)
         const rawShift = cell.code || cell.turno || cell.turnoFinal || cell.label || '';
