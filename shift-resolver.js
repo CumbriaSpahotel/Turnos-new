@@ -532,7 +532,7 @@ tipo=${normalized.tipo}`);
         return null;
     };
 
-    window.resolveEmployeeDay = ({ empleadoId, fecha, eventos = [], baseIndex = {}, hotel = '', skipChanges = false, _isResolvingRecursive = false, turnoBase = null }) => {
+    window.resolveEmployeeDay = ({ empleado = null, empleadoId, fecha, eventos = [], baseIndex = {}, hotel = '', skipChanges = false, _isResolvingRecursive = false, turnoBase = null }) => {
         const empId = window.normalizeId(empleadoId);
         const date = window.normalizeDate(fecha);
         const context = { baseIndex, eventos, hotel, _isResolvingRecursive, turnoBase };
@@ -840,7 +840,16 @@ tipo=${normalized.tipo}`);
             result.isAbsence = false;
         }
 
-        const empProfile = (context.empleadosGlobales || window.empleadosGlobales || []).find(e => window.normalizeId(e.id) === empId || window.normalizeId(e.nombre) === empId);
+        const normTarget = window.normalizeId ? window.normalizeId(empId) : String(empId || '').toLowerCase().trim();
+        const allEmps = (context.empleadosGlobales || window.empleadosGlobales || context.empleados || []);
+        const empProfile = empleado || allEmps.find(e => {
+            if (!e) return false;
+            const nid = window.normalizeId ? window.normalizeId(e.id) : String(e.id || '').toLowerCase().trim();
+            const nname = window.normalizeId ? window.normalizeId(e.nombre) : String(e.nombre || '').toLowerCase().trim();
+            const ninterno = window.normalizeId ? window.normalizeId(e.id_interno) : String(e.id_interno || '').toLowerCase().trim();
+            return (nid && nid === normTarget) || (nname && nname === normTarget) || (ninterno && ninterno === normTarget);
+        });
+
         const isTerminatedOnDate = window.TurnosRules?.isEmployeeTerminated ? window.TurnosRules.isEmployeeTerminated(empProfile, date) : false;
         if (isTerminatedOnDate) {
             result.turno = '—';
