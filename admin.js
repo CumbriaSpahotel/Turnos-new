@@ -1549,96 +1549,17 @@ window.openRefuerzoModal = async () => {
         rfHotel.innerHTML = hotels.map(h => `<option value="${h}"${h === selectedHotel && selectedHotel !== 'all' ? ' selected' : ''}>${h}</option>`).join('');
     }
 
-    // Employee select — only structural support/ocasional staff with valid EMP-XXXX IDs
+    // Employee select — allow ANY active employee
     const rfEmp = document.getElementById('rfEmp');
     if (rfEmp) {
-        const supportEmps = emps
-            .filter(e => {
-                const idInt = String(e.id_interno || '').trim();
-                if (!/^EMP-\d{4,}$/.test(idInt)) return false;
-                if (window.isEmpleadoOcasionalOApoyo && window.isEmpleadoOcasionalOApoyo(e)) return true;
-                return false;
-            })
+        const availableEmps = (emps || [])
+            .filter(e => e && e.activo !== false)
             .sort((a, b) => (a.nombre || '').localeCompare(b.nombre || ''));
-        if (supportEmps.length === 0) {
-            rfEmp.innerHTML = '<option value="" disabled selected>No hay empleados de apoyo con ID válido</option>';
+        if (availableEmps.length === 0) {
+            rfEmp.innerHTML = '<option value="" disabled selected>No hay empleados disponibles</option>';
         } else {
             rfEmp.innerHTML = '<option value="" disabled selected>Seleccionar empleado...</option>' +
-                supportEmps.map(e => `<option value="${e.id}">${e.nombre || e.id} [${e.id_interno}]</option>`).join('');
-        }
-    }
-
-    // Default date from Excel period
-    const ds = document.getElementById('excelDateStart')?.value || '';
-    const rfDateStart = document.getElementById('rfDateStart');
-    if (rfDateStart) rfDateStart.value = ds;
-
-    // Reset state
-    document.getElementById('rfDateEnd').value = '';
-    document.getElementById('rfTurno').value = '—';
-    document.getElementById('rfObs').value = '';
-    document.querySelectorAll('input[name="rfTipo"]').forEach(r => { r.checked = (r.value === 'dia'); });
-    window.updateRefuerzoFechas();
-
-    m.style.display = 'flex';
-    setTimeout(() => m.classList.add('open'), 10);
-};
-
-window.closeRefuerzoModal = () => {
-    const m = document.getElementById('modalRefuerzo');
-    if (m) { m.classList.remove('open'); setTimeout(() => m.style.display = 'none', 300); }
-};
-
-window.updateRefuerzoFechas = () => {
-    const tipo = document.querySelector('input[name="rfTipo"]:checked')?.value || 'dia';
-    const g1 = document.getElementById('rfFechaGroup1');
-    const g2 = document.getElementById('rfFechaGroup2');
-    const label1 = g1?.querySelector('label');
-    if (tipo === 'dia') {
-        if (label1) label1.textContent = 'FECHA';
-        if (g2) g2.style.display = 'none';
-    } else if (tipo === 'semana') {
-        if (label1) label1.textContent = 'INICIO DE SEMANA (LUNES)';
-        if (g2) g2.style.display = 'none';
-    } else {
-        if (label1) label1.textContent = 'FECHA INICIO';
-        if (g2) g2.style.display = '';
-    }
-};
-
-window.openRefuerzoModal = async () => {
-    const m = document.getElementById('modalRefuerzo');
-    if (!m) return;
-    const status = document.getElementById('refuerzoStatus');
-    const warn = document.getElementById('refuerzoWarning');
-    if (status) status.innerHTML = '';
-    if (warn) { warn.style.display = 'none'; warn.textContent = ''; }
-
-    const [hotels, emps] = await Promise.all([window.getAvailableHotels(), window.TurnosDB.getEmpleados()]);
-    const selectedHotel = document.getElementById('excelHotel')?.value || 'all';
-
-    // Hotel select — pre-select current Excel filter
-    const rfHotel = document.getElementById('rfHotel');
-    if (rfHotel) {
-        rfHotel.innerHTML = hotels.map(h => `<option value="${h}"${h === selectedHotel && selectedHotel !== 'all' ? ' selected' : ''}>${h}</option>`).join('');
-    }
-
-    // Employee select — only structural support/ocasional staff with valid EMP-XXXX IDs
-    const rfEmp = document.getElementById('rfEmp');
-    if (rfEmp) {
-        const supportEmps = emps
-            .filter(e => {
-                const idInt = String(e.id_interno || '').trim();
-                if (!/^EMP-\d{4,}$/.test(idInt)) return false;
-                if (window.isEmpleadoOcasionalOApoyo && window.isEmpleadoOcasionalOApoyo(e)) return true;
-                return false;
-            })
-            .sort((a, b) => (a.nombre || '').localeCompare(b.nombre || ''));
-        if (supportEmps.length === 0) {
-            rfEmp.innerHTML = '<option value="" disabled selected>No hay empleados de apoyo con ID válido</option>';
-        } else {
-            rfEmp.innerHTML = '<option value="" disabled selected>Seleccionar empleado...</option>' +
-                supportEmps.map(e => `<option value="${e.id}">${e.nombre || e.id} [${e.id_interno}]</option>`).join('');
+                availableEmps.map(e => `<option value="${e.id}">${e.nombre || e.id} [${e.id_interno || e.id}]</option>`).join('');
         }
     }
 
@@ -1699,11 +1620,10 @@ window.saveRefuerzo = async () => {
     if (!empId) { status.innerHTML = '<span style="color:var(--danger);">Empleado obligatorio.</span>'; return; }
     if (!dateStart) { status.innerHTML = '<span style="color:var(--danger);">Fecha obligatoria.</span>'; return; }
 
-    // Validate employee has valid ID
-    const emp = (window.empleadosGlobales || []).find(e => e.id === empId);
-    const idInt = String(emp?.id_interno || '').trim();
-    if (!/^EMP-\d{4,}$/.test(idInt)) {
-        status.innerHTML = '<span style="color:var(--danger);">Este empleado no tiene ID interno válido. No puede asignarse como refuerzo.</span>';
+    // Validate employee exists in DB
+    const emp = (window.empleadosGlobales || await window.TurnosDB.getEmpleados().catch(() => [])).find(e => e.id === empId || e.id_interno === empId);
+    if (!emp) {
+        status.innerHTML = '<span style="color:var(--danger);">Empleado no encontrado.</span>';
         return;
     }
 
