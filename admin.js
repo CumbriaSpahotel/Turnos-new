@@ -5135,9 +5135,10 @@ window.renderPreview = async () => {
                 const key = emp.employee_id;
                 const rawName = String(emp.nombre || emp.displayName || emp.employee_id || '').trim();
                 // Ignorar filas separadoras o de relleno
-                if (rawName.includes('---') || rawName.includes('___') || rawName === '' || rawName.toLowerCase() === 'vacante' || rawName.toLowerCase() === 'undefined' || rawName.toLowerCase() === 'null') {
+                if (rawName.includes('---') || rawName.includes('___') || rawName === '' || rawName.toLowerCase() === 'undefined' || rawName.toLowerCase() === 'null') {
                     return;
                 }
+
                 if (/^#?_dup_/i.test(rawName) || /^#?_dup_/i.test(key)) {
                     return;
                 }
