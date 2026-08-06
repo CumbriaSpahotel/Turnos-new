@@ -5615,7 +5615,7 @@ window.buildEmployeeLineModel = (empleado) => {
     const rolOperativo = hasExplicitRefuerzo ? 'refuerzo' : (isSubstitute ? 'sustituto' : configuredRole);
 
     const isExcedencia = window.employeeNorm(profile.estado_empresa || '').includes('excedencia') || window.employeeNorm(profile.estado || '').includes('excedencia');
-    const isTerminated = window.isEmployeeTerminated(profile, refISO);
+    const isTerminated = window.isEmployeeTerminated(profile, todayISO);
     let estado = isExcedencia ? 'Excedencia' : (isTerminated ? 'Baja empresa' : 'Activo');
     if (!isTerminated && !isExcedencia) {
         if (todayShift?.cls === 'v' || activeAbsences.some(ev => /VAC/i.test(ev.tipo || ''))) estado = 'Vacaciones';
