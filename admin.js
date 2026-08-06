@@ -3875,19 +3875,30 @@ window.createPuestosPreviewModel = ({
         // VALIDACIÓN CESE: Si el sustituto está dado de baja (cesado) en las fechas del evento, anular la sustitución
         if (sRaw) {
             const normS = resolveId(sRaw);
-            const sustProfile = employees.find(e => window.normalizeId(e.id) === normS || window.normalizeId(e.nombre) === normS);
+            const sustProfile = employees.find(e => 
+                window.normalizeId(e.id) === window.normalizeId(normS) || 
+                window.normalizeId(e.nombre) === window.normalizeId(normS) ||
+                window.normalizeId(e.id_interno) === window.normalizeId(normS)
+            );
+
             const isSustTerminated = sustProfile && window.TurnosRules?.isEmployeeTerminated
                 ? window.TurnosRules.isEmployeeTerminated(sustProfile, ev.fecha_inicio)
                 : false;
             if (isSustTerminated) {
                 sRaw = null;
-                ev.empleado_destino_id = null; // Anular en el objeto de evento para los siguientes pasos
+                ev.empleado_destino_id = null;
+                ev.sustituto_id = null;
+                ev.sustituto = null;
+                ev.destino_id = null;
+                ev.participante_b = null;
                 if (ev.payload) {
                     ev.payload.sustituto_id = null;
                     ev.payload.sustituto = null;
                     ev.payload.sustituto_nombre = null;
                 }
             }
+
+
         }
 
         if (sRaw) {
@@ -3913,8 +3924,16 @@ window.createPuestosPreviewModel = ({
 
             const vacacionista = employees.find(e => {
                 if (window.normalizeId(e.id) === window.normalizeId(tId) || window.normalizeId(e.nombre) === window.normalizeId(tId)) return false;
+                
+                // Excluir si el vacacionista candidato está cesado en la fecha del evento
+                const isVacTerminated = window.TurnosRules?.isEmployeeTerminated
+                    ? window.TurnosRules.isEmployeeTerminated(e, ev.fecha_inicio)
+                    : false;
+                if (isVacTerminated) return false;
+
                 const tipoNorm = String(e.tipo_personal || e.tipo || e.contrato || '').toLowerCase();
                 const puestoNorm = String(e.puesto || '').toLowerCase();
+
                 const esVacacionista = tipoNorm.includes('sustituto') || puestoNorm.includes('vacac');
                 if (!esVacacionista) return false;
                 
