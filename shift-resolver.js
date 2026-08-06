@@ -842,12 +842,16 @@ tipo=${normalized.tipo}`);
 
         const empProfile = (context.empleadosGlobales || window.empleadosGlobales || []).find(e => window.normalizeId(e.id) === empId || window.normalizeId(e.nombre) === empId);
         const isTerminatedOnDate = window.TurnosRules?.isEmployeeTerminated ? window.TurnosRules.isEmployeeTerminated(empProfile, date) : false;
-        if (isTerminatedOnDate && result.turno && result.turno !== '—' && result.turno !== 'D') {
-            result.esConflictoCese = true;
-            result.conflictoLabel = "Baja empresa — turno pendiente de revisión";
-            result.isConflict = true;
-            result.conflictReason = "Baja empresa — turno pendiente de revisión";
-            result.icons = [...new Set([...(result.icons || []), '⚠️'])];
+        if (isTerminatedOnDate) {
+            result.turno = '—';
+            result.turnoBase = null;
+            result.turnoFinal = '—';
+            result.incidencia = null;
+            result.esBajaEmpresa = true;
+            result.isAbsence = false;
+            result.isConflict = false;
+            result.icon = '';
+            result.icons = [];
         }
 
         return result;
