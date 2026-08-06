@@ -269,6 +269,23 @@ window.v9ExcelOrderMap = null;
 
 window.resolveId = window.resolveId || ((raw) => window.normalizeId ? window.normalizeId(raw) : String(raw || '').trim());
 
+/**
+ * Resuelve un ID de empleado (ej: 'EMP-0018') o nombre raw al nombre visible.
+ * Busca en window.empleadosGlobales. Usado por cambios-module.js y otros módulos.
+ */
+window.getEmployeeDisplayName = (idOrName) => {
+    if (!idOrName) return '—';
+    const emps = window.empleadosGlobales || [];
+    const norm = window.normalizeId ? window.normalizeId(idOrName) : String(idOrName).trim().toLowerCase();
+    const found = emps.find(e =>
+        (window.normalizeId ? window.normalizeId(e.id) : String(e.id || '').toLowerCase()) === norm ||
+        (window.normalizeId ? window.normalizeId(e.nombre) : String(e.nombre || '').toLowerCase()) === norm ||
+        (window.normalizeId ? window.normalizeId(e.id_interno) : String(e.id_interno || '').toLowerCase()) === norm
+    );
+    return found?.display_name || found?.nombre || found?.name || idOrName;
+};
+
+
 window.getAdminPanelVersion = function () {
     try {
         const script = document.querySelector('script[src*="admin.js"]');
@@ -3999,6 +4016,32 @@ window.createPuestosPreviewModel = ({
             if (!sRaw) {
                 sRaw = ev.empleado_destino_id || ev.sustituto_id || ev.sustituto || ev.payload?.sustituto_id || ev.payload?.sustituto || ev.participante_b || ev.destino_id;
             }
+
+            // REGLA AUTOMÁTICA DE VACACIONISTA: si el evento no tiene sustituta explícita,
+            // buscar un empleado de tipo 'sustituto' o puesto 'vacaciones' en el mismo hotel
+            if (!sRaw && (tipo === 'VAC' || tipo === 'BAJA' || tipo === 'PERM' || tipo === 'PERMISO')) {
+                const evHotel = window.normalizeId(ev.hotel_origen || ev.hotel || hotel);
+                // Intentar obtener la vacacionista ya asignada a esta semana (si ya fue registrada previamente)
+                const yaAsignada = new Set([...activeSubstitutes.keys()]);
+                const vacacionista = employees.find(e => {
+                    // No es el mismo titular
+                    if (window.normalizeId(e.id) === window.normalizeId(tId) || window.normalizeId(e.nombre) === window.normalizeId(tId)) return false;
+                    // Tipo sustituto o puesto vacaciones
+                    const tipoNorm = String(e.tipo_personal || e.tipo || e.contrato || '').toLowerCase();
+                    const puestoNorm = String(e.puesto || '').toLowerCase();
+                    const esVacacionista = tipoNorm.includes('sustituto') || puestoNorm.includes('vacac');
+                    if (!esVacacionista) return false;
+                    // Mismo hotel o multihotel
+                    const hoteles = String(e.hoteles_asignados || e.hotel_id || '').toLowerCase();
+                    const matchHotel = hoteles.includes(evHotel) || window.normalizeId(e.hotel_id) === evHotel;
+                    if (!matchHotel) return false;
+                    // No está ya ocupando otra posición en activeSubstitutes para esta semana
+                    const cId = window.ShiftResolver?.getCanonicalEmployeeId(window.normalizeId(e.id), uCtx);
+                    return !yaAsignada.has(cId);
+                });
+                if (vacacionista) sRaw = vacacionista.id;
+            }
+
             const normS = resolveId(sRaw);
             
             if (normS) {
