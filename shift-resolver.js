@@ -856,9 +856,12 @@ tipo=${normalized.tipo}`);
             result.turnoBase = null;
             result.turnoFinal = '—';
             result.incidencia = null;
+            result.estadoFinal = 'SIN_TURNO';
+            result.sourceReason = 'BAJA_EMPRESA';
             result.esBajaEmpresa = true;
             result.isAbsence = false;
             result.isConflict = false;
+            result.isModified = false;
             result.icon = '';
             result.icons = [];
         }

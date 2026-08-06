@@ -23,6 +23,7 @@
         const text = normalizeText(turno);
 
         // 1. Ausencias explícitas (prioridad absoluta)
+        if (upperType === 'BAJA_EMPRESA' || upperType === 'CESE') return '';
         if (upperType.startsWith('VAC')) return 'v';
         if (upperType.startsWith('BAJA') || upperType.startsWith('IT') || upperType === 'BM') return 'b';
         if (upperType.startsWith('PERM')) return 'perm';
