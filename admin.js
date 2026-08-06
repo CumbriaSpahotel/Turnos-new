@@ -83,6 +83,8 @@ const origResolveEmployeeDay = window.resolveEmployeeDay;
 window.resolveEmployeeDay = (options) => {
     if (!origResolveEmployeeDay) return null;
     const res = origResolveEmployeeDay(options);
+    // Si el empleado está cesado en esta fecha, respetar el '—' sin sobreescribir
+    if (res && res.esBajaEmpresa) return res;
     if (res && (!res.turno || res.turno === '—')) {
         const empId = window.normalizeId ? window.normalizeId(options.empleadoId) : String(options.empleadoId || '').trim().toLowerCase();
         const date = window.normalizeDate ? window.normalizeDate(options.fecha) : String(options.fecha || '').slice(0, 10);
@@ -3935,6 +3937,11 @@ window.createPuestosPreviewModel = ({
                         resolveId: resolveId
                     });
 
+                    // CESE DE EMPRESA: Si el empleado está dado de baja, respetar el '—' sin sobreescribir con el turno base del titular
+                    if (res.esBajaEmpresa) {
+                        return { ...res, _finalState: res };
+                    }
+
                     const shouldKeepResolvedTurno = res.intercambio || res.origen === 'CAMBIO_TURNO' || res.origen === 'INTERCAMBIO_TURNO';
                     const turnoOperativo = shouldKeepResolvedTurno ? res.turno : (turnoBase || res.turno);
 
@@ -3954,6 +3961,7 @@ window.createPuestosPreviewModel = ({
         const res = baseGetTurnoEmpleado(empleadoId, fecha);
         return { ...res, _finalState: res };
     };
+
 
     const getEmployees = (viewType = 'weekly') => {
         const firstDate = dates[0] || '';
@@ -4232,12 +4240,30 @@ window.createPuestosPreviewModel = ({
             return (a.nombre || '').localeCompare(b.nombre || '');
         });
 
+        // FILTRO FINAL DE CESE DE EMPRESA: eliminar filas de empleados cuyo contrato terminó
+        // antes del primer día visible de la semana (independientemente de Caso A o B)
+        const isCesadoEnSemana = (row) => {
+            const empId = row.employee_id || row.empleadoId;
+            if (!empId || !dates.length || !window.TurnosRules?.isEmployeeTerminated) return false;
+            const profile = employees.find(e =>
+                window.normalizeId(e.id) === window.normalizeId(empId) ||
+                window.normalizeId(e.nombre) === window.normalizeId(empId) ||
+                window.normalizeId(e.id_interno) === window.normalizeId(empId)
+            );
+            // Cesado si está baja en el PRIMER día de la semana (y por tanto en toda la semana)
+            return profile ? window.TurnosRules.isEmployeeTerminated(profile, dates[0]) : false;
+        };
+
         return [...operationalRows, ...absentRows, ...extraRefuerzoRows].filter(r => {
             const validId = r.employee_id && !String(r.employee_id).includes('---') && !String(r.employee_id).includes('___');
             const isGhost = /^#?_dup_/i.test(r.employee_id) || /^#?_dup_/i.test(r.nombre);
             const validName = r.nombre && r.nombre !== 'Empleado' && r.nombre.trim().length > 1;
-            return validId && validName && !isGhost;
+            if (!validId || !validName || isGhost) return false;
+            // Ocultar empleados dados de baja antes del inicio de la semana
+            if (isCesadoEnSemana(r)) return false;
+            return true;
         });
+
     };
 
     return {
