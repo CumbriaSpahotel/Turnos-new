@@ -4086,19 +4086,34 @@ window.createPuestosPreviewModel = ({
             else {
                 const canonicalTitular = window.ShiftResolver.getCanonicalEmployeeId(normTitular, uCtx);
                 if (canonicalTitular && !assignedNorms.has(canonicalTitular)) {
-                    const titularName = getDisplayName(r.empleadoId, r);
-                    operationalRows.push({
-                        ...r,
-                        employee_id: r.empleadoId,
-                        empleadoId: r.empleadoId,
-                        nombre: titularName,
-                        nombreVisible: titularName,
-                        displayName: titularName,
-                        puestoOrden: v9Order,
-                        rowType: 'operativo',
-                        titularOriginal: titularName
-                    });
-                    assignedNorms.add(canonicalTitular);
+                    // --- CESE CHECK: Si el empleado está dado de baja en TODOS los días de la semana, ocultar la fila ---
+                    const empProfile = employees.find(e =>
+                        window.normalizeId(e.id) === window.normalizeId(r.empleadoId) ||
+                        window.normalizeId(e.nombre) === window.normalizeId(r.empleadoId)
+                    );
+                    const allTerminated = dates.length > 0 && dates.every(d =>
+                        window.TurnosRules?.isEmployeeTerminated
+                            ? window.TurnosRules.isEmployeeTerminated(empProfile, d)
+                            : false
+                    );
+                    if (allTerminated) {
+                        // Empleado cesado en toda la semana — omitir fila
+                        assignedNorms.add(canonicalTitular);
+                    } else {
+                        const titularName = getDisplayName(r.empleadoId, r);
+                        operationalRows.push({
+                            ...r,
+                            employee_id: r.empleadoId,
+                            empleadoId: r.empleadoId,
+                            nombre: titularName,
+                            nombreVisible: titularName,
+                            displayName: titularName,
+                            puestoOrden: v9Order,
+                            rowType: 'operativo',
+                            titularOriginal: titularName
+                        });
+                        assignedNorms.add(canonicalTitular);
+                    }
                 }
             }
         });
