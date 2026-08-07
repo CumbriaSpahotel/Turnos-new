@@ -1958,7 +1958,7 @@ window.renderChanges = async () => {
                     </td>
                     <td style="padding:15px; font-size:0.85rem; color:#64748b;">${ev.hotel_origen || '—'}</td>
                     <td style="padding:15px;">
-                        <div style="font-weight:800; font-size:0.9rem;">${ev.empleado_id} ${ev.empleado_destino_id ? '<span style="color:#94a3b8; font-weight:400; margin:0 4px;">â†”</span> ' + ev.empleado_destino_id : ''}</div>
+                        <div style="font-weight:800; font-size:0.9rem;">${window.getEmployeeLabel ? (window.getEmployeeLabel(ev.empleado_id) || ev.empleado_id) : ev.empleado_id}${ev.empleado_destino_id ? '<span style="color:#94a3b8; font-weight:400; margin:0 4px;"> ↔ </span>' + (window.getEmployeeLabel ? (window.getEmployeeLabel(ev.empleado_destino_id) || ev.empleado_destino_id) : ev.empleado_destino_id) : ''}</div>
                     </td>
                     <td style="padding:15px;">${changeDetail(ev)}</td>
                     <td style="padding:15px;">
@@ -1983,7 +1983,7 @@ window.renderChanges = async () => {
         upcomingList.innerHTML = upcoming.map(ev => `
             <div style="padding:12px; border-radius:12px; background:#f8fafc; border:1px solid #e2e8f0;">
                 <div style="font-weight:800; font-size:0.8rem; color:#1e293b;">${window.TurnosDB.fmtDateLegacy(ev.fecha_inicio)} · ${ev.hotel_origen}</div>
-                <div style="font-size:0.75rem; color:#64748b; margin-top:2px;">${ev.empleado_id} ${ev.empleado_destino_id ? 'â†” ' + ev.empleado_destino_id : ''}</div>
+                <div style="font-size:0.75rem; color:#64748b; margin-top:2px;">${window.getEmployeeLabel ? (window.getEmployeeLabel(ev.empleado_id) || ev.empleado_id) : ev.empleado_id}${ev.empleado_destino_id ? ' ↔ ' + (window.getEmployeeLabel ? (window.getEmployeeLabel(ev.empleado_destino_id) || ev.empleado_destino_id) : ev.empleado_destino_id) : ''}</div>
                 <div style="font-size:0.72rem; color:#475569; margin-top:6px; display:flex; gap:6px; align-items:center; flex-wrap:wrap;">${changeDetail(ev)}</div>
             </div>
         `).join('') || '<div style="padding:10px; text-align:center; opacity:0.5; font-size:0.8rem;">No hay cambios próximos.</div>';
