@@ -6832,14 +6832,43 @@ window.buildPublicationSnapshotPreview = async (weekStart, hotelName = 'all') =>
 
             // Si no hay cache (o forzamos reconstrucción), regenerar modelo fiel
             if (!hotelData) {
-                console.warn(`[SNAPSHOT] Regenerando datos para ${hName} (no cache found)`);
                 const profiles = await window.TurnosDB.getEmpleados();
                 const excelSource = await window.loadAdminExcelSourceRows();
-                const weekExcelRows = (excelSource[hName] || []).filter(r => r.weekStart === weekStart);
+                let weekExcelRows = [...((excelSource[hName] || []).filter(r => r.weekStart === weekStart))];
                 const { rows: data } = await window.TurnosDB.fetchRangoCalculado(weekStart, weekEnd);
                 const eventos = await window.TurnosDB.fetchEventos(weekStart, weekEnd);
                 // También actualizar eventosGlobales para que el resto de la UI sea consistente
                 if (eventos && eventos.length) window.eventosGlobales = eventos;
+
+                // --- GENERAR SOURCE ROWS SINTÉTICOS SI NO HAY EXCEL ---
+                if (weekExcelRows.length === 0) {
+                    const hotelDataDb = (data || []).filter(r => r.hotel_id === hName);
+                    let empsInHotel = [...new Set(hotelDataDb.map(r => r.empleado_id))];
+                    if (empsInHotel.length === 0 && profiles && profiles.length > 0) {
+                        const normH = window.normalizeId ? window.normalizeId(hName) : String(hName).toLowerCase();
+                        empsInHotel = profiles.filter(p => {
+                            const assigned = Array.isArray(p.hoteles_asignados) ? p.hoteles_asignados : String(p.hoteles_asignados || p.hotel_id || p.hotel || '').split(/[,;|]/);
+                            return assigned.map(h => window.normalizeId ? window.normalizeId(h) : String(h).toLowerCase()).some(h => h === normH || h.includes(normH) || normH.includes(h));
+                        }).map(p => p.id);
+                    }
+
+                    if (empsInHotel.length > 0) {
+                        empsInHotel.forEach((empId, idx) => {
+                            const empProfile = (profiles || []).find(p => p.id === empId || p.nombre === empId || p.id_interno === empId);
+                            const row = {
+                                empleadoId: empId,
+                                displayName: empProfile?.nombre || empId,
+                                rowIndex: empProfile?.orden ?? empProfile?.display_order ?? empProfile?.sort_order ?? idx,
+                                weekStart: weekStart,
+                                values: dates.map(c => {
+                                    const found = hotelDataDb.find(r => r.empleado_id === empId && r.fecha === c);
+                                    return found ? found.turno : null;
+                                })
+                            };
+                            weekExcelRows.push(row);
+                        });
+                    }
+                }
 
                 const previewModel = window.createPuestosPreviewModel({
                     hotel: hName,
