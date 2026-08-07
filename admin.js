@@ -1918,6 +1918,16 @@ window.renderChanges = async () => {
             return 'x';
         };
         const shiftChip = (value) => `<span class="turno-pill-mini ${shiftClass(value)}" style="width:auto; min-width:58px; height:auto; padding:4px 8px; font-size:0.65rem;">${shiftLabel(value)}</span>`;
+        // Resuelve un ID o nombre crudo al nombre visible del empleado (sin código interno).
+        const empName = (rawId) => {
+            if (!rawId) return rawId;
+            const norm = window.normalizeId || ((v) => String(v || '').trim().toLowerCase());
+            const rawKey = norm(rawId);
+            const emps = window.empleadosGlobales || [];
+            const found = emps.find(emp => [emp?.id, emp?.nombre, emp?.id_interno, emp?.uuid, emp?.legacy_id]
+                .map(norm).filter(Boolean).includes(rawKey));
+            return (found && (found.nombre || found.displayName)) || rawId;
+        };
         const changeDetail = (ev) => {
             const original = ev.turno_original || ev.payload?.origen || ev.payload?.original_data?.origen;
             const requested = ev.turno_nuevo || ev.payload?.destino || ev.payload?.original_data?.destino;
@@ -1958,7 +1968,7 @@ window.renderChanges = async () => {
                     </td>
                     <td style="padding:15px; font-size:0.85rem; color:#64748b;">${ev.hotel_origen || '—'}</td>
                     <td style="padding:15px;">
-                        <div style="font-weight:800; font-size:0.9rem;">${window.getEmployeeLabel ? (window.getEmployeeLabel(ev.empleado_id) || ev.empleado_id) : ev.empleado_id}${ev.empleado_destino_id ? '<span style="color:#94a3b8; font-weight:400; margin:0 4px;"> ↔ </span>' + (window.getEmployeeLabel ? (window.getEmployeeLabel(ev.empleado_destino_id) || ev.empleado_destino_id) : ev.empleado_destino_id) : ''}</div>
+                        <div style="font-weight:800; font-size:0.9rem;">${empName(ev.empleado_id)}${ev.empleado_destino_id ? '<span style="color:#94a3b8; font-weight:400; margin:0 4px;"> ↔ </span>' + empName(ev.empleado_destino_id) : ''}</div>
                     </td>
                     <td style="padding:15px;">${changeDetail(ev)}</td>
                     <td style="padding:15px;">
@@ -1983,7 +1993,7 @@ window.renderChanges = async () => {
         upcomingList.innerHTML = upcoming.map(ev => `
             <div style="padding:12px; border-radius:12px; background:#f8fafc; border:1px solid #e2e8f0;">
                 <div style="font-weight:800; font-size:0.8rem; color:#1e293b;">${window.TurnosDB.fmtDateLegacy(ev.fecha_inicio)} · ${ev.hotel_origen}</div>
-                <div style="font-size:0.75rem; color:#64748b; margin-top:2px;">${window.getEmployeeLabel ? (window.getEmployeeLabel(ev.empleado_id) || ev.empleado_id) : ev.empleado_id}${ev.empleado_destino_id ? ' ↔ ' + (window.getEmployeeLabel ? (window.getEmployeeLabel(ev.empleado_destino_id) || ev.empleado_destino_id) : ev.empleado_destino_id) : ''}</div>
+                <div style="font-size:0.75rem; color:#64748b; margin-top:2px;">${empName(ev.empleado_id)}${ev.empleado_destino_id ? ' ↔ ' + empName(ev.empleado_destino_id) : ''}</div>
                 <div style="font-size:0.72rem; color:#475569; margin-top:6px; display:flex; gap:6px; align-items:center; flex-wrap:wrap;">${changeDetail(ev)}</div>
             </div>
         `).join('') || '<div style="padding:10px; text-align:center; opacity:0.5; font-size:0.8rem;">No hay cambios próximos.</div>';
@@ -6736,13 +6746,16 @@ window.publishToSupabase = async () => {
         // 4. Actualizar estado local
         window._adminExcelBaseOriginalRows = window.cloneExcelRows(window._adminExcelEditableRows);
         if (window.invalidatePreviewSnapshotCache) window.invalidatePreviewSnapshotCache('publication_completed');
+        // Limpiar caché del status global para que el dashboard re-consulte Supabase con los nuevos snapshots
+        window.__lastGlobalStatus = null;
         
         alert('Publicación completada con éxito.');
         document.getElementById('publishPreviewModal')?.classList.remove('open');
         
         window.renderExcelView();
         window.renderPreview();
-        window.renderDashboard();
+        // Pequeño delay para que Supabase propague el nuevo snapshot antes de re-consultar
+        setTimeout(() => window.renderDashboard(), 900);
 
     } catch (error) {
         console.error('Error en publicación:', error);
@@ -7165,6 +7178,41 @@ window.buildPublicationSnapshotPreview = async (weekStart, hotelName = 'all') =>
                 if (directKey && rowMap.has(directKey)) return rowMap.get(directKey);
                 const target = toSnapshotIdentity(rawId);
                 if (target && target !== directKey && rowMap.has(target)) return rowMap.get(target);
+
+                // Extra: si rawId es un id_interno (EMP-XXXX) o UUID, buscar el perfil cuyo
+                // id_interno / id / nombre coincida, y re-intentar con sus otras claves.
+                if (employees && employees.length) {
+                    const norm = window.normalizeId || ((v) => String(v || '').trim().toLowerCase());
+                    const rawNorm = norm(rawId);
+                    const matchedProfile = employees.find(emp =>
+                        norm(emp.id_interno) === rawNorm ||
+                        norm(emp.id)         === rawNorm ||
+                        norm(emp.nombre)     === rawNorm ||
+                        norm(emp.legacy_id)  === rawNorm ||
+                        norm(emp.uuid)       === rawNorm
+                    );
+                    if (matchedProfile) {
+                        // Intentar todas las claves del perfil encontrado contra el rowMap
+                        const altKeys = [matchedProfile.id, matchedProfile.nombre,
+                            matchedProfile.id_interno, matchedProfile.legacy_id, matchedProfile.uuid]
+                            .filter(Boolean)
+                            .map(window.normalizePersonKey || ((v) => String(v).toLowerCase().trim()))
+                            .filter(Boolean);
+                        for (const altKey of altKeys) {
+                            if (rowMap.has(altKey)) return rowMap.get(altKey);
+                        }
+                        // También buscar en snap.rows directamente
+                        const found = snap.rows.find(row => {
+                            const rowIdNorm = norm(row.empleado_id || row.employee_id || '');
+                            const rowNameNorm = norm(row.nombreVisible || row.nombre || '');
+                            return rowIdNorm === norm(matchedProfile.id) ||
+                                   rowIdNorm === norm(matchedProfile.id_interno) ||
+                                   rowNameNorm === norm(matchedProfile.nombre);
+                        });
+                        if (found) return found;
+                    }
+                }
+
                 // Fallback: look for ¿? row if the key is unknown
                 if (directKey && directKey !== '¿?' && !rowMap.has(directKey)) {
                     const plazaRowFound = rowMap.get('¿?')
@@ -7198,7 +7246,8 @@ window.buildPublicationSnapshotPreview = async (weekStart, hotelName = 'all') =>
             const rowDest = findOperationalRow(normEv.destino, evStart);
 
             if (!rowOrig) {
-                errors.push('[BLOQUEO] Origen de intercambio ' + normEv.origen + ' no aparece en el snapshot');
+                const labelOrig = (window.getEmployeeLabel ? window.getEmployeeLabel(normEv.origen) : null) || normEv.origen;
+                errors.push('[BLOQUEO] Origen de intercambio ' + labelOrig + ' no aparece en el snapshot');
             } else {
                 const cell = rowOrig.cells[evStart];
                 const hasMarker = hasCambioMarker(cell);
@@ -7215,7 +7264,8 @@ window.buildPublicationSnapshotPreview = async (weekStart, hotelName = 'all') =>
             }
 
             if (!rowDest) {
-                errors.push('[BLOQUEO] Destino de intercambio ' + normEv.destino + ' no aparece en el snapshot');
+                const labelDest = (window.getEmployeeLabel ? window.getEmployeeLabel(normEv.destino) : null) || normEv.destino;
+                errors.push('[BLOQUEO] Destino de intercambio ' + labelDest + ' no aparece en el snapshot');
             } else {
                 const cell = rowDest.cells[evStart];
                 const hasMarker = hasCambioMarker(cell);
