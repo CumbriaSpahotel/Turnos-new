@@ -321,7 +321,7 @@
             legendDiv.innerHTML = `
                 <div style="display:flex; align-items:center; gap:4px;"><span style="width:10px; height:10px; border-radius:3px; background:#3b82f6; display:inline-block;"></span> M = Mañana</div>
                 <div style="display:flex; align-items:center; gap:4px;"><span style="width:10px; height:10px; border-radius:3px; background:#f97316; display:inline-block;"></span> T = Tarde</div>
-                <div style="display:flex; align-items:center; gap:4px;"><span style="width:10px; height:10px; border-radius:3px; background:#fef9c3; border:1px solid #fde047; display:inline-block;"></span> 🔀 T/P = Turno Partido</div>
+                <div style="display:flex; align-items:center; gap:4px;"><span style="width:10px; height:10px; border-radius:3px; background:#ede9fe; border:1px solid #c4b5fd; display:inline-block;"></span> ⇅ T/P = Turno Partido</div>
                 <div style="display:flex; align-items:center; gap:4px;"><span style="width:10px; height:10px; border-radius:3px; background:#1e1b4b; display:inline-block;"></span> N = Noche</div>
                 <div style="display:flex; align-items:center; gap:4px;"><span style="width:10px; height:10px; border-radius:3px; background:#fee2e2; border:1px solid #fca5a5; display:inline-block;"></span> D = Descanso</div>
                 <div style="display:flex; align-items:center; gap:4px;"><span style="width:10px; height:10px; border-radius:3px; background:#10b981; display:inline-block;"></span> Vacaciones</div>

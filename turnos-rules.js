@@ -360,10 +360,12 @@
         const isBaja  = /baja|it|bm/i.test(label) || code === 'BAJA' || type === 'BAJA' || type === 'IT';
         const isPerm  = /permiso/i.test(label) || code === 'PERM' || type === 'PERM' || type === 'PERMISO';
         const isForm  = /formaci/i.test(label) || code === 'FORM' || type === 'FORM' || type === 'FORMACION';
+        const isPartido = /t\/p|partido/i.test(label) || code === 'TP' || code === 'P' || type === 'PARTIDO' || type === 'TP' || type === 'P';
         const isChanged = !!cell?.changed || !!cell?.intercambio || (cell?.origen && (cell.origen.includes('CAMBIO') || cell.origen.includes('INTERCAMBIO')));
 
         if (isNoche) icons.add('\u{1F319}');
         if (isVac)   icons.add('\u{1F3D6}\u{FE0F}');
+        if (isPartido) icons.add('⇅');
         // Baja y Permiso ya llevan el emoji en el label (Baja 🩺, Permiso 🗓️), no añadir más aquí
         if (isForm)  icons.add('\u{1F313}');
         if (isChanged && !isVac && !isBaja && !isPerm && !isForm) icons.add('\u{1F504}');
