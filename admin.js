@@ -1303,7 +1303,7 @@ window.renderExcelView = async () => {
             const idInt = profile.id_interno || profile.id || empId;
             return `${profile.nombre || empId} [${idInt}]`;
         };
-        const TURNO_MAP = { 'M': 'Mañana', 'Mañana': 'Mañana', 'T': 'Tarde', 'Tarde': 'Tarde', 'N': 'Noche', 'Noche': 'Noche', 'D': 'Descanso', 'Descanso': 'Descanso', '-': 'Pendiente de asignar', '—': 'Pendiente de asignar', '': 'Pendiente de asignar', null: 'Pendiente de asignar' };
+        const TURNO_MAP = { 'M': 'Mañana', 'Mañana': 'Mañana', 'T': 'Tarde', 'Tarde': 'Tarde', 'N': 'Noche', 'Noche': 'Noche', 'D': 'Descanso', 'Descanso': 'Descanso', 'TP': 'T/P', 'T/P': 'T/P', '-': 'Pendiente de asignar', '—': 'Pendiente de asignar', '': 'Pendiente de asignar', null: 'Pendiente de asignar' };
         let totalPendientes = 0;
         let totalSupportPendientes = 0;
         let totalNoId = 0;
@@ -1454,7 +1454,7 @@ window.renderExcelView = async () => {
                                             const mappedVal = TURNO_MAP[dbVal] || dbVal;
                                             const isPendiente = (mappedVal === 'Pendiente de asignar');
                                             const pendClass = isPendiente ? (row.isSupport ? 'turno-pendiente-soft' : 'turno-pendiente-alerta') : '';
-                                            const options = ['Pendiente de asignar', 'Mañana', 'Tarde', 'Noche', 'Descanso'].map(o => `<option value="${o}" ${o === mappedVal ? 'selected' : ''}>${o}</option>`).join('');
+                                            const options = ['Pendiente de asignar', 'Mañana', 'Tarde', 'T/P', 'Noche', 'Descanso'].map(o => `<option value="${o}" ${o === mappedVal ? 'selected' : ''}>${o}</option>`).join('');
                                             const currDate = new Date(row.weekStart); currDate.setDate(currDate.getDate() + offset);
                                             const dStr = window.isoDate(currDate);
                                             return `<td style="padding:6px; border-bottom:1px solid #f1f5f9; text-align:center;"><select class="turno-edit-select ${pendClass}" data-hotel="${row.hotel}" data-emp="${row.empId}" data-date="${dStr}" data-original="${dbVal}" style="width:110px; padding:6px; border:1px solid #e2e8f0; border-radius:8px; background:#f8fafc; text-align:center; color:#475569; font-size:0.8rem; cursor:pointer;" onchange="window.handleExcelCellChange(this)">${options}</select></td>`;
@@ -1491,7 +1491,7 @@ window.handleExcelCellChange = (sel) => {
     }
     const selects = document.querySelectorAll('.turno-edit-select');
     let changes = 0;
-    const REVERSE_MAP = { 'Mañana': 'M', 'Tarde': 'T', 'Noche': 'N', 'Descanso': 'D', 'Pendiente de asignar': '—' };
+    const REVERSE_MAP = { 'Mañana': 'M', 'Tarde': 'T', 'T/P': 'TP', 'Noche': 'N', 'Descanso': 'D', 'Pendiente de asignar': '—' };
     selects.forEach(s => {
         const currentDb = REVERSE_MAP[s.value] || s.value;
         if (s.dataset.original !== currentDb) changes++;
@@ -1512,7 +1512,7 @@ window.saveTurnosBaseDirect = async () => {
         const selects = document.querySelectorAll('select.turno-edit-select');
         const updates = [];
         const blocked = [];
-        const REVERSE_MAP = { 'Mañana': 'M', 'Tarde': 'T', 'Noche': 'N', 'Descanso': 'D', 'Pendiente de asignar': '—' };
+        const REVERSE_MAP = { 'Mañana': 'M', 'Tarde': 'T', 'T/P': 'TP', 'Noche': 'N', 'Descanso': 'D', 'Pendiente de asignar': '—' };
         selects.forEach(sel => {
             const original = sel.dataset.original;
             const currentDb = REVERSE_MAP[sel.value] || sel.value;
@@ -1909,6 +1909,7 @@ window.renderChanges = async () => {
             if (norm === 'T') return 'Tarde';
             if (norm === 'N') return 'Noche';
             if (norm === 'D') return 'Descanso';
+            if (norm === 'TP' || raw === 'T/P') return 'T/P';
             return raw;
         };
         const shiftClass = (value) => {
@@ -2040,12 +2041,12 @@ window.ensureChangeEditModal = () => {
 
                 <label style="display:grid; gap:7px; font-size:0.68rem; color:#64748b; font-weight:900; text-transform:uppercase;">Turno original
                     <select id="edit-change-origin" style="height:48px; border:1px solid #d5e1ef; border-radius:14px; padding:0 14px; font-size:0.95rem; font-weight:700;">
-                        <option value="">—</option><option value="Mañana">Mañana</option><option value="Tarde">Tarde</option><option value="Noche">Noche</option><option value="Descanso">Descanso</option>
+                        <option value="">—</option><option value="Mañana">Mañana</option><option value="Tarde">Tarde</option><option value="T/P">T/P</option><option value="Noche">Noche</option><option value="Descanso">Descanso</option>
                     </select>
                 </label>
                 <label style="display:grid; gap:7px; font-size:0.68rem; color:#64748b; font-weight:900; text-transform:uppercase;">Turno solicitado
                     <select id="edit-change-dest" style="height:48px; border:1px solid #d5e1ef; border-radius:14px; padding:0 14px; font-size:0.95rem; font-weight:700;">
-                        <option value="">—</option><option value="Mañana">Mañana</option><option value="Tarde">Tarde</option><option value="Noche">Noche</option><option value="Descanso">Descanso</option>
+                        <option value="">—</option><option value="Mañana">Mañana</option><option value="Tarde">Tarde</option><option value="T/P">T/P</option><option value="Noche">Noche</option><option value="Descanso">Descanso</option>
                     </select>
                 </label>
                 <label style="display:grid; gap:7px; font-size:0.68rem; color:#64748b; font-weight:900; text-transform:uppercase;">Tipo
@@ -2134,6 +2135,7 @@ window.editChange = async (id) => {
             if (norm === 'T') return 'Tarde';
             if (norm === 'N') return 'Noche';
             if (norm === 'D') return 'Descanso';
+            if (norm === 'TP' || String(value || '').trim() === 'T/P') return 'T/P';
             return value || '';
         };
         setValue('edit-change-date', ev.fecha_inicio || '');
@@ -2717,7 +2719,7 @@ window.employeeShiftLabel = (item) => {
     const raw = item.turno || item.turnoBase || item.turno_base || '';
     if (!raw) return '&mdash;';
     const key = window.normalizePreviewTurno ? window.normalizePreviewTurno(raw) : String(raw).toUpperCase();
-    return ({ M: 'Mañana', T: 'Tarde', N: 'Noche', D: 'Descanso' }[key]) || raw;
+    return ({ M: 'Mañana', T: 'Tarde', N: 'Noche', D: 'Descanso', TP: 'T/P' }[key]) || raw;
 };
 
 window.employeeFormatNumber = (value) => {
@@ -4824,6 +4826,7 @@ window.renderEmpleadoCell = (turnoEmpleado, { isCompact = false } = {}) => {
         P:    { bg: '#ffedd5', color: '#9a3412', border: '#fdba74', label: 'Permiso', icon: '' },
         M:    { bg: '#dcfce7', color: '#166534', border: '#86efac', label: 'Mañana', icon: '' },
         T:    { bg: '#fef9c3', color: '#854d0e', border: '#fde047', label: 'Tarde', icon: '' },
+        TP:   { bg: '#ede9fe', color: '#5b21b6', border: '#c4b5fd', label: 'T/P', icon: '⇅' },
         N:    { bg: '#dbeafe', color: '#1e40af', border: '#93c5fd', label: 'Noche', icon: '\u{1F319}' },
         D:    { bg: '#fee2e2', color: '#991b1b', border: '#fecaca', label: 'Descanso', icon: '' }
     };
@@ -8264,6 +8267,7 @@ window.employeeProfileShiftCodeMeta = (value) => {
     if (code === 'T') return { code: 'T', cls: 't', label: 'Tarde' };
     if (code === 'N') return { code: 'N', cls: 'n', label: 'Noche' };
     if (code === 'D') return { code: 'D', cls: 'd', label: 'Descanso' };
+    if (code === 'TP' || raw === 'T/P') return { code: 'TP', cls: 'tp', label: 'T/P' };
     if (code.startsWith('VAC')) return { code: 'VAC', cls: 'v', label: 'Vacaciones' };
     if (code.startsWith('BAJA') || code.startsWith('IT') || code.startsWith('PERM')) return { code: 'BAJA', cls: 'b', label: 'Baja / Permiso' };
     return { code: raw || '—', cls: 'x', label: raw || '—' };

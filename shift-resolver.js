@@ -514,7 +514,7 @@ tipo=${normalized.tipo}`);
 
     window.isValidShiftValue = (value) => {
         const t = canonicalShiftToken(value);
-        return ["M", "T", "N", "D", "MANANA", "MAANA", "TARDE", "NOCHE", "DESCANSO"].includes(t);
+        return ["M", "T", "N", "D", "TP", "MANANA", "MAANA", "TARDE", "TP", "TURNOPARTIDO", "NOCHE", "DESCANSO"].includes(t);
     };
 
     window.isInvalidLegacyChangeValue = (value) => {
@@ -528,7 +528,7 @@ tipo=${normalized.tipo}`);
         if (!t || t === '-') return null;
         if (t === "M" || t === "MANANA" || t === "MAANA") return "M";
         if (t === "T" || t === "TARDE") return "T";
-        if (t === "P" || t === "PARTIDO") return "P";
+        if (t === "TP" || t === "TURNOPARTIDO") return "TP";
         if (t === "N" || t === "NOCHE") return "N";
         if (t === "D" || t === "DESCANSO") return "D";
         return null;

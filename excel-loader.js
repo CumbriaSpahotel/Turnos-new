@@ -62,6 +62,7 @@
             .trim();
         if (!text) return '';
         if (text.startsWith('m') || text.includes('manana')) return 'M';
+        if (text === 't/p' || text.includes('t/p') || text.includes('turno partido') || text.includes('partido')) return 'TP';
         if (text.startsWith('t') || text.includes('tarde'))  return 'T';
         if (text.startsWith('n') || text.includes('noche'))  return 'N';
         if (text.startsWith('d') || text.includes('descanso')) return 'D';
