@@ -6395,11 +6395,31 @@ window.hasPendingPublicationChanges = async function({ weekStart, weekEnd, hotel
             let snapshotDiff = false;
             let pendingCount = 0;
 
+            // Validar que el snapshot publicado tenga contenido real para esta semana,
+            // igual que hace getGlobalPendingPublicationStatus con isSnapshotContentValid.
+            // Un snapshot con rows vacíos o fechas fuera de rango se trata como inexistente.
+            const isSnapContentValid = (snap, wStart) => {
+                if (!snap) return false;
+                const savedJson = snap.snapshot_json;
+                if (!savedJson) return true; // fallback: sin json → asumir válido (comportamiento legacy)
+                const rows = savedJson.rows || savedJson.cuadrante || [];
+                if (!Array.isArray(rows) || rows.length === 0) return false;
+                const wEnd = window.addIsoDays ? window.addIsoDays(wStart, 6) : wStart;
+                return rows.some(r => {
+                    const dias = r.dias || r.cells || {};
+                    return Object.keys(dias).some(k => k >= wStart && k <= wEnd);
+                });
+            };
+            const effectiveSnap = (lastSnap && isSnapContentValid(lastSnap, weekStart)) ? lastSnap : null;
+            if (lastSnap && !effectiveSnap) {
+                console.warn('[PENDING_CHECK] Snapshot publicado descartado por contenido inválido/vacío para', hotel, weekStart, 'id:', lastSnap.id);
+            }
+
             if (snapshots) {
                 const newSnap = snapshots.find(s => s.hotel_nombre === hotel || s.hotel_id === hotel);
                 // El snapshot se guarda en la columna snapshot_json
-                const savedSnap = lastSnap?.snapshot_json;
-                if (!lastSnap) {
+                const savedSnap = effectiveSnap?.snapshot_json;
+                if (!effectiveSnap) {
                     // No hay snapshot previo → siempre hay algo nuevo que publicar
                     snapshotDiff = true;
                     pendingCount = newSnap ? (newSnap.rows || []).length : 1;
