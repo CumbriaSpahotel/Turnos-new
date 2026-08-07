@@ -7013,32 +7013,71 @@ window.buildPublicationSnapshotPreview = async (weekStart, hotelName = 'all') =>
             const nRawId = norm(rawId);
             const nRawName = norm(rawName);
 
-            // 1. Búsqueda exacta por id, nombre o id_interno
+            if (!nRawId && !nRawName) return null;
+
+            // 1. Búsqueda exacta por id, nombre, id_interno, legacy_id o uuid
             let found = (employees || []).find(emp =>
-                norm(emp.id) === nRawId ||
-                norm(emp.nombre) === nRawName ||
-                norm(emp.id_interno) === nRawId ||
-                norm(emp.id) === nRawName // a veces rawName es el UUID
+                (nRawId && (norm(emp.id) === nRawId || norm(emp.id_interno) === nRawId || norm(emp.legacy_id) === nRawId || norm(emp.uuid) === nRawId)) ||
+                (nRawName && (norm(emp.nombre) === nRawName || norm(emp.id) === nRawName || norm(emp.id_interno) === nRawName))
             );
             if (found) return found;
 
-            // 2. Buscar via aliasMap: el rawName puede ser un alias (ej. "Sandra" → id)
-            const idViaAlias = aliasMap.get(nRawName);
-            if (idViaAlias) {
-                found = (employees || []).find(emp => norm(emp.id) === idViaAlias || norm(emp.id_interno) === idViaAlias);
-                if (found) return found;
+            // 2. Buscar via aliasMap
+            if (nRawName) {
+                const idViaAlias = aliasMap.get(nRawName);
+                if (idViaAlias) {
+                    found = (employees || []).find(emp => norm(emp.id) === idViaAlias || norm(emp.id_interno) === idViaAlias);
+                    if (found) return found;
+                }
             }
-            const idViaAliasRawId = aliasMap.get(nRawId);
-            if (idViaAliasRawId) {
-                found = (employees || []).find(emp => norm(emp.id) === idViaAliasRawId || norm(emp.id_interno) === idViaAliasRawId);
-                if (found) return found;
+            if (nRawId) {
+                const idViaAliasRawId = aliasMap.get(nRawId);
+                if (idViaAliasRawId) {
+                    found = (employees || []).find(emp => norm(emp.id) === idViaAliasRawId || norm(emp.id_interno) === idViaAliasRawId);
+                    if (found) return found;
+                }
             }
 
-            // 3. Coincidencia por primer nombre (ej. "S. Sánchez" → primer token "S" no sirve,
-            //    pero si rawName empieza por inicial buscar empleados cuyo nombre empieza igual)
-            const firstTokenRawName = nRawName.split(/[\s.]+/)[0];
-            if (firstTokenRawName && firstTokenRawName.length > 1) {
-                found = (employees || []).find(emp => {
+            // 3. Reconocimiento de nombres abreviados tipo "S. Sánchez" o "S Sánchez" <-> "Sandra Sánchez"
+            if (nRawName) {
+                // Caso A: Inicial + Apellido (ej. "S. Sánchez" -> initial: "s", surname: "sanchez")
+                const abbrMatch = nRawName.match(/^([a-z])[\s.]+(.+)$/i);
+                if (abbrMatch) {
+                    const initial = abbrMatch[1].toLowerCase();
+                    const surname = abbrMatch[2].trim().toLowerCase();
+                    found = (employees || []).find(emp => {
+                        const n = norm(emp.nombre || '');
+                        return n.startsWith(initial) && (n.includes(surname) || surname.includes(n));
+                    });
+                    if (found) return found;
+                }
+
+                // Caso B: Nombre + Inicial (ej. "Sandra S.")
+                const abbrEndMatch = nRawName.match(/^(.+)[\s.]+([a-z])\.?$/i);
+                if (abbrEndMatch) {
+                    const firstName = abbrEndMatch[1].trim().toLowerCase();
+                    const initial = abbrEndMatch[2].toLowerCase();
+                    found = (employees || []).find(emp => {
+                        const n = norm(emp.nombre || '');
+                        return (n.startsWith(firstName) || n.includes(firstName)) && n.split(/\s+/).some(part => part.startsWith(initial));
+                    });
+                    if (found) return found;
+                }
+
+                // Caso C: Coincidencia por tokens / palabras (ej. "Sandra" en "Sandra Sánchez", o "Sánchez" en "Sandra Sánchez")
+                const tokens = nRawName.split(/[\s.]+/).filter(t => t.length > 1);
+                if (tokens.length > 0) {
+                    found = (employees || []).find(emp => {
+                        const n = norm(emp.nombre || '');
+                        return tokens.some(tok => n.startsWith(tok) || n.includes(tok));
+                    });
+                    if (found) return found;
+                }
+            }
+
+            return null;
+        };
+mployees || []).find(emp => {
                     const nNombre = norm(emp.nombre || '');
                     return nNombre.startsWith(firstTokenRawName) || nNombre === firstTokenRawName;
                 });
@@ -7301,6 +7340,20 @@ window.buildPublicationSnapshotPreview = async (weekStart, hotelName = 'all') =>
                         });
                         if (found) return found;
                     }
+                }
+
+                // Fallback B: Coincidencia en snap.rows por primer carácter/inicial (ej. "Sandra" <-> "S. Sánchez")
+                if (directKey && directKey.length > 1) {
+                    const initialChar = directKey[0];
+                    const foundRow = snap.rows.find(row => {
+                        const rNameNorm = (window.normalizePersonKey || ((v) => String(v).toLowerCase().trim()))(row.nombreVisible || row.nombre || row.empleado || '');
+                        if (!rNameNorm) return false;
+                        return rNameNorm.startsWith(initialChar) && (
+                            directKey.includes(rNameNorm) || rNameNorm.includes(directKey) ||
+                            (rNameNorm.match(/^([a-z])[\s.]+(.+)$/i) && rNameNorm[0] === initialChar)
+                        );
+                    });
+                    if (foundRow) return foundRow;
                 }
 
                 // Fallback: look for ¿? row if the key is unknown
