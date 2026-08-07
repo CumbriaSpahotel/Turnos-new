@@ -7077,19 +7077,6 @@ window.buildPublicationSnapshotPreview = async (weekStart, hotelName = 'all') =>
 
             return null;
         };
-mployees || []).find(emp => {
-                    const nNombre = norm(emp.nombre || '');
-                    return nNombre.startsWith(firstTokenRawName) || nNombre === firstTokenRawName;
-                });
-                if (found) return found;
-            }
-            // 4. Si rawName es una inicial (ej. "s"), buscar por inicial en nombres completos
-            if (nRawName.length === 1) {
-                found = (employees || []).find(emp => norm(emp.nombre || '').startsWith(nRawName));
-                if (found) return found;
-            }
-            return null;
-        };
 
         (snap.rows || []).forEach(row => {
             const rawName = row.empleado || row.nombreVisible || row.nombre || row.employeeName || '';
