@@ -6940,6 +6940,45 @@ window.buildPublicationSnapshotPreview = async (weekStart, hotelName = 'all') =>
             const rawId = row.empleado_id || row.employee_id || '';
             const keyId = window.normalizePersonKey(rawId);
             if (keyId && keyId !== keyName && !rowMap.has(keyId)) rowMap.set(keyId, row);
+
+            // Enriquecer con todos los identificadores del perfil del empleado (incluyendo aliases y primer nombre)
+            const empProfile = (employees || []).find(emp => {
+                const norm = window.normalizeId;
+                return norm && (
+                    norm(emp.id) === norm(rawId) ||
+                    norm(emp.nombre) === norm(rawName) ||
+                    norm(emp.id_interno) === norm(rawId)
+                );
+            });
+            if (empProfile) {
+                // Primer nombre como alias (ej. "Sandra" de "S. Sánchez" o "Sandra García")
+                const fullName = empProfile.nombre || '';
+                const firstName = fullName.split(/[\s.]+/)[0];
+                if (firstName) {
+                    const keyFirst = window.normalizePersonKey(firstName);
+                    if (keyFirst && keyFirst.length > 1 && !rowMap.has(keyFirst)) rowMap.set(keyFirst, row);
+                }
+                // id_interno como clave adicional
+                if (empProfile.id_interno) {
+                    const keyInterno = window.normalizePersonKey(empProfile.id_interno);
+                    if (keyInterno && !rowMap.has(keyInterno)) rowMap.set(keyInterno, row);
+                }
+                // legacy_id si existe
+                if (empProfile.legacy_id) {
+                    const keyLegacy = window.normalizePersonKey(empProfile.legacy_id);
+                    if (keyLegacy && !rowMap.has(keyLegacy)) rowMap.set(keyLegacy, row);
+                }
+                // Nombre normalizado completo
+                if (empProfile.nombre) {
+                    const keyNombreEmp = window.normalizePersonKey(empProfile.nombre);
+                    if (keyNombreEmp && !rowMap.has(keyNombreEmp)) rowMap.set(keyNombreEmp, row);
+                }
+                // id del empleado
+                if (empProfile.id) {
+                    const keyEmpId = window.normalizePersonKey(empProfile.id);
+                    if (keyEmpId && !rowMap.has(keyEmpId)) rowMap.set(keyEmpId, row);
+                }
+            }
         });
 
         // Enrich rowMap: alias placeholder row for operationally named destinations
@@ -8098,7 +8137,15 @@ window.resolveEmployeeCanonicalId = (rawId, employees = window.empleadosGlobales
         emp?.uuid,
         emp?.legacy_id
     ].map(norm).filter(Boolean).includes(rawKey));
-    return found ? found.id : rawId;
+    if (found) return found.id;
+    // Búsqueda adicional por primer nombre (ej. "Sandra" → empleado con nombre "Sandra García" o "S. Sánchez")
+    const firstNameMatch = (employees || []).find(emp => {
+        const fullName = String(emp?.nombre || '').trim();
+        // Primer token que tenga más de 2 caracteres (evita iniciales como "S.")
+        const firstName = fullName.split(/[\s.]+/).find(t => t.length > 2);
+        return firstName && norm(firstName) === rawKey;
+    });
+    return firstNameMatch ? firstNameMatch.id : rawId;
 };
 
 window.getEmployeeName = (rawId, employees = window.empleadosGlobales || []) => {
