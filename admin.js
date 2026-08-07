@@ -6532,6 +6532,10 @@ window.showPublishPreview = async () => {
     const weekEnd = window.addIsoDays(weekStart, 6);
 
     // 2. Generar Snapshot Preview (Sin guardar)
+    // IMPORTANTE: Siempre invalidar el caché antes de publicar para que los datos sean frescos.
+    // El caché de la Vista Previa puede estar desactualizado respecto a la BD real.
+    if (window.invalidatePreviewSnapshotCache) window.invalidatePreviewSnapshotCache('pre_publish_fresh');
+    window.__lastGlobalStatus = null;
     let snapshots = [];
     try {
         snapshots = await window.buildPublicationSnapshotPreview(weekStart, hotelSel);
@@ -6700,7 +6704,8 @@ window.publishToSupabase = async () => {
         const base = new Date(rawDate + 'T12:00:00');
         const weekStart = window.isoDate(window.getMonday(base));
 
-        // 1. Generar Snapshots finales
+        // 1. Generar Snapshots finales (SIEMPRE frescos, sin caché)
+        if (window.invalidatePreviewSnapshotCache) window.invalidatePreviewSnapshotCache('publish_fresh');
         const snapshots = await window.buildPublicationSnapshotPreview(weekStart, hotelSel);
         
         // 2. Sincronizar cambios de Excel (turnos crudos)
@@ -6832,7 +6837,9 @@ window.buildPublicationSnapshotPreview = async (weekStart, hotelName = 'all') =>
                 const excelSource = await window.loadAdminExcelSourceRows();
                 const weekExcelRows = (excelSource[hName] || []).filter(r => r.weekStart === weekStart);
                 const { rows: data } = await window.TurnosDB.fetchRangoCalculado(weekStart, weekEnd);
-                const eventos = window.eventosGlobales || await window.TurnosDB.fetchEventos(weekStart, weekEnd);
+                const eventos = await window.TurnosDB.fetchEventos(weekStart, weekEnd);
+                // También actualizar eventosGlobales para que el resto de la UI sea consistente
+                if (eventos && eventos.length) window.eventosGlobales = eventos;
 
                 const previewModel = window.createPuestosPreviewModel({
                     hotel: hName,
@@ -6966,6 +6973,56 @@ window.buildPublicationSnapshotPreview = async (weekStart, hotelName = 'all') =>
 
         // Build rowMap: normalizedKey -> row
         const rowMap = new Map();
+
+        // Construir índice de aliases usando buildIndices para resolver "Sandra" → UUID, etc.
+        const { baseIndex: _aliasIndex } = window.buildIndices ? window.buildIndices(employees) : { baseIndex: { aliasesEmpleado: new Map() } };
+        const aliasMap = _aliasIndex.aliasesEmpleado; // nombre_normalizado → id_normalizado
+
+        // Función helper: encontrar el empProfile siendo tolerante con nombres abreviados (S. Sánchez ≈ Sandra Sánchez)
+        const findEmpProfile = (rawId, rawName) => {
+            const norm = window.normalizeId || ((v) => String(v || '').trim().toLowerCase());
+            const nRawId = norm(rawId);
+            const nRawName = norm(rawName);
+
+            // 1. Búsqueda exacta por id, nombre o id_interno
+            let found = (employees || []).find(emp =>
+                norm(emp.id) === nRawId ||
+                norm(emp.nombre) === nRawName ||
+                norm(emp.id_interno) === nRawId ||
+                norm(emp.id) === nRawName // a veces rawName es el UUID
+            );
+            if (found) return found;
+
+            // 2. Buscar via aliasMap: el rawName puede ser un alias (ej. "Sandra" → id)
+            const idViaAlias = aliasMap.get(nRawName);
+            if (idViaAlias) {
+                found = (employees || []).find(emp => norm(emp.id) === idViaAlias || norm(emp.id_interno) === idViaAlias);
+                if (found) return found;
+            }
+            const idViaAliasRawId = aliasMap.get(nRawId);
+            if (idViaAliasRawId) {
+                found = (employees || []).find(emp => norm(emp.id) === idViaAliasRawId || norm(emp.id_interno) === idViaAliasRawId);
+                if (found) return found;
+            }
+
+            // 3. Coincidencia por primer nombre (ej. "S. Sánchez" → primer token "S" no sirve,
+            //    pero si rawName empieza por inicial buscar empleados cuyo nombre empieza igual)
+            const firstTokenRawName = nRawName.split(/[\s.]+/)[0];
+            if (firstTokenRawName && firstTokenRawName.length > 1) {
+                found = (employees || []).find(emp => {
+                    const nNombre = norm(emp.nombre || '');
+                    return nNombre.startsWith(firstTokenRawName) || nNombre === firstTokenRawName;
+                });
+                if (found) return found;
+            }
+            // 4. Si rawName es una inicial (ej. "s"), buscar por inicial en nombres completos
+            if (nRawName.length === 1) {
+                found = (employees || []).find(emp => norm(emp.nombre || '').startsWith(nRawName));
+                if (found) return found;
+            }
+            return null;
+        };
+
         (snap.rows || []).forEach(row => {
             const rawName = row.empleado || row.nombreVisible || row.nombre || row.employeeName || '';
             const keyName = window.normalizePersonKey(rawName);
@@ -6975,23 +7032,20 @@ window.buildPublicationSnapshotPreview = async (weekStart, hotelName = 'all') =>
             if (keyId && keyId !== keyName && !rowMap.has(keyId)) rowMap.set(keyId, row);
 
             // Enriquecer con todos los identificadores del perfil del empleado (incluyendo aliases y primer nombre)
-            const empProfile = (employees || []).find(emp => {
-                const norm = window.normalizeId;
-                return norm && (
-                    norm(emp.id) === norm(rawId) ||
-                    norm(emp.nombre) === norm(rawName) ||
-                    norm(emp.id_interno) === norm(rawId)
-                );
-            });
+            const empProfile = findEmpProfile(rawId, rawName);
             if (empProfile) {
-                // Primer nombre como alias (ej. "Sandra" de "S. Sánchez" o "Sandra García")
+                // Todos los nombres y variantes del empleado como claves del rowMap
                 const fullName = empProfile.nombre || '';
+                // Nombre completo
+                const keyNombreEmp = window.normalizePersonKey(fullName);
+                if (keyNombreEmp && !rowMap.has(keyNombreEmp)) rowMap.set(keyNombreEmp, row);
+                // Primer nombre como alias (ej. "Sandra" de "Sandra Sánchez")
                 const firstName = fullName.split(/[\s.]+/)[0];
                 if (firstName) {
                     const keyFirst = window.normalizePersonKey(firstName);
                     if (keyFirst && keyFirst.length > 1 && !rowMap.has(keyFirst)) rowMap.set(keyFirst, row);
                 }
-                // id_interno como clave adicional
+                // id_interno (ej. EMP-0017)
                 if (empProfile.id_interno) {
                     const keyInterno = window.normalizePersonKey(empProfile.id_interno);
                     if (keyInterno && !rowMap.has(keyInterno)) rowMap.set(keyInterno, row);
@@ -7001,15 +7055,22 @@ window.buildPublicationSnapshotPreview = async (weekStart, hotelName = 'all') =>
                     const keyLegacy = window.normalizePersonKey(empProfile.legacy_id);
                     if (keyLegacy && !rowMap.has(keyLegacy)) rowMap.set(keyLegacy, row);
                 }
-                // Nombre normalizado completo
-                if (empProfile.nombre) {
-                    const keyNombreEmp = window.normalizePersonKey(empProfile.nombre);
-                    if (keyNombreEmp && !rowMap.has(keyNombreEmp)) rowMap.set(keyNombreEmp, row);
-                }
                 // id del empleado
                 if (empProfile.id) {
                     const keyEmpId = window.normalizePersonKey(empProfile.id);
                     if (keyEmpId && !rowMap.has(keyEmpId)) rowMap.set(keyEmpId, row);
+                }
+                // Todos los aliases del aliasMap que apunten a este empleado (ej. "Sandra" → S. Sánchez)
+                {
+                    const _n = window.normalizeId || ((v) => String(v || '').trim().toLowerCase());
+                    const _empNormId = _n(empProfile.id);
+                    const _empNormInterno = _n(empProfile.id_interno);
+                    aliasMap.forEach((canonicalId, aliasKey) => {
+                        if (canonicalId === _empNormId || canonicalId === _empNormInterno) {
+                            const keyAlias = window.normalizePersonKey(aliasKey);
+                            if (keyAlias && keyAlias.length > 1 && !rowMap.has(keyAlias)) rowMap.set(keyAlias, row);
+                        }
+                    });
                 }
             }
         });

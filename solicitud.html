@@ -532,7 +532,10 @@
                 altInput: true,
                 altFormat: "D j M",
                 disableMobile: true,
-                onChange: () => window.syncGeneralDateToFirstRow?.()
+                onChange: () => {
+                    window.syncGeneralDateToFirstRow?.();
+                    loadEmployees();
+                }
             });
 
             await loadEmployees();
@@ -563,12 +566,27 @@
             });
         }
 
-        function isActiveEmployee(emp) {
+        function isActiveEmployee(emp, dateStr = null) {
+            if (!emp) return false;
             const status = normalizeEmployeeText(`${emp.estado_empresa || ''} ${emp.estado || ''} ${emp.situacion || ''}`);
             const name = normalizeEmployeeText(emp.nombre || emp.id || '');
             if (emp.activo === false) return false;
             if (!name || name.includes('pendiente') || name.includes('vacante')) return false;
-            return !/(baja|inactivo|excedencia|anulado)/.test(status);
+            if (/(baja|inactivo|excedencia|anulado)/.test(status)) return false;
+
+            const fechaBajaRaw = emp.fecha_baja || emp.fecha_cese || emp.baja_date || emp.fecha_fin;
+            if (fechaBajaRaw) {
+                const fb = String(fechaBajaRaw).trim().slice(0, 10);
+                const evalDateRaw = dateStr || document.getElementById('general-date')?.value || new Date().toISOString().slice(0, 10);
+                if (evalDateRaw && fb) {
+                    const evalDate = String(evalDateRaw).trim().slice(0, 10);
+                    if (evalDate > fb) {
+                        return false;
+                    }
+                }
+            }
+
+            return true;
         }
 
         function isTitularEmployee(emp) {
@@ -585,6 +603,7 @@
 
         async function loadEmployees() {
             const hotel = $("#sel_hotel").value;
+            const targetDate = $("#general-date")?.value || null;
             const solSelect = $("#solicitante");
             const compSelect = $("#companero");
 
@@ -595,7 +614,7 @@
 
                 const hotelEmps = _emps.filter(e =>
                     employeeBelongsToHotel(e, hotel) &&
-                    isActiveEmployee(e) &&
+                    isActiveEmployee(e, targetDate) &&
                     isTitularEmployee(e)
                 );
                 const solicitanteEmps = hotelEmps.filter(isFixedOrSupportEmployee);
@@ -620,13 +639,15 @@
             const general = document.getElementById('general-date');
             const firstRow = document.querySelector('.shift-row .row-date-picker');
             if (!general || !firstRow || !general.value) return;
-            if ((firstRow.value || '') === general.value) return;
-            if (firstRow._flatpickr) {
-                firstRow._flatpickr.setDate(general.value, true, "Y-m-d");
-            } else {
-                firstRow.value = general.value;
-                firstRow.dispatchEvent(new Event('change', { bubbles: true }));
+            if ((firstRow.value || '') !== general.value) {
+                if (firstRow._flatpickr) {
+                    firstRow._flatpickr.setDate(general.value, true, "Y-m-d");
+                } else {
+                    firstRow.value = general.value;
+                    firstRow.dispatchEvent(new Event('change', { bubbles: true }));
+                }
             }
+            loadEmployees();
         };
 
         function addShiftRow() {
@@ -931,7 +952,7 @@
             let candidates = _emps.filter(e =>
                 e.id !== solId &&
                 employeeBelongsToHotel(e, hotel) &&
-                isActiveEmployee(e) &&
+                isActiveEmployee(e, date) &&
                 isTitularEmployee(e) &&
                 isFixedOrSupportEmployee(e)
             );
@@ -963,7 +984,7 @@
                     candidates = _emps.filter(e => {
                         if (e.id === solId) return false;
                         if (!employeeBelongsToHotel(e, hotel)) return false;
-                        if (!isActiveEmployee(e)) return false;
+                        if (!isActiveEmployee(e, date)) return false;
                         
                         const empIdLower = String(e.id).toLowerCase();
                         const empNameLower = String(e.nombre || '').toLowerCase();

@@ -77,6 +77,75 @@ window.TurnosDB = {
         window.realtimeActivo = (state === 'ok');
     },
 
+    // Verifica que el cliente Supabase esté disponible. Si no, muestra un banner
+    // de "Sin conexión" y reintenta la inicialización automáticamente cada 10s.
+    ensureClient() {
+        const client = window.supabase;
+        if (client && typeof client.from === 'function') {
+            this.client = client;
+            this._hideOfflineBanner();
+            return true;
+        }
+        this._showOfflineBanner();
+        this._scheduleReconnect();
+        return false;
+    },
+
+    _offlineBannerId: 'supabase-offline-banner',
+    _reconnectTimer: null,
+
+    _showOfflineBanner() {
+        this.updateUISyncStatus('error');
+        if (document.getElementById(this._offlineBannerId)) return;
+        const banner = document.createElement('div');
+        banner.id = this._offlineBannerId;
+        banner.style.cssText = [
+            'position:fixed', 'top:0', 'left:0', 'right:0', 'z-index:99999',
+            'background:#b91c1c', 'color:#fff', 'font-weight:700',
+            'font-size:0.85rem', 'padding:10px 20px',
+            'display:flex', 'align-items:center', 'justify-content:space-between',
+            'gap:12px', 'box-shadow:0 2px 12px rgba(0,0,0,0.3)'
+        ].join(';');
+        banner.innerHTML = `
+            <span>⚠️ Sin conexión con la base de datos. Reconectando automáticamente...</span>
+            <button onclick="window.TurnosDB._retryConnect()" style="background:#fff;color:#b91c1c;border:none;padding:6px 16px;border-radius:8px;font-weight:800;cursor:pointer;">
+                Reintentar ahora
+            </button>`;
+        document.body.prepend(banner);
+    },
+
+    _hideOfflineBanner() {
+        document.getElementById(this._offlineBannerId)?.remove();
+        if (this._reconnectTimer) { clearInterval(this._reconnectTimer); this._reconnectTimer = null; }
+    },
+
+    _scheduleReconnect() {
+        if (this._reconnectTimer) return; // ya hay un timer activo
+        this._reconnectTimer = setInterval(() => this._retryConnect(), 10000);
+    },
+
+    async _retryConnect() {
+        console.log('[DAO] Reintentando conexión con Supabase...');
+        try {
+            // Intentar recrear el cliente si las constantes están disponibles
+            if (typeof supabase !== 'undefined' && window.SUPABASE_URL && window.SUPABASE_ANON_KEY) {
+                window.supabase = supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY);
+            }
+            // Verificar si ya se resolvió (la librería pudo haber cargado después)
+            if (window.supabase && typeof window.supabase.from === 'function') {
+                this.client = window.supabase;
+                this._hideOfflineBanner();
+                this.updateUISyncStatus('ok');
+                console.log('[DAO] Reconexión exitosa.');
+                // Recargar los datos principales
+                if (window.renderDashboard) window.renderDashboard();
+                if (window.renderPreview)   window.renderPreview();
+            }
+        } catch (e) {
+            console.warn('[DAO] Reintento fallido:', e.message);
+        }
+    },
+
     async fetchAll(makeQuery, pageSize = 1000) {
         const allRows = [];
         let from = 0;
