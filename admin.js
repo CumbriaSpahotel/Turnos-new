@@ -4820,19 +4820,21 @@ window.renderEmpleadoCell = (turnoEmpleado, { isCompact = false } = {}) => {
     const hayCambio = Boolean(turnoEmpleado.cambio);
 
     // Capsule definitions (Shifts & Incidences)
+    // NOTA: Las claves coinciden exactamente con las que devuelve TurnosRules.shiftKey (minúsculas)
     const capsuleStyles = {
-        V:    { bg: '#e0f2fe', color: '#0369a1', border: '#7dd3fc', label: 'Vacaciones', icon: '\u{1F3D6}\u{FE0F}' },
-        B:    { bg: '#fee2e2', color: '#b91c1c', border: '#fca5a5', label: 'Baja', icon: '' },
-        P:    { bg: '#ffedd5', color: '#9a3412', border: '#fdba74', label: 'Permiso', icon: '' },
-        M:    { bg: '#dcfce7', color: '#166534', border: '#86efac', label: 'Mañana', icon: '' },
-        T:    { bg: '#fef9c3', color: '#854d0e', border: '#fde047', label: 'Tarde', icon: '' },
-        TP:   { bg: '#ede9fe', color: '#5b21b6', border: '#c4b5fd', label: 'T/P', icon: '⇅' },
-        N:    { bg: '#dbeafe', color: '#1e40af', border: '#93c5fd', label: 'Noche', icon: '\u{1F319}' },
-        D:    { bg: '#fee2e2', color: '#991b1b', border: '#fecaca', label: 'Descanso', icon: '' }
+        v:    { bg: '#e0f2fe', color: '#0369a1', border: '#7dd3fc', label: 'Vacaciones', icon: '\u{1F3D6}\u{FE0F}' },
+        b:    { bg: '#fee2e2', color: '#b91c1c', border: '#fca5a5', label: 'Baja', icon: '' },
+        perm: { bg: '#ffedd5', color: '#9a3412', border: '#fdba74', label: 'Permiso', icon: '' },
+        m:    { bg: '#dcfce7', color: '#166534', border: '#86efac', label: 'Mañana', icon: '' },
+        t:    { bg: '#fef9c3', color: '#854d0e', border: '#fde047', label: 'Tarde', icon: '' },
+        p:    { bg: '#ede9fe', color: '#5b21b6', border: '#c4b5fd', label: 'T/P', icon: '⇅' },
+        n:    { bg: '#dbeafe', color: '#1e40af', border: '#93c5fd', label: 'Noche', icon: '\u{1F319}' },
+        d:    { bg: '#fee2e2', color: '#991b1b', border: '#fecaca', label: 'Descanso', icon: '' }
     };
 
     const sKey = window.TurnosRules?.shiftKey?.(turnoVisible, 'NORMAL') || String(turnoVisible);
-    const styleKey = sKey.toUpperCase();
+    // sKey ya viene en minúsculas desde shiftKey — NO convertir a mayúsculas
+    const styleKey = sKey.toLowerCase();
     const style = capsuleStyles[styleKey] || { bg: '#f8fafc', color: '#475569', border: '#e2e8f0', label: turnoVisible || '-', icon: '' };
 
     if (isCompact) {

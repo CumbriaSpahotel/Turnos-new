@@ -63,11 +63,11 @@
             mobileClass: 't',
             adminStyle: 'background:#fff9db; color:#f08c00; border:1px solid #ffec99;'
         },
-        p: { label: '🔀 T/P',
-            icon: '',
+        p: { label: 'T/P',
+            icon: '⇅',
             publicClass: 'v-partido',
             mobileClass: 'p',
-            adminStyle: 'background:#fef9c3; color:#854d0e; border:1px solid #fde047;'
+            adminStyle: 'background:#ede9fe; color:#5b21b6; border:1px solid #c4b5fd;'
         },
         n: {
             label: 'Noche',
