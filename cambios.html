@@ -35,21 +35,88 @@
             font-size: 2rem;
             line-height: 1;
         }
+        /* ── Premium filter bar ── */
         .changes-toolbar {
-            display: grid;
-            grid-template-columns: 1.3fr 1fr 1fr 1fr 1fr;
-            gap: 10px;
-            margin-bottom: 14px;
-        }
-        .changes-toolbar input,
-        .changes-toolbar select {
-            width: 100%;
-            background: var(--bg3);
-            color: var(--text);
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.65rem;
+            align-items: center;
+            background: var(--surface);
             border: 1px solid var(--border);
-            border-radius: 8px;
-            padding: 11px 12px;
+            border-radius: 18px;
+            padding: 1rem 1.5rem;
+            margin-bottom: 10px;
+            box-shadow: var(--shadow-sm);
+        }
+        .filter-label {
+            font-size: 0.72rem;
+            font-weight: 900;
+            color: var(--text-dim);
+            text-transform: uppercase;
+            letter-spacing: 0.07em;
+            white-space: nowrap;
+            margin-right: 0.2rem;
+        }
+        .filter-group {
+            display: flex;
+            align-items: center;
+            gap: 0.45rem;
+            background: var(--bg2);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 0.3rem 0.7rem;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        .filter-group:focus-within {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(14,165,233,0.12);
+        }
+        .filter-icon { font-size: 0.85rem; opacity: 0.55; }
+        .filter-select, .filter-input {
+            border: none;
+            background: transparent;
+            padding: 0.2rem 0.2rem;
             font-weight: 700;
+            font-family: inherit;
+            font-size: 0.83rem;
+            outline: none;
+            color: var(--text);
+            cursor: pointer;
+            min-width: 120px;
+        }
+        .filter-input { min-width: 160px; cursor: text; }
+        .filter-input::placeholder { color: var(--text-dim); font-weight: 500; }
+        .btn-clear-filters {
+            border: none;
+            background: rgba(239,68,68,0.08);
+            color: #ef4444;
+            padding: 0.3rem 0.85rem;
+            border-radius: 8px;
+            font-weight: 800;
+            font-size: 0.76rem;
+            cursor: pointer;
+            font-family: inherit;
+            transition: background 0.2s;
+            margin-left: auto;
+        }
+        .btn-clear-filters:hover { background: rgba(239,68,68,0.18); }
+        .filter-summary-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+            padding: 0 0.25rem;
+            min-height: 22px;
+        }
+        .filter-summary-text {
+            font-size: 0.78rem;
+            color: var(--text-dim);
+            font-weight: 500;
+        }
+        .filter-results-count {
+            font-size: 0.83rem;
+            font-weight: 700;
+            color: var(--accent);
         }
         .changes-layout {
             display: grid;
@@ -173,20 +240,59 @@
             </div>
 
             <div class="changes-toolbar">
-                <input id="filterSearch" type="search" placeholder="Buscar empleado, hotel u observacion..." autocomplete="off">
-                <select id="filterHotel"><option value="">Todos los hoteles</option></select>
-                <select id="filterType">
-                    <option value="">Todos los tipos</option>
-                    <option value="INTERCAMBIO_TURNO">Intercambio de turno</option>
-                    <option value="CAMBIO_TURNO">Cambio de direccion</option>
-                </select>
-                <select id="filterStatus">
-                    <option value="pendiente">Pendientes</option>
-                    <option value="activo">Activos</option>
-                    <option value="">Todos</option>
-                    <option value="anulado">Anulados</option>
-                </select>
-                <input id="filterMonth" type="month">
+                <span class="filter-label">🔍 Filtros</span>
+
+                <!-- Búsqueda libre -->
+                <div class="filter-group">
+                    <span class="filter-icon">🔎</span>
+                    <input id="filterSearch" type="search" class="filter-input" placeholder="Buscar empleado, hotel..." autocomplete="off">
+                </div>
+
+                <!-- Estado -->
+                <div class="filter-group">
+                    <span class="filter-icon">📋</span>
+                    <select id="filterStatus" class="filter-select">
+                        <option value="pendiente">⏳ Pendientes</option>
+                        <option value="activo">✅ Activos</option>
+                        <option value="">Todos los estados</option>
+                        <option value="anulado">❌ Anulados</option>
+                    </select>
+                </div>
+
+                <!-- Hotel -->
+                <div class="filter-group">
+                    <span class="filter-icon">🏨</span>
+                    <select id="filterHotel" class="filter-select"><option value="">Todos los hoteles</option></select>
+                </div>
+
+                <!-- Tipo -->
+                <div class="filter-group">
+                    <span class="filter-icon">🔄</span>
+                    <select id="filterType" class="filter-select">
+                        <option value="">Cualquier tipo</option>
+                        <option value="INTERCAMBIO_TURNO">Intercambio de turno</option>
+                        <option value="CAMBIO_TURNO">Cambio de dirección</option>
+                    </select>
+                </div>
+
+                <!-- Empleado -->
+                <div class="filter-group">
+                    <span class="filter-icon">👤</span>
+                    <select id="filterEmpleado" class="filter-select"><option value="">Todos los empleados</option></select>
+                </div>
+
+                <!-- Mes -->
+                <div class="filter-group">
+                    <span class="filter-icon">📅</span>
+                    <input id="filterMonth" type="month" class="filter-input" style="min-width:130px;">
+                </div>
+
+                <button class="btn-clear-filters" onclick="clearAllFilters()">✕ Limpiar</button>
+            </div>
+
+            <div class="filter-summary-bar">
+                <div class="filter-summary-text" id="filterSummaryText"></div>
+                <div class="filter-results-count"><span id="filteredCount">0</span> <span style="color:var(--text-dim); font-weight:500;">resultados</span></div>
             </div>
 
             <div class="changes-layout">
@@ -328,12 +434,13 @@
         }
 
         function applyFilters(events) {
-            const q = $('#filterSearch').value.trim().toLowerCase();
-            const hotel = $('#filterHotel').value;
-            const type = $('#filterType').value;
-            const status = $('#filterStatus').value;
-            const month = $('#filterMonth').value;
-            const today = isoToday();
+            const q        = $('#filterSearch').value.trim().toLowerCase();
+            const hotel    = $('#filterHotel').value;
+            const type     = $('#filterType').value;
+            const status   = $('#filterStatus').value;
+            const month    = $('#filterMonth').value;
+            const empleado = $('#filterEmpleado')?.value || '';
+            const today    = isoToday();
 
             return events.filter(event => {
                 const haystack = [
@@ -350,15 +457,44 @@
                 if (status === 'pendiente' && (String(event.estado || 'activo').toLowerCase() === 'anulado' || eventDate(event) < today)) return false;
                 if (status && status !== 'pendiente' && String(event.estado || 'activo').toLowerCase() !== status) return false;
                 if (month && !eventDate(event).startsWith(month)) return false;
+                if (empleado && event.empleado_id !== empleado && event.empleado_destino_id !== empleado) return false;
                 return true;
             }).sort((a, b) => {
                 const da = new Date(eventDate(a) + 'T12:00:00').getTime();
                 const db = new Date(eventDate(b) + 'T12:00:00').getTime();
                 const now = new Date(today + 'T12:00:00').getTime();
-                
-                // Orden por proximidad absoluta a hoy
                 return Math.abs(da - now) - Math.abs(db - now);
             });
+        }
+
+        function updateFilterSummary(filtered) {
+            const q        = $('#filterSearch').value.trim();
+            const hotel    = $('#filterHotel').value;
+            const type     = $('#filterType').value;
+            const status   = $('#filterStatus').value;
+            const month    = $('#filterMonth').value;
+            const empleado = $('#filterEmpleado')?.value || '';
+            const parts    = [];
+            if (status)   parts.push(`Estado: <strong>${$('#filterStatus').options[$('#filterStatus').selectedIndex].textContent}</strong>`);
+            if (hotel)    parts.push(`Hotel: <strong>${hotel}</strong>`);
+            if (type)     parts.push(`Tipo: <strong>${typeLabel[type] || type}</strong>`);
+            if (empleado) parts.push(`Empleado: <strong>${empleado}</strong>`);
+            if (month)    parts.push(`Mes: <strong>${month}</strong>`);
+            if (q)        parts.push(`Texto: <strong>"${q}"</strong>`);
+            const summaryEl = $('#filterSummaryText');
+            if (summaryEl) summaryEl.innerHTML = parts.length ? '🔍 ' + parts.join(' &nbsp;·&nbsp; ') : '';
+            const countEl = $('#filteredCount');
+            if (countEl) countEl.textContent = filtered.length;
+        }
+
+        function clearAllFilters() {
+            $('#filterSearch').value  = '';
+            $('#filterStatus').value  = 'pendiente';
+            $('#filterHotel').value   = '';
+            $('#filterType').value    = '';
+            if ($('#filterEmpleado')) $('#filterEmpleado').value = '';
+            $('#filterMonth').value   = '';
+            renderTable();
         }
 
         function renderStats(events) {
@@ -401,12 +537,23 @@
             select.value = hotels.includes(current) ? current : '';
         }
 
+        function renderEmpleados(events) {
+            const select = $('#filterEmpleado');
+            const current = select.value;
+            const empleados = Array.from(new Set(events.flatMap(e => [
+                e.empleado_id, e.empleado_destino_id
+            ].filter(Boolean)))).sort();
+            select.innerHTML = '<option value="">Todos los empleados</option>' + empleados.map(e => `<option value="${escapeHtml(e)}">${escapeHtml(e)}</option>`).join('');
+            if (current && empleados.includes(current)) select.value = current;
+        }
+
         function renderTable() {
             const filtered = applyFilters(allEvents);
             const body = $('#swapsBody');
+            updateFilterSummary(filtered);
 
             if (!filtered.length) {
-                body.innerHTML = '<tr><td colspan="6" style="padding:4rem; text-align:center; opacity:0.5;">No hay cambios con los filtros seleccionados.</td></tr>';
+                body.innerHTML = '<tr><td colspan="6" style="padding:4rem; text-align:center; opacity:0.5;">No hay cambios con los filtros seleccionados. <a href="#" onclick="clearAllFilters(); return false;">Limpiar filtros</a></td></tr>';
                 return;
             }
 
@@ -444,6 +591,7 @@
             try {
                 allEvents = await loadEvents();
                 renderHotels(allEvents);
+                renderEmpleados(allEvents);
                 renderStats(allEvents);
                 renderNext(allEvents);
                 renderTable();
@@ -673,6 +821,13 @@
                     .channel('changes_realtime')
                     .on('postgres_changes', { event: '*', schema: 'public', table: 'eventos_cuadrante' }, renderSwaps)
                     .subscribe();
+            });
+
+            ['filterSearch', 'filterHotel', 'filterType', 'filterStatus', 'filterMonth', 'filterEmpleado'].forEach(id => {
+                const el = document.getElementById(id);
+                if (!el) return;
+                el.addEventListener('input', renderTable);
+                el.addEventListener('change', renderTable);
             });
         });
     </script>
