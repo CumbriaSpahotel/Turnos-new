@@ -313,19 +313,62 @@
                     <h1 class="page-title" style="font-size: 1.25rem; margin:0; font-weight: 800; letter-spacing: -0.02em;">Panel Operativo de Cambios</h1>
                     <p class="page-subtitle" style="font-size: 0.7rem; margin:0; color: var(--text-dim); font-weight: 500;">Gestión y sincronización de intercambios operativos</p>
                 </div>
-                <div class="header-controls" style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap; justify-content: flex-end;">
-                    <!-- Filter Group: Segmented look -->
-                    <div class="glass-panel" style="display: flex; gap: 0; padding: 0; border-radius: 12px; border: 1px solid var(--border); overflow: hidden; background: var(--bg3); height: 38px; box-shadow: var(--shadow-sm);">
-                        <input type="text" id="chSearch" class="btn-premium" placeholder="🔍 Buscar..." oninput="window.renderChanges()" style="width: 130px; border: none; background: transparent; padding: 0 12px; font-size: 0.75rem; margin:0; height: 100%; font-weight: 600;">
-                        <div style="width:1px; height:100%; background:var(--border);"></div>
-                        <input type="text" id="chRange" class="btn-premium" placeholder="📅 Periodo..." style="width: 150px; border: none; background: transparent; padding: 0 12px; font-size: 0.75rem; margin:0; height: 100%; font-weight: 600;">
-                        <div style="width:1px; height:100%; background:var(--border);"></div>
-                        <select id="chStatus" class="btn-premium" onchange="window.renderChanges()" style="border: none; background: transparent; padding: 0 12px; font-size: 0.75rem; margin:0; height: 100%; cursor:pointer; font-weight: 600; min-width: 120px;">
-                            <option value="activo">Pendientes</option>
-                            <option value="all">Ver Todos</option>
-                            <option value="anulado">Anulados</option>
-                        </select>
+                <div class="header-controls" style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap; justify-content: flex-end;">
+                    <!-- Filter Group -->
+                    <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
+                        <!-- Buscar -->
+                        <div style="display:flex; align-items:center; gap:6px; background:var(--bg3); border:1px solid var(--border); border-radius:10px; padding:4px 10px; height:38px;">
+                            <span style="font-size:0.85rem; opacity:0.6;">🔎</span>
+                            <input type="text" id="chSearch" placeholder="Buscar..." oninput="window.renderChanges()" style="border:none; background:transparent; font-weight:700; color:var(--text); font-size:0.78rem; outline:none; width:110px;">
+                        </div>
+
+                        <!-- Estado -->
+                        <div style="display:flex; align-items:center; gap:6px; background:var(--bg3); border:1px solid var(--border); border-radius:10px; padding:4px 10px; height:38px;">
+                            <span style="font-size:0.85rem; opacity:0.6;">📋</span>
+                            <select id="chStatus" onchange="window.renderChanges()" style="border:none; background:transparent; font-weight:700; color:var(--text); font-size:0.78rem; outline:none; cursor:pointer;">
+                                <option value="activo">⏳ Pendientes</option>
+                                <option value="all">✅ Ver Todos</option>
+                                <option value="anulado">❌ Anulados</option>
+                            </select>
+                        </div>
+
+                        <!-- Hotel -->
+                        <div style="display:flex; align-items:center; gap:6px; background:var(--bg3); border:1px solid var(--border); border-radius:10px; padding:4px 10px; height:38px;">
+                            <span style="font-size:0.85rem; opacity:0.6;">🏨</span>
+                            <select id="chHotel" onchange="window.renderChanges()" style="border:none; background:transparent; font-weight:700; color:var(--text); font-size:0.78rem; outline:none; cursor:pointer;">
+                                <option value="all">Todos los hoteles</option>
+                            </select>
+                        </div>
+
+                        <!-- Tipo -->
+                        <div style="display:flex; align-items:center; gap:6px; background:var(--bg3); border:1px solid var(--border); border-radius:10px; padding:4px 10px; height:38px;">
+                            <span style="font-size:0.85rem; opacity:0.6;">🔄</span>
+                            <select id="chType" onchange="window.renderChanges()" style="border:none; background:transparent; font-weight:700; color:var(--text); font-size:0.78rem; outline:none; cursor:pointer;">
+                                <option value="all">Cualquier tipo</option>
+                                <option value="INTERCAMBIO_TURNO">Intercambio de turno</option>
+                                <option value="CAMBIO_TURNO">Cambio de dirección</option>
+                                <option value="INTERCAMBIO_HOTEL">Intercambio entre hoteles</option>
+                            </select>
+                        </div>
+
+                        <!-- Empleado -->
+                        <div style="display:flex; align-items:center; gap:6px; background:var(--bg3); border:1px solid var(--border); border-radius:10px; padding:4px 10px; height:38px;">
+                            <span style="font-size:0.85rem; opacity:0.6;">👤</span>
+                            <select id="chEmp" onchange="window.renderChanges()" style="border:none; background:transparent; font-weight:700; color:var(--text); font-size:0.78rem; outline:none; cursor:pointer;">
+                                <option value="all">Todos los empleados</option>
+                            </select>
+                        </div>
+
+                        <!-- Rango de Fecha / Periodo -->
+                        <div style="display:flex; align-items:center; gap:6px; background:var(--bg3); border:1px solid var(--border); border-radius:10px; padding:4px 10px; height:38px;">
+                            <span style="font-size:0.85rem; opacity:0.6;">📅</span>
+                            <input type="text" id="chRange" placeholder="Rango de fechas..." style="border:none; background:transparent; font-weight:700; color:var(--text); font-size:0.78rem; outline:none; width:150px;">
+                        </div>
+
+                        <!-- Limpiar -->
+                        <button onclick="window.clearChangesFilters()" style="border:none; background:rgba(239,68,68,0.1); color:#ef4444; padding:6px 12px; border-radius:10px; font-weight:800; font-size:0.75rem; cursor:pointer; height:38px;" title="Limpiar todos los filtros">✕ Limpiar</button>
                     </div>
+
                     <!-- Action Group -->
                     <div style="display: flex; gap: 8px;">
                         <button class="btn-publish-premium" onclick="window.openNewChangeModal()" style="margin:0; padding: 0 16px; font-size: 0.72rem; font-weight: 800; border-radius: 12px; background: linear-gradient(135deg,#6366f1,#4f46e5); border:none; height: 38px; display: flex; align-items: center; gap: 8px; box-shadow: 0 4px 12px rgba(99, 102, 241, 0.25); color: white; cursor: pointer; transition: transform 0.2s;">

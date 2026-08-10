@@ -1849,10 +1849,21 @@ window.renderChanges = async () => {
             });
         }
 
+        const empSel = $('#chEmp');
+        if (empSel && empSel.options.length <= 1) {
+            const allEmpNames = [...new Set(changeSource.flatMap(ev => [ev.empleado_id, ev.empleado_destino_id].filter(Boolean)))].sort();
+            allEmpNames.forEach(e => {
+                const opt = document.createElement('option');
+                opt.value = e; opt.textContent = e;
+                empSel.appendChild(opt);
+            });
+        }
+
         const search = ($('#chSearch')?.value || '').toLowerCase();
         const selHotel = $('#chHotel')?.value || 'all';
         const selType = $('#chType')?.value || 'all';
         const selStatus = $('#chStatus')?.value || 'activo';
+        const selEmp = $('#chEmp')?.value || 'all';
         
         let filtered = changeSource.filter(ev => ['CAMBIO_TURNO', 'INTERCAMBIO_TURNO', 'INTERCAMBIO_HOTEL'].includes(ev.tipo));
         
@@ -1873,6 +1884,7 @@ window.renderChanges = async () => {
         else if (selStatus !== 'all') filtered = filtered.filter(ev => (ev.estado || 'activo') === selStatus);
         if (selHotel !== 'all') filtered = filtered.filter(ev => ev.hotel_origen === selHotel || ev.hotel_destino === selHotel);
         if (selType !== 'all') filtered = filtered.filter(ev => ev.tipo === selType);
+        if (selEmp !== 'all') filtered = filtered.filter(ev => ev.empleado_id === selEmp || ev.empleado_destino_id === selEmp);
         
         if (search) {
             filtered = filtered.filter(ev => 
@@ -2001,6 +2013,19 @@ window.renderChanges = async () => {
         console.error('[CHANGES ERROR]', err);
         if (document.querySelector('#changes-body')) document.querySelector('#changes-body').innerHTML = '<tr><td colspan="7" style="padding:3rem; text-align:center; color:#b91c1c;">Error cargando cambios.</td></tr>';
     }
+};
+
+window.clearChangesFilters = () => {
+    if ($('#chSearch')) $('#chSearch').value = '';
+    if ($('#chStatus')) $('#chStatus').value = 'activo';
+    if ($('#chHotel'))  $('#chHotel').value  = 'all';
+    if ($('#chType'))   $('#chType').value   = 'all';
+    if ($('#chEmp'))    $('#chEmp').value    = 'all';
+    if ($('#chRange'))  {
+        $('#chRange').value = '';
+        if ($('#chRange')._flatpickr) $('#chRange')._flatpickr.clear();
+    }
+    window.renderChanges();
 };
 
 window.ensureChangeEditModal = () => {
