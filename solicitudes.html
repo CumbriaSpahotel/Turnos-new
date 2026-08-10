@@ -179,23 +179,103 @@
 
         .filter-bar {
             display: flex;
-            gap: 1rem;
+            flex-wrap: wrap;
+            gap: 0.75rem;
             align-items: center;
             background: white;
-            padding: 0.75rem 1.25rem;
-            border-radius: 14px;
+            padding: 1rem 1.5rem;
+            border-radius: 18px;
             border: 1px solid var(--border);
             box-shadow: var(--shadow);
+            width: 100%;
+        }
+
+        .filter-label {
+            font-size: 0.75rem;
+            font-weight: 800;
+            color: var(--text-dim);
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            white-space: nowrap;
+            margin-right: 0.25rem;
+        }
+
+        .filter-group {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 0.35rem 0.75rem;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+
+        .filter-group:focus-within {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(14,165,233,0.12);
+        }
+
+        .filter-icon {
+            font-size: 0.9rem;
+            opacity: 0.6;
         }
 
         .select-premium {
-            border: 1px solid var(--border);
-            padding: 0.5rem 1rem;
-            border-radius: 8px;
+            border: none;
+            background: transparent;
+            padding: 0.2rem 0.25rem;
             font-weight: 600;
             font-family: inherit;
             outline: none;
             color: var(--text);
+            font-size: 0.85rem;
+            cursor: pointer;
+            min-width: 140px;
+        }
+
+        .input-premium {
+            border: none;
+            background: transparent;
+            padding: 0.2rem 0.25rem;
+            font-weight: 600;
+            font-family: inherit;
+            outline: none;
+            color: var(--text);
+            font-size: 0.85rem;
+            width: 120px;
+        }
+
+        .btn-clear-filters {
+            border: none;
+            background: rgba(239,68,68,0.08);
+            color: #ef4444;
+            padding: 0.35rem 0.9rem;
+            border-radius: 8px;
+            font-weight: 700;
+            font-size: 0.78rem;
+            cursor: pointer;
+            font-family: inherit;
+            transition: background 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            margin-left: auto;
+        }
+
+        .btn-clear-filters:hover { background: rgba(239,68,68,0.16); }
+
+        .active-filters-count {
+            background: var(--accent);
+            color: white;
+            border-radius: 50%;
+            width: 18px;
+            height: 18px;
+            font-size: 0.65rem;
+            font-weight: 800;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
         }
 
     </style>
@@ -241,18 +321,73 @@
                 </div>
             </header>
 
-            <div class="premium-list-header">
+            <div class="premium-list-header" style="flex-direction: column; align-items: stretch; gap: 1rem;">
                 <div class="filter-bar">
-                    <span style="font-size:0.8rem; font-weight:700; color:var(--text-dim); text-transform:uppercase;">Filtrar por:</span>
-                    <select id="statusFilter" onchange="fetchRequests()" class="select-premium">
-                        <option value="pendiente">Pendientes de Revisión</option>
-                        <option value="aprobada">Aprobadas</option>
-                        <option value="rechazada">Rechazadas</option>
-                        <option value="all">Todas las Solicitudes</option>
-                    </select>
+                    <span class="filter-label">🔍 Filtros</span>
+
+                    <!-- Estado -->
+                    <div class="filter-group">
+                        <span class="filter-icon">📋</span>
+                        <select id="statusFilter" onchange="applyFilters()" class="select-premium">
+                            <option value="all">Todas las Solicitudes</option>
+                            <option value="pendiente">⏳ Pendientes</option>
+                            <option value="aprobada">✅ Aprobadas</option>
+                            <option value="rechazada">❌ Rechazadas</option>
+                        </select>
+                    </div>
+
+                    <!-- Hotel -->
+                    <div class="filter-group">
+                        <span class="filter-icon">🏨</span>
+                        <select id="hotelFilter" onchange="applyFilters()" class="select-premium">
+                            <option value="all">Todos los Hoteles</option>
+                        </select>
+                    </div>
+
+                    <!-- Tipo -->
+                    <div class="filter-group">
+                        <span class="filter-icon">🔄</span>
+                        <select id="tipoFilter" onchange="applyFilters()" class="select-premium">
+                            <option value="all">Cualquier Tipo</option>
+                            <option value="intercambio">Intercambio mutuo</option>
+                            <option value="cambio">Cambio de turno</option>
+                        </select>
+                    </div>
+
+                    <!-- Empleado / Solicitante -->
+                    <div class="filter-group">
+                        <span class="filter-icon">👤</span>
+                        <select id="empleadoFilter" onchange="applyFilters()" class="select-premium">
+                            <option value="all">Todos los Empleados</option>
+                        </select>
+                    </div>
+
+                    <!-- Fecha desde -->
+                    <div class="filter-group">
+                        <span class="filter-icon">📅</span>
+                        <input type="date" id="fechaDesdeFilter" class="input-premium" onchange="applyFilters()" title="Desde fecha">
+                    </div>
+
+                    <!-- Fecha hasta -->
+                    <div class="filter-group">
+                        <span class="filter-icon">📅</span>
+                        <input type="date" id="fechaHastaFilter" class="input-premium" onchange="applyFilters()" title="Hasta fecha">
+                    </div>
+
+                    <!-- Búsqueda libre -->
+                    <div class="filter-group">
+                        <span class="filter-icon">🔎</span>
+                        <input type="text" id="searchFilter" class="input-premium" placeholder="Buscar..." oninput="applyFilters()" style="width:150px;">
+                    </div>
+
+                    <button class="btn-clear-filters" onclick="clearFilters()" title="Limpiar filtros">✕ Limpiar</button>
                 </div>
-                <div style="font-size:0.85rem; font-weight:600; color:var(--text-dim);">
-                    <span id="resultsCount">0</span> solicitudes encontradas
+
+                <div style="display:flex; justify-content:space-between; align-items:center; padding: 0 0.25rem;">
+                    <div style="font-size:0.8rem; color:var(--text-dim); font-weight:500;" id="activeFiltersSummary"></div>
+                    <div style="font-size:0.85rem; font-weight:700; color:var(--accent);">
+                        <span id="resultsCount">0</span> <span style="color:var(--text-dim); font-weight:500;">resultados</span>
+                    </div>
                 </div>
             </div>
 
@@ -270,102 +405,197 @@
     <script src="supabase-config.js?v=11.1"></script>
     <script>
         const $ = (s) => document.querySelector(s);
-        let _allRequests = [];
-        
+        let _allRequests = [];   // datos crudos de la BD
+        let _filtered    = [];   // resultado tras aplicar filtros
+
+        /* ─── Poblar selectores dinámicos ─── */
+        function populateDynamicFilters(data) {
+            const hotelSel    = $('#hotelFilter');
+            const empleadoSel = $('#empleadoFilter');
+
+            const hotels   = [...new Set(data.map(r => r.hotel).filter(Boolean))].sort();
+            const empleados = [...new Set(data.flatMap(r => [r.solicitante, r.companero].filter(Boolean)))].sort();
+
+            // Hoteles
+            const prevHotel = hotelSel.value;
+            hotelSel.innerHTML = '<option value="all">Todos los Hoteles</option>';
+            hotels.forEach(h => {
+                const opt = document.createElement('option');
+                opt.value = h; opt.textContent = h;
+                hotelSel.appendChild(opt);
+            });
+            if (prevHotel) hotelSel.value = prevHotel;
+
+            // Empleados
+            const prevEmp = empleadoSel.value;
+            empleadoSel.innerHTML = '<option value="all">Todos los Empleados</option>';
+            empleados.forEach(e => {
+                const opt = document.createElement('option');
+                opt.value = e; opt.textContent = e;
+                empleadoSel.appendChild(opt);
+            });
+            if (prevEmp) empleadoSel.value = prevEmp;
+        }
+
+        /* ─── Carga inicial de datos ─── */
         async function fetchRequests() {
             const list = $('#requestsList');
-            const filter = $('#statusFilter').value;
-            
+            list.innerHTML = `<div style="text-align:center; padding:5rem; opacity:0.3;">
+                <i class="fas fa-spinner fa-spin fa-2x"></i>
+                <p style="margin-top:1rem; font-weight:600;">Sincronizando...</p>
+            </div>`;
             try {
-                const today = new Date().toISOString().split('T')[0];
                 const data = await window.TurnosDB.fetchPeticiones();
-                
-                let filtered = (filter === 'all' ? data : data.filter(r => r.estado === filter));
-                
-                // Si es pendiente, mostramos solo las que son de hoy o futuro para evitar ruido histórico,
-                // PERO permitimos ver todo si se filtra específicamente por Pendiente (regla de oro: no ocultar datos útiles)
-                // Ajuste: si el filtro es 'pendiente', mostramos TODAS las pendientes.
-                
-                filtered.sort((a,b) => b.created_at.localeCompare(a.created_at));
-                _allRequests = filtered;
-                $('#resultsCount').textContent = filtered.length;
-
-                if (filtered.length === 0) {
-                    list.innerHTML = `
-                        <div class="glass-panel" style="text-align:center; opacity:0.5; padding:5rem; border-radius:24px;">
-                            <div style="font-size:3rem; margin-bottom:1rem;">📭</div>
-                            <h3 style="font-family:'Outfit', sans-serif;">No hay solicitudes registradas</h3>
-                            <p>Cuando un empleado envíe un cambio, aparecerá aquí.</p>
-                        </div>`;
-                    return;
-                }
-
-                list.innerHTML = filtered.map(req => {
-                    const statusCls = req.estado || 'pendiente';
-                    const fechas = Array.isArray(req.fechas) ? req.fechas : [];
-                    const dateFmt = new Date(req.created_at).toLocaleString('es-ES', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
-                    
-                    return `
-                        <div class="request-card ${statusCls}">
-                            <div class="request-header">
-                                <div>
-                                    <span class="hotel-badge">${req.hotel || 'CENTRO SIN DEFINIR'}</span>
-                                    <h3 class="request-title">
-                                        ${req.solicitante} 
-                                        ${req.companero ? ` <span style="font-weight:400; opacity:0.6; font-size:0.9em; margin:0 4px;">&</span> ${req.companero}` : ''}
-                                    </h3>
-                                    <div class="request-subtitle">
-                                        Petición de ${req.companero ? 'intercambio mutuo' : 'cambio de turno'} &bull; ${dateFmt}
-                                    </div>
-                                </div>
-                                
-                                <div style="text-align:right;">
-                                    <div class="status-pill ${statusCls}">${req.estado}</div>
-                                    <div class="action-group">
-                                        ${req.estado === 'pendiente' ? `
-                                            <button class="btn-action btn-reject" onclick="handleAction('${req.id}', 'rechazada')">Denegar</button>
-                                            <button class="btn-action btn-approve" onclick="handleAction('${req.id}', 'aprobada')">Aprobar</button>
-                                        ` : `
-                                            <button class="btn-action btn-reset" onclick="handleAction('${req.id}', 'pendiente')">🔄 Reabrir</button>
-                                        `}
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="date-grid">
-                                ${fechas.map(f => `
-                                    <div class="date-card">
-                                        <div class="date-label">📅 ${window.TurnosDB.fmtDateLegacy(f.fecha, true)}</div>
-                                        <div class="shift-swap">
-                                            <span class="shift-badge origen">${f.origen || 'BASE'}</span>
-                                            <span style="opacity:0.3;">→</span>
-                                            <span class="shift-badge destino">${f.destino}</span>
-                                        </div>
-                                        ${f.nota ? `<div style="font-size:0.75rem; color:var(--text-dim);">"${f.nota}"</div>` : ''}
-                                    </div>
-                                `).join('')}
-                            </div>
-                            
-                            ${req.observaciones ? `
-                                <div class="obs-box">
-                                    <strong>Nota del solicitante:</strong> "${req.observaciones}"
-                                </div>
-                            ` : ''}
-                        </div>
-                    `;
-                }).join('');
-
+                data.sort((a,b) => b.created_at.localeCompare(a.created_at));
+                _allRequests = data;
+                populateDynamicFilters(data);
+                applyFilters();
             } catch (err) {
                 console.error(err);
                 list.innerHTML = `<div class="alert error">Error de conexión: ${err.message}</div>`;
             }
         }
 
+        /* ─── Aplicar todos los filtros ─── */
+        function applyFilters() {
+            const status     = $('#statusFilter').value;
+            const hotel      = $('#hotelFilter').value;
+            const tipo       = $('#tipoFilter').value;
+            const empleado   = $('#empleadoFilter').value;
+            const fechaDesde = $('#fechaDesdeFilter').value;   // 'YYYY-MM-DD' o ''
+            const fechaHasta = $('#fechaHastaFilter').value;
+            const search     = ($('#searchFilter').value || '').toLowerCase().trim();
+
+            _filtered = _allRequests.filter(r => {
+                // Estado
+                if (status !== 'all' && r.estado !== status) return false;
+                // Hotel
+                if (hotel !== 'all' && r.hotel !== hotel) return false;
+                // Tipo
+                if (tipo === 'intercambio' && !r.companero) return false;
+                if (tipo === 'cambio'       &&  r.companero) return false;
+                // Empleado
+                if (empleado !== 'all' && r.solicitante !== empleado && r.companero !== empleado) return false;
+                // Fecha creación (rango)
+                if (fechaDesde || fechaHasta) {
+                    const d = r.created_at ? r.created_at.slice(0,10) : '';
+                    if (fechaDesde && d < fechaDesde) return false;
+                    if (fechaHasta && d > fechaHasta) return false;
+                }
+                // Búsqueda libre
+                if (search) {
+                    const hay = [r.solicitante, r.companero, r.hotel, r.observaciones]
+                        .filter(Boolean).join(' ').toLowerCase();
+                    if (!hay.includes(search)) return false;
+                }
+                return true;
+            });
+
+            renderList(_filtered);
+            updateFilterSummary({ status, hotel, tipo, empleado, fechaDesde, fechaHasta, search });
+        }
+
+        /* ─── Resumen de filtros activos ─── */
+        function updateFilterSummary({ status, hotel, tipo, empleado, fechaDesde, fechaHasta, search }) {
+            const parts = [];
+            if (status    !== 'all')  parts.push(`Estado: <strong>${$('#statusFilter').options[$('#statusFilter').selectedIndex].textContent}</strong>`);
+            if (hotel     !== 'all')  parts.push(`Hotel: <strong>${hotel}</strong>`);
+            if (tipo      !== 'all')  parts.push(`Tipo: <strong>${tipo === 'intercambio' ? 'Intercambio' : 'Cambio'}</strong>`);
+            if (empleado  !== 'all')  parts.push(`Empleado: <strong>${empleado}</strong>`);
+            if (fechaDesde)           parts.push(`Desde: <strong>${fechaDesde}</strong>`);
+            if (fechaHasta)           parts.push(`Hasta: <strong>${fechaHasta}</strong>`);
+            if (search)               parts.push(`Texto: <strong>"${search}"</strong>`);
+            $('#activeFiltersSummary').innerHTML = parts.length ? '🔍 ' + parts.join(' &nbsp;·&nbsp; ') : '';
+        }
+
+        /* ─── Limpiar filtros ─── */
+        function clearFilters() {
+            $('#statusFilter').value    = 'all';
+            $('#hotelFilter').value     = 'all';
+            $('#tipoFilter').value      = 'all';
+            $('#empleadoFilter').value  = 'all';
+            $('#fechaDesdeFilter').value = '';
+            $('#fechaHastaFilter').value = '';
+            $('#searchFilter').value    = '';
+            applyFilters();
+        }
+
+        /* ─── Renderizar lista ─── */
+        function renderList(filtered) {
+            const list = $('#requestsList');
+            $('#resultsCount').textContent = filtered.length;
+
+            if (filtered.length === 0) {
+                list.innerHTML = `
+                    <div class="glass-panel" style="text-align:center; opacity:0.5; padding:5rem; border-radius:24px;">
+                        <div style="font-size:3rem; margin-bottom:1rem;">📭</div>
+                        <h3 style="font-family:'Outfit', sans-serif;">Sin resultados para estos filtros</h3>
+                        <p>Prueba a cambiar los filtros o <a href="#" onclick="clearFilters(); return false;">límpialos todos</a>.</p>
+                    </div>`;
+                return;
+            }
+
+            list.innerHTML = filtered.map(req => {
+                const statusCls = req.estado || 'pendiente';
+                const fechas    = Array.isArray(req.fechas) ? req.fechas : [];
+                const dateFmt   = new Date(req.created_at).toLocaleString('es-ES', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
+
+                return `
+                    <div class="request-card ${statusCls}">
+                        <div class="request-header">
+                            <div>
+                                <span class="hotel-badge">${req.hotel || 'CENTRO SIN DEFINIR'}</span>
+                                <h3 class="request-title">
+                                    ${req.solicitante}
+                                    ${req.companero ? ` <span style="font-weight:400; opacity:0.6; font-size:0.9em; margin:0 4px;">&amp;</span> ${req.companero}` : ''}
+                                </h3>
+                                <div class="request-subtitle">
+                                    Petición de ${req.companero ? 'intercambio mutuo' : 'cambio de turno'} &bull; ${dateFmt}
+                                </div>
+                            </div>
+
+                            <div style="text-align:right;">
+                                <div class="status-pill ${statusCls}">${req.estado}</div>
+                                <div class="action-group">
+                                    ${req.estado === 'pendiente' ? `
+                                        <button class="btn-action btn-reject" onclick="handleAction('${req.id}', 'rechazada')">Denegar</button>
+                                        <button class="btn-action btn-approve" onclick="handleAction('${req.id}', 'aprobada')">Aprobar</button>
+                                    ` : `
+                                        <button class="btn-action btn-reset" onclick="handleAction('${req.id}', 'pendiente')">🔄 Reabrir</button>
+                                    `}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="date-grid">
+                            ${fechas.map(f => `
+                                <div class="date-card">
+                                    <div class="date-label">📅 ${window.TurnosDB.fmtDateLegacy(f.fecha, true)}</div>
+                                    <div class="shift-swap">
+                                        <span class="shift-badge origen">${f.origen || 'BASE'}</span>
+                                        <span style="opacity:0.3;">→</span>
+                                        <span class="shift-badge destino">${f.destino}</span>
+                                    </div>
+                                    ${f.nota ? `<div style="font-size:0.75rem; color:var(--text-dim);">"${f.nota}"</div>` : ''}
+                                </div>
+                            `).join('')}
+                        </div>
+
+                        ${req.observaciones ? `
+                            <div class="obs-box">
+                                <strong>Nota del solicitante:</strong> "${req.observaciones}"
+                            </div>
+                        ` : ''}
+                    </div>
+                `;
+            }).join('');
+        }
+
         async function handleAction(id, newState) {
             const peticion = _allRequests.find(r => r.id === id);
             if (!peticion) return;
 
-            const confirmMsg = newState === 'aprobada' 
+            const confirmMsg = newState === 'aprobada'
                 ? `¿Aprobar solicitud de ${peticion.solicitante}? El cuadrante se actualizará automáticamente.`
                 : (newState === 'rechazada' ? `¿Denegar solicitud?` : `¿Mover de nuevo a pendiente?`);
 
@@ -379,7 +609,7 @@
                 }
                 fetchRequests();
             } catch (e) {
-                alert("Error: " + e.message);
+                alert('Error: ' + e.message);
             }
         }
 
