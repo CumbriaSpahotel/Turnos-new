@@ -2368,6 +2368,8 @@ window.renderRequests = async () => {
         if (!window._requestsTipoFilter)   window._requestsTipoFilter = 'all';
         if (!window._requestsEmpFilter)    window._requestsEmpFilter = 'all';
         if (!window._requestsSearchFilter) window._requestsSearchFilter = '';
+        if (!window._requestsDateStart)    window._requestsDateStart = '';
+        if (!window._requestsDateEnd)      window._requestsDateEnd = '';
 
         const data = await window.TurnosDB.fetchPeticiones();
         console.log("[ADMIN] Peticiones recibidas:", data.length);
@@ -2418,10 +2420,22 @@ window.renderRequests = async () => {
                     </select>
                 </div>
 
+                <!-- Fecha Desde -->
+                <div style="display:flex; align-items:center; gap:6px; background:#f8fafc; border:1px solid #cbd5e1; border-radius:10px; padding:4px 10px;" title="Desde fecha">
+                    <span style="font-size:0.85rem;">📅</span>
+                    <input type="date" id="requestsDateStart" value="${escapeHtml(window._requestsDateStart)}" style="border:none; background:transparent; font-weight:700; color:#1e293b; font-size:0.83rem; outline:none; width:120px;" onchange="window._requestsDateStart = this.value; window.applyRequestsFilters()">
+                </div>
+
+                <!-- Fecha Hasta -->
+                <div style="display:flex; align-items:center; gap:6px; background:#f8fafc; border:1px solid #cbd5e1; border-radius:10px; padding:4px 10px;" title="Hasta fecha">
+                    <span style="font-size:0.85rem;">📅</span>
+                    <input type="date" id="requestsDateEnd" value="${escapeHtml(window._requestsDateEnd)}" style="border:none; background:transparent; font-weight:700; color:#1e293b; font-size:0.83rem; outline:none; width:120px;" onchange="window._requestsDateEnd = this.value; window.applyRequestsFilters()">
+                </div>
+
                 <!-- Búsqueda libre -->
                 <div style="display:flex; align-items:center; gap:6px; background:#f8fafc; border:1px solid #cbd5e1; border-radius:10px; padding:4px 10px;">
                     <span style="font-size:0.85rem;">🔎</span>
-                    <input type="text" id="requestsSearchFilter" placeholder="Buscar..." value="${escapeHtml(window._requestsSearchFilter)}" style="border:none; background:transparent; font-weight:700; color:#1e293b; font-size:0.83rem; outline:none; width:130px;" oninput="window._requestsSearchFilter = this.value; window.applyRequestsFilters()">
+                    <input type="text" id="requestsSearchFilter" placeholder="Buscar..." value="${escapeHtml(window._requestsSearchFilter)}" style="border:none; background:transparent; font-weight:700; color:#1e293b; font-size:0.83rem; outline:none; width:120px;" oninput="window._requestsSearchFilter = this.value; window.applyRequestsFilters()">
                 </div>
 
                 <!-- Botón Limpiar -->
@@ -2451,6 +2465,8 @@ window.applyRequestsFilters = () => {
     const hotel = window._requestsHotelFilter || 'all';
     const tipo = window._requestsTipoFilter || 'all';
     const empleado = window._requestsEmpFilter || 'all';
+    const dateStart = window._requestsDateStart || '';
+    const dateEnd = window._requestsDateEnd || '';
     const search = (window._requestsSearchFilter || '').toLowerCase().trim();
 
     const filtered = data.filter(req => {
@@ -2459,6 +2475,21 @@ window.applyRequestsFilters = () => {
         if (tipo === 'intercambio' && !req.companero) return false;
         if (tipo === 'cambio' && req.companero) return false;
         if (empleado !== 'all' && req.solicitante !== empleado && req.companero !== empleado) return false;
+
+        if (dateStart || dateEnd) {
+            const createdDate = req.created_at ? req.created_at.slice(0, 10) : '';
+            const shiftDates = Array.isArray(req.fechas) ? req.fechas.map(f => f.fecha).filter(Boolean) : [];
+            const allDates = [createdDate, ...shiftDates];
+
+            const matchesDate = allDates.some(d => {
+                if (!d) return false;
+                if (dateStart && d < dateStart) return false;
+                if (dateEnd && d > dateEnd) return false;
+                return true;
+            });
+            if (!matchesDate) return false;
+        }
+
         if (search) {
             const haystack = [req.solicitante, req.companero, req.hotel, req.observaciones, req.motivo, req.observacion]
                 .filter(Boolean).join(' ').toLowerCase();
@@ -2475,6 +2506,8 @@ window.applyRequestsFilters = () => {
     if (hotel !== 'all') summaryParts.push(`Hotel: <strong>${hotel}</strong>`);
     if (tipo !== 'all') summaryParts.push(`Tipo: <strong>${tipo}</strong>`);
     if (empleado !== 'all') summaryParts.push(`Empleado: <strong>${empleado}</strong>`);
+    if (dateStart) summaryParts.push(`Desde: <strong>${dateStart}</strong>`);
+    if (dateEnd) summaryParts.push(`Hasta: <strong>${dateEnd}</strong>`);
     if (search) summaryParts.push(`Texto: <strong>"${search}"</strong>`);
     const summaryEl = $('#requestsFilterSummary');
     if (summaryEl) summaryEl.innerHTML = summaryParts.length ? '🔍 ' + summaryParts.join(' &nbsp;·&nbsp; ') : '';
@@ -2560,12 +2593,16 @@ window.clearRequestsFilters = () => {
     window._requestsTipoFilter   = 'all';
     window._requestsEmpFilter    = 'all';
     window._requestsSearchFilter = '';
+    window._requestsDateStart    = '';
+    window._requestsDateEnd      = '';
     
     if ($('#requestsFilter'))       $('#requestsFilter').value       = 'all';
     if ($('#requestsHotelFilter'))  $('#requestsHotelFilter').value  = 'all';
     if ($('#requestsTipoFilter'))   $('#requestsTipoFilter').value   = 'all';
     if ($('#requestsEmpFilter'))    $('#requestsEmpFilter').value    = 'all';
     if ($('#requestsSearchFilter')) $('#requestsSearchFilter').value = '';
+    if ($('#requestsDateStart'))    $('#requestsDateStart').value    = '';
+    if ($('#requestsDateEnd'))      $('#requestsDateEnd').value      = '';
     
     window.applyRequestsFilters();
 };
