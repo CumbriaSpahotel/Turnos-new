@@ -2359,108 +2359,215 @@ window.openNewChangeModal = async () => {
 // ==========================================
 window.renderRequests = async () => {
     try {
-    console.log("[ADMIN] Iniciando renderRequests...");
-    const container = $('#changes-content');
-    if (!container) return;
-    
-    if (!window._requestsFilter) window._requestsFilter = 'pendiente';
+        console.log("[ADMIN] Iniciando renderRequests...");
+        const container = $('#changes-content');
+        if (!container) return;
 
-    container.innerHTML = `
-        <div class="requests-toolbar" style="display:flex; align-items:center; gap:20px; margin-bottom:20px; background:white; padding:15px 25px; border-radius:16px; border:1px solid #e2e8f0; box-shadow:0 4px 6px -1px rgba(0,0,0,0.05);">
-            <div style="font-size:0.75rem; font-weight:800; color:#64748b; text-transform:uppercase; letter-spacing:0.05em;">Filtrar por:</div>
-            <select id="requestsFilter" class="toolbar-input" style="padding:8px 15px; border-radius:10px; border:1px solid #cbd5e1; background:#f8fafc; font-weight:700; color:#1e293b; cursor:pointer;" onchange="window._requestsFilter = this.value; window.renderRequests()">
-                <option value="pendiente" ${window._requestsFilter === 'pendiente' ? 'selected' : ''}>Pendientes de Revisión</option>
-                <option value="aprobada" ${window._requestsFilter === 'aprobada' ? 'selected' : ''}>Aprobadas</option>
-                <option value="rechazada" ${window._requestsFilter === 'rechazada' ? 'selected' : ''}>Rechazadas</option>
-                <option value="all" ${window._requestsFilter === 'all' ? 'selected' : ''}>Todas las Solicitudes</option>
-            </select>
-            <div id="requestsCount" style="margin-left:auto; font-size:0.8rem; font-weight:700; color:#0ea5e9;">Cargando...</div>
-        </div>
-        <div id="requests-list">
-            <div style="padding:4rem; text-align:center; opacity:0.5;"><i class="fas fa-spinner fa-spin"></i> Cargando solicitudes...</div>
-        </div>
-    `;
+        if (!window._requestsFilter)       window._requestsFilter = 'pendiente';
+        if (!window._requestsHotelFilter)  window._requestsHotelFilter = 'all';
+        if (!window._requestsTipoFilter)   window._requestsTipoFilter = 'all';
+        if (!window._requestsEmpFilter)    window._requestsEmpFilter = 'all';
+        if (!window._requestsSearchFilter) window._requestsSearchFilter = '';
 
         const data = await window.TurnosDB.fetchPeticiones();
         console.log("[ADMIN] Peticiones recibidas:", data.length);
-        
-        let filtered = data;
-        if (window._requestsFilter !== 'all') {
-            filtered = data.filter(r => r.estado === window._requestsFilter);
-        }
 
-        $('#requestsCount').textContent = `${filtered.length} resultados`;
-        const listContainer = $('#requests-list');
+        const hotels = [...new Set(data.map(r => r.hotel).filter(Boolean))].sort();
+        const empleados = [...new Set(data.flatMap(r => [r.solicitante, r.companero].filter(Boolean)))].sort();
 
-        if (filtered.length === 0) {
-            listContainer.innerHTML = '<div style="padding:4rem; text-align:center; opacity:0.5;">No hay solicitudes que coincidan con el filtro.</div>';
-            return;
-        }
-
-        listContainer.innerHTML = filtered.map(req => {
-            const statusLabel = req.estado === 'pendiente' ? 'Pendiente' : (req.estado === 'aprobada' ? 'Aprobada' : 'Rechazada');
-            const statusColor = req.estado === 'pendiente' ? '#f59e0b' : (req.estado === 'aprobada' ? '#10b981' : '#ef4444');
-            const borderCol = req.estado === 'pendiente' ? '#f59e0b' : (req.estado === 'aprobada' ? '#10b981' : '#ef4444');
-
-            return `
-                <div class="request-card-admin" style="background:white; border:1px solid #e2e8f0; border-radius:16px; padding:20px; margin-bottom:16px; box-shadow:0 4px 6px -1px rgba(0,0,0,0.05); border-left:6px solid ${borderCol};">
-                    <div style="display:flex; justify-content:space-between; align-items:flex-start;">
-                        <div>
-                            <div style="display:flex; align-items:center; gap:8px;">
-                                <div style="font-size:0.7rem; font-weight:800; color:#0ea5e9; text-transform:uppercase;">${req.hotel}</div>
-                                <span style="font-size:0.65rem; padding:2px 8px; border-radius:10px; background:${statusColor}22; color:${statusColor}; font-weight:800; text-transform:uppercase;">${statusLabel}</span>
-                            </div>
-                            <h3 style="font-size:1.1rem; font-weight:800; margin:4px 0;">${req.solicitante} ${req.companero ? '& ' + req.companero : ''}</h3>
-                            <div style="font-size:0.8rem; color:#64748b;">Solicitado el ${new Date(req.created_at).toLocaleString()}</div>
-                        </div>
-                        ${req.estado === 'pendiente' ? `
-                            <div style="display:flex; gap:8px;">
-                                <button onclick="window.handleRequestAction('${req.id}', 'rechazada')" style="background:#fee2e2; color:#991b1b; border:none; padding:8px 16px; border-radius:8px; font-weight:700; cursor:pointer;">Denegar</button>
-                                <button onclick="window.handleRequestAction('${req.id}', 'aprobada')" style="background:#dcfce7; color:#166534; border:none; padding:8px 16px; border-radius:8px; font-weight:700; cursor:pointer;">Aprobar</button>
-                            </div>
-                        ` : `
-                            <button onclick="window.handleRequestAction('${req.id}', 'pendiente')" style="background:#f1f5f9; color:#475569; border:none; padding:8px 16px; border-radius:8px; font-weight:700; cursor:pointer;">Resetear a Pendiente</button>
-                        `}
-                    </div>
-                    <div style="margin-top:16px; display:grid; grid-template-columns:repeat(auto-fill, minmax(200px, 1fr)); gap:12px;">
-                        ${(req.fechas || []).map(f => `
-                            <div style="background:#f8fafc; padding:12px; border-radius:12px; border:1px solid #e2e8f0;">
-                                <div style="font-weight:800; font-size:0.85rem;">${f.fecha}</div>
-                                <div style="font-size:0.8rem; color:#64748b;">${f.origen} → ${f.destino}</div>
-                            </div>
-                        `).join('')}
-                    </div>
-                    ${(function() {
-                        const _motivo = req.motivo || req.observacion || req.comentario
-                            || (req.payload && (req.payload.motivo || req.payload.observacion || req.payload.comentario))
-                            || '';
-                        const _obsAdmin = req.observacion_admin || req.nota_admin
-                            || (req.payload && req.payload.observacion_admin)
-                            || '';
-                        if (!_motivo && !_obsAdmin) return '';
-                        let _html = '<div style="margin-top:12px; padding:12px 14px; background:#f1f5f9; border-radius:10px; border-left:3px solid #cbd5e1; font-size:0.8rem;">';
-                        if (_motivo) {
-                            _html += '<div style="margin-bottom:' + (_obsAdmin ? '8px' : '0') + ';">'
-                                + '<span style="display:block; font-weight:800; color:#475569; font-size:0.68rem; text-transform:uppercase; letter-spacing:0.06em; margin-bottom:3px;">Motivo de la solicitud</span>'
-                                + '<span style="color:#0f172a; font-weight:600;">' + escapeHtml(_motivo) + '</span>'
-                                + '</div>';
-                        }
-                        if (_obsAdmin) {
-                            _html += '<div>'
-                                + '<span style="display:block; font-weight:800; color:#0ea5e9; font-size:0.68rem; text-transform:uppercase; letter-spacing:0.06em; margin-bottom:3px;">Observación admin</span>'
-                                + '<span style="color:#334155;">' + escapeHtml(_obsAdmin) + '</span>'
-                                + '</div>';
-                        }
-                        _html += '</div>';
-                        return _html;
-                    }())}
+        container.innerHTML = `
+            <div class="requests-toolbar" style="display:flex; flex-wrap:wrap; gap:10px; align-items:center; margin-bottom:14px; background:white; padding:16px 20px; border-radius:18px; border:1px solid #e2e8f0; box-shadow:0 4px 6px -1px rgba(0,0,0,0.05);">
+                <div style="font-size:0.75rem; font-weight:800; color:#64748b; text-transform:uppercase; letter-spacing:0.05em; margin-right:4px;">🔍 Filtros:</div>
+                
+                <!-- Estado -->
+                <div style="display:flex; align-items:center; gap:6px; background:#f8fafc; border:1px solid #cbd5e1; border-radius:10px; padding:4px 10px;">
+                    <span style="font-size:0.85rem;">📋</span>
+                    <select id="requestsFilter" style="border:none; background:transparent; font-weight:700; color:#1e293b; font-size:0.83rem; outline:none; cursor:pointer;" onchange="window._requestsFilter = this.value; window.applyRequestsFilters()">
+                        <option value="all" ${window._requestsFilter === 'all' ? 'selected' : ''}>Todas las solicitudes</option>
+                        <option value="pendiente" ${window._requestsFilter === 'pendiente' ? 'selected' : ''}>⏳ Pendientes</option>
+                        <option value="aprobada" ${window._requestsFilter === 'aprobada' ? 'selected' : ''}>✅ Aprobadas</option>
+                        <option value="rechazada" ${window._requestsFilter === 'rechazada' ? 'selected' : ''}>❌ Rechazadas</option>
+                    </select>
                 </div>
-            `;
-        }).join('');
-    } catch (e) { 
+
+                <!-- Hotel -->
+                <div style="display:flex; align-items:center; gap:6px; background:#f8fafc; border:1px solid #cbd5e1; border-radius:10px; padding:4px 10px;">
+                    <span style="font-size:0.85rem;">🏨</span>
+                    <select id="requestsHotelFilter" style="border:none; background:transparent; font-weight:700; color:#1e293b; font-size:0.83rem; outline:none; cursor:pointer;" onchange="window._requestsHotelFilter = this.value; window.applyRequestsFilters()">
+                        <option value="all">Todos los hoteles</option>
+                        ${hotels.map(h => `<option value="${escapeHtml(h)}" ${window._requestsHotelFilter === h ? 'selected' : ''}>${escapeHtml(h)}</option>`).join('')}
+                    </select>
+                </div>
+
+                <!-- Tipo -->
+                <div style="display:flex; align-items:center; gap:6px; background:#f8fafc; border:1px solid #cbd5e1; border-radius:10px; padding:4px 10px;">
+                    <span style="font-size:0.85rem;">🔄</span>
+                    <select id="requestsTipoFilter" style="border:none; background:transparent; font-weight:700; color:#1e293b; font-size:0.83rem; outline:none; cursor:pointer;" onchange="window._requestsTipoFilter = this.value; window.applyRequestsFilters()">
+                        <option value="all" ${window._requestsTipoFilter === 'all' ? 'selected' : ''}>Cualquier tipo</option>
+                        <option value="intercambio" ${window._requestsTipoFilter === 'intercambio' ? 'selected' : ''}>Intercambio mutuo</option>
+                        <option value="cambio" ${window._requestsTipoFilter === 'cambio' ? 'selected' : ''}>Cambio de turno</option>
+                    </select>
+                </div>
+
+                <!-- Empleado -->
+                <div style="display:flex; align-items:center; gap:6px; background:#f8fafc; border:1px solid #cbd5e1; border-radius:10px; padding:4px 10px;">
+                    <span style="font-size:0.85rem;">👤</span>
+                    <select id="requestsEmpFilter" style="border:none; background:transparent; font-weight:700; color:#1e293b; font-size:0.83rem; outline:none; cursor:pointer;" onchange="window._requestsEmpFilter = this.value; window.applyRequestsFilters()">
+                        <option value="all">Todos los empleados</option>
+                        ${empleados.map(e => `<option value="${escapeHtml(e)}" ${window._requestsEmpFilter === e ? 'selected' : ''}>${escapeHtml(e)}</option>`).join('')}
+                    </select>
+                </div>
+
+                <!-- Búsqueda libre -->
+                <div style="display:flex; align-items:center; gap:6px; background:#f8fafc; border:1px solid #cbd5e1; border-radius:10px; padding:4px 10px;">
+                    <span style="font-size:0.85rem;">🔎</span>
+                    <input type="text" id="requestsSearchFilter" placeholder="Buscar..." value="${escapeHtml(window._requestsSearchFilter)}" style="border:none; background:transparent; font-weight:700; color:#1e293b; font-size:0.83rem; outline:none; width:130px;" oninput="window._requestsSearchFilter = this.value; window.applyRequestsFilters()">
+                </div>
+
+                <!-- Botón Limpiar -->
+                <button onclick="window.clearRequestsFilters()" style="border:none; background:rgba(239,68,68,0.1); color:#ef4444; padding:6px 12px; border-radius:8px; font-weight:800; font-size:0.78rem; cursor:pointer; margin-left:auto;">✕ Limpiar</button>
+            </div>
+
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; padding:0 4px;">
+                <div id="requestsFilterSummary" style="font-size:0.78rem; color:#64748b; font-weight:500;"></div>
+                <div id="requestsCount" style="font-size:0.85rem; font-weight:700; color:#0ea5e9;">0 resultados</div>
+            </div>
+
+            <div id="requests-list"></div>
+        `;
+
+        window._rawRequestsData = data;
+        window.applyRequestsFilters();
+
+    } catch (e) {
         console.error("[ADMIN ERROR] renderRequests:", e);
-        container.innerHTML = '<div style="padding:2rem; color:red; font-weight:800;">❌ Error cargando solicitudes: ' + e.message + '</div>'; 
+        container.innerHTML = '<div style="padding:2rem; color:red; font-weight:800;">❌ Error cargando solicitudes: ' + e.message + '</div>';
     }
+};
+
+window.applyRequestsFilters = () => {
+    const data = window._rawRequestsData || [];
+    const status = window._requestsFilter || 'all';
+    const hotel = window._requestsHotelFilter || 'all';
+    const tipo = window._requestsTipoFilter || 'all';
+    const empleado = window._requestsEmpFilter || 'all';
+    const search = (window._requestsSearchFilter || '').toLowerCase().trim();
+
+    const filtered = data.filter(req => {
+        if (status !== 'all' && req.estado !== status) return false;
+        if (hotel !== 'all' && req.hotel !== hotel) return false;
+        if (tipo === 'intercambio' && !req.companero) return false;
+        if (tipo === 'cambio' && req.companero) return false;
+        if (empleado !== 'all' && req.solicitante !== empleado && req.companero !== empleado) return false;
+        if (search) {
+            const haystack = [req.solicitante, req.companero, req.hotel, req.observaciones, req.motivo, req.observacion]
+                .filter(Boolean).join(' ').toLowerCase();
+            if (!haystack.includes(search)) return false;
+        }
+        return true;
+    });
+
+    const countEl = $('#requestsCount');
+    if (countEl) countEl.textContent = `${filtered.length} resultados`;
+
+    const summaryParts = [];
+    if (status !== 'all') summaryParts.push(`Estado: <strong>${status}</strong>`);
+    if (hotel !== 'all') summaryParts.push(`Hotel: <strong>${hotel}</strong>`);
+    if (tipo !== 'all') summaryParts.push(`Tipo: <strong>${tipo}</strong>`);
+    if (empleado !== 'all') summaryParts.push(`Empleado: <strong>${empleado}</strong>`);
+    if (search) summaryParts.push(`Texto: <strong>"${search}"</strong>`);
+    const summaryEl = $('#requestsFilterSummary');
+    if (summaryEl) summaryEl.innerHTML = summaryParts.length ? '🔍 ' + summaryParts.join(' &nbsp;·&nbsp; ') : '';
+
+    const listContainer = $('#requests-list');
+    if (!listContainer) return;
+
+    if (filtered.length === 0) {
+        listContainer.innerHTML = `
+            <div style="padding:4rem; text-align:center; opacity:0.5; background:white; border-radius:16px; border:1px solid #e2e8f0;">
+                <div style="font-size:2.5rem; margin-bottom:0.5rem;">📭</div>
+                <div style="font-weight:700; font-size:1.1rem; color:#1e293b;">No hay solicitudes que coincidan con el filtro</div>
+                <p style="font-size:0.85rem; margin-top:0.4rem; color:#64748b;">Prueba a cambiar los filtros o <a href="#" onclick="window.clearRequestsFilters(); return false;" style="color:#0ea5e9; text-decoration:underline;">límpialos todos</a>.</p>
+            </div>`;
+        return;
+    }
+
+    listContainer.innerHTML = filtered.map(req => {
+        const statusLabel = req.estado === 'pendiente' ? 'Pendiente' : (req.estado === 'aprobada' ? 'Aprobada' : 'Rechazada');
+        const statusColor = req.estado === 'pendiente' ? '#f59e0b' : (req.estado === 'aprobada' ? '#10b981' : '#ef4444');
+        const borderCol = req.estado === 'pendiente' ? '#f59e0b' : (req.estado === 'aprobada' ? '#10b981' : '#ef4444');
+
+        return `
+            <div class="request-card-admin" style="background:white; border:1px solid #e2e8f0; border-radius:16px; padding:20px; margin-bottom:16px; box-shadow:0 4px 6px -1px rgba(0,0,0,0.05); border-left:6px solid ${borderCol};">
+                <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+                    <div>
+                        <div style="display:flex; align-items:center; gap:8px;">
+                            <div style="font-size:0.7rem; font-weight:800; color:#0ea5e9; text-transform:uppercase;">${req.hotel || 'CENTRO SIN DEFINIR'}</div>
+                            <span style="font-size:0.65rem; padding:2px 8px; border-radius:10px; background:${statusColor}22; color:${statusColor}; font-weight:800; text-transform:uppercase;">${statusLabel}</span>
+                        </div>
+                        <h3 style="font-size:1.1rem; font-weight:800; margin:4px 0;">${req.solicitante} ${req.companero ? '& ' + req.companero : ''}</h3>
+                        <div style="font-size:0.8rem; color:#64748b;">Solicitado el ${new Date(req.created_at).toLocaleString('es-ES')}</div>
+                    </div>
+                    ${req.estado === 'pendiente' ? `
+                        <div style="display:flex; gap:8px;">
+                            <button onclick="window.handleRequestAction('${req.id}', 'rechazada')" style="background:#fee2e2; color:#991b1b; border:none; padding:8px 16px; border-radius:8px; font-weight:700; cursor:pointer;">Denegar</button>
+                            <button onclick="window.handleRequestAction('${req.id}', 'aprobada')" style="background:#dcfce7; color:#166534; border:none; padding:8px 16px; border-radius:8px; font-weight:700; cursor:pointer;">Aprobar</button>
+                        </div>
+                    ` : `
+                        <button onclick="window.handleRequestAction('${req.id}', 'pendiente')" style="background:#f1f5f9; color:#475569; border:none; padding:8px 16px; border-radius:8px; font-weight:700; cursor:pointer;">Resetear a Pendiente</button>
+                    `}
+                </div>
+                <div style="margin-top:16px; display:grid; grid-template-columns:repeat(auto-fill, minmax(200px, 1fr)); gap:12px;">
+                    ${(req.fechas || []).map(f => `
+                        <div style="background:#f8fafc; padding:12px; border-radius:12px; border:1px solid #e2e8f0;">
+                            <div style="font-weight:800; font-size:0.85rem;">📅 ${f.fecha}</div>
+                            <div style="font-size:0.8rem; color:#64748b; margin-top:2px;">${f.origen || 'BASE'} → ${f.destino}</div>
+                        </div>
+                    `).join('')}
+                </div>
+                ${(function() {
+                    const _motivo = req.motivo || req.observacion || req.comentario || req.observaciones
+                        || (req.payload && (req.payload.motivo || req.payload.observacion || req.payload.comentario))
+                        || '';
+                    const _obsAdmin = req.observacion_admin || req.nota_admin
+                        || (req.payload && req.payload.observacion_admin)
+                        || '';
+                    if (!_motivo && !_obsAdmin) return '';
+                    let _html = '<div style="margin-top:12px; padding:12px 14px; background:#f1f5f9; border-radius:10px; border-left:3px solid #cbd5e1; font-size:0.8rem;">';
+                    if (_motivo) {
+                        _html += '<div style="margin-bottom:' + (_obsAdmin ? '8px' : '0') + ';">'
+                            + '<span style="display:block; font-weight:800; color:#475569; font-size:0.68rem; text-transform:uppercase; letter-spacing:0.06em; margin-bottom:3px;">Motivo / Notas</span>'
+                            + '<span style="color:#0f172a; font-weight:600;">' + escapeHtml(_motivo) + '</span>'
+                            + '</div>';
+                    }
+                    if (_obsAdmin) {
+                        _html += '<div>'
+                            + '<span style="display:block; font-weight:800; color:#0ea5e9; font-size:0.68rem; text-transform:uppercase; letter-spacing:0.06em; margin-bottom:3px;">Observación admin</span>'
+                            + '<span style="color:#334155;">' + escapeHtml(_obsAdmin) + '</span>'
+                            + '</div>';
+                    }
+                    _html += '</div>';
+                    return _html;
+                }())}
+            </div>
+        `;
+    }).join('');
+};
+
+window.clearRequestsFilters = () => {
+    window._requestsFilter       = 'all';
+    window._requestsHotelFilter  = 'all';
+    window._requestsTipoFilter   = 'all';
+    window._requestsEmpFilter    = 'all';
+    window._requestsSearchFilter = '';
+    
+    if ($('#requestsFilter'))       $('#requestsFilter').value       = 'all';
+    if ($('#requestsHotelFilter'))  $('#requestsHotelFilter').value  = 'all';
+    if ($('#requestsTipoFilter'))   $('#requestsTipoFilter').value   = 'all';
+    if ($('#requestsEmpFilter'))    $('#requestsEmpFilter').value    = 'all';
+    if ($('#requestsSearchFilter')) $('#requestsSearchFilter').value = '';
+    
+    window.applyRequestsFilters();
 };
 
 window.handleRequestAction = async (id, newState) => {
