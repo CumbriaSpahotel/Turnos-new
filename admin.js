@@ -7156,9 +7156,9 @@ window.showPublishPreview = async () => {
                 <button onclick="document.getElementById('${modalId}').classList.remove('open')" style="padding: 12px 24px; border: 1px solid #e2e8f0; border-radius: 12px; background: white; font-weight: 700; cursor: pointer; color: #64748b;">Cancelar</button>
                 <button id="btnConfirmPublish" 
                         onclick="window.publishToSupabase()" 
-                        ${(!validation.ok || !pendingResult.hasChanges) ? 'disabled style="opacity: 0.5; cursor: not-allowed;"' : ''}
+                        ${(!validation.ok) ? 'disabled style="opacity: 0.5; cursor: not-allowed;"' : ''}
                         style="padding: 12px 32px; border: none; border-radius: 12px; background: #3b82f6; color: white; font-weight: 800; cursor: pointer; box-shadow: 0 4px 10px rgba(59, 130, 246, 0.3);">
-                    ${pendingResult.hasChanges ? "Confirmar y Publicar" : "Sin cambios pendientes"}
+                    ${pendingResult.hasChanges ? "Confirmar y Publicar" : "Volver a Publicar Semana"}
                 </button>
             </footer>
         </div>

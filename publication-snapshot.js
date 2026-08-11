@@ -187,7 +187,10 @@
 
                 days[date] = {
                     code: codeVal,
-                    relationEmployeeId: relationId
+                    relationEmployeeId: relationId,
+                    horario: cellVal?.horario || cellVal?.payload?.horario || null,
+                    label: cellVal?.label || null,
+                    title: cellVal?.title || null
                 };
             });
 
@@ -290,7 +293,13 @@
                 const cellCur = rCur.days[date];
                 const cellPub = rPub.days[date];
 
-                if (cellCur.code !== cellPub.code || cellCur.relationEmployeeId !== cellPub.relationEmployeeId) {
+                if (
+                    cellCur.code !== cellPub.code || 
+                    cellCur.relationEmployeeId !== cellPub.relationEmployeeId ||
+                    cellCur.horario !== cellPub.horario ||
+                    cellCur.label !== cellPub.label ||
+                    cellCur.title !== cellPub.title
+                ) {
                     diffs.push({
                         scope: 'cell',
                         changeType: 'modified',
