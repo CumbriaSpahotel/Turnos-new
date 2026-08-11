@@ -271,8 +271,9 @@
             icons: finalIcons,
             publicClass,
             mobileClass,
-        adminStyle,
+            adminStyle,
             title,
+            horario: customHorario || null,
             isAbsence: fs ? fs.isAbsence : isAbsenceType(cell.tipo),
             cls: key === 'empty' ? 'normal' : key,
             _finalState: fs 

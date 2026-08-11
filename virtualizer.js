@@ -259,7 +259,10 @@ class VirtualTable {
             cell.title = '';
         }
 
-        if (cleanShiftColorCls === 'v-partido' || rawTurno.includes('partido') || rawTurno === 'p' || rawTurno === 'tp' || rawTurno === 't/p') {
+        const customHorario = cellData.horario || cellData.payload?.horario;
+        if (customHorario) {
+            cell.title = cell.title ? `${cell.title} | Horario: ${customHorario}` : `${cleanLabel}: ${customHorario}`;
+        } else if (cleanShiftColorCls === 'v-partido' || rawTurno.includes('partido') || rawTurno === 'p' || rawTurno === 'tp' || rawTurno === 't/p') {
             const tpHorario = window.TurnosRules?.definitions?.p?.horario || '10:00 - 14:00 / 18:00 - 22:00';
             cell.title = cell.title ? `${cell.title} | Horario: ${tpHorario}` : `Turno Partido: ${tpHorario}`;
         }

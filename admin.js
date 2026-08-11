@@ -5275,8 +5275,16 @@ window.renderEmpleadoCell = (turnoEmpleado, { isCompact = false } = {}) => {
     const styleKey = sKey.toLowerCase();
     const style = capsuleStyles[styleKey] || { bg: '#f8fafc', color: '#475569', border: '#e2e8f0', label: turnoVisible || '-', icon: '' };
 
-    let cellTitle = turnoEmpleado?.title || '';
-    if (styleKey === 'p' || String(turnoVisible).toLowerCase().includes('t/p') || String(turnoVisible).toLowerCase().includes('partido')) {
+    let cellTitle = visual?.title || turnoEmpleado?.title || '';
+    const customHorario = turnoEmpleado?.horario || turnoEmpleado?.payload?.horario;
+    if (customHorario) {
+        const shiftName = style.label || turnoVisible || 'Turno';
+        if (!cellTitle || cellTitle === 'Planificación base Excel') {
+            cellTitle = `${shiftName}: ${customHorario}`;
+        } else if (!cellTitle.includes(customHorario)) {
+            cellTitle += ` | Horario: ${customHorario}`;
+        }
+    } else if (styleKey === 'p' || String(turnoVisible).toLowerCase().includes('t/p') || String(turnoVisible).toLowerCase().includes('partido')) {
         const tpHorario = window.TurnosRules?.definitions?.p?.horario || '10:00 - 14:00 / 18:00 - 22:00';
         if (!cellTitle) {
             cellTitle = `Turno Partido: ${tpHorario}`;
@@ -5655,7 +5663,9 @@ window.renderPreview = async () => {
                             origen: resolved.incidencia || resolved.origen || 'base',
                             titular_cubierto: resolved.titular || null,
                             sustituto: resolved.sustituidoPor || null,
-                            changed: !!resolved.cambio
+                            changed: !!resolved.cambio,
+                            horario: resolved.horario || visual.horario || null,
+                            title: visual.title || resolved.title || ''
                         };
                     });
                     return {
@@ -7373,7 +7383,9 @@ window.buildPublicationSnapshotPreview = async (weekStart, hotelName = 'all') =>
                             titular_cubierto: resolved.coversEmployeeId || resolved.sustituyeA || null,
                             incidenciaCubierta: resolved.coveredType || resolved.incidenciaCubierta || null,
                             sustituto: resolved.coveredByEmployeeId || resolved.sustituidoPor || null,
-                            origen: resolved.origen || 'base'
+                            origen: resolved.origen || 'base',
+                            horario: resolved.horario || visual.horario || null,
+                            title: visual.title || resolved.title || ''
                         };
                     });
                     

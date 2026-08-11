@@ -56,7 +56,7 @@
       label: display.text,
       cls: visual.mobileClass,
       icon: '',
-      title: visual.title || ''
+      title: display.title || visual.title || ''
     };
   }
 

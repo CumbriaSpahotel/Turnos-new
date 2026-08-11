@@ -838,8 +838,19 @@
             pill.className = `turno-pill v-${cls}`;
             pill.textContent = display.label;
 
-            const tpHorario = window.TurnosRules?.definitions?.p?.horario || '10:00 - 14:00 / 18:00 - 22:00';
-            const tooltipText = display.title || ((cls === 'p' || _codeForCls.toLowerCase().includes('partido') || _codeForCls.toLowerCase().includes('t/p')) ? `Turno Partido: ${tpHorario}` : '');
+            const customHorario = cellData?.horario || cellData?.payload?.horario || display?.horario;
+            let tooltipText = display.title || '';
+            if (customHorario) {
+                const shiftName = display.label !== '—' ? display.label : 'Turno';
+                if (!tooltipText || tooltipText === 'Planificación base Excel') {
+                    tooltipText = `${shiftName}: ${customHorario}`;
+                } else if (!tooltipText.includes(customHorario)) {
+                    tooltipText += ` | Horario: ${customHorario}`;
+                }
+            } else if (!tooltipText && (cls === 'p' || _codeForCls.toLowerCase().includes('partido') || _codeForCls.toLowerCase().includes('t/p'))) {
+                const tpHorario = window.TurnosRules?.definitions?.p?.horario || '10:00 - 14:00 / 18:00 - 22:00';
+                tooltipText = `Turno Partido: ${tpHorario}`;
+            }
             if (tooltipText) {
                 pill.title = tooltipText;
                 cell.title = tooltipText;
