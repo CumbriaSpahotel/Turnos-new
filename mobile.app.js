@@ -379,6 +379,7 @@
     );
 
     const shortByClass = { m: "M", t: "T", n: "N", d: "D" };
+    if (visualClass === "p") return "T/P";
 
     if (visualClass === "b" || visualClass === "baja") return "B<span class=\"emoji-indicator\">🩺</span>";
     if (visualClass === "perm" || visualClass === "permiso") return "P<span class=\"emoji-indicator\">🗓️</span>";
@@ -390,6 +391,28 @@
     }
 
     return normalized ? escapeHtml(normalized.charAt(0)) : "–";
+  }
+
+  function getMobileShiftTime(cell, display) {
+    const raw = cell?.horario || cell?.payload?.horario || display?.horario || "";
+    if (raw) return compactMobileShiftTime(raw);
+    const title = String(display?.title || cell?.title || "").trim();
+    const match = title.match(/(?:Turno Partido|T\/P|Horario)\s*:\s*(.+)$/i);
+    if (match && match[1]) return compactMobileShiftTime(match[1].replace(/\s*\|\s*Horario:.*$/i, "").trim());
+    return compactMobileShiftTime(window.TurnosRules?.definitions?.p?.horario || "10:00 - 14:00 / 18:00 - 22:00");
+  }
+
+  function compactMobileShiftTime(value) {
+    const raw = String(value || "").trim();
+    const ranges = raw.match(/\d{1,2}:?\d{0,2}\s*(?:-|a)\s*\d{1,2}:?\d{0,2}/gi);
+    if (ranges && ranges.length) {
+      return ranges.map(r => r
+        .replace(/\s+/g, "")
+        .replace(/a/i, "-")
+        .replace(/:00/g, "")
+      ).join("/");
+    }
+    return raw.replace(/\s+/g, " ").replace(/:00/g, "");
   }
 
   function getMobileShiftToken(displayText, visualClass) {
@@ -554,6 +577,10 @@
                                 
                                 // REGLA OBLIGATORIA: En móvil también debemos mostrar 📌 si es sustituto de Baja/Permiso
                                 let labelContent = getMobileShiftLabel(day, display.text, visual.mobileClass);
+                                if (shiftToken === 'p') {
+                                    const tpHorario = getMobileShiftTime(day, display);
+                                    labelContent = `<span class="tp-mobile-main">T/P</span><span class="tp-mobile-time">${escapeHtml(tpHorario)}</span>`;
+                                }
                                 if (display.icons && display.icons.includes('\u{1F4CC}') && !labelContent.includes('\u{1F4CC}')) {
                                     labelContent += ' <span class="pin-mobile">\u{1F4CC}</span>';
                                 }

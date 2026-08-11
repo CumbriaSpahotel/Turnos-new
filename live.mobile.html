@@ -844,7 +844,7 @@
     }
 
     .grid-row {
-      min-height: 54px;
+      min-height: 60px;
       background: rgba(255,255,255,0.38);
     }
 
@@ -892,6 +892,40 @@
     .badge-shift[data-shift="v"] {
       font-size: 1rem !important;
       line-height: 1 !important;
+    }
+
+    .badge-shift[data-shift="p"] {
+      width: min(52px, calc(100% - 4px)) !important;
+      min-width: 42px !important;
+      height: 42px !important;
+      padding: 3px 4px !important;
+      border-radius: 12px !important;
+      flex-direction: column !important;
+      gap: 1px !important;
+      background: linear-gradient(180deg, #a78bfa, #7c3aed) !important;
+      color: #ffffff !important;
+      text-shadow: none !important;
+      line-height: 1 !important;
+      letter-spacing: 0 !important;
+    }
+
+    .tp-mobile-main {
+      display: block;
+      font-size: 0.72rem;
+      font-weight: 900;
+      line-height: 1;
+    }
+
+    .tp-mobile-time {
+      display: block;
+      max-width: 100%;
+      font-size: 0.47rem;
+      font-weight: 800;
+      line-height: 1.05;
+      white-space: normal;
+      text-transform: none;
+      overflow-wrap: anywhere;
+      opacity: 0.95;
     }
 
     .week-toolbar {
@@ -1551,7 +1585,7 @@
   <script src="turnos-engine.js?v=13.30"></script>
   <script src="excel-loader.js?v=13.30"></script>
   <script src="plantilla_mobile_adapter.js?v=13.30"></script>
-  <script src="mobile.app.js?v=13.31"></script>
+  <script src="mobile.app.js?v=13.32"></script>
 
   <script>
     if (window.location.protocol === 'file:') {
