@@ -1218,21 +1218,25 @@ window.renderCustomHorariosList = async (empsList) => {
             return !!(ev.payload?.horario || ev.horario || (ev.observaciones && ev.observaciones.startsWith('Horario:')));
         });
 
-        // Deduplicar eventos con horario personalizado por (empleado_id + fecha)
+        // Deduplicar eventos con horario personalizado usando la identidad canónica del empleado y fecha normalizada
         const eventsByEmpDate = new Map();
         const duplicatesToAnnul = [];
 
         activeEvents.forEach(ev => {
             const empId = ev.empleado_id || ev.payload?.empleado_id;
-            const fecha = ev.fecha_inicio || ev.fecha;
-            const key = `${empId}_${fecha}`;
+            const canonicalId = window.ShiftResolver?.getCanonicalEmployeeId ? window.ShiftResolver.getCanonicalEmployeeId(empId) : window.normalizeId(empId);
+            const fechaNorm = window.normalizeDate ? window.normalizeDate(ev.fecha_inicio || ev.fecha) : (ev.fecha_inicio || ev.fecha);
+            const key = `${canonicalId}_${fechaNorm}`;
 
             if (!eventsByEmpDate.has(key)) {
                 eventsByEmpDate.set(key, ev);
             } else {
                 const prev = eventsByEmpDate.get(key);
-                // Quedarnos con el más reciente y marcar el antiguo para anular
-                if (ev.created_at && prev.created_at && new Date(ev.created_at) > new Date(prev.created_at)) {
+                const isNewer = (ev.created_at && prev.created_at) 
+                    ? new Date(ev.created_at) > new Date(prev.created_at)
+                    : String(ev.id) > String(prev.id);
+
+                if (isNewer) {
                     duplicatesToAnnul.push(prev.id);
                     eventsByEmpDate.set(key, ev);
                 } else {
@@ -1241,11 +1245,11 @@ window.renderCustomHorariosList = async (empsList) => {
             }
         });
 
-        // Anular duplicados en segundo plano si existen
+        // Anular inmediatamente cualquier duplicado antiguo detectado en Supabase
         if (duplicatesToAnnul.length > 0) {
-            Promise.all(duplicatesToAnnul.map(id => 
+            await Promise.all(duplicatesToAnnul.map(id => 
                 window.supabase.from('eventos_cuadrante').update({ estado: 'anulado' }).eq('id', id)
-            )).catch(err => console.error('[DEDUP_CLEANUP_ERROR]', err));
+            ));
         }
 
         const customEvents = Array.from(eventsByEmpDate.values());
@@ -1391,12 +1395,12 @@ window.saveHorarioDailyOverride = async () => {
         const { error } = await window.supabase.from('turnos').upsert([record], { onConflict: 'empleado_id,fecha' });
         if (error) throw error;
 
-        // Buscar evento existente para este empleado y fecha si no veníamos de un ID cargado explícito
+        // Buscar evento existente resolviendo identidades con eventoPerteneceAEmpleado
         const existingEvents = await window.TurnosDB.fetchEventos();
         const existing = (existingEvents || []).find(ev => 
             window.normalizeEstado(ev.estado) !== 'anulado' &&
-            String(ev.empleado_id) === String(empId) &&
-            String(ev.fecha_inicio || ev.fecha) === String(fecha) &&
+            (window.eventoPerteneceAEmpleado ? window.eventoPerteneceAEmpleado(ev, empId) : String(ev.empleado_id) === String(empId)) &&
+            window.normalizeDate(ev.fecha_inicio || ev.fecha) === window.normalizeDate(fecha) &&
             (ev.payload?.horario || (ev.observaciones && ev.observaciones.startsWith('Horario:')))
         );
 
