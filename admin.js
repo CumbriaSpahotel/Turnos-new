@@ -5356,7 +5356,7 @@ window.renderEmpleadoCell = (turnoEmpleado, { isCompact = false } = {}) => {
         const shiftName = style.label || turnoVisible || 'Turno';
         if (!cellTitle || cellTitle === 'Planificación base Excel') {
             cellTitle = `${shiftName}: ${customHorario}`;
-        } else if (!cellTitle.includes(customHorario)) {
+        } else if (!(window.TurnosRules?.titleIncludesHorario ? window.TurnosRules.titleIncludesHorario(cellTitle, customHorario) : cellTitle.includes(customHorario))) {
             cellTitle += ` | Horario: ${customHorario}`;
         }
     } else if (styleKey === 'p' || String(turnoVisible).toLowerCase().includes('t/p') || String(turnoVisible).toLowerCase().includes('partido')) {

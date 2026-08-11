@@ -5,6 +5,16 @@
         .replace(/[\u0300-\u036f]/g, '')
         .trim();
 
+    const normalizeHorarioText = (value) => normalizeText(value)
+        .replace(/\b(turno partido|horario|turno|t\/p)\b/g, '')
+        .replace(/[^0-9:/-]+/g, '')
+        .trim();
+
+    const titleIncludesHorario = (title, horario) => {
+        const normHorario = normalizeHorarioText(horario);
+        return !!normHorario && normalizeHorarioText(title).includes(normHorario);
+    };
+
     const isCtType = (type) => String(type || '').toUpperCase().includes('CT');
     const isAbsenceType = (type) => {
         const t = String(type || '').toUpperCase();
@@ -282,14 +292,14 @@
             const shiftName = label || fs?.turnoFinal || cell.turno || 'Turno';
             if (!title || title === 'Planificación base Excel') {
                 title = `${shiftName}: ${customHorario}`;
-            } else if (!title.includes(customHorario)) {
+            } else if (!titleIncludesHorario(title, customHorario)) {
                 title += ` | Horario: ${customHorario}`;
             }
         } else if (key === 'p') {
             const tpHorario = def.horario || '10:00 - 14:00 / 18:00 - 22:00';
             if (!title || title === 'Planificación base Excel') {
                 title = `Turno Partido: ${tpHorario}`;
-            } else if (!title.includes('10:00') && !title.includes('Horario')) {
+            } else if (!titleIncludesHorario(title, tpHorario) && !title.includes('Horario')) {
                 title += ` | Horario: ${tpHorario}`;
             }
         }
@@ -471,14 +481,14 @@
             const shiftName = label !== '—' ? label : 'Turno';
             if (!title) {
                 title = `${shiftName}: ${customHorario}`;
-            } else if (!title.includes(customHorario)) {
+            } else if (!titleIncludesHorario(title, customHorario)) {
                 title += ` | Horario: ${customHorario}`;
             }
         } else if (isPartido) {
             const tpHorario = definitions.p?.horario || '10:00 - 14:00 / 18:00 - 22:00';
             if (!title) {
                 title = `Turno Partido: ${tpHorario}`;
-            } else if (!title.includes('10:00') && !title.includes('Horario')) {
+            } else if (!titleIncludesHorario(title, tpHorario) && !title.includes('Horario')) {
                 title += ` | Horario: ${tpHorario}`;
             }
         }
@@ -792,6 +802,7 @@
 
     window.TurnosRules = {
         normalizeText,
+        titleIncludesHorario,
         shiftKey,
         isCtType,
         isAbsenceType,

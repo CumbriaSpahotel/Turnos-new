@@ -491,7 +491,7 @@
   <script src="supabase.js"></script>
   <script src="supabase-config.js?v=13.8"></script>
   <script src="supabase-dao.js?v=13.25"></script>
-  <script src="turnos-rules.js?v=14.2"></script>
+  <script src="turnos-rules.js?v=14.3"></script>
   <script src="shift-resolver.js?v=14.3"></script>
   <script src="publication-snapshot.js?v=1.1"></script>
   <script src="virtualizer.js"></script>
@@ -848,7 +848,7 @@
                 const shiftName = display.label !== '—' ? display.label : 'Turno';
                 if (!tooltipText || tooltipText === 'Planificación base Excel') {
                     tooltipText = `${shiftName}: ${customHorario}`;
-                } else if (!tooltipText.includes(customHorario)) {
+                } else if (!(window.TurnosRules?.titleIncludesHorario ? window.TurnosRules.titleIncludesHorario(tooltipText, customHorario) : tooltipText.includes(customHorario))) {
                     tooltipText += ` | Horario: ${customHorario}`;
                 }
             } else if (!tooltipText && (cls === 'p' || _codeForCls.toLowerCase().includes('partido') || _codeForCls.toLowerCase().includes('t/p'))) {
