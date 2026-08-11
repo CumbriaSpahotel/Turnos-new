@@ -4607,7 +4607,8 @@ window.createPuestosPreviewModel = ({
                         return { ...res, _finalState: res };
                     }
 
-                    const shouldKeepResolvedTurno = res.intercambio || res.origen === 'CAMBIO_TURNO' || res.origen === 'INTERCAMBIO_TURNO';
+                    const isBaseDescanso = !turnoBase || turnoBase === 'D' || turnoBase === 'Descanso' || turnoBase === '—';
+                    const shouldKeepResolvedTurno = res.intercambio || res.origen === 'CAMBIO_TURNO' || res.origen === 'INTERCAMBIO_TURNO' || isBaseDescanso || !!res.horario;
                     const turnoOperativo = shouldKeepResolvedTurno ? res.turno : (turnoBase || res.turno);
 
                     const finalRes = {
