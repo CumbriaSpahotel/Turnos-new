@@ -4260,8 +4260,14 @@ window.createPuestosPreviewModel = ({
             const turnoExcel = sRow.values[idx] || null;
             
             // PRIORIZAR SUPABASE: Si existe un turno en la base de datos, sobrescribe al Excel.
-            const normSrowEmpId = window.normalizeId(sRow.empleadoId);
-            const overrideDbRow = (rows || []).find(r => window.normalizeId(r.empleado_id) === normSrowEmpId && r.fecha === date);
+            const sRowCanonical = (window.ShiftResolver?.getCanonicalEmployeeId ? window.ShiftResolver.getCanonicalEmployeeId(sRow.empleadoId || sRow.displayName, { employees }) : null) || window.normalizeId(sRow.empleadoId);
+            const overrideDbRow = (rows || []).find(r => {
+                if (r.fecha !== date) return false;
+                const rCanonical = (window.ShiftResolver?.getCanonicalEmployeeId ? window.ShiftResolver.getCanonicalEmployeeId(r.empleado_id, { employees }) : null) || window.normalizeId(r.empleado_id);
+                return (sRowCanonical && rCanonical && sRowCanonical === rCanonical) || 
+                       window.normalizeId(r.empleado_id) === window.normalizeId(sRow.empleadoId) || 
+                       window.normalizeId(r.empleado_id) === window.normalizeId(sRow.displayName);
+            });
             const turno = overrideDbRow ? overrideDbRow.turno : turnoExcel;
 
             baseRowsFlat.push({
