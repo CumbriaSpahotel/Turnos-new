@@ -1192,8 +1192,118 @@ window.renderHorariosSection = async () => {
         if (fechaInput && !fechaInput.value) {
             fechaInput.value = window.isoDate(new Date());
         }
+
+        // Cargar tabla de horarios personalizados asignados
+        await window.renderCustomHorariosList(emps);
     } catch (e) {
         console.error('[HORARIOS_SECTION_ERROR]', e);
+    }
+};
+
+window.renderCustomHorariosList = async (empsList) => {
+    const listBody = document.getElementById('horarios-list-body');
+    if (!listBody) return;
+
+    try {
+        const empsMap = new Map();
+        (empsList || window.empleadosGlobales || []).forEach(e => {
+            empsMap.set(String(e.id), e.nombre);
+            if (e.id_interno) empsMap.set(String(e.id_interno), e.nombre);
+        });
+
+        // Obtener eventos con horario personalizado
+        const eventos = await window.TurnosDB.fetchEventos();
+        const customEvents = (eventos || []).filter(ev => {
+            if (window.normalizeEstado(ev.estado) === 'anulado') return false;
+            return !!(ev.payload?.horario || ev.horario || (ev.observaciones && ev.observaciones.startsWith('Horario:')));
+        });
+
+        if (!customEvents.length) {
+            listBody.innerHTML = '<tr><td colspan="6" style="padding:20px; text-align:center; color:var(--text-dim); font-size:0.8rem;">No hay horarios personalizados registrados actualmente.</td></tr>';
+            return;
+        }
+
+        customEvents.sort((a, b) => String(b.fecha_inicio || b.fecha || '').localeCompare(String(a.fecha_inicio || a.fecha || '')));
+
+        listBody.innerHTML = customEvents.map(ev => {
+            const empId = ev.empleado_id || ev.payload?.empleado_id;
+            const empNombre = empsMap.get(String(empId)) || empId || 'Desconocido';
+            const fecha = ev.fecha_inicio || ev.fecha || '—';
+            const hotel = ev.hotel_origen || ev.hotel_destino || ev.hotel_id || '—';
+            const turno = ev.turno_nuevo || ev.payload?.destino || ev.payload?.turno || 'Turno';
+            const customHorario = ev.payload?.horario || ev.horario || (ev.observaciones ? ev.observaciones.replace('Horario:', '').trim() : '—');
+            const safeEvId = escapeHtml(ev.id);
+
+            return `
+                <tr style="border-bottom:1px solid var(--border);">
+                    <td style="padding:10px 12px; font-weight:800; font-size:0.8rem;">${escapeHtml(fecha)}</td>
+                    <td style="padding:10px 12px; font-size:0.8rem;">${escapeHtml(hotel)}</td>
+                    <td style="padding:10px 12px; font-weight:700; font-size:0.8rem;">${escapeHtml(empNombre)}</td>
+                    <td style="padding:10px 12px; font-size:0.8rem;"><span style="padding:2px 8px; border-radius:6px; background:var(--bg3); font-weight:800;">${escapeHtml(turno)}</span></td>
+                    <td style="padding:10px 12px; font-weight:800; color:#2563eb; font-size:0.8rem;">${escapeHtml(customHorario)}</td>
+                    <td style="padding:10px 12px; text-align:center;">
+                        <button class="btn-premium" style="font-size:0.7rem; padding:4px 8px; margin-right:4px;" onclick="window.loadHorarioCustomEvent('${safeEvId}')" title="Cargar en el formulario para editar">✏️ Editar</button>
+                        <button class="btn-premium" style="font-size:0.7rem; padding:4px 8px; background:rgba(239,68,68,0.1); color:#ef4444; border:1px solid rgba(239,68,68,0.3);" onclick="window.deleteHorarioCustomEvent('${safeEvId}')" title="Eliminar este horario personalizado">🗑️ Eliminar</button>
+                    </td>
+                </tr>
+            `;
+        }).join('');
+    } catch (err) {
+        console.error('[RENDER_CUSTOM_HORARIOS_ERROR]', err);
+        listBody.innerHTML = '<tr><td colspan="6" style="padding:20px; text-align:center; color:#ef4444; font-size:0.8rem;">Error cargando horarios personalizados: ' + escapeHtml(err.message) + '</td></tr>';
+    }
+};
+
+window.loadHorarioCustomEvent = async (eventId) => {
+    try {
+        const eventos = await window.TurnosDB.fetchEventos();
+        const ev = (eventos || []).find(e => String(e.id) === String(eventId));
+        if (!ev) return;
+
+        const hotelSel = document.getElementById('horarioModHotel');
+        const empSel = document.getElementById('horarioModEmp');
+        const fechaInput = document.getElementById('horarioModFecha');
+        const turnoSel = document.getElementById('horarioModTurno');
+        const horarioInput = document.getElementById('horarioModHorario');
+
+        if (hotelSel && (ev.hotel_origen || ev.hotel_destino || ev.hotel_id)) {
+            hotelSel.value = ev.hotel_origen || ev.hotel_destino || ev.hotel_id;
+        }
+        if (empSel && (ev.empleado_id || ev.payload?.empleado_id)) {
+            empSel.value = ev.empleado_id || ev.payload?.empleado_id;
+        }
+        if (fechaInput && (ev.fecha_inicio || ev.fecha)) {
+            fechaInput.value = ev.fecha_inicio || ev.fecha;
+        }
+        if (turnoSel && (ev.turno_nuevo || ev.payload?.destino)) {
+            turnoSel.value = ev.turno_nuevo || ev.payload?.destino;
+        }
+        if (horarioInput) {
+            horarioInput.value = ev.payload?.horario || ev.horario || (ev.observaciones ? ev.observaciones.replace('Horario:', '').trim() : '');
+        }
+
+        const status = document.getElementById('horarioDailyStatus');
+        if (status) {
+            status.style.color = '#3b82f6';
+            status.textContent = 'Horario cargado en el formulario. Modifícalo y pulsa "Guardar Horario del Día".';
+        }
+    } catch (e) {
+        console.error('[LOAD_CUSTOM_HORARIO_ERROR]', e);
+    }
+};
+
+window.deleteHorarioCustomEvent = async (eventId) => {
+    if (!confirm('¿Estás seguro de que deseas eliminar este horario personalizado?')) return;
+    try {
+        const { error } = await window.supabase.from('eventos_cuadrante').update({ estado: 'anulado' }).eq('id', eventId);
+        if (error) throw error;
+
+        if (window.TurnosDB?.clearCache) window.TurnosDB.clearCache();
+        await window.renderHorariosSection();
+        if (window.renderPreview) await window.renderPreview();
+        alert('Horario personalizado eliminado correctamente.');
+    } catch (err) {
+        alert('Error eliminando horario: ' + err.message);
     }
 };
 
@@ -1255,10 +1365,12 @@ window.saveHorarioDailyOverride = async () => {
                 hotel_destino: hotel,
                 fecha_inicio: fecha,
                 fecha_fin: fecha,
+                turno_original: turno,
                 turno_nuevo: turno,
                 estado: 'activo',
                 observaciones: `Horario: ${horario}`,
                 payload: {
+                    origen: turno,
                     destino: turno,
                     horario: horario
                 }
@@ -1270,7 +1382,10 @@ window.saveHorarioDailyOverride = async () => {
             status.textContent = '✓ Horario del día guardado correctamente para ' + fecha;
             setTimeout(() => { status.textContent = ''; }, 4000);
         }
+
         if (window.TurnosDB?.clearCache) window.TurnosDB.clearCache();
+        await window.renderHorariosSection();
+        if (window.renderPreview) await window.renderPreview();
     } catch (err) {
         if (status) { status.style.color = '#ef4444'; status.textContent = 'Error guardando: ' + err.message; }
     }

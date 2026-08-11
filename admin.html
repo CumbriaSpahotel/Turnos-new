@@ -556,6 +556,35 @@
                         </div>
                     </div>
                 </div>
+
+                <!-- TABLA DE HORARIOS PERSONALIZADOS REGISTRADOS -->
+                <div class="glass-panel" style="grid-column: 1 / -1; padding:24px; border-radius:24px; border:1px solid var(--border); background:var(--surface);">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:18px;">
+                        <h3 style="margin:0; font-size:1rem; font-weight:800; color:var(--text);">
+                            <i class="fas fa-list-alt" style="margin-right:10px; color:#3b82f6;"></i> Horarios Personalizados Asignados
+                        </h3>
+                        <button class="btn-premium" style="font-size:0.75rem; font-weight:700; padding:6px 14px;" onclick="window.renderHorariosSection()">
+                            <i class="fas fa-sync-alt" style="margin-right:6px;"></i> Actualizar Lista
+                        </button>
+                    </div>
+                    <div style="overflow-x:auto;">
+                        <table style="width:100%; border-collapse:collapse; min-width:650px;">
+                            <thead>
+                                <tr style="background:var(--bg3); border-bottom:1px solid var(--border);">
+                                    <th style="padding:12px; text-align:left; font-size:0.7rem; color:var(--text-dim); text-transform:uppercase;">Fecha</th>
+                                    <th style="padding:12px; text-align:left; font-size:0.7rem; color:var(--text-dim); text-transform:uppercase;">Hotel</th>
+                                    <th style="padding:12px; text-align:left; font-size:0.7rem; color:var(--text-dim); text-transform:uppercase;">Empleado</th>
+                                    <th style="padding:12px; text-align:left; font-size:0.7rem; color:var(--text-dim); text-transform:uppercase;">Turno</th>
+                                    <th style="padding:12px; text-align:left; font-size:0.7rem; color:var(--text-dim); text-transform:uppercase;">Horario Personalizado</th>
+                                    <th style="padding:12px; text-align:center; font-size:0.7rem; color:var(--text-dim); text-transform:uppercase;">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="horarios-list-body">
+                                <tr><td colspan="6" style="padding:20px; text-align:center; color:var(--text-dim); font-size:0.8rem;">Cargando horarios asignados...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
             </div>
         </section>
 
