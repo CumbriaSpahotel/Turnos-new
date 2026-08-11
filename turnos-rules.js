@@ -367,6 +367,7 @@
                 const fullMap = {
                     'M': 'Mañana', 'MANANA': 'Mañana', 'MAÑANA': 'Mañana',
                     'T': 'Tarde', 'TARDE': 'Tarde',
+                    'P': 'T/P', 'TP': 'T/P', 'TURNOPARTIDO': 'T/P',
                     'N': 'Noche', 'NOCHE': 'Noche',
                     'D': 'Descanso', 'DESCANSO': 'Descanso',
                     'VAC': 'Vacaciones', 'VACACIONES': 'Vacaciones',
