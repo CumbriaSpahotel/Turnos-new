@@ -299,21 +299,26 @@
 
     /* BADGES DE CONTROL (MOVILES) */
     .emp-badges-mobile {
-      display: flex;
-      flex-direction: column;
-      gap: 2px;
-      margin-left: 6px;
+      display: inline-flex;
+      flex-direction: row;
+      gap: 3px;
+      margin-left: 0;
+      margin-top: 4px;
+      flex-wrap: wrap;
     }
     .badge-mini {
-      font-size: 8px;
-      font-weight: 800;
-      color: var(--muted);
-      background: rgba(0,0,0,0.03);
-      padding: 1px 3px;
-      border-radius: 4px;
+      font-size: 9px;
+      font-weight: 900;
+      color: #475569;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      padding: 2px 4px;
+      border-radius: 999px;
       white-space: nowrap;
       line-height: 1;
     }
+    .badge-night { color: #1e3a8a; background: #eff6ff; border-color: #bfdbfe; }
+    .badge-rest { color: #991b1b; background: #fff1f2; border-color: #fecdd3; }
     .dark-mode .badge-mini {
       background: rgba(255,255,255,0.06);
     }
@@ -1584,12 +1589,12 @@
   <script src="xlsx.full.min.js"></script>
   <script src="supabase-config.js?v=13.30"></script>
   <script src="supabase-dao.js?v=13.30"></script>
-  <script src="turnos-rules.js?v=13.33"></script>
+  <script src="turnos-rules.js?v=13.34"></script>
   <script src="shift-resolver.js?v=13.33"></script>
   <script src="turnos-engine.js?v=13.30"></script>
   <script src="excel-loader.js?v=13.30"></script>
   <script src="plantilla_mobile_adapter.js?v=13.30"></script>
-  <script src="mobile.app.js?v=13.33"></script>
+  <script src="mobile.app.js?v=13.34"></script>
 
   <script>
     if (window.location.protocol === 'file:') {

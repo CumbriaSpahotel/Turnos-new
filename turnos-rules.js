@@ -720,8 +720,9 @@
             logVisibility(false, 'excluded_placeholder_or_direction_by_name');
             return false;
         }
+        const isNatalio = employeeId === 'natalio' || normalizeText(name) === 'natalio' || normalizeText(employee.id_interno || '') === 'emp-0006';
         const isSupport = type.includes('apoyo') || type.includes('ocasional') || role.includes('apoyo') || role.includes('ocasional') || puesto.includes('apoyo') || puesto.includes('ocasional');
-        if (isSupport) {
+        if (isSupport && !isNatalio) {
             logVisibility(false, 'excluded_support_staff_robust');
             return false;
         }

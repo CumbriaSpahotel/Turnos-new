@@ -560,10 +560,26 @@
                       empName = "sin asignar";
                     }
                     const daysMap = emp.turnosOperativos || emp.cells || emp.dias || {};
+                    const showCounters = window.TurnosRules ? window.TurnosRules.shouldShowNightRestControls(emp, {
+                      view: 'mobile',
+                      hotel: hotelSelect?.value || 'ALL',
+                      weekStart: dateInput.value
+                    }) : true;
+                    let nights = 0;
+                    let rests = 0;
+                    if (showCounters) {
+                      dates.forEach(f => {
+                        const d = daysMap[f] || {};
+                        const code = String(d.code || d.turno || d.turnoFinal || d.label || '').trim().toUpperCase();
+                        if (code.startsWith('N') || code.includes('NOCHE')) nights++;
+                        if (code === 'D' || code === 'DESCANSO') rests++;
+                      });
+                    }
                     return `
                         <div class="grid-row" style="${emp.rowType === 'ausencia_informativa' ? 'opacity:0.6;' : ''}">
                             <div class="name-cell">
                                 <span class="emp-name">${escapeHtml(empName)}</span>
+                                ${showCounters ? `<span class="emp-badges-mobile"><span class="badge-mini badge-night">\u{1F319} ${nights}</span><span class="badge-mini badge-rest">D ${rests}</span></span>` : ''}
                                 ${(() => {
                                     // Reconciliación de perfil en móvil
                                     const idKey = String(emp.empleado_id || emp.nombre || '').trim();
