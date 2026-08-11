@@ -5350,7 +5350,7 @@ window.renderEmpleadoCell = (turnoEmpleado, { isCompact = false } = {}) => {
     const styleKey = sKey.toLowerCase();
     const style = capsuleStyles[styleKey] || { bg: '#f8fafc', color: '#475569', border: '#e2e8f0', label: turnoVisible || '-', icon: '' };
 
-    let cellTitle = turnoEmpleado?.title || '';
+    let cellTitle = window.TurnosRules?.cleanDuplicateHorarioTitle ? window.TurnosRules.cleanDuplicateHorarioTitle(turnoEmpleado?.title || '') : (turnoEmpleado?.title || '');
     const customHorario = turnoEmpleado?.horario || turnoEmpleado?.payload?.horario;
     if (customHorario) {
         const shiftName = style.label || turnoVisible || 'Turno';

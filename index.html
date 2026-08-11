@@ -491,7 +491,7 @@
   <script src="supabase.js"></script>
   <script src="supabase-config.js?v=13.8"></script>
   <script src="supabase-dao.js?v=13.25"></script>
-  <script src="turnos-rules.js?v=14.3"></script>
+  <script src="turnos-rules.js?v=14.4"></script>
   <script src="shift-resolver.js?v=14.3"></script>
   <script src="publication-snapshot.js?v=1.1"></script>
   <script src="virtualizer.js"></script>
@@ -843,7 +843,7 @@
             pill.textContent = display.label;
 
             const customHorario = data?.horario || data?.payload?.horario || display?.horario;
-            let tooltipText = display.title || '';
+            let tooltipText = window.TurnosRules?.cleanDuplicateHorarioTitle ? window.TurnosRules.cleanDuplicateHorarioTitle(display.title || '') : (display.title || '');
             if (customHorario) {
                 const shiftName = display.label !== '—' ? display.label : 'Turno';
                 if (!tooltipText || tooltipText === 'Planificación base Excel') {

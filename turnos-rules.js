@@ -11,8 +11,18 @@
         .trim();
 
     const titleIncludesHorario = (title, horario) => {
+        const normTitle = normalizeText(title);
+        if (/\b(turno partido|t\/p|horario)\s*:/.test(normTitle)) return true;
         const normHorario = normalizeHorarioText(horario);
         return !!normHorario && normalizeHorarioText(title).includes(normHorario);
+    };
+
+    const cleanDuplicateHorarioTitle = (title) => {
+        const raw = String(title || '').trim();
+        if (!raw) return '';
+        const normTitle = normalizeText(raw);
+        if (!/\b(turno partido|t\/p)\s*:/.test(normTitle)) return raw;
+        return raw.replace(/\s*\|\s*Horario:\s*.*$/i, '').trim();
     };
 
     const isCtType = (type) => String(type || '').toUpperCase().includes('CT');
@@ -288,6 +298,7 @@
 
         // Aplicar horario personalizado si está presente en la celda/evento
         const customHorario = fs?.horario || cell.horario || cell.payload?.horario;
+        title = cleanDuplicateHorarioTitle(title);
         if (customHorario) {
             const shiftName = label || fs?.turnoFinal || cell.turno || 'Turno';
             if (!title || title === 'Planificación base Excel') {
@@ -468,7 +479,7 @@
         }
 
         // Generar tooltip enriquecido con horario para Turno Partido u horario personalizado
-        let title = cell?.title || '';
+        let title = cleanDuplicateHorarioTitle(cell?.title || '');
 
         if (title && (title.includes('Cubierto por:') || title.includes('Sustituyendo a:') || title.includes('Intercambio'))) {
             title = title.replace(/\b(EMP-\d+|emp-\d+|[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12})\b/gi, (match) => {
@@ -804,6 +815,7 @@
     window.TurnosRules = {
         normalizeText,
         titleIncludesHorario,
+        cleanDuplicateHorarioTitle,
         shiftKey,
         isCtType,
         isAbsenceType,
