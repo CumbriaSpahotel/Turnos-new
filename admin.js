@@ -1213,10 +1213,42 @@ window.renderCustomHorariosList = async (empsList) => {
 
         // Obtener eventos con horario personalizado
         const eventos = await window.TurnosDB.fetchEventos();
-        const customEvents = (eventos || []).filter(ev => {
+        const activeEvents = (eventos || []).filter(ev => {
             if (window.normalizeEstado(ev.estado) === 'anulado') return false;
             return !!(ev.payload?.horario || ev.horario || (ev.observaciones && ev.observaciones.startsWith('Horario:')));
         });
+
+        // Deduplicar eventos con horario personalizado por (empleado_id + fecha)
+        const eventsByEmpDate = new Map();
+        const duplicatesToAnnul = [];
+
+        activeEvents.forEach(ev => {
+            const empId = ev.empleado_id || ev.payload?.empleado_id;
+            const fecha = ev.fecha_inicio || ev.fecha;
+            const key = `${empId}_${fecha}`;
+
+            if (!eventsByEmpDate.has(key)) {
+                eventsByEmpDate.set(key, ev);
+            } else {
+                const prev = eventsByEmpDate.get(key);
+                // Quedarnos con el más reciente y marcar el antiguo para anular
+                if (ev.created_at && prev.created_at && new Date(ev.created_at) > new Date(prev.created_at)) {
+                    duplicatesToAnnul.push(prev.id);
+                    eventsByEmpDate.set(key, ev);
+                } else {
+                    duplicatesToAnnul.push(ev.id);
+                }
+            }
+        });
+
+        // Anular duplicados en segundo plano si existen
+        if (duplicatesToAnnul.length > 0) {
+            Promise.all(duplicatesToAnnul.map(id => 
+                window.supabase.from('eventos_cuadrante').update({ estado: 'anulado' }).eq('id', id)
+            )).catch(err => console.error('[DEDUP_CLEANUP_ERROR]', err));
+        }
+
+        const customEvents = Array.from(eventsByEmpDate.values());
 
         if (!customEvents.length) {
             listBody.innerHTML = '<tr><td colspan="6" style="padding:20px; text-align:center; color:var(--text-dim); font-size:0.8rem;">No hay horarios personalizados registrados actualmente.</td></tr>';
@@ -1260,6 +1292,8 @@ window.loadHorarioCustomEvent = async (eventId) => {
         const ev = (eventos || []).find(e => String(e.id) === String(eventId));
         if (!ev) return;
 
+        window._editingCustomHorarioEventId = ev.id;
+
         const hotelSel = document.getElementById('horarioModHotel');
         const empSel = document.getElementById('horarioModEmp');
         const fechaInput = document.getElementById('horarioModFecha');
@@ -1285,7 +1319,7 @@ window.loadHorarioCustomEvent = async (eventId) => {
         const status = document.getElementById('horarioDailyStatus');
         if (status) {
             status.style.color = '#3b82f6';
-            status.textContent = 'Horario cargado en el formulario. Modifícalo y pulsa "Guardar Horario del Día".';
+            status.textContent = 'Modificando horario existente. Pulsa "Guardar Horario del Día" para actualizarlo.';
         }
     } catch (e) {
         console.error('[LOAD_CUSTOM_HORARIO_ERROR]', e);
@@ -1357,8 +1391,20 @@ window.saveHorarioDailyOverride = async () => {
         const { error } = await window.supabase.from('turnos').upsert([record], { onConflict: 'empleado_id,fecha' });
         if (error) throw error;
 
+        // Buscar evento existente para este empleado y fecha si no veníamos de un ID cargado explícito
+        const existingEvents = await window.TurnosDB.fetchEventos();
+        const existing = (existingEvents || []).find(ev => 
+            window.normalizeEstado(ev.estado) !== 'anulado' &&
+            String(ev.empleado_id) === String(empId) &&
+            String(ev.fecha_inicio || ev.fecha) === String(fecha) &&
+            (ev.payload?.horario || (ev.observaciones && ev.observaciones.startsWith('Horario:')))
+        );
+
+        const targetEventId = window._editingCustomHorarioEventId || existing?.id;
+
         if (horario) {
             await window.TurnosDB.upsertEvento({
+                ...(targetEventId ? { id: targetEventId } : {}),
                 tipo: 'CAMBIO_TURNO',
                 empleado_id: empId,
                 hotel_origen: hotel,
@@ -1375,7 +1421,12 @@ window.saveHorarioDailyOverride = async () => {
                     horario: horario
                 }
             });
+        } else if (targetEventId) {
+            // Si se guardó vaciando el horario personalizado pero existía un evento previo, anularlo
+            await window.supabase.from('eventos_cuadrante').update({ estado: 'anulado' }).eq('id', targetEventId);
         }
+
+        window._editingCustomHorarioEventId = null;
 
         if (status) {
             status.style.color = '#10b981';

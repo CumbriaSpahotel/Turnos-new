@@ -838,7 +838,7 @@
             pill.className = `turno-pill v-${cls}`;
             pill.textContent = display.label;
 
-            const customHorario = cellData?.horario || cellData?.payload?.horario || display?.horario;
+            const customHorario = data?.horario || data?.payload?.horario || display?.horario;
             let tooltipText = display.title || '';
             if (customHorario) {
                 const shiftName = display.label !== '—' ? display.label : 'Turno';
