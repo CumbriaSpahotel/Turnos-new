@@ -436,7 +436,6 @@ tipo=${normalized.tipo}`);
         if (context.turnoBase !== undefined && context.turnoBase !== null) {
             return context.turnoBase;
         }
-        const baseIndex = context.baseIndex || context;
         const events = context.eventos || [];
         const empIdNorm = window.normalizeId(empleadoId);
         const date = window.normalizeDate(fecha);
