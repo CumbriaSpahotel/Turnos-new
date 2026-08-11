@@ -4372,6 +4372,7 @@ window.createPuestosPreviewModel = ({
         
         // Obtener sustituto
         let sRaw = ev.empleado_destino_id || ev.sustituto_id || ev.sustituto || ev.payload?.sustituto_id || ev.payload?.sustituto || ev.participante_b || ev.destino_id;
+        const hadExplicitSustituto = !!sRaw;
         
         // VALIDACIÓN CESE: Si el sustituto está dado de baja (cesado) en las fechas del evento, anular la sustitución
         if (sRaw) {
@@ -4387,6 +4388,7 @@ window.createPuestosPreviewModel = ({
                 : false;
             if (isSustTerminated) {
                 sRaw = null;
+                ev._skipAutoSustituto = hadExplicitSustituto;
                 ev.empleado_destino_id = null;
                 ev.sustituto_id = null;
                 ev.sustituto = null;
@@ -4419,6 +4421,7 @@ window.createPuestosPreviewModel = ({
         
         const sRaw = ev.empleado_destino_id || ev.sustituto_id || ev.sustituto || ev.payload?.sustituto_id || ev.payload?.sustituto || ev.participante_b || ev.destino_id;
         if (!sRaw) {
+            if (ev._skipAutoSustituto) return;
             const evHotel = window.normalizeId(ev.hotel_origen || ev.hotel || hotel);
             const tId = ev.empleado_id || ev.titular_id || ev.participante_a || ev.empleado;
             if (!tId) return;
