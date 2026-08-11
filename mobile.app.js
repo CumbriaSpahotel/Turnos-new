@@ -410,9 +410,18 @@
         .replace(/\s+/g, "")
         .replace(/a/i, "-")
         .replace(/:00/g, "")
-      ).join("/");
+      ).join(" ");
     }
     return raw.replace(/\s+/g, " ").replace(/:00/g, "");
+  }
+
+  function getMobileShiftTokenFromCell(cell, displayText, visualClass) {
+    const rawCode = String(cell?.code || cell?.turno || cell?.turnoFinal || cell?.label || "").trim();
+    const canonical = window.normalizeShiftValue ? window.normalizeShiftValue(rawCode) : rawCode.toUpperCase();
+    if (canonical === "TP" || canonical === "P") return "p";
+    const rawTitle = `${displayText || ""} ${cell?.title || ""}`.toUpperCase();
+    if (rawTitle.includes("T/P") || rawTitle.includes("TURNO PARTIDO")) return "p";
+    return getMobileShiftToken(displayText, visualClass);
   }
 
   function getMobileShiftToken(displayText, visualClass) {
@@ -573,13 +582,13 @@
                                 const context = { view: 'mobile', hotel: hotelSelect?.value || 'ALL', weekStart: dateInput.value };
                                 const display = window.TurnosRules.getPublicCellDisplay(day, { compact: true }, emp, context);
                                 const visual = window.TurnosRules.describeCell(day);
-                                const shiftToken = getMobileShiftToken(display.text, visual.mobileClass);
+                                const shiftToken = getMobileShiftTokenFromCell(day, display.text, visual.mobileClass);
                                 
                                 // REGLA OBLIGATORIA: En móvil también debemos mostrar 📌 si es sustituto de Baja/Permiso
                                 let labelContent = getMobileShiftLabel(day, display.text, visual.mobileClass);
                                 if (shiftToken === 'p') {
                                     const tpHorario = getMobileShiftTime(day, display);
-                                    labelContent = `<span class="tp-mobile-main">T/P</span><span class="tp-mobile-time">${escapeHtml(tpHorario)}</span>`;
+                                    labelContent = `<span class="tp-mobile-main">TP</span><span class="tp-mobile-time">${escapeHtml(tpHorario)}</span>`;
                                 }
                                 if (display.icons && display.icons.includes('\u{1F4CC}') && !labelContent.includes('\u{1F4CC}')) {
                                     labelContent += ' <span class="pin-mobile">\u{1F4CC}</span>';
