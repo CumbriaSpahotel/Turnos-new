@@ -833,6 +833,10 @@ tipo=${normalized.tipo}`);
         result.coveredType = result.incidenciaCubierta;
         result.rol = result.sustituyeA ? 'sustituto' : 'titular';
         result.cubierto_por = result.sustituidoPor;
+        
+        // Propagar horario personalizado si está definido en eventos o base
+        const activeEv = eventosActivos && eventosActivos.length ? eventosActivos[0] : null;
+        result.horario = activeEv?.payload?.horario || activeEv?.horario || baseRecord?.horario || null;
 
         if (result.turno === 'CT' || window.isInvalidLegacyChangeValue(result.turno)) {
             result.turno = result.turnoBase || '—';

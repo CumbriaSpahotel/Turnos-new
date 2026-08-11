@@ -230,8 +230,16 @@
             }
         }
 
-        // Si es Turno Partido (key 'p'), asegurar que title incluya el horario
-        if (key === 'p') {
+        // Aplicar horario personalizado si está presente en la celda/evento
+        const customHorario = fs?.horario || cell.horario || cell.payload?.horario;
+        if (customHorario) {
+            const shiftName = label || fs?.turnoFinal || cell.turno || 'Turno';
+            if (!title || title === 'Planificación base Excel') {
+                title = `${shiftName}: ${customHorario}`;
+            } else if (!title.includes(customHorario)) {
+                title += ` | Horario: ${customHorario}`;
+            }
+        } else if (key === 'p') {
             const tpHorario = def.horario || '10:00 - 14:00 / 18:00 - 22:00';
             if (!title || title === 'Planificación base Excel') {
                 title = `Turno Partido: ${tpHorario}`;
@@ -401,9 +409,17 @@
             label = compactMap[label] || label;
         }
 
-        // Generar tooltip enriquecido con horario para Turno Partido
+        // Generar tooltip enriquecido con horario para Turno Partido u horario personalizado
         let title = cell?.title || '';
-        if (isPartido) {
+        const customHorario = cell?.horario || cell?.payload?.horario;
+        if (customHorario) {
+            const shiftName = label !== '—' ? label : 'Turno';
+            if (!title) {
+                title = `${shiftName}: ${customHorario}`;
+            } else if (!title.includes(customHorario)) {
+                title += ` | Horario: ${customHorario}`;
+            }
+        } else if (isPartido) {
             const tpHorario = definitions.p?.horario || '10:00 - 14:00 / 18:00 - 22:00';
             if (!title) {
                 title = `Turno Partido: ${tpHorario}`;

@@ -1630,6 +1630,7 @@ window.saveRefuerzo = async () => {
     const empId = document.getElementById('rfEmp')?.value;
     const tipo = document.querySelector('input[name="rfTipo"]:checked')?.value || 'dia';
     const turno = document.getElementById('rfTurno')?.value || '—';
+    const horario = document.getElementById('rfHorario')?.value?.trim() || '';
     const obs = document.getElementById('rfObs')?.value || '';
     const dateStart = document.getElementById('rfDateStart')?.value;
     const dateEnd = document.getElementById('rfDateEnd')?.value;
@@ -1722,6 +1723,7 @@ window.saveRefuerzo = async () => {
             hotel_id: hotel,
             fecha: d,
             turno: turno,
+            ...(horario ? { horario } : {}),
             updated_by: 'ADMIN_REFUERZO'
         }));
 
@@ -2094,6 +2096,9 @@ window.ensureChangeEditModal = () => {
                         <option value="activo">Activo</option><option value="anulado">Anulado</option>
                     </select>
                 </label>
+                <label style="grid-column:1 / -1; display:grid; gap:7px; font-size:0.68rem; color:#64748b; font-weight:900; text-transform:uppercase;">Horario personalizado (ej: 10:30 - 14:30 / 18:30 - 22:30)
+                    <input id="edit-change-horario" type="text" style="height:48px; border:1px solid #d5e1ef; border-radius:14px; padding:0 14px; font-size:0.95rem; font-weight:700;" placeholder="Ej: 10:30 - 14:30 / 18:30 - 22:30 (opcional)">
+                </label>
                 <label style="grid-column:1 / -1; display:grid; gap:7px; font-size:0.68rem; color:#64748b; font-weight:900; text-transform:uppercase;">Observacion
                     <textarea id="edit-change-obs" rows="3" style="border:1px solid #d5e1ef; border-radius:14px; padding:12px 14px; font-size:0.95rem; font-weight:700; resize:vertical;"></textarea>
                 </label>
@@ -2177,6 +2182,7 @@ window.editChange = async (id) => {
         setValue('edit-change-hotel', ev.hotel_origen || ev.hotel_destino || '');
         setValue('edit-change-origin', toShiftSelectValue(ev.turno_original || ev.payload?.origen || ''));
         setValue('edit-change-dest', toShiftSelectValue(ev.turno_nuevo || ev.payload?.destino || ''));
+        setValue('edit-change-horario', ev.payload?.horario || ev.horario || '');
         setValue('edit-change-type', ev.tipo || 'INTERCAMBIO_TURNO');
         setValue('edit-change-status', ev.estado || 'activo');
         setValue('edit-change-obs', ev.observaciones || '');
@@ -2277,6 +2283,7 @@ window.saveChangeEdit = async (event) => {
                 ...(original.payload || {}),
                 origen: turnoOriginal,
                 destino: turnoNuevo,
+                horario: document.getElementById('edit-change-horario')?.value?.trim() || null,
                 edited_from_admin: true,
                 edited_at: new Date().toISOString()
             }
