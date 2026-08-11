@@ -837,6 +837,13 @@
             const pill = document.createElement('div');
             pill.className = `turno-pill v-${cls}`;
             pill.textContent = display.label;
+
+            const tpHorario = window.TurnosRules?.definitions?.p?.horario || '10:00 - 14:00 / 18:00 - 22:00';
+            const tooltipText = display.title || ((cls === 'p' || _codeForCls.toLowerCase().includes('partido') || _codeForCls.toLowerCase().includes('t/p')) ? `Turno Partido: ${tpHorario}` : '');
+            if (tooltipText) {
+                pill.title = tooltipText;
+                cell.title = tooltipText;
+            }
             
             if (display.icons) {
                 const currentText = pill.textContent;

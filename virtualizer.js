@@ -238,6 +238,9 @@ class VirtualTable {
         } else if (rawTurno.includes('descanso') || rawTurno === 'd') {
             cleanShiftColorCls = 'v-descanso';
             cleanLabel = 'Descanso';
+        } else if (rawTurno.includes('partido') || rawTurno === 'p' || rawTurno === 'tp' || rawTurno === 't/p') {
+            cleanShiftColorCls = 'v-partido';
+            cleanLabel = 'T/P';
         }
 
         const isInterchange = !!(cellData.cambio || cellData.intercambio || (cellData.origen && (cellData.origen.includes('CAMBIO') || cellData.origen.includes('INTERCAMBIO'))));
@@ -256,9 +259,14 @@ class VirtualTable {
             cell.title = '';
         }
 
+        if (cleanShiftColorCls === 'v-partido' || rawTurno.includes('partido') || rawTurno === 'p' || rawTurno === 'tp' || rawTurno === 't/p') {
+            const tpHorario = window.TurnosRules?.definitions?.p?.horario || '10:00 - 14:00 / 18:00 - 22:00';
+            cell.title = cell.title ? `${cell.title} | Horario: ${tpHorario}` : `Turno Partido: ${tpHorario}`;
+        }
+
         const cleanClsString = `v-cell ${cleanShiftColorCls}`;
         if (cell.className !== cleanClsString) cell.className = cleanClsString;
-        const cleanDisplayHTML = `<div class="v-pill">${cleanLabel}${cleanIcon ? ` <small>${cleanIcon}</small>` : ''}</div>`;
+        const cleanDisplayHTML = `<div class="v-pill" ${cell.title ? `title="${cell.title}"` : ''}>${cleanLabel}${cleanIcon ? ` <small>${cleanIcon}</small>` : ''}</div>`;
         if (cell.innerHTML !== cleanDisplayHTML) cell.innerHTML = cleanDisplayHTML;
         return;
     }

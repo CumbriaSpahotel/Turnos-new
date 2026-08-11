@@ -67,7 +67,8 @@
             icon: '⇅',
             publicClass: 'v-partido',
             mobileClass: 'p',
-            adminStyle: 'background:#ede9fe; color:#5b21b6; border:1px solid #c4b5fd;'
+            adminStyle: 'background:#ede9fe; color:#5b21b6; border:1px solid #c4b5fd;',
+            horario: '10:00 - 14:00 / 18:00 - 22:00'
         },
         n: {
             label: 'Noche',
@@ -226,6 +227,16 @@
                 title = `Sustituido por: ${cell.sustituto}`;
             } else if (cell.coveringFor) {
                 title = `Cubriendo a: ${cell.coveringFor}`;
+            }
+        }
+
+        // Si es Turno Partido (key 'p'), asegurar que title incluya el horario
+        if (key === 'p') {
+            const tpHorario = def.horario || '10:00 - 14:00 / 18:00 - 22:00';
+            if (!title || title === 'Planificación base Excel') {
+                title = `Turno Partido: ${tpHorario}`;
+            } else if (!title.includes('10:00') && !title.includes('Horario')) {
+                title += ` | Horario: ${tpHorario}`;
             }
         }
 
@@ -390,10 +401,22 @@
             label = compactMap[label] || label;
         }
 
+        // Generar tooltip enriquecido con horario para Turno Partido
+        let title = cell?.title || '';
+        if (isPartido) {
+            const tpHorario = definitions.p?.horario || '10:00 - 14:00 / 18:00 - 22:00';
+            if (!title) {
+                title = `Turno Partido: ${tpHorario}`;
+            } else if (!title.includes('10:00') && !title.includes('Horario')) {
+                title += ` | Horario: ${tpHorario}`;
+            }
+        }
+
         return {
             label,
             icons: Array.from(icons),
-            text: label === '—' ? '—' : `${label}${icons.size ? ' ' + Array.from(icons).join(' ') : ''}`
+            text: label === '—' ? '—' : `${label}${icons.size ? ' ' + Array.from(icons).join(' ') : ''}`,
+            title
         };
     };
 

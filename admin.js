@@ -5016,20 +5016,32 @@ window.renderEmpleadoCell = (turnoEmpleado, { isCompact = false } = {}) => {
     const styleKey = sKey.toLowerCase();
     const style = capsuleStyles[styleKey] || { bg: '#f8fafc', color: '#475569', border: '#e2e8f0', label: turnoVisible || '-', icon: '' };
 
+    let cellTitle = turnoEmpleado?.title || '';
+    if (styleKey === 'p' || String(turnoVisible).toLowerCase().includes('t/p') || String(turnoVisible).toLowerCase().includes('partido')) {
+        const tpHorario = window.TurnosRules?.definitions?.p?.horario || '10:00 - 14:00 / 18:00 - 22:00';
+        if (!cellTitle) {
+            cellTitle = `Turno Partido: ${tpHorario}`;
+        } else if (!cellTitle.includes('10:00') && !cellTitle.includes('Horario')) {
+            cellTitle += ` | Horario: ${tpHorario}`;
+        }
+    }
+
+    const titleAttribute = cellTitle ? `title="${escapeHtml(cellTitle)}"` : '';
+
     if (isCompact) {
         // VISTA MENSUAL
         const labelText = style.label || turnoVisible || '-';
-        const compactIcons = (style.icon ? ` ${style.icon}` : '') + (hayCambio ? ' ðŸ”„' : '');
+        const compactIcons = (style.icon ? ` ${style.icon}` : '') + (hayCambio ? ' 🔄' : '');
         
         return `
-        <div style="display:flex; align-items:center; justify-content:center; padding:4px 2px; border-radius:6px; font-size:0.7rem; font-weight:700; min-height:45px; background:${style.bg}; color:${style.color}; border:1px solid rgba(0,0,0,0.05);">
+        <div ${titleAttribute} style="display:flex; align-items:center; justify-content:center; padding:4px 2px; border-radius:6px; font-size:0.7rem; font-weight:700; min-height:45px; background:${style.bg}; color:${style.color}; border:1px solid rgba(0,0,0,0.05);">
             ${escapeHtml(labelText)}${compactIcons ? ` <span style="font-size:0.65rem;">${compactIcons}</span>` : ''}
         </div>`;
     } else {
         // VISTA SEMANAL
         let label = style.label || turnoVisible || '-';
         
-        // CORRECCIÃ“N V12.5.16: Bloqueo de CT en render
+        // CORRECCIÓN V12.5.16: Bloqueo de CT en render
         if (window.isInvalidLegacyChangeValue && window.isInvalidLegacyChangeValue(label)) {
             label = turnoEmpleado.turnoBase || '-';
             console.warn('[RENDER_GUARD_DEBUG] Bloqueado CT en render cell', { labelOriginal: style.label || turnoVisible });
@@ -5052,7 +5064,7 @@ window.renderEmpleadoCell = (turnoEmpleado, { isCompact = false } = {}) => {
 
         return `
         <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:75px; gap:4px;">
-            <span class="v-pill" style="display:inline-flex; align-items:center; justify-content:center; padding:8px 16px; border-radius:999px; font-size:0.8rem; font-weight:800; background:${style.bg} !important; color:${style.color} !important; border:1px solid ${style.border} !important; box-shadow:0 1px 3px rgba(0,0,0,0.06); white-space:nowrap;">
+            <span class="v-pill" ${titleAttribute} style="display:inline-flex; align-items:center; justify-content:center; padding:8px 16px; border-radius:999px; font-size:0.8rem; font-weight:800; background:${style.bg} !important; color:${style.color} !important; border:1px solid ${style.border} !important; box-shadow:0 1px 3px rgba(0,0,0,0.06); white-space:nowrap;">
                 ${escapeHtml(label)}${iconHtml}
             </span>
         </div>`;
