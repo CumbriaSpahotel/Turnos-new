@@ -1241,12 +1241,29 @@ window.saveHorarioDailyOverride = async () => {
             hotel_id: hotel,
             fecha: fecha,
             turno: turno,
-            ...(horario ? { horario } : {}),
             updated_by: 'ADMIN_HORARIO_MODULO'
         };
 
         const { error } = await window.supabase.from('turnos').upsert([record], { onConflict: 'empleado_id,fecha' });
         if (error) throw error;
+
+        if (horario) {
+            await window.TurnosDB.upsertEvento({
+                tipo: 'CAMBIO_TURNO',
+                empleado_id: empId,
+                hotel_origen: hotel,
+                hotel_destino: hotel,
+                fecha_inicio: fecha,
+                fecha_fin: fecha,
+                turno_nuevo: turno,
+                estado: 'activo',
+                observaciones: `Horario: ${horario}`,
+                payload: {
+                    destino: turno,
+                    horario: horario
+                }
+            });
+        }
 
         if (status) {
             status.style.color = '#10b981';
@@ -1824,12 +1841,31 @@ window.saveRefuerzo = async () => {
             hotel_id: hotel,
             fecha: d,
             turno: turno,
-            ...(horario ? { horario } : {}),
             updated_by: 'ADMIN_REFUERZO'
         }));
 
         const { error } = await window.supabase.from('turnos').upsert(records, { onConflict: 'empleado_id,fecha' });
         if (error) throw error;
+
+        if (horario) {
+            for (const d of dates) {
+                await window.TurnosDB.upsertEvento({
+                    tipo: 'CAMBIO_TURNO',
+                    empleado_id: empId,
+                    hotel_origen: hotel,
+                    hotel_destino: hotel,
+                    fecha_inicio: d,
+                    fecha_fin: d,
+                    turno_nuevo: turno,
+                    estado: 'activo',
+                    observaciones: `Horario: ${horario}`,
+                    payload: {
+                        destino: turno,
+                        horario: horario
+                    }
+                });
+            }
+        }
 
         if (window.addLog) window.addLog(`Refuerzo añadido: ${emp?.nombre || empId} en ${hotel} (${dates.length} día${dates.length !== 1 ? 's' : ''})`, 'info');
 
