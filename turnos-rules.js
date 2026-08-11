@@ -121,6 +121,17 @@
         }
     };
 
+    const loadSavedHorarios = () => {
+        try {
+            const saved = JSON.parse(localStorage.getItem('turnos_horarios_config') || '{}');
+            if (saved.p) definitions.p.horario = saved.p;
+            if (saved.m) definitions.m.horario = saved.m;
+            if (saved.t) definitions.t.horario = saved.t;
+            if (saved.n) definitions.n.horario = saved.n;
+        } catch (e) {}
+    };
+    loadSavedHorarios();
+
     const describeCell = (cell = {}) => {
         const fs = cell._finalState;
         

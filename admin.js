@@ -1152,10 +1152,111 @@ window.switchSection = (id) => {
     if (targetId === 'excel') window.renderExcelView?.();
     if (targetId === 'preview') window.renderPreview?.();
     if (targetId === 'employees') window.populateEmployees?.();
+    if (targetId === 'horarios') window.renderHorariosSection?.();
     if (targetId === 'changes') window.renderChanges?.();
     if (targetId === 'requests') window.renderRequests?.();
     if (targetId === 'vacations') window.renderVacations?.();
     if (targetId === 'bajas') window.renderBajas?.();
+};
+
+window.renderHorariosSection = async () => {
+    try {
+        const saved = JSON.parse(localStorage.getItem('turnos_horarios_config') || '{}');
+        const tpInput = document.getElementById('cfg-horario-tp');
+        const mInput = document.getElementById('cfg-horario-m');
+        const tInput = document.getElementById('cfg-horario-t');
+        const nInput = document.getElementById('cfg-horario-n');
+        
+        if (tpInput && saved.p) tpInput.value = saved.p;
+        if (mInput && saved.m) mInput.value = saved.m;
+        if (tInput && saved.t) tInput.value = saved.t;
+        if (nInput && saved.n) nInput.value = saved.n;
+
+        // Poblar selects de hoteles y empleados para asignación rápida diaria
+        const [hotels, emps] = await Promise.all([
+            window.TurnosDB.getHotels(),
+            window.empleadosGlobales || window.TurnosDB.getEmpleados()
+        ]);
+
+        const hotelSel = document.getElementById('horarioModHotel');
+        const empSel = document.getElementById('horarioModEmp');
+        const fechaInput = document.getElementById('horarioModFecha');
+
+        if (hotelSel) {
+            hotelSel.innerHTML = (hotels || []).map(h => `<option value="${escapeHtml(h)}">${escapeHtml(h)}</option>`).join('');
+        }
+        if (empSel) {
+            const empsSorted = [...(emps || [])].sort((a,b) => (a.nombre || '').localeCompare(b.nombre || ''));
+            empSel.innerHTML = empsSorted.map(e => `<option value="${e.id}">${escapeHtml(e.nombre)} [${escapeHtml(e.id_interno || e.id)}]</option>`).join('');
+        }
+        if (fechaInput && !fechaInput.value) {
+            fechaInput.value = window.isoDate(new Date());
+        }
+    } catch (e) {
+        console.error('[HORARIOS_SECTION_ERROR]', e);
+    }
+};
+
+window.saveHorariosConfig = () => {
+    const tp = document.getElementById('cfg-horario-tp')?.value?.trim();
+    const m = document.getElementById('cfg-horario-m')?.value?.trim();
+    const t = document.getElementById('cfg-horario-t')?.value?.trim();
+    const n = document.getElementById('cfg-horario-n')?.value?.trim();
+
+    const config = { p: tp, m, t, n };
+    localStorage.setItem('turnos_horarios_config', JSON.stringify(config));
+
+    if (window.TurnosRules?.definitions) {
+        if (tp) window.TurnosRules.definitions.p.horario = tp;
+        if (m) window.TurnosRules.definitions.m.horario = m;
+        if (t) window.TurnosRules.definitions.t.horario = t;
+        if (n) window.TurnosRules.definitions.n.horario = n;
+    }
+
+    const status = document.getElementById('horariosSaveStatus');
+    if (status) {
+        status.textContent = '✓ Horarios estándar guardados y aplicados correctamente.';
+        setTimeout(() => { status.textContent = ''; }, 4000);
+    }
+};
+
+window.saveHorarioDailyOverride = async () => {
+    const status = document.getElementById('horarioDailyStatus');
+    if (status) { status.style.color = 'var(--text-dim)'; status.textContent = 'Guardando...'; }
+
+    const hotel = document.getElementById('horarioModHotel')?.value;
+    const empId = document.getElementById('horarioModEmp')?.value;
+    const fecha = document.getElementById('horarioModFecha')?.value;
+    const turno = document.getElementById('horarioModTurno')?.value;
+    const horario = document.getElementById('horarioModHorario')?.value?.trim();
+
+    if (!hotel || !empId || !fecha) {
+        if (status) { status.style.color = '#ef4444'; status.textContent = 'Hotel, empleado y fecha son obligatorios.'; }
+        return;
+    }
+
+    try {
+        const record = {
+            empleado_id: empId,
+            hotel_id: hotel,
+            fecha: fecha,
+            turno: turno,
+            ...(horario ? { horario } : {}),
+            updated_by: 'ADMIN_HORARIO_MODULO'
+        };
+
+        const { error } = await window.supabase.from('turnos').upsert([record], { onConflict: 'empleado_id,fecha' });
+        if (error) throw error;
+
+        if (status) {
+            status.style.color = '#10b981';
+            status.textContent = '✓ Horario del día guardado correctamente para ' + fecha;
+            setTimeout(() => { status.textContent = ''; }, 4000);
+        }
+        if (window.TurnosDB?.clearCache) window.TurnosDB.clearCache();
+    } catch (err) {
+        if (status) { status.style.color = '#ef4444'; status.textContent = 'Error guardando: ' + err.message; }
+    }
 };
 
 /**
