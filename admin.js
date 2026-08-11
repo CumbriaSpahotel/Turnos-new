@@ -4550,8 +4550,15 @@ window.createPuestosPreviewModel = ({
 
     const baseGetTurnoEmpleado = (empleadoId, fecha) => {
         const normEmpId = window.normalizeId(empleadoId);
-        const profile = employees.find(e => window.normalizeId(e.id) === normEmpId || window.normalizeId(e.nombre) === normEmpId);
-        const titularRow = sourceRows.find(r => window.normalizeId(r.empleadoId) === normEmpId);
+        const empCanonical = (window.ShiftResolver?.getCanonicalEmployeeId ? window.ShiftResolver.getCanonicalEmployeeId(empleadoId, { employees }) : null) || normEmpId;
+        const profile = employees.find(e => {
+            const eCan = (window.ShiftResolver?.getCanonicalEmployeeId ? window.ShiftResolver.getCanonicalEmployeeId(e.id, { employees }) : null) || window.normalizeId(e.id);
+            return eCan === empCanonical || window.normalizeId(e.id) === normEmpId || window.normalizeId(e.nombre) === normEmpId;
+        });
+        const titularRow = sourceRows.find(r => {
+            const rCan = (window.ShiftResolver?.getCanonicalEmployeeId ? window.ShiftResolver.getCanonicalEmployeeId(r.empleadoId || r.displayName, { employees }) : null) || window.normalizeId(r.empleadoId);
+            return (empCanonical && rCan && empCanonical === rCan) || window.normalizeId(r.empleadoId) === normEmpId || window.normalizeId(r.displayName) === normEmpId;
+        });
         const dateIdx = dates.indexOf(fecha);
         const turnoBase = (titularRow && dateIdx !== -1) ? (titularRow.values[dateIdx] || null) : null;
         
@@ -4574,7 +4581,10 @@ window.createPuestosPreviewModel = ({
             const coberturas = ausenciaSustitucionMap.get(normEmpId);
             for (const cob of coberturas) {
                 if (fecha >= cob.fi && fecha <= cob.ff) {
-                    const titularRow = sourceRows.find(r => window.normalizeId(r.empleadoId) === cob.normTitular);
+                    const titularRow = sourceRows.find(r => {
+                        const rCan = (window.ShiftResolver?.getCanonicalEmployeeId ? window.ShiftResolver.getCanonicalEmployeeId(r.empleadoId || r.displayName, { employees }) : null) || window.normalizeId(r.empleadoId);
+                        return (rCan && rCan === cob.normTitular) || window.normalizeId(r.empleadoId) === cob.normTitular || window.normalizeId(r.displayName) === cob.normTitular;
+                    });
                     const dateIdx = dates.indexOf(fecha);
                     const turnoBase = (titularRow && dateIdx !== -1) ? (titularRow.values[dateIdx] || null) : null;
                     const profile = employees.find(e => window.normalizeId(e.id) === normEmpId || window.normalizeId(e.nombre) === normEmpId);
@@ -8137,24 +8147,48 @@ window.getGlobalPendingPublicationStatus = async function() {
             const snapDate = new Date(snap.created_at);
             const newerEvts = group.events.filter(e => {
                 const d = e.updated_at || e.created_at;
-                return d && new Date(d) > snapDate;
+                // Tolerancia de 5 segundos para evitar desfases de reloj o tiempos de ejecución de red
+                return d && (new Date(d).getTime() - snapDate.getTime() > 5000);
             });
+
             if (newerEvts.length > 0) {
-                result.totalPendingChanges += 1;
-                result.totalOutdatedSnapshots++;
-                result.pendingEvents.push(...newerEvts);
-                result.outdatedSnapshots.push({
-                    hotel: group.hotel, weekStart: group.weekStart,
-                    snapshotId: snap.id, snapshotDate: snap.created_at,
-                    pendingCount: newerEvts.length,
-                    eventIds: newerEvts.map(e => e.id)
-                });
-                result.byHotelWeek.push({
-                    hotel: group.hotel, weekStart: group.weekStart,
-                    snapshotExists: true, snapshotDate: snap.created_at,
-                    pendingCount: newerEvts.length, isOutdated: true,
-                    eventIds: newerEvts.map(e => e.id)
-                });
+                // Verificar si existe alguna diferencia real entre el snapshot publicado y la versión actual
+                let hasRealDiff = true;
+                if (snap && snap.snapshot_json && window.PublicationSnapshot?.diffPublishedSchedules) {
+                    try {
+                        const employees = (window.empleadosGlobales && window.empleadosGlobales.length)
+                            ? window.empleadosGlobales
+                            : await window.TurnosDB.getEmpleados();
+                        const { baseIndex } = window.buildIndices ? window.buildIndices(employees) : { baseIndex: { aliasesEmpleado: new Map() } };
+                        const uCtx = window.ShiftResolver.createIdentityContext({ baseIndex, employees });
+                        const context = { resolveEmployeeId: (id) => window.ShiftResolver.getCanonicalEmployeeId(id, uCtx) };
+                        const currentSnap = (await window.buildPublicationSnapshotPreview(group.weekStart, group.hotel))?.[0];
+                        if (currentSnap) {
+                            const diffs = window.PublicationSnapshot.diffPublishedSchedules(currentSnap, snap.snapshot_json, context);
+                            hasRealDiff = diffs.length > 0;
+                        }
+                    } catch (_diffErr) {
+                        hasRealDiff = true;
+                    }
+                }
+
+                if (hasRealDiff) {
+                    result.totalPendingChanges += 1;
+                    result.totalOutdatedSnapshots++;
+                    result.pendingEvents.push(...newerEvts);
+                    result.outdatedSnapshots.push({
+                        hotel: group.hotel, weekStart: group.weekStart,
+                        snapshotId: snap.id, snapshotDate: snap.created_at,
+                        pendingCount: newerEvts.length,
+                        eventIds: newerEvts.map(e => e.id)
+                    });
+                    result.byHotelWeek.push({
+                        hotel: group.hotel, weekStart: group.weekStart,
+                        snapshotExists: true, snapshotDate: snap.created_at,
+                        pendingCount: newerEvts.length, isOutdated: true,
+                        eventIds: newerEvts.map(e => e.id)
+                    });
+                }
             }
         }
 

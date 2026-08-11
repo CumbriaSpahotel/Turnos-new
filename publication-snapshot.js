@@ -188,9 +188,9 @@
                 days[date] = {
                     code: codeVal,
                     relationEmployeeId: relationId,
-                    horario: cellVal?.horario || cellVal?.payload?.horario || null,
-                    label: cellVal?.label || null,
-                    title: cellVal?.title || null
+                    horario: dayObj.horario || dayObj.payload?.horario || null,
+                    label: dayObj.label || null,
+                    title: dayObj.title || null
                 };
             });
 

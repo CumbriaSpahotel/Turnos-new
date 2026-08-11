@@ -18,6 +18,38 @@
         return !norm || norm === '-' || norm === '—' || norm === 'SIN_TURNO' || norm === 'NO_TURNO';
     };
 
+    const getEmployeeDisplayName = (rawId, context = {}) => {
+        if (!rawId) return '';
+        const norm = window.normalizeId ? window.normalizeId(rawId) : String(rawId).toLowerCase().trim();
+        if (!norm) return String(rawId);
+
+        const employees = context.employees || window.empleadosGlobales || (window.TurnosDB?.getEmpleados ? window.TurnosDB.getEmpleados() : []);
+        if (Array.isArray(employees) && employees.length > 0) {
+            const found = employees.find(e => {
+                const eId = window.normalizeId ? window.normalizeId(e.id) : String(e.id || '').toLowerCase();
+                const eInt = window.normalizeId ? window.normalizeId(e.id_interno) : String(e.id_interno || '').toLowerCase();
+                const eNom = window.normalizeId ? window.normalizeId(e.nombre) : String(e.nombre || '').toLowerCase();
+                return eId === norm || eInt === norm || eNom === norm;
+            });
+            if (found && found.nombre) return found.nombre;
+        }
+
+        const baseIndex = context.baseIndex || (context.aliasesEmpleado ? context : null);
+        if (baseIndex && baseIndex.aliasesEmpleado) {
+            for (const [nombre, id] of baseIndex.aliasesEmpleado.entries()) {
+                const idNorm = window.normalizeId ? window.normalizeId(id) : String(id).toLowerCase();
+                const nomNorm = window.normalizeId ? window.normalizeId(nombre) : String(nombre).toLowerCase();
+                if (idNorm === norm || nomNorm === norm) {
+                    return nombre;
+                }
+            }
+        }
+
+        return String(rawId);
+    };
+
+    window.getEmployeeDisplayName = getEmployeeDisplayName;
+
     const shiftKey = (turno, type = 'NORMAL') => {
         const upperType = String(type || 'NORMAL').toUpperCase();
         const text = normalizeText(turno);
@@ -193,18 +225,21 @@
                 icon = def.icon; // fallback a icono de definición (ej: 🌙 para Noche)
             }
 
+            const coveredByName = getEmployeeDisplayName(fs.coveredByEmployeeId, context) || fs.coveredByEmployeeId;
+            const coversByName = getEmployeeDisplayName(fs.coversEmployeeId, context) || fs.coversEmployeeId;
+
             // 3. Tooltip (Title) enriquecido
             switch (fs.sourceReason) {
                 case 'EVENTO_VAC':
                 case 'EVENTO_BAJA':
                 case 'EVENTO_PERM':
-                    title = fs.coveredByEmployeeId ? `Ausente. Cubierto por: ${fs.coveredByEmployeeId}` : `Ausencia: ${fs.estadoFinal}`;
+                    title = fs.coveredByEmployeeId ? `Ausente. Cubierto por: ${coveredByName}` : `Ausencia: ${fs.estadoFinal}`;
                     break;
                 case 'EVENTO_SUSTITUCION':
-                    title = `Sustituyendo a: ${fs.coversEmployeeId}`;
+                    title = `Sustituyendo a: ${coversByName}`;
                     break;
                 case 'EVENTO_INTERCAMBIO':
-                    title = `Intercambio de turno con: ${fs.coveredByEmployeeId || fs.coversEmployeeId}`;
+                    title = `Intercambio de turno con: ${coveredByName || coversByName}`;
                     break;
                 case 'EVENTO_CAMBIO_HOTEL':
                     title = `Cambio de hotel (Destino: ${fs.hotelFinal})`;
@@ -424,6 +459,13 @@
 
         // Generar tooltip enriquecido con horario para Turno Partido u horario personalizado
         let title = cell?.title || '';
+
+        if (title && (title.includes('Cubierto por:') || title.includes('Sustituyendo a:') || title.includes('Intercambio'))) {
+            title = title.replace(/\b(EMP-\d+|emp-\d+|[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12})\b/gi, (match) => {
+                const resolvedName = getEmployeeDisplayName(match, context);
+                return resolvedName && resolvedName !== match ? resolvedName : match;
+            });
+        }
         const customHorario = cell?.horario || cell?.payload?.horario;
         if (customHorario) {
             const shiftName = label !== '—' ? label : 'Turno';
