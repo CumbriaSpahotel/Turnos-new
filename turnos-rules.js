@@ -164,7 +164,7 @@
     };
     loadSavedHorarios();
 
-    const describeCell = (cell = {}) => {
+    const describeCell = (cell = {}, context = {}) => {
         const fs = cell._finalState;
         
         // Determinar clave de definición
