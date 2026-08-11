@@ -7136,6 +7136,22 @@ window.showPublishPreview = async () => {
            </div>`
         : '';
 
+    const publishNoteHtml = pendingResult.hasChanges
+        ? `<div style="background: #eff6ff; border: 1px solid #dbeafe; padding: 16px; border-radius: 12px; font-size: 0.85rem; color: #1e40af;">
+                    <strong>Nota:</strong> Al publicar, se crearÃ¡ una versiÃ³n inmutable (Snapshot) que serÃ¡ la Ãºnica fuente de verdad para el Cuadrante PÃºblico. Los cambios locales en el Excel tambiÃ©n se sincronizarÃ¡n con la base de datos.
+                </div>`
+        : `<div style="background: #f8fafc; border: 1px solid #e2e8f0; padding: 16px; border-radius: 12px; font-size: 0.85rem; color: #475569;">
+                    No se crearÃ¡ una nueva publicaciÃ³n porque la semana seleccionada ya coincide con el snapshot activo.
+                </div>`;
+
+    const publishButtonHtml = pendingResult.hasChanges ? `
+                <button id="btnConfirmPublish" 
+                        onclick="window.publishToSupabase()" 
+                        ${(!validation.ok) ? 'disabled style="opacity: 0.5; cursor: not-allowed;"' : ''}
+                        style="padding: 12px 32px; border: none; border-radius: 12px; background: #3b82f6; color: white; font-weight: 800; cursor: pointer; box-shadow: 0 4px 10px rgba(59, 130, 246, 0.3);">
+                    Confirmar y Publicar
+                </button>` : '';
+
     modal.innerHTML = `
         <div class="drawer-content" style="max-width: 600px; padding: 0; border-radius: 24px; overflow: hidden; background: #f8fafc;">
             <header style="padding: 24px 32px; background: #0f172a; color: white;">
@@ -7167,17 +7183,19 @@ window.showPublishPreview = async () => {
                     ${hotelSummary}
                 </section>
 
-                <div style="background: #eff6ff; border: 1px solid #dbeafe; padding: 16px; border-radius: 12px; font-size: 0.85rem; color: #1e40af;">
+                ${publishNoteHtml}
+                <div style="display:none; background: #eff6ff; border: 1px solid #dbeafe; padding: 16px; border-radius: 12px; font-size: 0.85rem; color: #1e40af;">
                     <strong>Nota:</strong> Al publicar, se creará una versión inmutable (Snapshot) que será la única fuente de verdad para el Cuadrante Público. Los cambios locales en el Excel también se sincronizarán con la base de datos.
                 </div>
             </div>
 
             <footer style="padding: 24px 32px; background: white; border-top: 1px solid #e2e8f0; display: flex; justify-content: flex-end; gap: 12px;">
                 <button onclick="document.getElementById('${modalId}').classList.remove('open')" style="padding: 12px 24px; border: 1px solid #e2e8f0; border-radius: 12px; background: white; font-weight: 700; cursor: pointer; color: #64748b;">Cancelar</button>
-                <button id="btnConfirmPublish" 
+                ${publishButtonHtml}
+                <button data-legacy-hidden-publish-button="true" 
                         onclick="window.publishToSupabase()" 
                         ${(!validation.ok) ? 'disabled style="opacity: 0.5; cursor: not-allowed;"' : ''}
-                        style="padding: 12px 32px; border: none; border-radius: 12px; background: #3b82f6; color: white; font-weight: 800; cursor: pointer; box-shadow: 0 4px 10px rgba(59, 130, 246, 0.3);">
+                        style="display:none; padding: 12px 32px; border: none; border-radius: 12px; background: #3b82f6; color: white; font-weight: 800; cursor: pointer; box-shadow: 0 4px 10px rgba(59, 130, 246, 0.3);">
                     ${pendingResult.hasChanges ? "Confirmar y Publicar" : "Volver a Publicar Semana"}
                 </button>
             </footer>
@@ -7232,6 +7250,23 @@ window.publishToSupabase = async () => {
         // 1. Generar Snapshots finales (SIEMPRE frescos, sin caché)
         if (window.invalidatePreviewSnapshotCache) window.invalidatePreviewSnapshotCache('publish_fresh');
         const snapshots = await window.buildPublicationSnapshotPreview(weekStart, hotelSel);
+        const weekEnd = window.addIsoDays(weekStart, 6);
+        const pendingResult = await window.hasPendingPublicationChanges({
+            weekStart,
+            weekEnd,
+            hotels: snapshots.map(s => s.hotel_nombre || s.hotel_id),
+            snapshots
+        });
+        if (!pendingResult.hasChanges) {
+            alert('No se ha publicado nada: la semana seleccionada ya coincide con el snapshot activo.');
+            document.getElementById('publishPreviewModal')?.classList.remove('open');
+            if (btn) {
+                btn.disabled = false;
+                btn.textContent = 'Confirmar y Publicar';
+                btn.style.opacity = '1';
+            }
+            return;
+        }
         
         // 2. Sincronizar cambios de Excel (turnos crudos)
         const changes = window.getExcelDiff ? window.getExcelDiff() : [];
