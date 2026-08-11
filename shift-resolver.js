@@ -426,6 +426,13 @@ tipo=${normalized.tipo}`);
     };
 
     window.getTurnoOperativoBase = (empleadoId, fecha, context = {}) => {
+        const baseIndex = context.baseIndex || context;
+        if (baseIndex && typeof window.getTurnoBaseDeEmpleado === 'function') {
+            const dbTurno = window.getTurnoBaseDeEmpleado(empleadoId, fecha, baseIndex);
+            if (dbTurno !== null && dbTurno !== undefined) {
+                return dbTurno;
+            }
+        }
         if (context.turnoBase !== undefined && context.turnoBase !== null) {
             return context.turnoBase;
         }
