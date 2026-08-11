@@ -389,8 +389,11 @@ tipo=${normalized.tipo}`);
         if (!baseIndex || !baseIndex.porEmpleadoFecha) return null;
         const normId = window.normalizeId(empleadoId);
         const date = window.normalizeDate(fecha);
+        const canonicalId = (window.ShiftResolver?.getCanonicalEmployeeId ? window.ShiftResolver.getCanonicalEmployeeId(empleadoId, { baseIndex }) : null) || normId;
+
         const tryGet = (id) => {
-            const k = `${id}_${date}`;
+            if (!id) return null;
+            const k = `${window.normalizeId(id)}_${date}`;
             if (baseIndex.porEmpleadoFecha.has(k)) {
                 const val = baseIndex.porEmpleadoFecha.get(k);
                 if (val === null || val === undefined || String(val).trim() === '') return '—';
@@ -400,11 +403,12 @@ tipo=${normalized.tipo}`);
             }
             return null;
         };
+
         if (baseIndex.ausenciaSustitucionMap) {
             let titularIdReal = null;
             baseIndex.ausenciaSustitucionMap.forEach((coberturas, normSust) => {
                 if (titularIdReal) return;
-                if (normSust === normId) {
+                if (normSust === normId || normSust === canonicalId) {
                     const cob = coberturas.find(c => date >= c.fi && date <= c.ff);
                     if (cob) titularIdReal = cob.titularId;
                 }
@@ -415,12 +419,27 @@ tipo=${normalized.tipo}`);
                 if (valTitular !== null) return valTitular;
             }
         }
-        let res = tryGet(normId);
+
+        // 1. Probar primero con el ID canónico de BD (ej. emp-0018)
+        let res = tryGet(canonicalId);
         if (res !== null) return res;
-        const alias = baseIndex.aliasesEmpleado?.get(normId);
-        if (alias) {
-            res = tryGet(alias);
-            if (res !== null) return res;
+
+        // 2. Probar con el ID crudo (ej. elena)
+        res = tryGet(normId);
+        if (res !== null) return res;
+
+        // 3. Probar con alias en ambas direcciones
+        if (baseIndex.aliasesEmpleado) {
+            const alias1 = baseIndex.aliasesEmpleado.get(normId);
+            if (alias1) {
+                res = tryGet(alias1);
+                if (res !== null) return res;
+            }
+            const alias2 = baseIndex.aliasesEmpleado.get(canonicalId);
+            if (alias2) {
+                res = tryGet(alias2);
+                if (res !== null) return res;
+            }
         }
         return null;
     };
