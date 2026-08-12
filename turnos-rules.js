@@ -85,7 +85,14 @@
         if (text.startsWith('perm') || text.includes('permiso')) return 'perm';
 
         // 2. Turno Partido (Coincidencia exacta e inequívoca, antes de otros turnos para no chocar con "tp" o "t/p")
-        if (text === 'p' || text === 'tp' || text === 't/p' || text === 'partido' || text === 'turno partido') return 'p';
+        if (
+            text === 'p' ||
+            text === 'tp' ||
+            text === 't/p' ||
+            text.includes('t/p') ||
+            text.includes('turno partido') ||
+            text.includes('partido')
+        ) return 'p';
 
         // 3. Otros turnos de trabajo (M, T, N)
         if (text.startsWith('m') || text.includes('manana')) return 'm';

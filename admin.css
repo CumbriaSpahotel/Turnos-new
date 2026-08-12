@@ -4223,6 +4223,14 @@ input, select, textarea { color: var(--text); }
   color: #92400e !important;
 }
 
+#empDrawer .emp-cal-cell.st-tp {
+  background: #ede9fe !important;
+  border-color: #c4b5fd !important;
+}
+#empDrawer .emp-cal-cell.st-tp .shift-tag {
+  color: #5b21b6 !important;
+}
+
 #empDrawer .emp-cal-cell.st-n {
   background: #dbeafe !important;
   border-color: #93c5fd !important;

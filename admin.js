@@ -3237,6 +3237,7 @@ window.employeeShiftClass = (value, incidencia = null) => {
     const code = window.normalizePreviewTurno ? window.normalizePreviewTurno(value || '') : String(value || '').toUpperCase();
     if (code === 'M') return 'm';
     if (code === 'T') return 't';
+    if (code === 'TP') return 'tp';
     if (code === 'N') return 'n';
     if (code === 'D') return 'd';
     return 'x';
@@ -3741,7 +3742,9 @@ window.renderEmployeeProfileCalendar = (model) => {
             <div class="emp-calendar-grid month" style="display:grid; grid-template-columns:repeat(7, 1fr); gap:4px;">
                 ${days.map(day => {
                     const label = window.employeeShiftLabel(day).replace('&mdash;', '-').replace('PENDIENTE DE ASIGNAR', '-').replace('Descanso', 'D');
-                    const labelShort = label.length > 2 ? label.charAt(0) : label;
+                    const shiftMeta = window.employeeProfileShiftCodeMeta ? window.employeeProfileShiftCodeMeta(label) : null;
+                    const isPartido = shiftMeta?.code === 'TP' || /t\/p|partido/i.test(label);
+                    const labelShort = isPartido ? 'TP' : (label.length > 2 ? label.charAt(0) : label);
                     const isToday = day.fecha === window.isoDate(new Date());
                     
                     let statusClass = '';
@@ -3751,6 +3754,8 @@ window.renderEmployeeProfileCalendar = (model) => {
                         if (type === 'VAC') statusClass = 'vac';
                         else if (type === 'BAJA' || type === 'IT') statusClass = 'baja';
                         else statusClass = 'event';
+                    } else if (isPartido) {
+                        statusClass = 'tp';
                     } else if (label === 'D' || label === 'Descanso') {
                         statusClass = 'descanso';
                     } else if (['M','T','N'].includes(labelShort.toUpperCase())) {
@@ -3832,6 +3837,7 @@ window.renderEmployeeProfileEditForm = (emp, model) => {
                 <div id="supportReducedNotice" class="emp-support-note span-2" ${isReducedSupport ? '' : 'hidden'}>Personal de apoyo/ocasional: ficha reducida. No computa vacaciones ni descansos pendientes.</div>
                 <label data-balance-field ${isReducedSupport ? 'hidden' : ''}><span>Vacaciones/a&ntilde;o</span><input id="edit-emp-vac-anuales" type="number" min="0" step="1" value="${escapeHtml(emp.vacaciones_anuales || model?.vacaciones?.derechoAnual || 44)}"></label>
                 <label data-balance-field ${isReducedSupport ? 'hidden' : ''}><span>Ajuste vacaciones</span><input id="edit-emp-vac-ajuste" type="number" step="1" value="${escapeHtml(emp.ajuste_vacaciones_dias || 0)}"></label>
+                <label data-balance-field ${isReducedSupport ? 'hidden' : ''}><span>Ajuste descansos</span><input type="number" step="1" value="${escapeHtml(emp.ajuste_descansos_dias || 0)}" readonly><small>Se regula desde Resumen con motivo obligatorio.</small></label>
                 <label class="span-2"><span>Observaciones</span><textarea id="edit-emp-observaciones" rows="3">${escapeHtml(emp.observaciones || emp.notas || '')}</textarea></label>
                 <div class="emp-edit-actions span-2">
                     <span id="empProfileSaveStatus">El ID no se modifica en este formulario.</span>
@@ -3927,7 +3933,7 @@ window.renderEmployeeProfile = () => {
                 <strong style="font-size:1rem; color:var(--text);">${model.vacaciones.usadas} / ${model.vacaciones.derechoAnual}</strong>
             </div>
             <div class="emp-kpi-card glass" style="padding:15px; border-radius:18px; border:1px solid var(--border);">
-                <label style="display:block; font-size:0.6rem; font-weight:800; color:var(--text-dim); text-transform:uppercase; margin-bottom:4px;">Futuras / Pendientes</label>
+                <label style="display:block; font-size:0.6rem; font-weight:800; color:var(--text-dim); text-transform:uppercase; margin-bottom:4px;">Vacaciones futuras</label>
                 <strong style="font-size:1rem; color:var(--text);">${model.vacaciones.previstas}</strong>
             </div>
             <div class="emp-kpi-card glass" style="padding:15px; border-radius:18px; border:1px solid var(--border);">
@@ -3949,7 +3955,7 @@ window.renderEmployeeProfile = () => {
                         <div class="emp-ficha-field"><label>Ausencias registradas</label><div class="emp-ficha-field-value">${model.resumenGlobal.ausencias}</div></div>
                         <div class="emp-ficha-field"><label>Bajas</label><div class="emp-ficha-field-value">${model.resumenGlobal.bajas}</div></div>
                         <div class="emp-ficha-field"><label>Cambios de turno</label><div class="emp-ficha-field-value">${model.resumenGlobal.cambios}</div></div>
-                        <div class="emp-ficha-field"><label>Descanso pendiente</label><div class="emp-ficha-field-value">${model.resumenGlobal.descansoPendiente}</div></div>
+                        <div class="emp-ficha-field"><label>Descansos semanales pendientes</label><div class="emp-ficha-field-value">${model.resumenGlobal.descansoPendiente}</div></div>
                         <div class="emp-ficha-field"><label>Descansos acumulados</label><div class="emp-ficha-field-value">${model.resumenGlobal.descansosReales} / ${model.resumenGlobal.descansosEsperados}</div></div>
                         <div class="emp-ficha-field"><label>Pr&oacute;ximos eventos</label><div class="emp-ficha-field-value">${model.resumenGlobal.proximosEventos}</div></div>
                     </div>
@@ -4139,6 +4145,7 @@ window.renderEmployeeProfile = () => {
                     </div>
                     <div class="emp-profile-field" style="margin-top:15px;"><label>D&iacute;as Vacaciones/A&ntilde;o</label><input type="number" id="edit-emp-vac-anuales" value="${emp.vacaciones_anuales || 44}" class="btn-premium" style="width:100%; margin-top:5px;"></div>
                     <div class="emp-profile-field" style="margin-top:15px;"><label>Ajuste Saldo (D&iacute;as)</label><input type="number" id="edit-emp-vac-ajuste" value="${emp.ajuste_vacaciones_dias || 0}" class="btn-premium" style="width:100%; margin-top:5px;"></div>
+                    <div class="emp-profile-field" style="margin-top:15px;"><label>Ajuste Descansos</label><input type="number" value="${emp.ajuste_descansos_dias || 0}" class="btn-premium" style="width:100%; margin-top:5px;" readonly><small>Se regula desde Resumen con motivo obligatorio.</small></div>
                 </div>
                 <div class="span-6">
                     <div class="emp-profile-field"><label>Categor&iacute;a / Puesto</label><input type="text" id="edit-emp-puesto" value="${emp.puesto || ''}" class="btn-premium" style="width:100%; margin-top:5px;"></div>
@@ -4285,6 +4292,21 @@ window.buildPuestoId = (hotelId, rowIndex) => `${hotelId}::${String(rowIndex).pa
 window.normalizePreviewTurno = (value) => {
     const raw = String(value ?? '').trim();
     if (!raw) return '';
+    const normalizedRaw = raw
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/\s+/g, ' ')
+        .trim();
+    if (
+        normalizedRaw === 'p' ||
+        normalizedRaw === 'tp' ||
+        normalizedRaw.includes('t/p') ||
+        normalizedRaw.includes('turno partido') ||
+        normalizedRaw.includes('partido')
+    ) {
+        return 'TP';
+    }
     if (window.ExcelLoader?.shiftFromExcel) return window.ExcelLoader.shiftFromExcel(raw);
     return raw;
 };
@@ -9668,6 +9690,10 @@ window.buildEmployeeProfileModel = (empId, refISO) => {
     const planificadasAnio = annualVacationDays.size;
 
     const ajuste = Number(emp.ajuste_vacaciones_dias || 0);
+    const ajusteDescansos = Number(emp.ajuste_descansos_dias || 0);
+    const restAdjustmentLogs = (window._employeeRestAdjustmentLogs || [])
+        .filter(log => String(log.empleado_id || '') === String(emp.id || '') && Number(log.anio) === Number(selectedYear))
+        .sort((a, b) => String(b.created_at || '').localeCompare(String(a.created_at || '')));
     const derechoAnual = Number(emp.vacaciones_anuales || 44);
     const countVacationDaysForYear = (year) => {
         const yearKey = Number(year);
@@ -9713,8 +9739,6 @@ window.buildEmployeeProfileModel = (empId, refISO) => {
     const pendientePlanificar = derechoAnual + ajuste + arrastreVacaciones - planificadasAnio;
     const hoy = calendario.find(d => d.fecha === todayISO) || calendario[0] || null;
     const hotelActual = hoy?.detalle?.hotel || hoy?.hotel || hotelPrincipal || '-';
-    const condiciones = window.calcularCondicionesEmpleado ? window.calcularCondicionesEmpleado(emp.id) : null;
-    const descansos = condiciones?.descansos || { esperados: 0, reales: 0, diferencia: 0 };
     const structuralType = window.getEmployeeStructuralType ? window.getEmployeeStructuralType(profile) : (profile.tipo || 'fijo');
     const isReducedSupport = ['apoyo', 'ocasional'].includes(structuralType);
     const typeMeta = window.employeeProfileTypeMeta(structuralType);
@@ -9886,6 +9910,112 @@ window.buildEmployeeProfileModel = (empId, refISO) => {
     const tardeDays = workedDays.filter(day => window.employeeProfileShiftCodeMeta(day.turno || day.detalle?.turno).code === 'T').length;
     const nightDays = workedDays.filter(day => window.employeeProfileShiftCodeMeta(day.turno || day.detalle?.turno).code === 'N').length;
     const restDays = kpiDays.filter(day => window.employeeProfileShiftCodeMeta(day.turno || day.detalle?.turno).code === 'D').length;
+    const buildWeeklyRestBalance = (days) => {
+        const byWeek = new Map();
+        (days || []).forEach(day => {
+            const fecha = String(day.fecha || '').slice(0, 10);
+            if (!fecha) return;
+            const weekStartDate = window.getMonday ? window.getMonday(new Date(`${fecha}T12:00:00`)) : new Date(`${fecha}T12:00:00`);
+            const weekStart = typeof weekStartDate === 'string' ? weekStartDate.slice(0, 10) : window.isoDate(weekStartDate);
+            if (!weekStart) return;
+            if (!byWeek.has(weekStart)) byWeek.set(weekStart, []);
+            byWeek.get(weekStart).push(day);
+        });
+
+        const incidencias = [];
+        let weeksCount = 0;
+        let restsCount = 0;
+        const operationalCodes = ['M', 'T', 'N', 'TP', 'D'];
+        const isVacationDay = (day) => {
+            const incRaw = typeof day.incidencia === 'string'
+                ? day.incidencia
+                : (day.incidencia?.tipo || day.detalle?.incidencia?.tipo || day.detalle?.incidencia || '');
+            const incCode = window.normalizeTipo ? window.normalizeTipo(incRaw) : String(incRaw || '').toUpperCase();
+            if (incCode === 'VAC') return true;
+            const finalCode = window.employeeProfileShiftCodeMeta(day.turno || day.detalle?.turno).code;
+            if (finalCode === 'VAC') return true;
+            const label = window.employeeShiftLabel ? window.employeeShiftLabel(day) : '';
+            return /VACACIONES/i.test(String(label || ''));
+        };
+        const isDateCoveredByVacationPeriod = (fecha) => {
+            const iso = String(fecha || '').slice(0, 10);
+            if (!iso) return false;
+            return (yearGroupedVacs || []).some(ev => {
+                const start = String(ev.fecha_inicio || '').slice(0, 10);
+                const end = String(ev.fecha_fin || ev.fecha_inicio || '').slice(0, 10);
+                return start && end && start <= iso && iso <= end;
+            });
+        };
+        const isVacationCoveredDay = (day) => isVacationDay(day) || isDateCoveredByVacationPeriod(day.fecha);
+
+        Array.from(byWeek.entries()).sort((a, b) => a[0].localeCompare(b[0])).forEach(([weekStart, weekDays]) => {
+            const ordered = weekDays.slice().sort((a, b) => String(a.fecha || '').localeCompare(String(b.fecha || '')));
+            if (ordered.length < 7) return;
+            if (ordered.every(isVacationCoveredDay)) return;
+
+            const relevantDays = ordered.filter(day => {
+                const baseCode = window.employeeProfileShiftCodeMeta(day.turnoBase || day.detalle?.turnoBase).code;
+                const finalCode = window.employeeProfileShiftCodeMeta(day.turno || day.detalle?.turno).code;
+                return operationalCodes.includes(baseCode) || operationalCodes.includes(finalCode) || Boolean(day.incidencia);
+            });
+            if (relevantDays.length === 0) return;
+
+            const restDates = ordered
+                .filter(day => window.employeeProfileShiftCodeMeta(day.turno || day.detalle?.turno).code === 'D')
+                .map(day => day.fecha);
+            const restCount = restDates.length;
+            const weekEndDate = new Date(`${weekStart}T12:00:00`);
+            weekEndDate.setDate(weekEndDate.getDate() + 6);
+            const weekEnd = window.isoDate(weekEndDate);
+            weeksCount += 1;
+            restsCount += restCount;
+
+            if (restCount < 2) {
+                const missing = 2 - restCount;
+                incidencias.push({
+                    fecha: weekEnd,
+                    weekStart,
+                    weekEnd,
+                    restCount,
+                    delta: missing,
+                    tipo: 'DESCANSO_PENDIENTE',
+                    label: `+${missing} dia${missing === 1 ? '' : 's'} pendiente${missing === 1 ? '' : 's'} de descanso`
+                });
+            } else if (restCount > 2) {
+                restDates.slice(2).forEach(fecha => {
+                    incidencias.push({
+                        fecha,
+                        weekStart,
+                        weekEnd,
+                        restCount,
+                        delta: -1,
+                        tipo: 'EXCESO_DESCANSO',
+                        label: '-1 dia de descanso'
+                    });
+                });
+            }
+        });
+
+        const esperados = weeksCount * 2;
+        return {
+            esperados,
+            reales: restsCount,
+            diferencia: restsCount - esperados,
+            pendiente: esperados - restsCount,
+            incidencias
+        };
+    };
+    const weeklyRestBalanceRaw = isReducedSupport
+        ? { esperados: 0, reales: 0, diferencia: 0, pendiente: 0, incidencias: [] }
+        : buildWeeklyRestBalance(kpiDays);
+    const weeklyRestBalance = {
+        ...weeklyRestBalanceRaw,
+        ajusteManual: isReducedSupport ? 0 : ajusteDescansos,
+        pendienteBase: weeklyRestBalanceRaw.pendiente || 0,
+        pendiente: isReducedSupport ? 0 : (weeklyRestBalanceRaw.pendiente || 0) + ajusteDescansos,
+        diferencia: isReducedSupport ? 0 : (weeklyRestBalanceRaw.diferencia || 0) - ajusteDescansos
+    };
+    const descansos = weeklyRestBalance;
     const countEventDaysInSelectedYear = (items) => {
         const dates = new Set();
         (items || []).forEach(ev => {
@@ -9992,11 +10122,23 @@ window.buildEmployeeProfileModel = (empId, refISO) => {
     }
     if (Object.values(suspiciousDuplicates).some(count => count > 1)) alerts.push({ level: 'warn', text: 'Duplicidad sospechosa en eventos del periodo' });
     if (structuralType === 'placeholder') alerts.push({ level: 'danger', text: 'Placeholder en uso operativo' });
+    if (weeklyRestBalance.incidencias.length > 0) {
+        const pendingRestCount = weeklyRestBalance.incidencias
+            .filter(item => item.delta > 0)
+            .reduce((acc, item) => acc + Number(item.delta || 0), 0);
+        const extraRestCount = weeklyRestBalance.incidencias
+            .filter(item => item.delta < 0)
+            .reduce((acc, item) => acc + Math.abs(Number(item.delta || 0)), 0);
+        const parts = [];
+        if (pendingRestCount) parts.push(`${pendingRestCount} descanso${pendingRestCount === 1 ? '' : 's'} pendiente${pendingRestCount === 1 ? '' : 's'}`);
+        if (extraRestCount) parts.push(`${extraRestCount} descanso${extraRestCount === 1 ? '' : 's'} de mas`);
+        alerts.push({ level: pendingRestCount ? 'danger' : 'warn', text: `Balance semanal de descansos: ${parts.join(' y ')}` });
+    }
     const resumenGlobal = {
         ausencias: periodGroupedEvents.filter(ev => /VAC|BAJA|PERM|IT/i.test(String(ev.tipo || ''))).length,
         bajas: periodGroupedEvents.filter(ev => /BAJA|IT/i.test(String(ev.tipo || ''))).length,
         cambios: periodGroupedEvents.filter(ev => /CAMBIO|INTERCAMBIO|REFUERZO|CT/i.test(String(ev.tipo || ''))).length,
-        descansoPendiente: isReducedSupport ? 0 : Math.max(0, (descansos.esperados || 0) - (descansos.reales || 0)),
+        descansoPendiente: isReducedSupport ? 0 : (descansos.pendiente ?? ((descansos.esperados || 0) - (descansos.reales || 0))),
         descansosReales: descansos.reales || 0,
         descansosEsperados: descansos.esperados || 0,
         proximosEventos: periodGroupedEvents.filter(ev => (ev.fecha_fin || ev.fecha_inicio) >= todayISO).length
@@ -10016,7 +10158,9 @@ window.buildEmployeeProfileModel = (empId, refISO) => {
         availableYears,
         periodGroupedEvents,
         groupedVacs,
+        restAdjustmentLogs,
         descansos,
+        weeklyRestBalance,
         resumenGlobal,
         structuralType,
         typeMeta,
@@ -10155,6 +10299,7 @@ window.openNewEmployeeDrawer = () => {
                     <div id="supportReducedNotice" class="emp-support-note span-2" hidden>Personal de apoyo/ocasional: ficha reducida. No computa vacaciones ni descansos pendientes.</div>
                     <label data-balance-field><span>Vacaciones/a&ntilde;o</span><input id="new-emp-vac-anuales" type="number" min="0" step="1" value="44"></label>
                     <label data-balance-field><span>Ajuste vacaciones</span><input id="new-emp-vac-ajuste" type="number" step="1" value="0"></label>
+                    <label data-balance-field><span>Ajuste descansos</span><input type="number" step="1" value="0" readonly><small>Se regula desde la ficha, en Resumen, con motivo obligatorio.</small></label>
                     <label class="span-2"><span>Observaciones</span><textarea id="new-emp-observaciones" rows="3"></textarea></label>
                     <div class="emp-edit-actions span-2">
                         <span id="empProfileSaveStatus">Completa la ficha y guarda para crear el empleado.</span>
@@ -10211,6 +10356,7 @@ window.saveNewEmployeeInline = async (event) => {
         activo: estado === 'Activo',
         vacaciones_anuales: isReducedSupport ? null : Number(document.getElementById('new-emp-vac-anuales')?.value || 44),
         ajuste_vacaciones_dias: isReducedSupport ? 0 : Number(document.getElementById('new-emp-vac-ajuste')?.value || 0),
+        ajuste_descansos_dias: 0,
         observaciones: document.getElementById('new-emp-observaciones')?.value?.trim() || null
     };
     try {
@@ -10233,6 +10379,11 @@ window.openEmpDrawer = async (id) => {
     window._employeeProfileTab = 'summary';
     window._employeeProfileDate = window.isoDate(new Date());
     await window.loadEmployeeProfileBaseRows(id, window._employeeProfileDate);
+    if (window.TurnosDB?.fetchAjustesDescanso) {
+        window._employeeRestAdjustmentLogs = await window.TurnosDB.fetchAjustesDescanso(id, null, 100);
+    } else {
+        window._employeeRestAdjustmentLogs = [];
+    }
     
     const drawer = $('#empDrawer');
     if (drawer) {
@@ -10279,6 +10430,9 @@ window.setEmployeeProfileGlobalYear = async (year) => {
     window._employeeProfileYear = parsedYear;
     if (window._employeeProfileId && window.loadEmployeeProfileBaseRows) {
         await window.loadEmployeeProfileBaseRows(window._employeeProfileId, window._employeeProfileDate);
+    }
+    if (window._employeeProfileId && window.TurnosDB?.fetchAjustesDescanso) {
+        window._employeeRestAdjustmentLogs = await window.TurnosDB.fetchAjustesDescanso(window._employeeProfileId, null, 100);
     }
     window.renderEmployeeProfile();
 };
@@ -10343,6 +10497,7 @@ window.renderEmployeeProfileEditForm = (emp, model) => {
                 <div id="supportReducedNotice" class="emp-support-note span-2" ${isReducedSupport ? '' : 'hidden'}>Personal de apoyo/ocasional: ficha reducida. No computa vacaciones ni descansos pendientes.</div>
                 <label data-balance-field ${isReducedSupport ? 'hidden' : ''}><span>Vacaciones/a&ntilde;o</span><input id="edit-emp-vac-anuales" type="number" min="0" step="1" value="${escapeHtml(emp.vacaciones_anuales || model?.vacaciones?.derechoAnual || 44)}"></label>
                 <label data-balance-field ${isReducedSupport ? 'hidden' : ''}><span>Ajuste vacaciones</span><input id="edit-emp-vac-ajuste" type="number" step="1" value="${escapeHtml(emp.ajuste_vacaciones_dias || 0)}"></label>
+                <label data-balance-field ${isReducedSupport ? 'hidden' : ''}><span>Ajuste descansos</span><input type="number" step="1" value="${escapeHtml(emp.ajuste_descansos_dias || 0)}" readonly><small>Se regula desde Resumen con motivo obligatorio.</small></label>
                 <label class="span-2"><span>Observaciones</span><textarea id="edit-emp-observaciones" rows="3">${escapeHtml(emp.observaciones || emp.notas || '')}</textarea></label>
                 <div class="emp-edit-actions span-2">
                     <span id="empProfileSaveStatus">El ID no se modifica en este formulario.</span>
@@ -10378,7 +10533,8 @@ window.renderEmployeeProfile = () => {
     const netVal = model.vacaciones?.neto || 0;
     const absNetVal = Math.abs(netVal);
     const isNegative = netVal < 0;
-    const kpiBalanceLabel = model.vacaciones?.applies ? (isNegative ? 'Exceso planif.' : 'Pendiente planif.') : 'Pendiente planif.';
+    const restWeeklyPendingValue = model.pendingPolicy.applies ? Math.max(0, Number(model.resumenGlobal.descansoPendiente || 0)) : 'No aplica';
+    const kpiBalanceLabel = model.vacaciones?.applies ? (isNegative ? 'Vacaciones: exceso planificado' : 'Vacaciones: pendiente de planificar') : 'Vacaciones: pendiente de planificar';
     const kpiBalanceValue = model.vacaciones?.applies ? `${absNetVal} dias` : 'No aplica';
     const kpiBalanceColor = isNegative ? '#ef4444' : '#10b981';
     const carryoverVal = Number(model.vacaciones?.arrastre || 0);
@@ -10386,7 +10542,7 @@ window.renderEmployeeProfile = () => {
     const kpiCarryoverHTML = model.vacaciones?.applies && carryoverVal !== 0
         ? `<div style="margin-top:4px; font-size:0.68rem; font-weight:900; color:#dc2626;">${carryoverSign}${carryoverVal} dias de ${model.vacaciones.arrastreAnio}</div>`
         : '';
-    const summaryBalanceLabel = model.vacaciones?.applies ? (isNegative ? 'Exceso planificado' : 'Pendiente de planificar') : 'Pendiente de planificar';
+    const summaryBalanceLabel = model.vacaciones?.applies ? (isNegative ? 'Vacaciones: exceso planificado' : 'Vacaciones: pendiente de planificar') : 'Vacaciones: pendiente de planificar';
     const vacationBalanceLabel = model.vacaciones?.applies ? `${absNetVal} dias` : 'No aplica';
 
     const tabs = [
@@ -10427,7 +10583,7 @@ window.renderEmployeeProfile = () => {
     const pendingTopDetailHTML = currentTab === 'summary' && model.pendingPolicy.applies && pendingTopDays.length > 0
         ? `<section class="emp-card glass" style="padding:16px 18px; border-radius:16px; border:1px solid rgba(185,28,28,0.22); margin:-4px 0 18px; background:rgba(254,242,242,0.55);"><div style="display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; margin-bottom:12px;"><h3 style="margin:0; font-size:0.85rem; font-weight:900; color:#991b1b;">Dias pendientes de turno</h3><span style="font-size:0.78rem; font-weight:900; color:#991b1b;">${pendingTopDays.length} dias</span></div><div style="display:flex; flex-wrap:wrap; gap:8px;">${pendingTopDays.map(day => { const baseMeta = window.employeeProfileShiftCodeMeta(day.turnoBase || day.detalle?.turnoBase); return `<span style="display:inline-flex; align-items:center; gap:6px; padding:7px 10px; border-radius:999px; border:1px solid rgba(185,28,28,0.20); background:white; font-size:0.76rem; font-weight:800; color:var(--text);"><strong>${escapeHtml(window.fmtDateLegacy(day.fecha))}</strong><span style="color:var(--text-dim);">base ${escapeHtml(baseMeta.label || baseMeta.code || 'N/D')}</span></span>`; }).join('')}</div></section>`
         : '';
-    const kpiHTML = `<div class="emp-kpi-grid" style="display:grid; grid-template-columns:repeat(6, minmax(120px, 1fr)); gap:12px; margin-bottom:18px;"><div class="emp-kpi-card glass" style="padding:14px; border-radius:16px; border:1px solid var(--border);"><label style="display:block; font-size:0.6rem; font-weight:800; color:var(--text-dim); text-transform:uppercase; margin-bottom:4px;">Rol actual</label><strong style="font-size:0.98rem; color:var(--text);">${escapeHtml(model.currentRoleMeta.label)}</strong></div><div class="emp-kpi-card glass" style="padding:14px; border-radius:16px; border:1px solid var(--border);"><label style="display:block; font-size:0.6rem; font-weight:800; color:var(--text-dim); text-transform:uppercase; margin-bottom:4px;">Estado operativo</label><strong style="font-size:0.98rem; color:var(--text);">${escapeHtml(currentShiftLabel)}</strong></div><div class="emp-kpi-card glass" style="padding:14px; border-radius:16px; border:1px solid var(--border);"><label style="display:block; font-size:0.6rem; font-weight:800; color:var(--text-dim); text-transform:uppercase; margin-bottom:4px;">Próximo turno</label><strong style="font-size:0.9rem; color:var(--text);">${escapeHtml(nextShiftLabel)}</strong></div><div class="emp-kpi-card glass" style="padding:14px; border-radius:16px; border:1px solid var(--border);"><label style="display:block; font-size:0.6rem; font-weight:800; color:var(--text-dim); text-transform:uppercase; margin-bottom:4px;">Incidencia</label><strong style="font-size:0.9rem; color:var(--text);">${escapeHtml(incidenciaLabel)}</strong></div><div class="emp-kpi-card glass" style="padding:14px; border-radius:16px; border:1px solid var(--border);"><label style="display:block; font-size:0.6rem; font-weight:800; color:var(--text-dim); text-transform:uppercase; margin-bottom:4px;">Pendientes</label><strong style="font-size:0.98rem; color:var(--text);">${model.pendingPolicy.applies ? model.periodKpis.diasPendiente : 'No aplica'}</strong></div><div class="emp-kpi-card glass" style="padding:14px; border-radius:16px; border:1px solid var(--border);"><label style="display:block; font-size:0.6rem; font-weight:800; color:var(--text-dim); text-transform:uppercase; margin-bottom:4px;">${kpiBalanceLabel}</label><strong style="font-size:0.98rem; color:${kpiBalanceColor};">${escapeHtml(kpiBalanceValue)}</strong>${kpiCarryoverHTML}</div></div>`;
+    const kpiHTML = `<div class="emp-kpi-grid" style="display:grid; grid-template-columns:repeat(6, minmax(120px, 1fr)); gap:12px; margin-bottom:18px;"><div class="emp-kpi-card glass" style="padding:14px; border-radius:16px; border:1px solid var(--border);"><label style="display:block; font-size:0.6rem; font-weight:800; color:var(--text-dim); text-transform:uppercase; margin-bottom:4px;">Rol actual</label><strong style="font-size:0.98rem; color:var(--text);">${escapeHtml(model.currentRoleMeta.label)}</strong></div><div class="emp-kpi-card glass" style="padding:14px; border-radius:16px; border:1px solid var(--border);"><label style="display:block; font-size:0.6rem; font-weight:800; color:var(--text-dim); text-transform:uppercase; margin-bottom:4px;">Estado operativo</label><strong style="font-size:0.98rem; color:var(--text);">${escapeHtml(currentShiftLabel)}</strong></div><div class="emp-kpi-card glass" style="padding:14px; border-radius:16px; border:1px solid var(--border);"><label style="display:block; font-size:0.6rem; font-weight:800; color:var(--text-dim); text-transform:uppercase; margin-bottom:4px;">Próximo turno</label><strong style="font-size:0.9rem; color:var(--text);">${escapeHtml(nextShiftLabel)}</strong></div><div class="emp-kpi-card glass" style="padding:14px; border-radius:16px; border:1px solid var(--border);"><label style="display:block; font-size:0.6rem; font-weight:800; color:var(--text-dim); text-transform:uppercase; margin-bottom:4px;">Incidencia</label><strong style="font-size:0.9rem; color:var(--text);">${escapeHtml(incidenciaLabel)}</strong></div><div class="emp-kpi-card glass" style="padding:14px; border-radius:16px; border:1px solid var(--border);"><label style="display:block; font-size:0.6rem; font-weight:800; color:var(--text-dim); text-transform:uppercase; margin-bottom:4px;">Descansos semanales pendientes</label><strong style="font-size:0.98rem; color:var(--text);">${escapeHtml(restWeeklyPendingValue)}</strong><div style="margin-top:4px; font-size:0.66rem; font-weight:800; color:var(--text-dim);">saldo anual de descansos</div></div><div class="emp-kpi-card glass" style="padding:14px; border-radius:16px; border:1px solid var(--border);"><label style="display:block; font-size:0.6rem; font-weight:800; color:var(--text-dim); text-transform:uppercase; margin-bottom:4px;">${kpiBalanceLabel}</label><strong style="font-size:0.98rem; color:${kpiBalanceColor};">${escapeHtml(kpiBalanceValue)}</strong><div style="margin-top:4px; font-size:0.66rem; font-weight:800; color:var(--text-dim);">saldo anual de vacaciones</div>${kpiCarryoverHTML}</div></div>`;
     let tabContent = '';
     if (currentTab === 'summary') {
         const pendingRows = ((model.pendingPolicy && model.pendingPolicy.dayList) || []).map(day => {
@@ -10440,8 +10596,32 @@ window.renderEmployeeProfile = () => {
                 badgeColor: '#b91c1c'
             };
         });
-        const pendingDetailHTML = '';
-        tabContent = `<div style="display:grid; gap:18px;"><div class="emp-grid" style="display:grid; grid-template-columns:1.1fr 1fr; gap:18px;"><section class="emp-card glass" style="padding:20px; border-radius:18px; border:1px solid var(--border);"><h3 style="margin:0 0 14px; font-size:0.9rem; font-weight:800;">Identidad y estado</h3><div style="display:grid; gap:10px;">${window.renderEmployeeProfileField(['Hotel principal', emp.hotel || 'No informado'])}${window.renderEmployeeProfileField(['Hoteles asignados', assignedHotelLabel])}${window.renderEmployeeProfileField(['Tipo de empleado', model.typeMeta.label])}${window.renderEmployeeProfileField(['Estado laboral', model.laborStatus.label])}${window.renderEmployeeProfileField(['Rol operativo actual', model.currentRoleMeta.label])}${window.renderEmployeeProfileField(['Próximo turno', nextShiftLabel])}${window.renderEmployeeProfileField(['Incidencia activa', incidenciaLabel])}</div></section><section class="emp-card glass" style="padding:20px; border-radius:18px; border:1px solid var(--border);"><h3 style="margin:0 0 14px; font-size:0.9rem; font-weight:800;">KPIs del año ${selectedYear}</h3><div style="display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:10px;">${window.renderEmployeeProfileField(['Turnos base', model.periodKpis.turnosBase])}${window.renderEmployeeProfileField(['Turnos trabajados', model.periodKpis.turnosTrabajados])}${window.renderEmployeeProfileField(['Mañanas', model.periodKpis.mananas])}${window.renderEmployeeProfileField(['Tardes', model.periodKpis.tardes])}${window.renderEmployeeProfileField(['Noches', model.periodKpis.noches])}${window.renderEmployeeProfileField(['Descansos', model.periodKpis.descansos])}${window.renderEmployeeProfileField(['Vacaciones', model.periodKpis.vacaciones])}${window.renderEmployeeProfileField(['Baja / IT', model.periodKpis.bajaIt])}${window.renderEmployeeProfileField(['Permisos', model.periodKpis.permisos])}${window.renderEmployeeProfileField(['Bajas / Permisos total', model.periodKpis.bajasPermisos])}${window.renderEmployeeProfileField(['Cambios de turno', model.periodKpis.cambiosTurno])}${window.renderEmployeeProfileField(['Sustituciones realizadas', model.periodKpis.sustitucionesRealizadas])}${window.renderEmployeeProfileField(['Sustituciones recibidas', model.periodKpis.sustitucionesRecibidas])}${window.renderEmployeeProfileField(['Refuerzos explícitos', model.periodKpis.refuerzosExplicitos])}</div></section></div><section class="emp-card glass" style="padding:20px; border-radius:18px; border:1px solid var(--border);"><h3 style="margin:0 0 14px; font-size:0.9rem; font-weight:800;">Vision anual ${selectedYear}</h3><div style="display:grid; grid-template-columns:repeat(3, minmax(0, 1fr)); gap:10px;">${window.renderEmployeeProfileField(['Total planificado año', model.vacaciones.applies ? `${model.vacaciones.planificadas} dias` : 'No aplica'])}${window.renderEmployeeProfileField(['Bajas / Permisos', model.annualKpis.bajasPermisos])}${window.renderEmployeeProfileField(['Cambios de turno', model.annualKpis.cambiosTurno])}${window.renderEmployeeProfileField(['Sustituciones realizadas', model.annualKpis.sustitucionesRealizadas])}${window.renderEmployeeProfileField(['Sustituciones recibidas', model.annualKpis.sustitucionesRecibidas])}${window.renderEmployeeProfileField(['Refuerzos explícitos', model.annualKpis.refuerzosExplicitos])}</div></section><section class="emp-card glass" style="padding:20px; border-radius:18px; border:1px solid var(--border);"><h3 style="margin:0 0 14px; font-size:0.9rem; font-weight:800;">Pendientes y balance</h3><div style="display:grid; grid-template-columns:repeat(4, minmax(0, 1fr)); gap:10px;">${window.renderEmployeeProfileField(['Cuenta para pendientes', model.pendingPolicy.applies ? 'Sí' : 'No'])}${window.renderEmployeeProfileField(['Días con pendiente', model.pendingPolicy.applies ? model.periodKpis.diasPendiente : 'No aplica'])}${window.renderEmployeeProfileField(['Descanso pendiente', model.pendingPolicy.applies ? model.resumenGlobal.descansoPendiente : 'No aplica'])}${window.renderEmployeeProfileField([summaryBalanceLabel, vacationBalanceLabel])}</div></section>${pendingDetailHTML}${alertHTML}</div>`;
+        const descansoSaldo = Number(model.resumenGlobal.descansoPendiente || 0);
+        const descansoSaldoLabel = descansoSaldo > 0 ? `+${descansoSaldo}` : String(descansoSaldo);
+        const restIncidentRows = ((model.weeklyRestBalance && model.weeklyRestBalance.incidencias) || []).map(item => ({
+            fecha: item.fecha,
+            main: `<strong>${escapeHtml(item.label)}</strong>`,
+            secondary: `Semana ${escapeHtml(window.employeeProfileDateRangeLabel(item.weekStart, item.weekEnd))} · descansos reales: ${escapeHtml(String(item.restCount ?? 0))}/2`,
+            badge: item.delta > 0 ? 'Pendiente' : 'Exceso',
+            badgeColor: item.delta > 0 ? '#b91c1c' : '#d97706'
+        }));
+        const restAdjustmentRows = ((model.restAdjustmentLogs || [])).map(log => {
+            const created = String(log.created_at || '').slice(0, 10);
+            const diff = Number(log.diferencia ?? (Number(log.valor_nuevo || 0) - Number(log.valor_anterior || 0)));
+            return {
+                fecha: created,
+                main: `<strong>${diff > 0 ? '+' : ''}${escapeHtml(String(diff))} dia${Math.abs(diff) === 1 ? '' : 's'}</strong>`,
+                secondary: `${escapeHtml(log.motivo || 'Sin motivo')} Â· antes ${escapeHtml(String(log.valor_anterior ?? 0))}, ahora ${escapeHtml(String(log.valor_nuevo ?? 0))}`,
+                badge: escapeHtml(log.usuario || 'WEB_ADMIN'),
+                badgeColor: '#2563eb'
+            };
+        });
+        const restAdjustmentFieldHTML = `<form class="emp-profile-field span-6 emp-rest-adjustment-form" onsubmit="window.saveEmployeeRestAdjustmentInline(event)" style="display:grid; gap:8px;"><dt>Ajuste manual</dt><dd style="display:grid; gap:8px; margin:0;"><div style="display:flex; align-items:center; gap:8px;"><input id="emp-rest-adjustment" type="number" step="1" value="${escapeHtml(model.descansos.ajusteManual || 0)}" style="width:86px; height:38px; border:1px solid var(--border); border-radius:10px; padding:0 10px; font-weight:900; color:var(--text); background:white;"><button type="submit" class="btn-premium" style="height:38px; padding:0 14px; border-radius:10px; font-size:0.72rem; font-weight:900;">Guardar</button><span id="empRestAdjustmentStatus" style="font-size:0.68rem; font-weight:800; color:var(--text-dim);"></span></div><textarea id="emp-rest-adjustment-reason" rows="2" maxlength="280" placeholder="Motivo obligatorio de la regularizaci&oacute;n..." style="width:100%; min-height:58px; border:1px solid var(--border); border-radius:12px; padding:10px 12px; font-weight:700; color:var(--text); background:white; resize:vertical;">${escapeHtml(emp.ajuste_descansos_motivo || '')}</textarea><small style="font-size:0.68rem; color:var(--text-dim); font-weight:700;">Cada ajuste queda registrado con fecha, usuario, valor anterior, valor nuevo y motivo.</small></dd></form>`;
+        const restIncidentHTML = model.pendingPolicy.applies
+            ? `<section class="emp-card glass" style="padding:20px; border-radius:18px; border:1px solid rgba(185,28,28,0.22); background:rgba(255,251,235,0.45);"><h3 style="margin:0 0 14px; font-size:0.9rem; font-weight:800;">C&oacute;mputo anual de descansos</h3><div style="display:grid; grid-template-columns:repeat(4, minmax(0, 1fr)); gap:10px; margin-bottom:14px;">${window.renderEmployeeProfileField(['Descansos esperados', model.descansos.esperados || 0])}${window.renderEmployeeProfileField(['Descansos reales', model.descansos.reales || 0])}${restAdjustmentFieldHTML}${window.renderEmployeeProfileField(['Saldo anual descanso', descansoSaldoLabel])}</div><h3 style="margin:0 0 14px; font-size:0.9rem; font-weight:800;">Registro de ajustes manuales</h3><div style="margin-bottom:16px;">${renderRowsTable(restAdjustmentRows, 'No hay ajustes manuales registrados en este a&ntilde;o.')}</div><h3 style="margin:0 0 14px; font-size:0.9rem; font-weight:800;">Incidencias de descanso</h3>${renderRowsTable(restIncidentRows, 'No hay incidencias de descanso.')}</section>`
+            : '';
+        const pendingDetailHTML = restIncidentHTML;
+        tabContent = `<div style="display:grid; gap:18px;"><div class="emp-grid" style="display:grid; grid-template-columns:1.1fr 1fr; gap:18px;"><section class="emp-card glass" style="padding:20px; border-radius:18px; border:1px solid var(--border);"><h3 style="margin:0 0 14px; font-size:0.9rem; font-weight:800;">Identidad y estado</h3><div style="display:grid; gap:10px;">${window.renderEmployeeProfileField(['Hotel principal', emp.hotel || 'No informado'])}${window.renderEmployeeProfileField(['Hoteles asignados', assignedHotelLabel])}${window.renderEmployeeProfileField(['Tipo de empleado', model.typeMeta.label])}${window.renderEmployeeProfileField(['Estado laboral', model.laborStatus.label])}${window.renderEmployeeProfileField(['Rol operativo actual', model.currentRoleMeta.label])}${window.renderEmployeeProfileField(['Próximo turno', nextShiftLabel])}${window.renderEmployeeProfileField(['Incidencia activa', incidenciaLabel])}</div></section><section class="emp-card glass" style="padding:20px; border-radius:18px; border:1px solid var(--border);"><h3 style="margin:0 0 14px; font-size:0.9rem; font-weight:800;">KPIs del año ${selectedYear}</h3><div style="display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:10px;">${window.renderEmployeeProfileField(['Turnos base', model.periodKpis.turnosBase])}${window.renderEmployeeProfileField(['Turnos trabajados', model.periodKpis.turnosTrabajados])}${window.renderEmployeeProfileField(['Mañanas', model.periodKpis.mananas])}${window.renderEmployeeProfileField(['Tardes', model.periodKpis.tardes])}${window.renderEmployeeProfileField(['Noches', model.periodKpis.noches])}${window.renderEmployeeProfileField(['Descansos', model.periodKpis.descansos])}${window.renderEmployeeProfileField(['Vacaciones', model.periodKpis.vacaciones])}${window.renderEmployeeProfileField(['Baja / IT', model.periodKpis.bajaIt])}${window.renderEmployeeProfileField(['Permisos', model.periodKpis.permisos])}${window.renderEmployeeProfileField(['Bajas / Permisos total', model.periodKpis.bajasPermisos])}${window.renderEmployeeProfileField(['Cambios de turno', model.periodKpis.cambiosTurno])}${window.renderEmployeeProfileField(['Sustituciones realizadas', model.periodKpis.sustitucionesRealizadas])}${window.renderEmployeeProfileField(['Sustituciones recibidas', model.periodKpis.sustitucionesRecibidas])}${window.renderEmployeeProfileField(['Refuerzos explícitos', model.periodKpis.refuerzosExplicitos])}</div></section></div><section class="emp-card glass" style="padding:20px; border-radius:18px; border:1px solid var(--border);"><h3 style="margin:0 0 14px; font-size:0.9rem; font-weight:800;">Vision anual ${selectedYear}</h3><div style="display:grid; grid-template-columns:repeat(3, minmax(0, 1fr)); gap:10px;">${window.renderEmployeeProfileField(['Total planificado año', model.vacaciones.applies ? `${model.vacaciones.planificadas} dias` : 'No aplica'])}${window.renderEmployeeProfileField(['Bajas / Permisos', model.annualKpis.bajasPermisos])}${window.renderEmployeeProfileField(['Cambios de turno', model.annualKpis.cambiosTurno])}${window.renderEmployeeProfileField(['Sustituciones realizadas', model.annualKpis.sustitucionesRealizadas])}${window.renderEmployeeProfileField(['Sustituciones recibidas', model.annualKpis.sustitucionesRecibidas])}${window.renderEmployeeProfileField(['Refuerzos explícitos', model.annualKpis.refuerzosExplicitos])}</div></section><section class="emp-card glass" style="padding:20px; border-radius:18px; border:1px solid var(--border);"><h3 style="margin:0 0 14px; font-size:0.9rem; font-weight:800;">Descansos y vacaciones</h3><div style="display:grid; grid-template-columns:repeat(4, minmax(0, 1fr)); gap:10px;">${window.renderEmployeeProfileField(['Cuenta descansos semanales', model.pendingPolicy.applies ? 'Sí' : 'No'])}${window.renderEmployeeProfileField(['Turnos pendientes de resolver', model.pendingPolicy.applies ? model.periodKpis.diasPendiente : 'No aplica'])}${window.renderEmployeeProfileField(['Descansos semanales pendientes', model.pendingPolicy.applies ? model.resumenGlobal.descansoPendiente : 'No aplica'])}${window.renderEmployeeProfileField([summaryBalanceLabel, vacationBalanceLabel])}</div></section>${pendingDetailHTML}${alertHTML}</div>`;
     } else if (currentTab === 'profile') {
         tabContent = window.renderEmployeeProfileEditForm(emp, model);
     } else if (currentTab === 'turns') {
@@ -10773,6 +10953,67 @@ window._experimental_calculateCarryOver = (emp, groupedEvents, targetYear) => {
     return result;
 };
 
+window.saveEmployeeRestAdjustmentInline = async (event) => {
+    if (event?.preventDefault) event.preventDefault();
+    const empId = window._employeeProfileId;
+    const input = document.getElementById('emp-rest-adjustment');
+    const reasonInput = document.getElementById('emp-rest-adjustment-reason');
+    const status = document.getElementById('empRestAdjustmentStatus');
+    const setStatus = (text, color = 'var(--text-dim)') => {
+        if (!status) return;
+        status.textContent = text;
+        status.style.color = color;
+    };
+
+    if (!empId || !input) {
+        setStatus('No se pudo guardar', '#dc2626');
+        return;
+    }
+
+    const value = Number(input.value || 0);
+    if (!Number.isFinite(value)) {
+        setStatus('Valor no valido', '#dc2626');
+        return;
+    }
+    const reason = String(reasonInput?.value || '').trim();
+    if (reason.length < 6) {
+        setStatus('Explica el motivo', '#dc2626');
+        if (reasonInput) reasonInput.focus();
+        return;
+    }
+
+    try {
+        setStatus('Guardando...');
+        const selectedYear = Number(window._employeeProfileYear || new Date(`${window._employeeProfileDate || window.isoDate(new Date())}T12:00:00`).getFullYear());
+        const emp = (window.empleadosGlobales || []).find(e => String(e.id) === String(empId) || String(e.id_interno) === String(empId)) || { id: empId, nombre: empId };
+
+        if (window.TurnosDB?.registrarAjusteDescanso) {
+            await window.TurnosDB.registrarAjusteDescanso({
+                empleadoId: empId,
+                empleadoNombre: emp.nombre || empId,
+                anio: selectedYear,
+                valorNuevo: value,
+                motivo: reason
+            });
+        } else {
+            throw new Error('Registro seguro no disponible');
+        }
+
+        if (window.TurnosDB?.getEmpleados) {
+            window.empleadosGlobales = await window.TurnosDB.getEmpleados();
+        }
+        if (window.TurnosDB?.fetchAjustesDescanso) {
+            window._employeeRestAdjustmentLogs = await window.TurnosDB.fetchAjustesDescanso(empId, null, 100);
+        }
+        window._employeeProfileTab = 'summary';
+        setStatus('Guardado', '#16a34a');
+        window.renderEmployeeProfile();
+    } catch (e) {
+        console.error('[REST ADJUSTMENT SAVE ERROR]', e);
+        setStatus('Error al guardar', '#dc2626');
+    }
+};
+
 window.saveEmployeeProfileInline = async (event) => {
     if (event?.preventDefault) event.preventDefault();
     const empId = window._employeeProfileId;
@@ -10821,6 +11062,10 @@ window.saveEmployeeProfileInline = async (event) => {
         ajuste_vacaciones_dias: isReducedSupport ? 0 : Number(document.getElementById('edit-emp-vac-ajuste')?.value || 0),
         observaciones: $('#edit-emp-observaciones')?.value?.trim() || null
     };
+    if (isReducedSupport) {
+        payload.ajuste_descansos_dias = 0;
+        payload.ajuste_descansos_motivo = 'No computa descansos por tipo de personal';
+    }
 
     try {
         setStatus('Guardando cambios...', 'pending');

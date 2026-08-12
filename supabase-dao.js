@@ -1115,6 +1115,8 @@ window.TurnosDB = {
                 'orden',
                 'id_interno',
                 'ajuste_vacaciones_dias',
+                'ajuste_descansos_dias',
+                'ajuste_descansos_motivo',
                 'categoria',
                 'contrato',
                 'motivo_baja',
@@ -1211,6 +1213,104 @@ window.TurnosDB = {
     },
 
     // --- AUDITORÍA Y PUBLICACIONES ---
+    async registrarAjusteDescanso({ empleadoId, empleadoNombre, anio, valorNuevo, motivo }) {
+        const client = window.supabase;
+        const { data: { session } } = await client.auth.getSession();
+        const usuario = session?.user?.email || 'WEB_ADMIN';
+        const payload = {
+            p_empleado_id: empleadoId,
+            p_empleado_nombre: empleadoNombre || empleadoId,
+            p_anio: Number(anio),
+            p_valor_nuevo: Number(valorNuevo || 0),
+            p_motivo: String(motivo || '').trim(),
+            p_usuario: usuario
+        };
+
+        const { data, error } = await client.rpc('registrar_ajuste_descanso', payload);
+        if (!error) return data;
+
+        const missingRpc = ['PGRST202', '42883'].includes(error.code) || /registrar_ajuste_descanso/i.test(String(error.message || ''));
+        if (!missingRpc) throw error;
+
+        const { data: current, error: currentError } = await client
+            .from('empleados')
+            .select('ajuste_descansos_dias')
+            .eq('id', empleadoId)
+            .single();
+        if (currentError) throw currentError;
+
+        const logPayload = {
+            empleado_id: empleadoId,
+            empleado_nombre: empleadoNombre || empleadoId,
+            anio: Number(anio),
+            valor_anterior: Number(current?.ajuste_descansos_dias || 0),
+            valor_nuevo: Number(valorNuevo || 0),
+            motivo: String(motivo || '').trim(),
+            usuario
+        };
+
+        const { data: logData, error: logError } = await client
+            .from('descanso_ajustes_log')
+            .insert([logPayload])
+            .select()
+            .single();
+        if (logError) throw logError;
+
+        const employeePayload = {
+            ajuste_descansos_dias: Number(valorNuevo || 0),
+            ajuste_descansos_motivo: String(motivo || '').trim(),
+            updated_at: new Date().toISOString()
+        };
+
+        const { error: updateError } = await client
+            .from('empleados')
+            .update(employeePayload)
+            .eq('id', empleadoId);
+        if (updateError) {
+            const errorStr = String(updateError?.details || updateError?.message || updateError?.hint || '');
+            if (/ajuste_descansos_motivo/i.test(errorStr)) {
+                const { error: retryError } = await client
+                    .from('empleados')
+                    .update({
+                        ajuste_descansos_dias: Number(valorNuevo || 0),
+                        updated_at: new Date().toISOString()
+                    })
+                    .eq('id', empleadoId);
+                if (retryError) throw retryError;
+            } else {
+                throw updateError;
+            }
+        }
+
+        return logData;
+    },
+
+    async fetchAjustesDescanso(empleadoId, anio = null, limit = 50) {
+        const client = window.supabase;
+        try {
+            let query = client
+                .from('descanso_ajustes_log')
+                .select('*')
+                .eq('empleado_id', empleadoId)
+                .order('created_at', { ascending: false })
+                .limit(limit);
+
+            if (anio) query = query.eq('anio', Number(anio));
+
+            const { data, error } = await query;
+            if (error) throw error;
+            return data || [];
+        } catch (err) {
+            console.error("[ADMIN ERROR] DAO fetchAjustesDescanso", {
+                message: err.message,
+                code: err.code,
+                empleadoId,
+                anio
+            });
+            return [];
+        }
+    },
+
     async insertLog(logData) {
         const client = window.supabase;
         try {

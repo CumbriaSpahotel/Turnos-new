@@ -38,6 +38,8 @@ ALTER TABLE empleados ADD COLUMN IF NOT EXISTS email text;
 ALTER TABLE empleados ADD COLUMN IF NOT EXISTS observaciones text;
 ALTER TABLE empleados ADD COLUMN IF NOT EXISTS hoteles_asignados text;
 ALTER TABLE empleados ADD COLUMN IF NOT EXISTS ajuste_vacaciones_dias numeric DEFAULT 0;
+ALTER TABLE empleados ADD COLUMN IF NOT EXISTS ajuste_descansos_dias numeric DEFAULT 0;
+ALTER TABLE empleados ADD COLUMN IF NOT EXISTS ajuste_descansos_motivo text;
 ALTER TABLE empleados ADD COLUMN IF NOT EXISTS vacaciones_regularizadas_pagadas boolean DEFAULT false;
 ALTER TABLE empleados ADD COLUMN IF NOT EXISTS antiguedad text;
 ALTER TABLE empleados ADD COLUMN IF NOT EXISTS categoria text;
@@ -317,6 +319,89 @@ CREATE TABLE IF NOT EXISTS publicaciones_log (
 ALTER TABLE publicaciones_log ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "allow all" ON publicaciones_log;
 CREATE POLICY "allow all" ON publicaciones_log FOR ALL USING (true);
+
+-- 11B. HISTORIAL SEGURO DE AJUSTES MANUALES DE DESCANSOS
+CREATE TABLE IF NOT EXISTS descanso_ajustes_log (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  empleado_id text NOT NULL,
+  empleado_nombre text,
+  anio integer NOT NULL,
+  valor_anterior numeric NOT NULL DEFAULT 0,
+  valor_nuevo numeric NOT NULL DEFAULT 0,
+  diferencia numeric GENERATED ALWAYS AS (valor_nuevo - valor_anterior) STORED,
+  motivo text NOT NULL,
+  usuario text DEFAULT 'WEB_ADMIN',
+  origen text DEFAULT 'ficha_empleado',
+  created_at timestamptz DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_descanso_ajustes_log_empleado_anio
+ON descanso_ajustes_log (empleado_id, anio, created_at DESC);
+
+ALTER TABLE descanso_ajustes_log ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "descanso ajustes lectura" ON descanso_ajustes_log;
+DROP POLICY IF EXISTS "descanso ajustes insercion" ON descanso_ajustes_log;
+CREATE POLICY "descanso ajustes lectura" ON descanso_ajustes_log FOR SELECT USING (true);
+CREATE POLICY "descanso ajustes insercion" ON descanso_ajustes_log FOR INSERT WITH CHECK (true);
+
+CREATE OR REPLACE FUNCTION registrar_ajuste_descanso(
+  p_empleado_id text,
+  p_empleado_nombre text,
+  p_anio integer,
+  p_valor_nuevo numeric,
+  p_motivo text,
+  p_usuario text DEFAULT 'WEB_ADMIN'
+) RETURNS descanso_ajustes_log AS $$
+DECLARE
+  v_valor_anterior numeric;
+  v_log descanso_ajustes_log;
+BEGIN
+  IF p_empleado_id IS NULL OR length(trim(p_empleado_id)) = 0 THEN
+    RAISE EXCEPTION 'Empleado obligatorio';
+  END IF;
+
+  IF p_motivo IS NULL OR length(trim(p_motivo)) < 6 THEN
+    RAISE EXCEPTION 'El motivo del ajuste es obligatorio';
+  END IF;
+
+  SELECT COALESCE(ajuste_descansos_dias, 0)
+  INTO v_valor_anterior
+  FROM empleados
+  WHERE id = p_empleado_id
+  FOR UPDATE;
+
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'Empleado no encontrado: %', p_empleado_id;
+  END IF;
+
+  INSERT INTO descanso_ajustes_log (
+    empleado_id,
+    empleado_nombre,
+    anio,
+    valor_anterior,
+    valor_nuevo,
+    motivo,
+    usuario
+  ) VALUES (
+    p_empleado_id,
+    p_empleado_nombre,
+    p_anio,
+    COALESCE(v_valor_anterior, 0),
+    p_valor_nuevo,
+    trim(p_motivo),
+    COALESCE(NULLIF(trim(p_usuario), ''), 'WEB_ADMIN')
+  )
+  RETURNING * INTO v_log;
+
+  UPDATE empleados
+  SET ajuste_descansos_dias = p_valor_nuevo,
+      ajuste_descansos_motivo = trim(p_motivo),
+      updated_at = now()
+  WHERE id = p_empleado_id;
+
+  RETURN v_log;
+END;
+$$ LANGUAGE plpgsql;
 
 -- 12. TABLA SNAPSHOTS DE CUADRANTE (ARQUITECTURA FIJA)
 -- Almacena el resultado final horneado por Admin para consumo de Index y App Móvil.
