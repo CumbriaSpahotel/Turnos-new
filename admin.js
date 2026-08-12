@@ -8612,6 +8612,81 @@ window.validateSystemHealth = async function(weekStart, weekEnd) {
     return health;
 };
 
+window.getDailyShiftCoverageRisks = async function(startISO = null, endISO = null) {
+    const risks = [];
+    try {
+        if (!window.buildPublicationSnapshotPreview || !window.TurnosDB) return risks;
+        const today = window.isoDate ? window.isoDate(new Date()) : new Date().toISOString().slice(0, 10);
+        const start = String(startISO || today).slice(0, 10);
+        const end = String(endISO || (window.addIsoDays ? window.addIsoDays(today, 60) : today)).slice(0, 10);
+        if (!start || !end || end < start) return risks;
+
+        const getMondayISO = (dateStr) => {
+            if (window.getMonday && window.isoDate) {
+                return window.isoDate(window.getMonday(new Date(`${dateStr}T12:00:00`)));
+            }
+            const d = new Date(`${dateStr}T12:00:00`);
+            const day = d.getDay();
+            d.setDate(d.getDate() + (day === 0 ? -6 : 1 - day));
+            return d.toISOString().slice(0, 10);
+        };
+        const addDays = window.addIsoDays || ((dateStr, days) => {
+            const d = new Date(`${dateStr}T12:00:00`);
+            d.setDate(d.getDate() + days);
+            return d.toISOString().slice(0, 10);
+        });
+        const format = window.fmtDateLegacy || window.formatDateES || ((dateStr) => dateStr);
+        const shiftName = { M: 'mañana', T: 'tarde', N: 'noche' };
+        const codeOf = (cell) => {
+            if (!cell) return '';
+            if (cell.isAbsence || /VAC|BAJA|IT|PERM|FORM/i.test(String(cell.type || ''))) return '';
+            const raw = cell.code || cell.turno || cell.label || '';
+            const meta = window.employeeProfileShiftCodeMeta
+                ? window.employeeProfileShiftCodeMeta(raw)
+                : { code: String(raw || '').trim().toUpperCase() };
+            return meta.code || '';
+        };
+
+        let week = getMondayISO(start);
+        const endWeek = getMondayISO(end);
+        while (week <= endWeek) {
+            const snapshots = await window.buildPublicationSnapshotPreview(week, 'all');
+            (snapshots || []).forEach(snap => {
+                const hotel = snap.hotel_nombre || snap.hotel_id || snap.hotel || 'Sin hotel';
+                for (let i = 0; i < 7; i++) {
+                    const date = addDays(week, i);
+                    if (date < start || date > end) continue;
+                    const counts = { M: 0, T: 0, N: 0 };
+                    let hasAnyAssignment = false;
+                    (snap.rows || []).forEach(row => {
+                        if (String(row.rowType || 'operativo').toLowerCase() === 'placeholder') return;
+                        const cell = (row.cells || row.dias || row.days || {})[date];
+                        const rawCellText = String(cell?.code || cell?.turno || cell?.label || '').trim();
+                        if (rawCellText && rawCellText !== '-' && rawCellText !== '—') hasAnyAssignment = true;
+                        const code = codeOf(cell);
+                        if (counts[code] !== undefined) counts[code] += 1;
+                    });
+                    if (!hasAnyAssignment) continue;
+                    const missing = ['M', 'T', 'N'].filter(code => counts[code] < 1);
+                    if (missing.length === 0) continue;
+                    const weekStart = getMondayISO(date);
+                    risks.push({
+                        severity: 'critical',
+                        type: 'DAILY_SHIFT_COVERAGE',
+                        title: 'Cobertura diaria incompleta',
+                        desc: `${hotel} - ${format(date)}: falta ${missing.map(code => shiftName[code]).join(', ')}. Actual: mañana ${counts.M}, tarde ${counts.T}, noche ${counts.N}.`,
+                        action: { fn: `window.goToRiskPreview('${hotel}', '${weekStart}')`, label: 'Ir a Vista Previa' }
+                    });
+                }
+            });
+            week = addDays(week, 7);
+        }
+    } catch (err) {
+        console.warn('[DAILY_SHIFT_COVERAGE_RISKS]', err);
+    }
+    return risks;
+};
+
 window.renderDashboard = async () => {
     if (!window.TurnosDB) {
         console.error('[ADMIN ERROR] DAO (TurnosDB) no inicializado. Revisa el orden de scripts y posibles errores de sintaxis.');
@@ -8696,6 +8771,14 @@ window.renderDashboard = async () => {
         }
 
         // Auditoría de ID Interno (Fase 1)
+        const coverageRisks = window.getDailyShiftCoverageRisks
+            ? await window.getDailyShiftCoverageRisks(today, window.addIsoDays ? window.addIsoDays(today, 60) : today)
+            : [];
+        coverageRisks.forEach(risk => {
+            allRisks.push(risk);
+            counts[risk.severity] = (counts[risk.severity] || 0) + 1;
+        });
+
         const empsSinIdInterno = (empleados || []).filter(e => (!e.id_interno || String(e.id_interno).trim() === '') && e.activo !== false && e.id !== '¿?');
         if (empsSinIdInterno.length > 0) {
             allRisks.push({
@@ -9947,6 +10030,23 @@ window.buildEmployeeProfileModel = (empId, refISO) => {
             });
         };
         const isVacationCoveredDay = (day) => isVacationDay(day) || isDateCoveredByVacationPeriod(day.fecha);
+        const isDateCoveredByLeavePeriod = (fecha) => {
+            const iso = String(fecha || '').slice(0, 10);
+            if (!iso) return false;
+            return (yearLeavePermissionEvents || []).some(ev => {
+                const start = String(ev.fecha_inicio || '').slice(0, 10);
+                const end = String(ev.fecha_fin || ev.fecha_inicio || '').slice(0, 10);
+                return start && end && start <= iso && iso <= end;
+            });
+        };
+        const isLeaveCoveredDay = (day) => {
+            const incRaw = typeof day.incidencia === 'string'
+                ? day.incidencia
+                : (day.incidencia?.tipo || day.detalle?.incidencia?.tipo || day.detalle?.incidencia || '');
+            const incCode = window.normalizeTipo ? window.normalizeTipo(incRaw) : String(incRaw || '').toUpperCase();
+            return /BAJA|IT|PERM|PERMISO/.test(incCode) || isDateCoveredByLeavePeriod(day.fecha);
+        };
+        const workedCodesForRestRule = ['M', 'T', 'N', 'TP'];
 
         Array.from(byWeek.entries()).sort((a, b) => a[0].localeCompare(b[0])).forEach(([weekStart, weekDays]) => {
             const ordered = weekDays.slice().sort((a, b) => String(a.fecha || '').localeCompare(String(b.fecha || '')));
@@ -9960,8 +10060,19 @@ window.buildEmployeeProfileModel = (empId, refISO) => {
             });
             if (relevantDays.length === 0) return;
 
+            const workedCount = ordered.filter(day => {
+                if (isVacationCoveredDay(day) || isLeaveCoveredDay(day)) return false;
+                const finalCode = window.employeeProfileShiftCodeMeta(day.turno || day.detalle?.turno).code;
+                return workedCodesForRestRule.includes(finalCode);
+            }).length;
+            const expectedRests = workedCount >= 5 ? 2 : 0;
+            if (expectedRests === 0) return;
+
             const restDates = ordered
-                .filter(day => window.employeeProfileShiftCodeMeta(day.turno || day.detalle?.turno).code === 'D')
+                .filter(day => {
+                    if (isVacationCoveredDay(day) || isLeaveCoveredDay(day)) return false;
+                    return window.employeeProfileShiftCodeMeta(day.turno || day.detalle?.turno).code === 'D';
+                })
                 .map(day => day.fecha);
             const restCount = restDates.length;
             const weekEndDate = new Date(`${weekStart}T12:00:00`);
@@ -9970,24 +10081,28 @@ window.buildEmployeeProfileModel = (empId, refISO) => {
             weeksCount += 1;
             restsCount += restCount;
 
-            if (restCount < 2) {
-                const missing = 2 - restCount;
+            if (restCount < expectedRests) {
+                const missing = expectedRests - restCount;
                 incidencias.push({
                     fecha: weekEnd,
                     weekStart,
                     weekEnd,
                     restCount,
+                    workedCount,
+                    expectedRests,
                     delta: missing,
                     tipo: 'DESCANSO_PENDIENTE',
                     label: `+${missing} dia${missing === 1 ? '' : 's'} pendiente${missing === 1 ? '' : 's'} de descanso`
                 });
-            } else if (restCount > 2) {
-                restDates.slice(2).forEach(fecha => {
+            } else if (restCount > expectedRests) {
+                restDates.slice(expectedRests).forEach(fecha => {
                     incidencias.push({
                         fecha,
                         weekStart,
                         weekEnd,
                         restCount,
+                        workedCount,
+                        expectedRests,
                         delta: -1,
                         tipo: 'EXCESO_DESCANSO',
                         label: '-1 dia de descanso'
@@ -10601,7 +10716,7 @@ window.renderEmployeeProfile = () => {
         const restIncidentRows = ((model.weeklyRestBalance && model.weeklyRestBalance.incidencias) || []).map(item => ({
             fecha: item.fecha,
             main: `<strong>${escapeHtml(item.label)}</strong>`,
-            secondary: `Semana ${escapeHtml(window.employeeProfileDateRangeLabel(item.weekStart, item.weekEnd))} · descansos reales: ${escapeHtml(String(item.restCount ?? 0))}/2`,
+            secondary: `Semana ${escapeHtml(window.employeeProfileDateRangeLabel(item.weekStart, item.weekEnd))} - trabajados: ${escapeHtml(String(item.workedCount ?? 0))}/5 - descansos reales: ${escapeHtml(String(item.restCount ?? 0))}/${escapeHtml(String(item.expectedRests ?? 2))}`,
             badge: item.delta > 0 ? 'Pendiente' : 'Exceso',
             badgeColor: item.delta > 0 ? '#b91c1c' : '#d97706'
         }));
