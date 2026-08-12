@@ -90,6 +90,19 @@ td {
   font-size: 0.85rem;
   border-right: 1px solid var(--border);
   min-width: 120px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: flex-start;
+  padding: 6px 8px;
+}
+
+.emp-name {
+  display: block;
+  width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 /* Píldoras de Turno */

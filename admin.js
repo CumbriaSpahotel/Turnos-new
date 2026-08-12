@@ -6080,12 +6080,12 @@ window.debugVacCristina = (fechaTest = '2026-04-20') => {
         console.log(`[TEST CRISTINA VAC ${fechaTest}]`, testResult);
         console.log('[INTERPRETACION]',
             testResult.incidencia === 'VAC' || testResult.turno === 'VAC'
-                ? '-S& Motor resuelve VAC correctamente'
+                ? '🚀 Motor resuelve VAC correctamente'
                 : todosCristina.length === 0
                     ? '-R PROBLEMA DE DATOS: no hay eventos de Cristina en eventosActivos -  fallo en fetch/query'
                     : todosVAC.filter(e => JSON.stringify(e).toLowerCase().includes('cristina')).length === 0
                         ? '-R PROBLEMA DE MATCHING: hay eventos de Cristina pero ninguno de tipo VAC -  posible discrepancia campo tipo'
-                        : '-a-Ã¯Â¸Â PROBLEMA DE MOTOR/RENDER: el evento VAC existe y matchea pero resolveEmployeeDay no lo aplica'
+                        : '⚠️ PROBLEMA DE MOTOR/RENDER: el evento VAC existe y matchea pero resolveEmployeeDay no lo aplica'
         );
         return testResult;
     } else {
@@ -7223,7 +7223,7 @@ window.showPublishPreview = async () => {
     modal.innerHTML = `
         <div class="drawer-content" style="max-width: 600px; padding: 0; border-radius: 24px; overflow: hidden; background: #f8fafc;">
             <header style="padding: 24px 32px; background: #0f172a; color: white;">
-                <h2 style="margin: 0; font-size: 1.25rem;">ðŸÅ¡Ã¢â€šÂ¬ Publicar Snapshot de Turnos</h2>
+                <h2 style="margin: 0; font-size: 1.25rem;">🚀 Publicar Snapshot de Turnos</h2>
                 <p style="margin: 4px 0 0 0; font-size: 0.85rem; opacity: 0.8;">Semana del ${weekStart} al ${weekEnd}</p>
             </header>
             

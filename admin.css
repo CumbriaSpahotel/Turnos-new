@@ -448,7 +448,7 @@ input, select, textarea { color: var(--text); }
 .drop-zone:hover::after, .drop-zone.drag-over::after { opacity: 1; }
 .drop-zone.loaded { border-color: var(--success); border-style: solid; box-shadow: 0 4px 24px rgba(16,232,152,0.15); }
 
-/* BLOQUE C: ACCIONES RÃPIDAS */
+/* BLOQUE C: ACCIONES RÁPIDAS */
 .dashboard-actions-strip {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
@@ -2885,7 +2885,7 @@ input, select, textarea { color: var(--text); }
   border-color: #fef3c7;
 }
 
-/* Lista de PrÃ³ximos Turnos */
+/* Lista de Próximos Turnos */
 .next-shifts-list {
   display: flex;
   flex-direction: column;

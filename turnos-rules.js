@@ -726,7 +726,17 @@
 
         // 1. Exclusiones permanentes (Apoyo, Ocasional, Dirección y VACANTE).
         // EMP-0010 (Sergio) es fijo titular y debe computar; no excluir por nombre de pila.
-        const isSergioDireccion = employeeId === 'emp-0004' || normalizeText(name) === 'sergio sanchez';
+        const normName = normalizeText(name);
+        const normId = normalizeText(employeeId);
+        const normInternalId = normalizeText(employee.id_interno || '');
+        const isSergioDireccion = normId === 'emp-0004' ||
+            normInternalId === 'emp-0004' ||
+            normName === 'sergio sanchez' ||
+            normName === 's. sanchez' ||
+            normName === 's sanchez' ||
+            normName === 's. sancchez' ||
+            normName === 's sancchez' ||
+            (normName.startsWith('s') && (normName.includes('sanchez') || normName.includes('sancchez')));
         if (name.includes('vacante') || name === '¿?' || name.includes('sin asignar') || isSergioDireccion) {
             logVisibility(false, 'excluded_placeholder_or_direction_by_name');
             return false;

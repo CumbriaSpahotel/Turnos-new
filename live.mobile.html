@@ -186,10 +186,12 @@
       left: 0;
       z-index: 10;
       background: var(--card) !important;
-      padding-left: 12px !important;
+      padding: 6px 4px 6px 10px !important;
       height: 100%;
       display: flex !important;
-      align-items: center !important;
+      flex-direction: column !important;
+      justify-content: center !important;
+      align-items: flex-start !important;
       border-right: 1px solid var(--border);
     }
 
@@ -197,12 +199,14 @@
       font-size: 13px !important;
       font-weight: 700 !important;
       color: var(--text);
-      white-space: normal !important;
-      overflow: visible !important;
-      text-overflow: clip !important;
-      word-break: break-word;
+      white-space: nowrap !important;
+      overflow: hidden !important;
+      text-overflow: ellipsis !important;
+      word-break: normal;
       line-height: 1.2;
       opacity: 1;
+      display: block !important;
+      width: 100% !important;
     }
 
     .grid-cell {
@@ -299,12 +303,14 @@
 
     /* BADGES DE CONTROL (MOVILES) */
     .emp-badges-mobile {
-      display: inline-flex;
-      flex-direction: row;
-      gap: 3px;
-      margin-left: 0;
-      margin-top: 4px;
-      flex-wrap: wrap;
+      display: flex !important;
+      flex-direction: row !important;
+      align-items: center !important;
+      gap: 3px !important;
+      margin-left: 0 !important;
+      margin-top: 3px !important;
+      flex-wrap: nowrap !important;
+      width: 100% !important;
     }
     .badge-mini {
       font-size: 9px;
@@ -859,15 +865,24 @@
 
     .name-cell {
       background: linear-gradient(180deg, rgba(255,255,255,0.92), rgba(255,255,255,0.84)) !important;
-      padding-left: 10px !important;
+      padding: 6px 4px 6px 10px !important;
+      display: flex !important;
+      flex-direction: column !important;
+      justify-content: center !important;
+      align-items: flex-start !important;
     }
 
     .emp-name {
       font-size: 13px !important;
       line-height: 1.22;
       font-weight: 800 !important;
-      padding-right: 6px;
+      padding-right: 4px;
       color: #1f2937 !important;
+      display: block !important;
+      width: 100% !important;
+      white-space: nowrap !important;
+      overflow: hidden !important;
+      text-overflow: ellipsis !important;
     }
 
     .grid-cell {
