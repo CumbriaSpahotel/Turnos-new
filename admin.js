@@ -1631,6 +1631,45 @@ window.renderExcelView = async () => {
             return `${profile.nombre || empId} [${idInt}]`;
         };
         const TURNO_MAP = { 'M': 'Mañana', 'Mañana': 'Mañana', 'T': 'Tarde', 'Tarde': 'Tarde', 'N': 'Noche', 'Noche': 'Noche', 'D': 'Descanso', 'Descanso': 'Descanso', 'TP': 'T/P', 'T/P': 'T/P', '-': 'Pendiente de asignar', '—': 'Pendiente de asignar', '': 'Pendiente de asignar', null: 'Pendiente de asignar' };
+        const excelShiftCoverageCode = (value) => {
+            const raw = String(value || '').trim();
+            if (!raw || /pendiente|descanso|vacaciones|baja|permiso/i.test(raw)) return '';
+            const normalized = window.normalizePreviewTurno ? window.normalizePreviewTurno(raw) : raw.toUpperCase();
+            if (normalized === 'M') return 'M';
+            if (normalized === 'T') return 'T';
+            if (normalized === 'N') return 'N';
+            return '';
+        };
+        const buildExcelCoverageWarnings = (rows) => {
+            const byDate = new Map();
+            (rows || []).forEach(row => {
+                if (row.isSupport || !row.hasValidId) return;
+                row.values.forEach((value, offset) => {
+                    const currDate = new Date(`${row.weekStart}T12:00:00`);
+                    currDate.setDate(currDate.getDate() + offset);
+                    const date = window.isoDate(currDate);
+                    if (!date || date < dateStart || date > dateEnd) return;
+                    if (!byDate.has(date)) byDate.set(date, { M: 0, T: 0, N: 0, assigned: 0 });
+                    const item = byDate.get(date);
+                    const mapped = TURNO_MAP[value] || value;
+                    if (String(mapped || '').trim() && mapped !== 'Pendiente de asignar') item.assigned++;
+                    const code = excelShiftCoverageCode(mapped);
+                    if (item[code] !== undefined) item[code]++;
+                });
+            });
+            return Array.from(byDate.entries()).sort((a, b) => a[0].localeCompare(b[0])).map(([date, counts]) => {
+                if (counts.assigned === 0) return null;
+                const missing = [];
+                if (counts.M < 1) missing.push('mañana');
+                if (counts.T < 1) missing.push('tarde');
+                if (counts.N < 1) missing.push('noche');
+                if (missing.length === 0) return null;
+                return { date, counts, missing };
+            }).filter(Boolean);
+        };
+        const renderExcelCoverageWarnings = (warnings) => {
+            return `<div class="excel-coverage-alerts" style="${warnings && warnings.length ? 'display:grid;' : 'display:none;'} gap:8px; padding:12px 20px; border-bottom:1px solid #fecaca; background:#fef2f2;">${(warnings || []).map(item => `<div style="display:flex; align-items:center; justify-content:space-between; gap:12px; padding:9px 11px; border:1px solid #fecaca; border-radius:12px; background:white; color:#991b1b; font-size:0.78rem; font-weight:800;"><span><i class="fas fa-triangle-exclamation" style="margin-right:8px;"></i>${window.fmtDateLegacy(item.date)}: falta ${item.missing.join(', ')}</span><span style="color:#64748b;">M ${item.counts.M} · T ${item.counts.T} · N ${item.counts.N}</span></div>`).join('')}</div>`;
+        };
         let totalPendientes = 0;
         let totalSupportPendientes = 0;
         let totalNoId = 0;
@@ -1772,9 +1811,11 @@ window.renderExcelView = async () => {
                 });
             });
             if (rows.length === 0) return '';
+            const coverageWarnings = buildExcelCoverageWarnings(rows);
             return `
-                <div style="background:white; border:1px solid #e2e8f0; border-radius:16px; overflow:hidden; margin-bottom:24px; box-shadow:0 4px 6px -1px rgba(0,0,0,0.05);">
+                <div class="excel-hotel-section" data-hotel="${escapeHtml(hotel)}" style="background:white; border:1px solid #e2e8f0; border-radius:16px; overflow:hidden; margin-bottom:24px; box-shadow:0 4px 6px -1px rgba(0,0,0,0.05);">
                     <div style="padding:16px 20px; font-weight:800; color:#1e293b; background:#f8fafc; border-bottom:1px solid #e2e8f0; display:flex; justify-content:space-between;"><span>${hotel}</span><span style="font-size:0.7rem; color:#64748b; font-weight:600;">MOSTRANDO ${rows.length} FILAS</span></div>
+                    ${renderExcelCoverageWarnings(coverageWarnings)}
                     <div style="overflow:auto;"><table style="width:100%; border-collapse:collapse; min-width:980px;"><thead><tr style="background:#f8fafc;"><th style="padding:12px; border-bottom:1px solid #e2e8f0; text-align:left; font-size:0.7rem; color:#64748b; text-transform:uppercase;">Semana</th><th style="padding:12px; border-bottom:1px solid #e2e8f0; text-align:left; font-size:0.7rem; color:#64748b; text-transform:uppercase;">Empleado</th>${['LUN', 'MAR', 'MIE', 'JUE', 'VIE', 'SAB', 'DOM'].map(day => `<th style="padding:12px 8px; border-bottom:1px solid #e2e8f0; text-align:center; font-size:0.7rem; color:#64748b;">${day}</th>`).join('')}</tr></thead><tbody>${rows.map(row => `
                                     <tr class="excel-row-hover"><td style="padding:12px; border-bottom:1px solid #f1f5f9; white-space:nowrap; color:#64748b; font-size:0.8rem;">${window.fmtDateLegacy(row.weekStart)}</td><td style="padding:12px; border-bottom:1px solid #f1f5f9; min-width:220px; font-weight:600; color:#334155; font-size:0.85rem;">${row.displayName}</td>${[0, 1, 2, 3, 4, 5, 6].map(offset => {
                                             const dbVal = row.values[offset];
@@ -1784,7 +1825,7 @@ window.renderExcelView = async () => {
                                             const options = ['Pendiente de asignar', 'Mañana', 'Tarde', 'T/P', 'Noche', 'Descanso'].map(o => `<option value="${o}" ${o === mappedVal ? 'selected' : ''}>${o}</option>`).join('');
                                             const currDate = new Date(row.weekStart); currDate.setDate(currDate.getDate() + offset);
                                             const dStr = window.isoDate(currDate);
-                                            return `<td style="padding:6px; border-bottom:1px solid #f1f5f9; text-align:center;"><select class="turno-edit-select ${pendClass}" data-hotel="${row.hotel}" data-emp="${row.empId}" data-date="${dStr}" data-original="${dbVal}" style="width:110px; padding:6px; border:1px solid #e2e8f0; border-radius:8px; background:#f8fafc; text-align:center; color:#475569; font-size:0.8rem; cursor:pointer;" onchange="window.handleExcelCellChange(this)">${options}</select></td>`;
+                                            return `<td style="padding:6px; border-bottom:1px solid #f1f5f9; text-align:center;"><select class="turno-edit-select ${pendClass}" data-hotel="${row.hotel}" data-emp="${row.empId}" data-date="${dStr}" data-original="${dbVal}" data-support="${row.isSupport ? '1' : '0'}" data-valid-id="${row.hasValidId ? '1' : '0'}" style="width:110px; padding:6px; border:1px solid #e2e8f0; border-radius:8px; background:#f8fafc; text-align:center; color:#475569; font-size:0.8rem; cursor:pointer;" onchange="window.handleExcelCellChange(this)">${options}</select></td>`;
                                         }).join('')}</tr>`).join('')}</tbody></table></div></div>`;
         }).join('');
         container.innerHTML += sections || '<div style="padding: 3rem; text-align: center; color: #94a3b8; font-weight:600;">No hay registros que coincidan con los filtros.</div>';
@@ -1806,6 +1847,44 @@ window.renderExcelView = async () => {
             }
         });
     } catch (error) { container.innerHTML = `<div style="padding:2rem; color:red; font-weight:800;">Error cargando Modo Excel: ${error.message}</div>`; }
+};
+
+window.refreshExcelCoverageAlarms = () => {
+    const shiftCode = (value) => {
+        const raw = String(value || '').trim();
+        if (!raw || /pendiente|descanso|vacaciones|baja|permiso/i.test(raw)) return '';
+        const normalized = window.normalizePreviewTurno ? window.normalizePreviewTurno(raw) : raw.toUpperCase();
+        if (normalized === 'M') return 'M';
+        if (normalized === 'T') return 'T';
+        if (normalized === 'N') return 'N';
+        return '';
+    };
+    document.querySelectorAll('.excel-hotel-section').forEach(section => {
+        const byDate = new Map();
+        section.querySelectorAll('select.turno-edit-select').forEach(sel => {
+            if (sel.dataset.support === '1' || sel.dataset.validId !== '1') return;
+            const date = sel.dataset.date;
+            if (!date) return;
+            if (!byDate.has(date)) byDate.set(date, { M: 0, T: 0, N: 0, assigned: 0 });
+            const item = byDate.get(date);
+            const value = sel.value || '';
+            if (value && value !== 'Pendiente de asignar') item.assigned++;
+            const code = shiftCode(value);
+            if (item[code] !== undefined) item[code]++;
+        });
+        const warnings = Array.from(byDate.entries()).sort((a, b) => a[0].localeCompare(b[0])).map(([date, counts]) => {
+            if (counts.assigned === 0) return null;
+            const missing = [];
+            if (counts.M < 1) missing.push('mañana');
+            if (counts.T < 1) missing.push('tarde');
+            if (counts.N < 1) missing.push('noche');
+            return missing.length ? { date, counts, missing } : null;
+        }).filter(Boolean);
+        const box = section.querySelector('.excel-coverage-alerts');
+        if (!box) return;
+        box.style.display = warnings.length ? 'grid' : 'none';
+        box.innerHTML = warnings.map(item => `<div style="display:flex; align-items:center; justify-content:space-between; gap:12px; padding:9px 11px; border:1px solid #fecaca; border-radius:12px; background:white; color:#991b1b; font-size:0.78rem; font-weight:800;"><span><i class="fas fa-triangle-exclamation" style="margin-right:8px;"></i>${window.fmtDateLegacy(item.date)}: falta ${item.missing.join(', ')}</span><span style="color:#64748b;">M ${item.counts.M} · T ${item.counts.T} · N ${item.counts.N}</span></div>`).join('');
+    });
 };
 
 window.handleExcelCellChange = (sel) => {
@@ -1830,6 +1909,7 @@ window.handleExcelCellChange = (sel) => {
         btn.classList.toggle('active', changes > 0);
         btn.innerHTML = `<i class="fas fa-save"></i> ${changes > 0 ? `Guardar cambios (${changes})` : 'Guardar base'}`;
     }
+    window.refreshExcelCoverageAlarms?.();
 };
 
 window.saveTurnosBaseDirect = async () => {
@@ -4040,6 +4120,24 @@ window.renderEmployeeProfile = () => {
                 </div>
             </div>
         `;
+    } else if (currentTab === 'handover') {
+        const activeCandidates = (window.empleadosGlobales || [])
+            .filter(candidate => String(candidate.id || '') !== String(emp.id || '') && candidate.activo !== false)
+            .sort((a, b) => String(a.nombre || a.id || '').localeCompare(String(b.nombre || b.id || '')));
+        const candidateOptions = activeCandidates
+            .map(candidate => `<option value="${escapeHtml(candidate.id)}">${escapeHtml(candidate.nombre || candidate.id)}${candidate.id_interno ? ` [${escapeHtml(candidate.id_interno)}]` : ''}</option>`)
+            .join('');
+        const todayValue = window.isoDate ? window.isoDate(new Date()) : new Date().toISOString().slice(0, 10);
+        tabContent = `<section class="emp-card glass emp-year-card" style="padding:20px; border-radius:18px; border:1px solid var(--border);"><div class="emp-year-header"><div><h3 style="margin:0 0 6px; font-size:0.9rem; font-weight:800;">Relevo de titular fijo</h3><div class="emp-year-subtitle">Cambia la titularidad desde una fecha. El hist&oacute;rico anterior del saliente no se modifica.</div></div></div><form class="emp-edit-form" onsubmit="window.previewEmployeeHandover(event)" style="margin-top:16px;"><label><span>Trabajador saliente</span><input type="text" value="${escapeHtml(emp.nombre || emp.id)}" readonly><small>Se marcar&aacute; baja empresa desde el d&iacute;a anterior.</small></label><label><span>Nuevo titular fijo</span><select id="emp-handover-target" required><option value="">Seleccionar trabajador</option>${candidateOptions}</select><small>Recibir&aacute; posici&oacute;n, hotel y turnos futuros.</small></label><label><span>Fecha efectiva</span><input id="emp-handover-date" type="date" value="${todayValue}" required><small>Desde este d&iacute;a se mueven los turnos al nuevo titular.</small></label><label><span>Hotel</span><input id="emp-handover-hotel" type="text" value="${escapeHtml(emp.hotel_id || emp.hotel || '')}" readonly><small>Se aplica a la l&iacute;nea de este hotel.</small></label><label class="span-2"><span>Motivo obligatorio</span><textarea id="emp-handover-reason" rows="3" maxlength="280" required placeholder="Ej. Baja empresa y relevo definitivo de plantilla fija..."></textarea></label><label class="span-2" style="display:flex; align-items:center; gap:10px; flex-direction:row;"><input id="emp-handover-overwrite" type="checkbox" style="width:auto;"><span style="font-weight:800;">Permitir sobrescribir turnos futuros que ya tenga el nuevo titular</span></label><div class="emp-edit-actions span-2"><span id="empHandoverStatus">Primero revisa el impacto antes de aplicar.</span><button type="submit" class="emp-save-btn"><i class="fas fa-magnifying-glass"></i> Revisar impacto</button><button type="button" class="emp-save-btn" onclick="window.applyEmployeeHandover(event)" style="background:#dc2626;"><i class="fas fa-user-check"></i> Aplicar relevo</button></div></form><div id="empHandoverPreview" style="margin-top:18px;"></div></section>`;
+    } else if (currentTab === 'handover') {
+        const activeCandidates = (window.empleadosGlobales || [])
+            .filter(candidate => String(candidate.id || '') !== String(emp.id || '') && candidate.activo !== false)
+            .sort((a, b) => String(a.nombre || a.id || '').localeCompare(String(b.nombre || b.id || '')));
+        const candidateOptions = activeCandidates
+            .map(candidate => `<option value="${escapeHtml(candidate.id)}">${escapeHtml(candidate.nombre || candidate.id)}${candidate.id_interno ? ` [${escapeHtml(candidate.id_interno)}]` : ''}</option>`)
+            .join('');
+        const todayValue = window.isoDate ? window.isoDate(new Date()) : new Date().toISOString().slice(0, 10);
+        tabContent = `<section class="emp-card glass emp-year-card" style="padding:20px; border-radius:18px; border:1px solid var(--border);"><div class="emp-year-header"><div><h3 style="margin:0 0 6px; font-size:0.9rem; font-weight:800;">Relevo de titular fijo</h3><div class="emp-year-subtitle">Cambia la titularidad desde una fecha. El hist&oacute;rico anterior del saliente no se modifica.</div></div></div><form class="emp-edit-form" onsubmit="window.previewEmployeeHandover(event)" style="margin-top:16px;"><label><span>Trabajador saliente</span><input type="text" value="${escapeHtml(emp.nombre || emp.id)}" readonly><small>Se marcar&aacute; baja empresa desde el d&iacute;a anterior.</small></label><label><span>Nuevo titular fijo</span><select id="emp-handover-target" required><option value="">Seleccionar trabajador</option>${candidateOptions}</select><small>Recibir&aacute; posici&oacute;n, hotel y turnos futuros.</small></label><label><span>Fecha efectiva</span><input id="emp-handover-date" type="date" value="${todayValue}" required><small>Desde este d&iacute;a se mueven los turnos al nuevo titular.</small></label><label><span>Hotel</span><input id="emp-handover-hotel" type="text" value="${escapeHtml(emp.hotel_id || emp.hotel || '')}" readonly><small>Se aplica a la l&iacute;nea de este hotel.</small></label><label class="span-2"><span>Motivo obligatorio</span><textarea id="emp-handover-reason" rows="3" maxlength="280" required placeholder="Ej. Baja empresa y relevo definitivo de plantilla fija..."></textarea></label><label class="span-2" style="display:flex; align-items:center; gap:10px; flex-direction:row;"><input id="emp-handover-overwrite" type="checkbox" style="width:auto;"><span style="font-weight:800;">Permitir sobrescribir turnos futuros que ya tenga el nuevo titular</span></label><div class="emp-edit-actions span-2"><span id="empHandoverStatus">Primero revisa el impacto antes de aplicar.</span><button type="submit" class="emp-save-btn"><i class="fas fa-magnifying-glass"></i> Revisar impacto</button><button type="button" class="emp-save-btn" onclick="window.applyEmployeeHandover(event)" style="background:#dc2626;"><i class="fas fa-user-check"></i> Aplicar relevo</button></div></form><div id="empHandoverPreview" style="margin-top:18px;"></div></section>`;
     } else if (currentTab === 'history') {
         const historySummaryEvents = (model.yearGroupedEvents || model.groupedEvents || []);
         const historyFilter = window._employeeProfileHistoryFilter || 'all';
@@ -10669,6 +10767,7 @@ window.renderEmployeeProfile = () => {
         ['changes', 'Cambios de Turno'],
         ['substitutions', 'Sustituciones'],
         ['reinforcements', 'Refuerzos'],
+        ['handover', 'Relevo'],
         ['history', 'Historial']
     ];
 
@@ -10936,7 +11035,15 @@ window.renderEmployeeProfile = () => {
     } else if (currentTab === 'reinforcements') {
         const refRows = model.explicitRefuerzoEvents.map(ev => ({ fecha: ev.fecha_inicio, main: `<strong>${escapeHtml(window.employeeProfileDateRangeLabel(ev.fecha_inicio, ev.fecha_fin || ev.fecha_inicio))}</strong> · ${escapeHtml(window.getEventoHotel ? window.getEventoHotel(ev) : (ev.hotel || ev.hotel_origen || ev.hotel_destino || emp.hotel || 'No informado'))}`, secondary: `Turno ${escapeHtml(ev.turno || ev.payload?.turno || 'No informado')} · origen ${escapeHtml(window.employeeProfileReadableSource(ev))}`, badge: escapeHtml(ev.id || ev.evento_id || 'sin id') }));
         tabContent = `<section class="emp-card glass" style="padding:20px; border-radius:18px; border:1px solid var(--border);"><h3 style="margin:0 0 14px; font-size:0.9rem; font-weight:800;">Refuerzos explícitos</h3>${renderRowsTable(refRows, 'No hay refuerzos explícitos para este empleado en el periodo.')}</section>`;
-    } else if (currentTab === 'history') {
+    } else if (currentTab === 'handover') {
+        const activeCandidates = (window.empleadosGlobales || [])
+            .filter(candidate => String(candidate.id || '') !== String(emp.id || '') && candidate.activo !== false)
+            .sort((a, b) => String(a.nombre || a.id || '').localeCompare(String(b.nombre || b.id || '')));
+        const candidateOptions = activeCandidates
+            .map(candidate => `<option value="${escapeHtml(candidate.id)}">${escapeHtml(candidate.nombre || candidate.id)}${candidate.id_interno ? ` [${escapeHtml(candidate.id_interno)}]` : ''}</option>`)
+            .join('');
+        const todayValue = window.isoDate ? window.isoDate(new Date()) : new Date().toISOString().slice(0, 10);
+        tabContent = `<section class="emp-card glass emp-year-card" style="padding:20px; border-radius:18px; border:1px solid var(--border);"><div class="emp-year-header"><div><h3 style="margin:0 0 6px; font-size:0.9rem; font-weight:800;">Relevo de titular fijo</h3><div class="emp-year-subtitle">Cambia la titularidad desde una fecha. El hist&oacute;rico anterior del saliente no se modifica.</div></div></div><form class="emp-edit-form" onsubmit="window.previewEmployeeHandover(event)" style="margin-top:16px;"><label><span>Trabajador saliente</span><input type="text" value="${escapeHtml(emp.nombre || emp.id)}" readonly><small>Se marcar&aacute; baja empresa desde el d&iacute;a anterior.</small></label><label><span>Nuevo titular fijo</span><select id="emp-handover-target" required><option value="">Seleccionar trabajador</option>${candidateOptions}</select><small>Recibir&aacute; posici&oacute;n, hotel y turnos futuros.</small></label><label><span>Fecha efectiva</span><input id="emp-handover-date" type="date" value="${todayValue}" required><small>Desde este d&iacute;a se mueven los turnos al nuevo titular.</small></label><label><span>Hotel</span><input id="emp-handover-hotel" type="text" value="${escapeHtml(emp.hotel_id || emp.hotel || '')}" readonly><small>Se aplica a la l&iacute;nea de este hotel.</small></label><label class="span-2"><span>Motivo obligatorio</span><textarea id="emp-handover-reason" rows="3" maxlength="280" required placeholder="Ej. Baja empresa y relevo definitivo de plantilla fija..."></textarea></label><label class="span-2" style="display:flex; align-items:center; gap:10px; flex-direction:row;"><input id="emp-handover-overwrite" type="checkbox" style="width:auto;"><span style="font-weight:800;">Permitir sobrescribir turnos futuros que ya tenga el nuevo titular</span></label><div class="emp-edit-actions span-2"><span id="empHandoverStatus">Primero revisa el impacto antes de aplicar.</span><button type="submit" class="emp-save-btn"><i class="fas fa-magnifying-glass"></i> Revisar impacto</button><button type="button" class="emp-save-btn" onclick="window.applyEmployeeHandover(event)" style="background:#dc2626;"><i class="fas fa-user-check"></i> Aplicar relevo</button></div></form><div id="empHandoverPreview" style="margin-top:18px;"></div></section>`;    } else if (currentTab === 'history') {
         const historySummaryEvents = (model.yearGroupedEvents || model.groupedEvents || []);
         const historyFilter = window._employeeProfileHistoryFilter || 'all';
         const historyIdentityKeys = window.getEmployeeIdentityKeys(emp);
@@ -11126,6 +11233,113 @@ window.saveEmployeeRestAdjustmentInline = async (event) => {
     } catch (e) {
         console.error('[REST ADJUSTMENT SAVE ERROR]', e);
         setStatus('Error al guardar', '#dc2626');
+    }
+};
+
+window.getEmployeeHandoverFormData = () => {
+    const salienteId = window._employeeProfileId;
+    return {
+        salienteId,
+        entranteId: document.getElementById('emp-handover-target')?.value || '',
+        fechaEfectiva: document.getElementById('emp-handover-date')?.value || '',
+        hotel: document.getElementById('emp-handover-hotel')?.value || null,
+        motivo: document.getElementById('emp-handover-reason')?.value?.trim() || '',
+        overwriteConflicts: Boolean(document.getElementById('emp-handover-overwrite')?.checked)
+    };
+};
+
+window.renderEmployeeHandoverPreview = (preview) => {
+    const target = document.getElementById('empHandoverPreview');
+    if (!target || !preview) return;
+    const conflictRows = (preview.conflictos || []).slice(0, 8).map(conflict => `
+        <div style="display:grid; grid-template-columns:110px 1fr 1fr; gap:10px; align-items:center; padding:10px 12px; border:1px solid var(--border); border-radius:12px; background:white;">
+            <strong>${escapeHtml(window.fmtDateLegacy ? window.fmtDateLegacy(conflict.fecha) : conflict.fecha)}</strong>
+            <span>Saliente: ${escapeHtml(conflict.turno_saliente || '-')}</span>
+            <span>Entrante: ${escapeHtml(conflict.turno_entrante || '-')}</span>
+        </div>
+    `).join('');
+    target.innerHTML = `
+        <section class="emp-card glass" style="padding:16px; border-radius:16px; border:1px solid ${preview.conflictos?.length ? 'rgba(220,38,38,.28)' : 'var(--border)'}; background:${preview.conflictos?.length ? 'rgba(254,242,242,.55)' : 'white'};">
+            <h3 style="margin:0 0 12px; font-size:0.86rem; font-weight:900;">Impacto del relevo</h3>
+            <div style="display:grid; grid-template-columns:repeat(4, minmax(0, 1fr)); gap:10px; margin-bottom:12px;">
+                ${window.renderEmployeeProfileField(['Saliente', preview.saliente?.nombre || preview.saliente?.id || '-'])}
+                ${window.renderEmployeeProfileField(['Entrante', preview.entrante?.nombre || preview.entrante?.id || '-'])}
+                ${window.renderEmployeeProfileField(['Turnos futuros a mover', preview.turnosMovibles || 0])}
+                ${window.renderEmployeeProfileField(['Posici&oacute;n heredada', preview.posicionAnterior ?? '-'])}
+            </div>
+            <div style="font-size:0.78rem; font-weight:800; color:${preview.conflictos?.length ? '#b91c1c' : 'var(--text-dim)'};">
+                ${preview.conflictos?.length ? `Hay ${preview.conflictos.length} conflicto(s): el nuevo titular ya tiene turno en esas fechas.` : 'Sin conflictos de turnos futuros para el nuevo titular.'}
+            </div>
+            ${conflictRows ? `<div style="display:grid; gap:8px; margin-top:12px;">${conflictRows}</div>` : ''}
+        </section>
+    `;
+};
+
+window.previewEmployeeHandover = async (event) => {
+    if (event?.preventDefault) event.preventDefault();
+    const status = document.getElementById('empHandoverStatus');
+    const setStatus = (text, color = 'var(--text-dim)') => {
+        if (!status) return;
+        status.textContent = text;
+        status.style.color = color;
+    };
+    const data = window.getEmployeeHandoverFormData();
+    if (!data.entranteId || !data.fechaEfectiva) {
+        setStatus('Selecciona trabajador entrante y fecha.', '#dc2626');
+        return;
+    }
+    try {
+        setStatus('Revisando impacto...');
+        const preview = await window.TurnosDB.previewRelevoTitular(data);
+        window._employeeHandoverPreview = preview;
+        window.renderEmployeeHandoverPreview(preview);
+        setStatus(preview.conflictos?.length ? 'Revisa los conflictos antes de aplicar.' : 'Impacto revisado. Puedes aplicar el relevo.', preview.conflictos?.length ? '#dc2626' : '#16a34a');
+    } catch (err) {
+        console.error('[EMP HANDOVER PREVIEW ERROR]', err);
+        setStatus('Error al revisar: ' + err.message, '#dc2626');
+    }
+};
+
+window.applyEmployeeHandover = async (event) => {
+    if (event?.preventDefault) event.preventDefault();
+    const status = document.getElementById('empHandoverStatus');
+    const setStatus = (text, color = 'var(--text-dim)') => {
+        if (!status) return;
+        status.textContent = text;
+        status.style.color = color;
+    };
+    const data = window.getEmployeeHandoverFormData();
+    if (data.motivo.length < 6) {
+        setStatus('El motivo es obligatorio.', '#dc2626');
+        document.getElementById('emp-handover-reason')?.focus();
+        return;
+    }
+    if (!window._employeeHandoverPreview || window._employeeHandoverPreview.fechaEfectiva !== data.fechaEfectiva || String(window._employeeHandoverPreview.entrante?.id || '') !== String(data.entranteId)) {
+        setStatus('Revisa el impacto antes de aplicar.', '#dc2626');
+        return;
+    }
+    const conflicts = window._employeeHandoverPreview.conflictos || [];
+    if (conflicts.length > 0 && !data.overwriteConflicts) {
+        setStatus('Hay conflictos. Marca la casilla para sobrescribir o cambia el entrante.', '#dc2626');
+        return;
+    }
+    const ok = confirm(`Aplicar relevo desde ${data.fechaEfectiva}?\n\nSe moveran ${window._employeeHandoverPreview.turnosMovibles || 0} turnos futuros y el saliente quedara de baja empresa.`);
+    if (!ok) return;
+    try {
+        setStatus('Aplicando relevo...');
+        const result = await window.TurnosDB.aplicarRelevoTitular(data);
+        window._employeeHandoverPreview = result;
+        window.renderEmployeeHandoverPreview(result);
+        if (window.invalidatePreviewSnapshotCache) window.invalidatePreviewSnapshotCache('relevo titular fijo');
+        window.empleadosGlobales = await window.TurnosDB.getEmpleados();
+        if (window.populateEmployees) await window.populateEmployees();
+        setStatus(`Relevo aplicado. Turnos movidos: ${result.turnosMovidos || 0}.`, '#16a34a');
+        await window.openEmpDrawer(result.entrante?.id || data.entranteId);
+        window._employeeProfileTab = 'summary';
+        window.renderEmployeeProfile();
+    } catch (err) {
+        console.error('[EMP HANDOVER APPLY ERROR]', err);
+        setStatus('Error al aplicar: ' + err.message, '#dc2626');
     }
 };
 

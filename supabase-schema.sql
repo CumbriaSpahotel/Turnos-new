@@ -344,6 +344,39 @@ DROP POLICY IF EXISTS "descanso ajustes insercion" ON descanso_ajustes_log;
 CREATE POLICY "descanso ajustes lectura" ON descanso_ajustes_log FOR SELECT USING (true);
 CREATE POLICY "descanso ajustes insercion" ON descanso_ajustes_log FOR INSERT WITH CHECK (true);
 
+-- 11C. HISTORIAL DE RELEVOS DE TITULAR FIJO
+CREATE TABLE IF NOT EXISTS empleado_relevos_log (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  empleado_saliente_id text NOT NULL,
+  empleado_saliente_nombre text,
+  empleado_entrante_id text NOT NULL,
+  empleado_entrante_nombre text,
+  hotel text,
+  fecha_efectiva date NOT NULL,
+  motivo text NOT NULL,
+  turnos_movidos integer DEFAULT 0,
+  conflictos_json jsonb DEFAULT '[]'::jsonb,
+  posicion_anterior integer,
+  posicion_nueva integer,
+  usuario text DEFAULT 'WEB_ADMIN',
+  created_at timestamptz DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_empleado_relevos_fecha
+ON empleado_relevos_log (fecha_efectiva DESC, created_at DESC);
+
+CREATE INDEX IF NOT EXISTS idx_empleado_relevos_saliente
+ON empleado_relevos_log (empleado_saliente_id, fecha_efectiva DESC);
+
+CREATE INDEX IF NOT EXISTS idx_empleado_relevos_entrante
+ON empleado_relevos_log (empleado_entrante_id, fecha_efectiva DESC);
+
+ALTER TABLE empleado_relevos_log ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "empleado relevos lectura" ON empleado_relevos_log;
+DROP POLICY IF EXISTS "empleado relevos insercion" ON empleado_relevos_log;
+CREATE POLICY "empleado relevos lectura" ON empleado_relevos_log FOR SELECT USING (true);
+CREATE POLICY "empleado relevos insercion" ON empleado_relevos_log FOR INSERT WITH CHECK (true);
+
 CREATE OR REPLACE FUNCTION registrar_ajuste_descanso(
   p_empleado_id text,
   p_empleado_nombre text,

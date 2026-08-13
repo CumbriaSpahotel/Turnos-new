@@ -1179,6 +1179,197 @@ window.TurnosDB = {
         }
     },
 
+    async previewRelevoTitular({ salienteId, entranteId, fechaEfectiva, hotel = null }) {
+        const client = window.supabase;
+        const fecha = this.normalizeDate(fechaEfectiva);
+        if (!salienteId || !entranteId || !fecha) throw new Error('Faltan datos del relevo.');
+        if (String(salienteId) === String(entranteId)) throw new Error('El trabajador saliente y entrante no pueden ser el mismo.');
+
+        const todayYear = fecha.slice(0, 4);
+        const end = `${Number(todayYear) + 2}-12-31`;
+        const [empleados, salienteTurnos, entranteTurnos] = await Promise.all([
+            this.getEmpleados(),
+            this.fetchTurnosBase(fecha, end, hotel || null),
+            this.fetchTurnosBase(fecha, end, hotel || null)
+        ]);
+
+        const norm = window.normalizeId || ((v) => String(v || '').trim().toLowerCase());
+        const saliente = (empleados || []).find(e => norm(e.id) === norm(salienteId) || norm(e.id_interno) === norm(salienteId) || norm(e.nombre) === norm(salienteId));
+        const entrante = (empleados || []).find(e => norm(e.id) === norm(entranteId) || norm(e.id_interno) === norm(entranteId) || norm(e.nombre) === norm(entranteId));
+        if (!saliente) throw new Error('No se encuentra el trabajador saliente.');
+        if (!entrante) throw new Error('No se encuentra el trabajador entrante.');
+
+        const salienteKeys = new Set([saliente.id, saliente.id_interno, saliente.nombre].filter(Boolean).map(norm));
+        const entranteKeys = new Set([entrante.id, entrante.id_interno, entrante.nombre].filter(Boolean).map(norm));
+        const sourceRows = (salienteTurnos || []).filter(row => salienteKeys.has(norm(row.empleado_id)));
+        const targetRows = (entranteTurnos || []).filter(row => entranteKeys.has(norm(row.empleado_id)));
+        const targetByDate = new Map(targetRows.map(row => [String(row.fecha || '').slice(0, 10), row]));
+        const conflicts = sourceRows
+            .filter(row => targetByDate.has(String(row.fecha || '').slice(0, 10)))
+            .map(row => {
+                const fechaRow = String(row.fecha || '').slice(0, 10);
+                const target = targetByDate.get(fechaRow);
+                return {
+                    fecha: fechaRow,
+                    turno_saliente: row.turno || '',
+                    turno_entrante: target?.turno || '',
+                    hotel: row.hotel_id || target?.hotel_id || hotel || saliente.hotel_id || saliente.hotel || ''
+                };
+            });
+
+        return {
+            saliente,
+            entrante,
+            fechaEfectiva: fecha,
+            hotel: hotel || saliente.hotel_id || saliente.hotel || '',
+            turnosMovibles: sourceRows.length,
+            conflictos: conflicts,
+            posicionAnterior: Number(saliente.orden ?? 999),
+            posicionEntranteActual: Number(entrante.orden ?? 999),
+            warnings: conflicts.length > 0 ? [`El entrante ya tiene ${conflicts.length} turno(s) desde esa fecha.`] : []
+        };
+    },
+
+    async aplicarRelevoTitular({ salienteId, entranteId, fechaEfectiva, hotel = null, motivo, overwriteConflicts = false }) {
+        const client = window.supabase;
+        const fecha = this.normalizeDate(fechaEfectiva);
+        const cleanMotivo = String(motivo || '').trim();
+        if (cleanMotivo.length < 6) throw new Error('El motivo del relevo es obligatorio.');
+
+        const preview = await this.previewRelevoTitular({ salienteId, entranteId, fechaEfectiva: fecha, hotel });
+        if (preview.conflictos.length > 0 && !overwriteConflicts) {
+            throw new Error(`El entrante ya tiene ${preview.conflictos.length} turno(s) desde esa fecha. Revisa la vista previa antes de confirmar.`);
+        }
+
+        const { data: { session } } = await client.auth.getSession();
+        const usuario = session?.user?.email || 'WEB_ADMIN';
+        const end = `${Number(fecha.slice(0, 4)) + 2}-12-31`;
+        const { error: logPreflightError } = await client
+            .from('empleado_relevos_log')
+            .select('id')
+            .limit(1);
+        if (logPreflightError) {
+            throw new Error('Registro seguro de relevos no disponible. Aplica primero el esquema SQL actualizado.');
+        }
+        const sourceRows = (await this.fetchTurnosBase(fecha, end, hotel || null))
+            .filter(row => {
+                const norm = window.normalizeId || ((v) => String(v || '').trim().toLowerCase());
+                return norm(row.empleado_id) === norm(preview.saliente.id) || norm(row.empleado_id) === norm(preview.saliente.id_interno) || norm(row.empleado_id) === norm(preview.saliente.nombre);
+            });
+
+        const movedRows = sourceRows.map(row => ({
+            empleado_id: preview.entrante.id,
+            fecha: row.fecha,
+            hotel_id: row.hotel_id || preview.hotel,
+            tipo: row.tipo || null,
+            turno: row.turno || null,
+            sustituto: row.sustituto || null,
+            updated_by: `RELEVO_${usuario}`,
+            updated_at: new Date().toISOString()
+        }));
+
+        if (movedRows.length > 0) {
+            if (overwriteConflicts) {
+                for (const conflict of preview.conflictos || []) {
+                    const matchingTarget = (await this.fetchTurnosBase(conflict.fecha, conflict.fecha, conflict.hotel || hotel || null))
+                        .find(row => {
+                            const norm = window.normalizeId || ((v) => String(v || '').trim().toLowerCase());
+                            return (
+                                (norm(row.empleado_id) === norm(preview.entrante.id) ||
+                                 norm(row.empleado_id) === norm(preview.entrante.id_interno) ||
+                                 norm(row.empleado_id) === norm(preview.entrante.nombre)) &&
+                                String(row.fecha || '').slice(0, 10) === String(conflict.fecha || '').slice(0, 10)
+                            );
+                        });
+                    if (!matchingTarget) continue;
+                    let deleteTargetQuery = client
+                        .from('turnos')
+                        .delete()
+                        .eq('empleado_id', matchingTarget.empleado_id)
+                        .eq('fecha', matchingTarget.fecha);
+                    if (matchingTarget.hotel_id || hotel) deleteTargetQuery = deleteTargetQuery.eq('hotel_id', matchingTarget.hotel_id || hotel);
+                    const { error: deleteTargetError } = await deleteTargetQuery;
+                    if (deleteTargetError) throw deleteTargetError;
+                }
+            }
+            const { error: upsertError } = await client
+                .from('turnos')
+                .upsert(movedRows, { onConflict: 'empleado_id,fecha' });
+            if (upsertError) throw upsertError;
+
+            for (const row of sourceRows) {
+                let deleteQuery = client
+                    .from('turnos')
+                    .delete()
+                    .eq('empleado_id', row.empleado_id)
+                    .eq('fecha', row.fecha);
+                if (row.hotel_id || hotel) deleteQuery = deleteQuery.eq('hotel_id', row.hotel_id || hotel);
+                const { error: deleteError } = await deleteQuery;
+                if (deleteError) throw deleteError;
+            }
+        }
+
+        const bajaDate = window.addIsoDays ? window.addIsoDays(fecha, -1) : (() => {
+            const d = new Date(`${fecha}T12:00:00`);
+            d.setDate(d.getDate() - 1);
+            return d.toISOString().slice(0, 10);
+        })();
+        const sharedPayload = {
+            hotel_id: preview.saliente.hotel_id || preview.saliente.hotel || preview.hotel,
+            hoteles_asignados: preview.saliente.hoteles_asignados || null,
+            puesto: preview.saliente.puesto || preview.saliente.categoria || null,
+            categoria: preview.saliente.categoria || preview.saliente.puesto || null,
+            tipo_personal: 'fijo',
+            contrato: 'fijo',
+            estado_empresa: 'Activo',
+            activo: true,
+            orden: preview.posicionAnterior,
+            updated_at: new Date().toISOString()
+        };
+
+        const { error: entranteError } = await client
+            .from('empleados')
+            .update(sharedPayload)
+            .eq('id', preview.entrante.id);
+        if (entranteError) throw entranteError;
+
+        const { error: salienteError } = await client
+            .from('empleados')
+            .update({
+                estado_empresa: 'Baja empresa',
+                activo: false,
+                fecha_baja: bajaDate,
+                motivo_baja: cleanMotivo,
+                orden: 999,
+                updated_at: new Date().toISOString()
+            })
+            .eq('id', preview.saliente.id);
+        if (salienteError) throw salienteError;
+
+        const logPayload = {
+            empleado_saliente_id: preview.saliente.id,
+            empleado_saliente_nombre: preview.saliente.nombre || preview.saliente.id,
+            empleado_entrante_id: preview.entrante.id,
+            empleado_entrante_nombre: preview.entrante.nombre || preview.entrante.id,
+            hotel: preview.hotel,
+            fecha_efectiva: fecha,
+            motivo: cleanMotivo,
+            turnos_movidos: movedRows.length,
+            conflictos_json: preview.conflictos || [],
+            posicion_anterior: preview.posicionAnterior,
+            posicion_nueva: preview.posicionAnterior,
+            usuario
+        };
+        const { data: logData, error: logError } = await client
+            .from('empleado_relevos_log')
+            .insert([logPayload])
+            .select()
+            .single();
+        if (logError) throw logError;
+
+        return { ...preview, turnosMovidos: movedRows.length, log: logData };
+    },
+
     // --- REALTIME ---
     async initRealtime() {
         if (this._channel) return;
