@@ -5617,14 +5617,14 @@ window.renderEmpleadoCell = (turnoEmpleado, { isCompact = false } = {}) => {
     }
 
     const titleAttribute = cellTitle ? `title="${escapeHtml(cellTitle)}"` : '';
+    const cleanIcon = (icon) => {
+        const fixed = window.fixMojibake ? window.fixMojibake(icon) : icon;
+        return /[ÃÂâ]/.test(String(fixed || '')) ? '' : fixed;
+    };
 
     if (isCompact) {
         // VISTA MENSUAL
         const labelText = style.label || turnoVisible || '-';
-        const cleanIcon = (icon) => {
-            const fixed = window.fixMojibake ? window.fixMojibake(icon) : icon;
-            return /[ÃÂâ]/.test(String(fixed || '')) ? '' : fixed;
-        };
         const compactStyleIcon = cleanIcon(style.icon);
         const compactIcons = (compactStyleIcon ? ` ${compactStyleIcon}` : '') + (hayCambio ? ' \u{1F504}' : '');
         
