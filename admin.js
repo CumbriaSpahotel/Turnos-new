@@ -1507,20 +1507,22 @@ window.goToPendingAssignmentsExcel = async () => {
         const pending = await window.getCurrentYearPendingAssignments(new Date().getFullYear());
         items = pending.items || [];
     }
-    const dates = items
-        .map(item => String(item.fecha || '').slice(0, 10))
-        .filter(Boolean)
-        .sort();
     const todayISO = window.isoDate ? window.isoDate(new Date()) : new Date().toISOString().slice(0, 10);
-    const year = new Date().getFullYear();
-    const dateStart = dates[0] || todayISO;
-    const dateEnd = dates[dates.length - 1] || `${year}-12-31`;
+    const firstItem = items
+        .slice()
+        .sort((a, b) => String(a.fecha || '').localeCompare(String(b.fecha || '')))[0] || {};
+    const targetDate = String(firstItem.fecha || todayISO).slice(0, 10);
+    const dateStart = window.getWeekStartISO ? window.getWeekStartISO(targetDate) : targetDate;
+    const dateEnd = window.addIsoDays ? window.addIsoDays(dateStart, 6) : targetDate;
+    const search = firstItem.empleadoId || firstItem.empleado || '';
 
-    window.excelFilters = { search: '', onlyPending: true };
+    window.excelFilters = { search, onlyPending: true };
     window._excelPreset = {
-        hotel: 'all',
+        hotel: firstItem.hotel || 'all',
         dateStart,
-        dateEnd
+        dateEnd,
+        search,
+        onlyPending: true
     };
     window.switchSection('excel');
 };
@@ -1620,6 +1622,8 @@ window.renderExcelView = async () => {
         const rawData = await window.TurnosDB.fetchTurnosBase(wStartStr, wEndStr, selectedHotel === 'all' ? null : selectedHotel);
         
         if (!window.excelFilters) window.excelFilters = { search: '', onlyPending: false };
+        if (preset?.search !== undefined) window.excelFilters.search = preset.search || '';
+        if (preset?.onlyPending !== undefined) window.excelFilters.onlyPending = Boolean(preset.onlyPending);
         // Helper: valid internal ID
         const _hasValidId = (empId) => {
             const profile = (window.empleadosGlobales || []).find(e => window.normalizeId(e.id) === window.normalizeId(empId) || window.normalizeId(e.nombre) === window.normalizeId(empId));
@@ -1857,6 +1861,20 @@ window.renderExcelView = async () => {
                                         }).join('')}</tr>`).join('')}</tbody></table></div></div>`;
         }).join('');
         container.innerHTML += sections || '<div style="padding: 3rem; text-align: center; color: #94a3b8; font-weight:600;">No hay registros que coincidan con los filtros.</div>';
+
+        if (preset?.search) {
+            setTimeout(() => {
+                const needle = String(preset.search || '').toLowerCase();
+                const row = Array.from(container.querySelectorAll('.excel-row-hover'))
+                    .find(tr => tr.textContent.toLowerCase().includes(needle));
+                if (row) {
+                    row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    row.style.transition = 'background 0.4s';
+                    row.style.background = '#fef3c7';
+                    setTimeout(() => { row.style.background = ''; }, 2600);
+                }
+            }, 150);
+        }
 
         // Inicializar Flatpickr para el rango Excel
         flatpickr("#excelRangePicker", {
@@ -5570,7 +5588,7 @@ window.renderEmpleadoCell = (turnoEmpleado, { isCompact = false } = {}) => {
         perm: { bg: '#ffedd5', color: '#9a3412', border: '#fdba74', label: 'Permiso', icon: '' },
         m:    { bg: '#dcfce7', color: '#166534', border: '#86efac', label: 'MaÃ±ana', icon: '' },
         t:    { bg: '#fef9c3', color: '#854d0e', border: '#fde047', label: 'Tarde', icon: '' },
-        p:    { bg: '#ede9fe', color: '#5b21b6', border: '#c4b5fd', label: 'T/P', icon: 'â‡…' },
+        p:    { bg: '#ede9fe', color: '#5b21b6', border: '#c4b5fd', label: 'T/P', icon: '' },
         n:    { bg: '#dbeafe', color: '#1e40af', border: '#93c5fd', label: 'Noche', icon: '\u{1F319}' },
         d:    { bg: '#fee2e2', color: '#991b1b', border: '#fecaca', label: 'Descanso', icon: '' }
     };
@@ -5603,7 +5621,12 @@ window.renderEmpleadoCell = (turnoEmpleado, { isCompact = false } = {}) => {
     if (isCompact) {
         // VISTA MENSUAL
         const labelText = style.label || turnoVisible || '-';
-        const compactIcons = (style.icon ? ` ${style.icon}` : '') + (hayCambio ? ' ðŸ”„' : '');
+        const cleanIcon = (icon) => {
+            const fixed = window.fixMojibake ? window.fixMojibake(icon) : icon;
+            return /[ÃÂâ]/.test(String(fixed || '')) ? '' : fixed;
+        };
+        const compactStyleIcon = cleanIcon(style.icon);
+        const compactIcons = (compactStyleIcon ? ` ${compactStyleIcon}` : '') + (hayCambio ? ' \u{1F504}' : '');
         
         return `
         <div ${titleAttribute} style="display:flex; align-items:center; justify-content:center; padding:4px 2px; border-radius:6px; font-size:0.7rem; font-weight:700; min-height:45px; background:${style.bg}; color:${style.color}; border:1px solid rgba(0,0,0,0.05);">
@@ -5620,10 +5643,10 @@ window.renderEmpleadoCell = (turnoEmpleado, { isCompact = false } = {}) => {
         }
 
         const iconsToRender = new Set();
-        if (style.icon) iconsToRender.add(style.icon);
-        if (turnoEmpleado.icon) iconsToRender.add(turnoEmpleado.icon);
+        if (cleanIcon(style.icon)) iconsToRender.add(cleanIcon(style.icon));
+        if (cleanIcon(turnoEmpleado.icon)) iconsToRender.add(cleanIcon(turnoEmpleado.icon));
         if (Array.isArray(turnoEmpleado.icons)) {
-            turnoEmpleado.icons.forEach(i => { if (i) iconsToRender.add(i); });
+            turnoEmpleado.icons.forEach(i => { const icon = cleanIcon(i); if (icon) iconsToRender.add(icon); });
         }
         
         if (hayCambio) iconsToRender.add('\u{1F504}');
@@ -8401,8 +8424,6 @@ window.getGlobalPendingPublicationStatus = async function() {
 
         // Build map: canonicalHotel::semanaInicio â†’ latest valid snapshot
         const snapMap = new Map();
-        const hotelLatestEnd = new Map(); // canonicalHotel -> max semana_fin
-
         snapshotsAll.forEach(s => {
             if (!isSnapshotContentValid(s)) {
                 console.warn('[GLOBAL_STATUS] Ignorando snapshot con fechas invalidas/corruptas:', s.id, s.hotel, s.semana_inicio);
@@ -8412,24 +8433,7 @@ window.getGlobalPendingPublicationStatus = async function() {
             const h = normHotel(s.hotel);
             const key = h + '::' + s.semana_inicio;
             if (!snapMap.has(key)) snapMap.set(key, s); // already sorted desc
-
-            const endDate = s.semana_fin || (window.addIsoDays ? window.addIsoDays(s.semana_inicio, 6) : s.semana_inicio);
-            const curMax = hotelLatestEnd.get(h) || '';
-            if (endDate && endDate > curMax) {
-                hotelLatestEnd.set(h, endDate);
-            }
         });
-
-        // Calcular cobertura global publicada (mÃ­nimo de semanas finales entre TODOS los hoteles activos)
-        // Si algÃºn hotel no tiene ningÃºn snapshot publicado, la cobertura global es null ("Sin cobertura")
-        const activeHotels = ['Cumbria Spa&Hotel', 'Sercotel Guadiana'];
-        const hasAllCoverage = activeHotels.every(h => hotelLatestEnd.has(h));
-        if (hasAllCoverage && activeHotels.length > 0) {
-            const coverageDates = activeHotels.map(h => hotelLatestEnd.get(h));
-            result.globalPublishedUntil = coverageDates.reduce((min, d) => d < min ? d : min, coverageDates[0]);
-        } else {
-            result.globalPublishedUntil = null;
-        }
 
         // Helper: get Monday for a date
         const getMonday = (dateStr) => {
@@ -8445,6 +8449,29 @@ window.getGlobalPendingPublicationStatus = async function() {
         };
 
         const currentWeekStart = getMonday(today);
+        const addDays = window.addIsoDays || ((dateStr, days) => {
+            const d = new Date(`${dateStr}T12:00:00`);
+            d.setDate(d.getDate() + days);
+            return d.toISOString().split('T')[0];
+        });
+
+        // Calcular cobertura continua publicada desde la semana actual.
+        // No usar la fecha maxima: una semana futura aislada no significa que todo hasta ahi este publicado.
+        const activeHotels = ['Cumbria Spa&Hotel', 'Sercotel Guadiana'];
+        const hotelContinuousUntil = activeHotels.map(hotel => {
+            let weekStart = currentWeekStart;
+            let lastCoveredEnd = null;
+            while (weekStart <= rangeEnd) {
+                const snap = snapMap.get(normHotel(hotel) + '::' + weekStart);
+                if (!snap) break;
+                lastCoveredEnd = snap.semana_fin || addDays(weekStart, 6);
+                weekStart = addDays(weekStart, 7);
+            }
+            return lastCoveredEnd;
+        });
+        result.globalPublishedUntil = hotelContinuousUntil.every(Boolean)
+            ? hotelContinuousUntil.reduce((min, date) => date < min ? date : min, hotelContinuousUntil[0])
+            : null;
 
         // 3. Group events by canonicalHotel+week and check against snapshot
         const grouped = new Map();
