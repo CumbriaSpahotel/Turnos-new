@@ -253,6 +253,11 @@ if (document.readyState === 'loading') {
     window.installMojibakeSanitizer();
 }
 
+if (!window._nativeAlert) window._nativeAlert = window.alert.bind(window);
+window.alert = (message) => window._nativeAlert(window.fixMojibake ? window.fixMojibake(message) : message);
+if (!window._nativeConfirm) window._nativeConfirm = window.confirm.bind(window);
+window.confirm = (message) => window._nativeConfirm(window.fixMojibake ? window.fixMojibake(message) : message);
+
 window.addLog = (msg, type = 'info') => {
     console.log(`[${type.toUpperCase()}] ${msg}`);
     const timeline = document.getElementById('dashboard-timeline');
@@ -7539,7 +7544,7 @@ window.publishToSupabase = async () => {
         // Limpiar cachÃ© del status global para que el dashboard re-consulte Supabase con los nuevos snapshots
         window.__lastGlobalStatus = null;
         
-        alert('PublicaciÃ³n completada con Ã©xito.');
+        alert('Publicación completada con éxito.');
         document.getElementById('publishPreviewModal')?.classList.remove('open');
         
         window.renderExcelView();
@@ -8256,7 +8261,7 @@ window.revertirPublicacion = async (logId) => {
         if (window.invalidatePreviewSnapshotCache) window.invalidatePreviewSnapshotCache('rollback');
 
         window.addLog(`ReversiÃ³n completada: ${revertData.length} turnos restaurados.`, 'ok');
-        alert('PublicaciÃ³n revertida con Ã©xito.');
+        alert('Publicación revertida con éxito.');
         
         window.renderDashboard();
         window.renderPreview();
