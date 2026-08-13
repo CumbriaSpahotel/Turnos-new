@@ -1689,10 +1689,14 @@ window.renderExcelView = async () => {
         let totalNoId = 0;
         // PHASE 1: Group WITHOUT employee filter â€” to compute available employees
         const grouped = {};
+        const _isCoverageSupportProfile = (emp) => {
+            const type = window.normalizeId ? window.normalizeId(emp?.tipoPersonal || emp?.tipo_personal || emp?.tipo || '') : String(emp?.tipoPersonal || emp?.tipo_personal || emp?.tipo || '').trim().toLowerCase();
+            return type === 'apoyo' || type === 'ocasional';
+        };
         // Pre-compute support staff set for fast lookup
         const _supportStaffSet = new Set();
         (window.empleadosGlobales || []).forEach(emp => {
-            if (window.isEmpleadoOcasionalOApoyo && window.isEmpleadoOcasionalOApoyo(emp)) {
+            if (_isCoverageSupportProfile(emp)) {
                 _supportStaffSet.add(window.normalizeId(emp.id));
                 if (emp.nombre) _supportStaffSet.add(window.normalizeId(emp.nombre));
             }
@@ -8766,11 +8770,15 @@ window.getDailyShiftCoverageRisks = async function(startISO = null, endISO = nul
         const employees = window.empleadosGlobales || [];
         const normalize = window.normalizeId || ((raw) => String(raw || '').trim().toLowerCase());
         const findProfile = (empId) => employees.find(e => normalize(e.id) === normalize(empId) || normalize(e.nombre) === normalize(empId) || normalize(e.id_interno) === normalize(empId));
+        const isCoverageSupportProfile = (emp) => {
+            const type = normalize(emp?.tipoPersonal || emp?.tipo_personal || emp?.tipo || '');
+            return type === 'apoyo' || type === 'ocasional';
+        };
         const isSupportRow = (row) => {
-            if (row?.isSupport || row?.support || row?.esApoyo || row?.tipo === 'apoyo') return true;
+            if (isCoverageSupportProfile(row)) return true;
             const empId = row?.empleado_id || row?.empleadoId || row?.employee_id || row?.employeeId || row?.id || row?.nombre || row?.name;
             const profile = findProfile(empId);
-            return Boolean(profile && window.isEmpleadoOcasionalOApoyo && window.isEmpleadoOcasionalOApoyo(profile));
+            return Boolean(profile && isCoverageSupportProfile(profile));
         };
         const codeOf = (cell) => {
             if (!cell) return '';
