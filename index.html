@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <title>TurnosWeb â€” Cuadrante PÃºblico</title>
+  <title>TurnosWeb - Cuadrante Público</title>
   <link rel="icon" type="image/png" href="favicon.png">
   <link rel="shortcut icon" href="favicon.ico">
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -476,20 +476,20 @@
 <body>
   <div class="site-toolbar">
     <div class="toolbar-brand">
-      <div class="toolbar-title">Cuadrantes de turnos RecepciÃ³n</div>
+      <div class="toolbar-title">Cuadrantes de turnos Recepción</div>
       <div class="toolbar-subtitle">Sercotel Guadiana / Cumbria Spa&Hotel</div>
     </div>
     <div class="toolbar-controls">
       <div style="display:flex; background:#2a2e35; border-radius:8px; padding:2px; border:1px solid #3b4048;">
-        <button class="btn-nav" style="border:none; background:transparent;" onclick="changeWeek(-1)">â† Semana</button>
+        <button class="btn-nav" style="border:none; background:transparent;" onclick="changeWeek(-1)">← Semana</button>
         <button class="btn-nav" style="border:none; background:transparent; border-left:1px solid #3b4048; border-right:1px solid #3b4048;" onclick="goToday()">Hoy</button>
-        <button class="btn-nav" style="border:none; background:transparent;" onclick="changeWeek(1)">semana â†’</button>
+        <button class="btn-nav" style="border:none; background:transparent;" onclick="changeWeek(1)">Semana →</button>
       </div>
       <select id="hotelSelect" class="toolbar-select" onchange="renderPublicView()">
       </select>
       <input type="text" id="dateRange" class="toolbar-date" readonly>
       <a href="solicitud.html" class="btn-request">
-        <span>ðŸ”„ Solicitar Cambio</span>
+        <span>Solicitar Cambio</span>
       </a>
     </div>
   </div>
@@ -527,13 +527,43 @@
             .replace(/Â€”|â€”|Ã¢â‚¬â€|Ã¢â‚¬â€œ/g, '—')
             .replace(/MaÃ±ana|MAÃ‘ANA/g, 'Mañana')
             .replace(/PlanificaciÃ³n/g, 'Planificación')
-            .replace(/FormaciÃ³n/g, 'Formación');
+            .replace(/FormaciÃ³n/g, 'Formación')
+            .replace(/RecepciÃ³n/g, 'Recepción')
+            .replace(/PÃºblico|pÃºblico/g, (m) => m[0] === 'P' ? 'Público' : 'público')
+            .replace(/DÃ­a/g, 'Día')
+            .replace(/MIÃ‰RCOLES/g, 'MIÉRCOLES')
+            .replace(/SÃBADO/g, 'SÁBADO')
+            .replace(/dÃ­as/g, 'días')
+            .replace(/ðŸ”„/g, '🔄')
+            .replace(/ðŸŒ™/g, '🌙')
+            .replace(/ðŸ“Œ/g, '📌')
+            .replace(/ðŸ–ï¸/g, '🏖️')
+            .replace(/â†/g, '←')
+            .replace(/â†’/g, '→')
+            .replace(/â‡…/g, '');
     };
     const isPublicEmptyShift = (value) => {
         const raw = String(value ?? '').trim();
         const fixed = String(fixPublicMojibake(raw) ?? '').trim();
         if (!fixed || fixed === '-' || fixed === '—' || fixed === '&mdash;') return true;
         return raw.length <= 8 && /[ÃÂâ]/.test(raw) && /[€\u20AC]/.test(raw);
+    };
+    const sanitizePublicDOM = (root = document.body) => {
+        if (!root) return;
+        const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+        const nodes = [];
+        while (walker.nextNode()) nodes.push(walker.currentNode);
+        nodes.forEach(node => {
+            const fixed = fixPublicMojibake(node.nodeValue);
+            if (fixed !== node.nodeValue) node.nodeValue = fixed;
+        });
+        root.querySelectorAll?.('[title], [placeholder], [value]').forEach(el => {
+            ['title', 'placeholder', 'value'].forEach(attr => {
+                if (!el.hasAttribute(attr)) return;
+                const fixed = fixPublicMojibake(el.getAttribute(attr));
+                if (fixed !== el.getAttribute(attr)) el.setAttribute(attr, fixed);
+            });
+        });
     };
     // â”€â”€ Auto-refresh configuraciÃ³n â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     // Auto-refresh pÃºblico cada 15 minutos para evitar interrupciones de lectura.
@@ -596,7 +626,7 @@
             const [year, month] = monthKey.split('-').map(Number);
             const daysInMonth = new Date(year, month, 0).getDate();
             const selectedDays = getSelectedDaysInMonth(year, month, rangeStart, rangeEnd);
-            html += `<div class="night-month"><h3>${monthNamesFull[month - 1]} de ${year}<span class="night-month-days">(${selectedDays} de ${daysInMonth} dÃ­as)</span></h3><div class="night-hotel-grid">`;
+            html += `<div class="night-month"><h3>${monthNamesFull[month - 1]} de ${year}<span class="night-month-days">(${selectedDays} de ${daysInMonth} días)</span></h3><div class="night-hotel-grid">`;
 
             [...hotels.entries()].sort((a, b) => a[0].localeCompare(b[0], 'es')).forEach(([hotelName, employees]) => {
                 const rows = [...employees.entries()]
@@ -780,9 +810,9 @@
             legendDiv.style.fontWeight = '700';
             legendDiv.style.color = 'var(--text-dim)';
             legendDiv.innerHTML = `
-                <div style="display:flex; align-items:center; gap:6px;"><span style="width:12px; height:12px; border-radius:3px; background:var(--mint-bg); border:1px solid #c7e5ca; display:inline-block;"></span> MaÃ±ana</div>
+                <div style="display:flex; align-items:center; gap:6px;"><span style="width:12px; height:12px; border-radius:3px; background:var(--mint-bg); border:1px solid #c7e5ca; display:inline-block;"></span> Mañana</div>
                 <div style="display:flex; align-items:center; gap:6px;"><span style="width:12px; height:12px; border-radius:3px; background:var(--amber-bg); border:1px solid #f3df9b; display:inline-block;"></span> Tarde</div>
-                <div style="display:flex; align-items:center; gap:6px;"><span style="width:12px; height:12px; border-radius:3px; background:#ede9fe; border:1px solid #c4b5fd; display:inline-block;"></span> â‡… T/P = Turno Partido</div>
+                <div style="display:flex; align-items:center; gap:6px;"><span style="width:12px; height:12px; border-radius:3px; background:#ede9fe; border:1px solid #c4b5fd; display:inline-block;"></span> T/P = Turno Partido</div>
                 <div style="display:flex; align-items:center; gap:6px;"><span style="width:12px; height:12px; border-radius:3px; background:var(--slate-bg); border:1px solid #d8dee5; display:inline-block;"></span> Noche</div>
                 <div style="display:flex; align-items:center; gap:6px;"><span style="width:12px; height:12px; border-radius:3px; background:#fee2e2; border:1px solid #fecaca; display:inline-block;"></span> Descanso</div>
                 <div style="display:flex; align-items:center; gap:6px;"><span style="width:12px; height:12px; border-radius:3px; background:#e8f9ff; border:1px solid #aee6ff; display:inline-block;"></span> Vacaciones</div>
@@ -793,6 +823,7 @@
         }
 
         applyTheme(localStorage.getItem('public-theme') || 'day');
+        sanitizePublicDOM(document.body);
         _lastPublicRenderTime = Date.now();
         // Si fue un refresco silencioso, restaurar posiciÃ³n de scroll
         if (opts._savedState) {
@@ -816,7 +847,7 @@
                     </div>
                 </div>
                 <div class="header-mode">
-                    <button type="button" class="mode-btn" data-theme="day" onclick="setVisualTheme('day')">DÃ­a</button>
+                    <button type="button" class="mode-btn" data-theme="day" onclick="setVisualTheme('day')">Día</button>
                     <button type="button" class="mode-btn" data-theme="night" onclick="setVisualTheme('night')">Noche</button>
                 </div>
             </div>
@@ -834,7 +865,7 @@
             d.setDate(d.getDate()+1);
         }
 
-        const days = ['DOMINGO','LUNES','MARTES','MIÃ‰RCOLES','JUEVES','VIERNES','SÃBADO'];
+        const days = ['DOMINGO','LUNES','MARTES','MIÉRCOLES','JUEVES','VIERNES','SÁBADO'];
         const todayKey = formatDateLocal(new Date());
         const columns = dates.map((f, idx) => {
             const dt = new Date(f + 'T12:00:00');
@@ -903,20 +934,19 @@
             if (display.icons) {
                 const currentText = pill.textContent;
                 display.icons.forEach(icon => {
-                    if (currentText.includes(icon)) return; // Evitar duplicado si ya estÃ¡ en el label
+                    icon = fixPublicMojibake(icon);
+                    if (!icon || currentText.includes(icon)) return; // Evitar duplicado si ya estÃ¡ en el label
                     
-                    if (icon === '\u{1F504}' || icon === 'ðŸ”„') {
+                    if (icon === '\u{1F504}' || icon === '🔄') {
                         pill.innerHTML += ' <span class="icon-sync">\u{1F504}</span>';
-                    } else if (icon === 'â‡…') {
-                        pill.innerHTML += ' <span class="icon-tp">â‡…</span>';
-                    } else if (icon === '\u{1F4CC}' || icon === 'ðŸ“Œ') {
+                    } else if (icon === '\u{1F4CC}' || icon === '📌') {
                         pill.innerHTML += ' <span class="icon-pin">\u{1F4CC}</span>';
-                    } else if (icon === '\u{1F3D6}\u{FE0F}' || icon === 'ðŸ–ï¸') {
+                    } else if (icon === '\u{1F3D6}\u{FE0F}' || icon === '🏖️') {
                         pill.innerHTML += ' <span class="icon-vac">\u{1F3D6}\u{FE0F}</span>';
-                    } else if (icon === '\u{1F319}' || icon === 'ðŸŒ™') {
+                    } else if (icon === '\u{1F319}' || icon === '🌙') {
                         pill.innerHTML += ' <span class="icon-moon">\u{1F319}</span>';
                     } else {
-                        pill.innerHTML += ` <span>${icon}</span>`;
+                        pill.innerHTML += ` <span>${escapeHtml(icon)}</span>`;
                     }
                 });
             }
@@ -973,7 +1003,7 @@
                         <div class="employee-name">${escapeHtml(displayName)}</div>
                     ${isAbsent || skipCounters ? '' : `
                     <div class="emp-badges">
-                        <span class="badge"><span class="badge-icon">ðŸŒ™</span> ${nights}</span>
+                        <span class="badge"><span class="badge-icon">🌙</span> ${nights}</span>
                         <span class="badge">D ${rests}</span>
                     </div>
                     `}
