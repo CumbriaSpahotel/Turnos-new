@@ -1690,6 +1690,11 @@ window.renderExcelView = async () => {
         // PHASE 1: Group WITHOUT employee filter â€” to compute available employees
         const grouped = {};
         const _isCoverageSupportProfile = (emp) => {
+            const norm = window.normalizeId || ((raw) => String(raw || '').trim().toLowerCase());
+            const name = norm(emp?.nombre || emp?.nombreVisible || emp?.name || emp?.empleado || '');
+            const id = norm(emp?.id || emp?.empleado_id || emp?.employee_id || '');
+            const internalId = norm(emp?.id_interno || '');
+            if (name === 'natalio' || id === 'natalio' || id === 'emp-0006' || internalId === 'emp-0006') return false;
             const type = window.normalizeId ? window.normalizeId(emp?.tipoPersonal || emp?.tipo_personal || emp?.tipo || '') : String(emp?.tipoPersonal || emp?.tipo_personal || emp?.tipo || '').trim().toLowerCase();
             return type === 'apoyo' || type === 'ocasional';
         };
@@ -8771,6 +8776,10 @@ window.getDailyShiftCoverageRisks = async function(startISO = null, endISO = nul
         const normalize = window.normalizeId || ((raw) => String(raw || '').trim().toLowerCase());
         const findProfile = (empId) => employees.find(e => normalize(e.id) === normalize(empId) || normalize(e.nombre) === normalize(empId) || normalize(e.id_interno) === normalize(empId));
         const isCoverageSupportProfile = (emp) => {
+            const name = normalize(emp?.nombre || emp?.nombreVisible || emp?.name || emp?.empleado || '');
+            const id = normalize(emp?.id || emp?.empleado_id || emp?.employee_id || '');
+            const internalId = normalize(emp?.id_interno || '');
+            if (name === 'natalio' || id === 'natalio' || id === 'emp-0006' || internalId === 'emp-0006') return false;
             const type = normalize(emp?.tipoPersonal || emp?.tipo_personal || emp?.tipo || '');
             return type === 'apoyo' || type === 'ocasional';
         };
