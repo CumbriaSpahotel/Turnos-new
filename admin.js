@@ -1660,12 +1660,13 @@ window.renderExcelView = async () => {
                     currDate.setDate(currDate.getDate() + offset);
                     const date = window.isoDate(currDate);
                     if (!date || date < dateStart || date > dateEnd) return;
-                    if (!byDate.has(date)) byDate.set(date, { M: 0, T: 0, N: 0, D: 0, assigned: 0 });
+                    if (!byDate.has(date)) byDate.set(date, { M: 0, T: 0, N: 0, D: 0, assigned: 0, supportWorking: 0 });
                     const item = byDate.get(date);
                     const mapped = TURNO_MAP[value] || value;
                     if (String(mapped || '').trim() && mapped !== 'Pendiente de asignar') item.assigned++;
                     const code = excelShiftCoverageCode(mapped);
                     if (item[code] !== undefined) item[code]++;
+                    if (row.isSupport && ['M', 'T', 'N'].includes(code)) item.supportWorking++;
                 });
             });
             return Array.from(byDate.entries()).sort((a, b) => a[0].localeCompare(b[0])).map(([date, counts]) => {
@@ -1674,7 +1675,8 @@ window.renderExcelView = async () => {
                 if (counts.M < 1) missing.push('mañana');
                 if (counts.T < 1) missing.push('tarde');
                 if (counts.N < 1) missing.push('noche');
-                if (counts.D < 1) missing.push('descanso');
+                const requiredRest = counts.supportWorking > 0 ? 2 : 1;
+                if (counts.D < requiredRest) missing.push(requiredRest > 1 ? 'descanso extra por apoyo' : 'descanso');
                 if (missing.length === 0) return null;
                 return { date, counts, missing };
             }).filter(Boolean);
@@ -1888,12 +1890,13 @@ window.refreshExcelCoverageAlarms = () => {
             if (sel.dataset.validId !== '1') return;
             const date = sel.dataset.date;
             if (!date) return;
-            if (!byDate.has(date)) byDate.set(date, { M: 0, T: 0, N: 0, D: 0, assigned: 0 });
+            if (!byDate.has(date)) byDate.set(date, { M: 0, T: 0, N: 0, D: 0, assigned: 0, supportWorking: 0 });
             const item = byDate.get(date);
             const value = sel.value || '';
             if (value && value !== 'Pendiente de asignar') item.assigned++;
             const code = shiftCode(value);
             if (item[code] !== undefined) item[code]++;
+            if (sel.dataset.support === '1' && ['M', 'T', 'N'].includes(code)) item.supportWorking++;
         });
         const warnings = Array.from(byDate.entries()).sort((a, b) => a[0].localeCompare(b[0])).map(([date, counts]) => {
             if (counts.assigned === 0) return null;
@@ -1901,7 +1904,8 @@ window.refreshExcelCoverageAlarms = () => {
             if (counts.M < 1) missing.push('mañana');
             if (counts.T < 1) missing.push('tarde');
             if (counts.N < 1) missing.push('noche');
-            if (counts.D < 1) missing.push('descanso');
+            const requiredRest = counts.supportWorking > 0 ? 2 : 1;
+            if (counts.D < requiredRest) missing.push(requiredRest > 1 ? 'descanso extra por apoyo' : 'descanso');
             return missing.length ? { date, counts, missing } : null;
         }).filter(Boolean);
         const box = section.querySelector('.excel-coverage-alerts');
@@ -8759,6 +8763,15 @@ window.getDailyShiftCoverageRisks = async function(startISO = null, endISO = nul
         });
         const format = window.fmtDateLegacy || window.formatDateES || ((dateStr) => dateStr);
         const shiftName = { M: 'mañana', T: 'tarde', N: 'noche', D: 'descanso' };
+        const employees = window.empleadosGlobales || [];
+        const normalize = window.normalizeId || ((raw) => String(raw || '').trim().toLowerCase());
+        const findProfile = (empId) => employees.find(e => normalize(e.id) === normalize(empId) || normalize(e.nombre) === normalize(empId) || normalize(e.id_interno) === normalize(empId));
+        const isSupportRow = (row) => {
+            if (row?.isSupport || row?.support || row?.esApoyo || row?.tipo === 'apoyo') return true;
+            const empId = row?.empleado_id || row?.empleadoId || row?.employee_id || row?.employeeId || row?.id || row?.nombre || row?.name;
+            const profile = findProfile(empId);
+            return Boolean(profile && window.isEmpleadoOcasionalOApoyo && window.isEmpleadoOcasionalOApoyo(profile));
+        };
         const codeOf = (cell) => {
             if (!cell) return '';
             if (cell.isAbsence || /VAC|BAJA|IT|PERM|FORM/i.test(String(cell.type || ''))) return '';
@@ -8778,7 +8791,7 @@ window.getDailyShiftCoverageRisks = async function(startISO = null, endISO = nul
                 for (let i = 0; i < 7; i++) {
                     const date = addDays(week, i);
                     if (date < start || date > end) continue;
-                    const counts = { M: 0, T: 0, N: 0, D: 0 };
+                    const counts = { M: 0, T: 0, N: 0, D: 0, supportWorking: 0 };
                     let hasAnyAssignment = false;
                     (snap.rows || []).forEach(row => {
                         if (String(row.rowType || 'operativo').toLowerCase() === 'placeholder') return;
@@ -8787,9 +8800,11 @@ window.getDailyShiftCoverageRisks = async function(startISO = null, endISO = nul
                         if (rawCellText && rawCellText !== '-' && rawCellText !== 'â€”') hasAnyAssignment = true;
                         const code = codeOf(cell);
                         if (counts[code] !== undefined) counts[code] += 1;
+                        if (isSupportRow(row) && ['M', 'T', 'N'].includes(code)) counts.supportWorking += 1;
                     });
                     if (!hasAnyAssignment) continue;
-                    const missing = ['M', 'T', 'N', 'D'].filter(code => counts[code] < 1);
+                    const missing = ['M', 'T', 'N'].filter(code => counts[code] < 1);
+                    if (counts.D < (counts.supportWorking > 0 ? 2 : 1)) missing.push('D');
                     if (missing.length === 0) continue;
                     const weekStart = getMondayISO(date);
                     risks.push({
