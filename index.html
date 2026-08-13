@@ -160,6 +160,38 @@
           box-shadow: 0 8px 20px rgba(31, 79, 130, 0.18);
       }
 
+      body.night-mode .site-toolbar {
+          background: rgba(15, 23, 36, 0.96);
+          border-bottom-color: #2f4560;
+      }
+      body.night-mode .toolbar-title,
+      body.night-mode .toolbar-subtitle {
+          color: #f8fbff;
+      }
+      body.night-mode .toolbar-controls > div:first-child {
+          background: #172336 !important;
+          border-color: #3b526f !important;
+      }
+      body.night-mode .btn-nav,
+      body.night-mode .toolbar-select,
+      body.night-mode .toolbar-date {
+          background: #f8fbff;
+          border-color: #c9d7e8;
+          color: #0c2138;
+      }
+      body.night-mode .toolbar-controls > div:first-child .btn-nav {
+          color: #f8fbff !important;
+      }
+      body.night-mode .toolbar-controls > div:first-child .btn-nav:nth-child(2) {
+          background: #f8fbff !important;
+          color: #0c2138 !important;
+          border-color: #c9d7e8 !important;
+      }
+      body.night-mode .btn-request {
+          background: #6aa8ff;
+          color: #071525;
+      }
+
       .public-main { padding: 22px 0 34px; }
       
       .hotel-card {
@@ -232,6 +264,18 @@
       .mode-btn.active {
           background: var(--accent-soft);
           color: var(--accent);
+      }
+
+      body.night-mode .header-mode {
+          background: #223348;
+          border-color: #48627f;
+      }
+      body.night-mode .mode-btn {
+          color: #dbe8f7;
+      }
+      body.night-mode .mode-btn.active {
+          background: #6aa8ff;
+          color: #071525;
       }
 
       .hotel-card > .viewport { padding: 0 22px 22px; }
