@@ -8369,9 +8369,10 @@ window.getGlobalPendingPublicationStatus = async function() {
     };
     try {
         const today = window.isoDate ? window.isoDate(new Date()) : new Date().toISOString().split('T')[0];
-        // Rango ampliado: hoy - 90d -> hoy + 365d
+        // Rango amplio: debe cubrir publicaciones operativas de largo plazo.
+        // Un año exacto desde hoy corta semanas futuras ya publicadas (ej. enero 2028).
         const rangeStart = window.addIsoDays ? window.addIsoDays(today, -90) : today;
-        const rangeEnd   = window.addIsoDays ? window.addIsoDays(today, 365) : today;
+        const rangeEnd   = window.addIsoDays ? window.addIsoDays(today, 730) : today;
 
         const normHotel = (h) => {
             if (window.TurnosRules && window.TurnosRules.normalizeHotelName) {
@@ -8825,6 +8826,8 @@ window.getDailyShiftCoverageRisks = async function(startISO = null, endISO = nul
             if (!cell) return '';
             if (cell.isAbsence || /VAC|BAJA|IT|PERM|FORM/i.test(String(cell.type || ''))) return '';
             const raw = cell.code || cell.turno || cell.label || '';
+            const fixedRaw = window.fixMojibake ? window.fixMojibake(raw) : raw;
+            if (String(fixedRaw || '').trim() === '-' || String(fixedRaw || '').trim() === '\u2014') return 'D';
             const meta = window.employeeProfileShiftCodeMeta
                 ? window.employeeProfileShiftCodeMeta(raw)
                 : { code: String(raw || '').trim().toUpperCase() };

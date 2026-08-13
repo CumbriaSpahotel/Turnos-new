@@ -1,9 +1,9 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="es">
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <title>TurnosWeb — Cuadrante Público</title>
+  <title>TurnosWeb â€” Cuadrante PÃºblico</title>
   <link rel="icon" type="image/png" href="favicon.png">
   <link rel="shortcut icon" href="favicon.ico">
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -476,20 +476,20 @@
 <body>
   <div class="site-toolbar">
     <div class="toolbar-brand">
-      <div class="toolbar-title">Cuadrantes de turnos Recepción</div>
+      <div class="toolbar-title">Cuadrantes de turnos RecepciÃ³n</div>
       <div class="toolbar-subtitle">Sercotel Guadiana / Cumbria Spa&Hotel</div>
     </div>
     <div class="toolbar-controls">
       <div style="display:flex; background:#2a2e35; border-radius:8px; padding:2px; border:1px solid #3b4048;">
-        <button class="btn-nav" style="border:none; background:transparent;" onclick="changeWeek(-1)">← Semana</button>
+        <button class="btn-nav" style="border:none; background:transparent;" onclick="changeWeek(-1)">â† Semana</button>
         <button class="btn-nav" style="border:none; background:transparent; border-left:1px solid #3b4048; border-right:1px solid #3b4048;" onclick="goToday()">Hoy</button>
-        <button class="btn-nav" style="border:none; background:transparent;" onclick="changeWeek(1)">semana →</button>
+        <button class="btn-nav" style="border:none; background:transparent;" onclick="changeWeek(1)">semana â†’</button>
       </div>
       <select id="hotelSelect" class="toolbar-select" onchange="renderPublicView()">
       </select>
       <input type="text" id="dateRange" class="toolbar-date" readonly>
       <a href="solicitud.html" class="btn-request">
-        <span>🔄 Solicitar Cambio</span>
+        <span>ðŸ”„ Solicitar Cambio</span>
       </a>
     </div>
   </div>
@@ -511,14 +511,37 @@
     let _publicRefreshTimer = null;
     const $ = s => document.querySelector(s);
     const escapeHtml = s => String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-
-    // ── Auto-refresh configuración ────────────────────────────────────────────
-    // Auto-refresh público cada 15 minutos para evitar interrupciones de lectura.
+    const fixPublicMojibake = (value) => {
+        if (value === null || value === undefined) return value;
+        let s = String(value);
+        for (let i = 0; i < 2 && /[ÃÂâ]/.test(s); i++) {
+            try {
+                const decoded = decodeURIComponent(escape(s));
+                if (!decoded || decoded === s || decoded.includes('\uFFFD')) break;
+                s = decoded;
+            } catch (_) {
+                break;
+            }
+        }
+        return s
+            .replace(/Â€”|â€”|Ã¢â‚¬â€|Ã¢â‚¬â€œ/g, '—')
+            .replace(/MaÃ±ana|MAÃ‘ANA/g, 'Mañana')
+            .replace(/PlanificaciÃ³n/g, 'Planificación')
+            .replace(/FormaciÃ³n/g, 'Formación');
+    };
+    const isPublicEmptyShift = (value) => {
+        const raw = String(value ?? '').trim();
+        const fixed = String(fixPublicMojibake(raw) ?? '').trim();
+        if (!fixed || fixed === '-' || fixed === '—' || fixed === '&mdash;') return true;
+        return raw.length <= 8 && /[ÃÂâ]/.test(raw) && /[€\u20AC]/.test(raw);
+    };
+    // â”€â”€ Auto-refresh configuraciÃ³n â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // Auto-refresh pÃºblico cada 15 minutos para evitar interrupciones de lectura.
     const PUBLIC_AUTO_REFRESH_MS = window.__DEBUG_REFRESH_MS || (15 * 60 * 1000);
-    const USER_IDLE_THRESHOLD_MS = 60 * 1000; // No refrescar si el usuario estuvo activo en el último minuto
+    const USER_IDLE_THRESHOLD_MS = 60 * 1000; // No refrescar si el usuario estuvo activo en el Ãºltimo minuto
     let _lastUserInteractionAt = Date.now();
     let _publicPeriodicTimer = null;
-    // ─────────────────────────────────────────────────────────────────────────
+    // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     const formatDisplayName = (name) => {
         if (!name) return '';
         return name.replace(/_DUP_.*$/, '').replace(/_CT$/, '').replace(/_/g, ' ').trim();
@@ -573,7 +596,7 @@
             const [year, month] = monthKey.split('-').map(Number);
             const daysInMonth = new Date(year, month, 0).getDate();
             const selectedDays = getSelectedDaysInMonth(year, month, rangeStart, rangeEnd);
-            html += `<div class="night-month"><h3>${monthNamesFull[month - 1]} de ${year}<span class="night-month-days">(${selectedDays} de ${daysInMonth} días)</span></h3><div class="night-hotel-grid">`;
+            html += `<div class="night-month"><h3>${monthNamesFull[month - 1]} de ${year}<span class="night-month-days">(${selectedDays} de ${daysInMonth} dÃ­as)</span></h3><div class="night-hotel-grid">`;
 
             [...hotels.entries()].sort((a, b) => a[0].localeCompare(b[0], 'es')).forEach(([hotelName, employees]) => {
                 const rows = [...employees.entries()]
@@ -617,7 +640,7 @@
 
     window.setVisualTheme = (theme) => applyTheme(theme);
 
-    // Captura el estado actual de navegación para preservarlo tras un refresco silencioso
+    // Captura el estado actual de navegaciÃ³n para preservarlo tras un refresco silencioso
     function _capturePublicState() {
         return {
             scrollY: window.scrollY,
@@ -628,7 +651,7 @@
         };
     }
 
-    // Restaura el estado capturado después de un refresco silencioso
+    // Restaura el estado capturado despuÃ©s de un refresco silencioso
     function _restorePublicState(state) {
         if (!state) return;
         // Restaurar hotel
@@ -636,7 +659,7 @@
         if (sel && state.hotel !== undefined && sel.value !== state.hotel) {
             sel.value = state.hotel;
         }
-        // Restaurar semana (solo si no la cambió el usuario)
+        // Restaurar semana (solo si no la cambiÃ³ el usuario)
         if (state.weekStart && _picker) {
             const current = _picker.selectedDates?.[0] ? formatDateLocal(_picker.selectedDates[0]) : '';
             if (current !== state.weekStart) {
@@ -644,7 +667,7 @@
                 setWeekRange(d);
             }
         }
-        // Restaurar scroll después de que el DOM se actualice
+        // Restaurar scroll despuÃ©s de que el DOM se actualice
         requestAnimationFrame(() => {
             window.scrollTo({ top: state.scrollY, behavior: 'instant' });
             const main = document.querySelector('.public-main');
@@ -660,7 +683,7 @@
         const end = formatDateLocal(range[1]);
 
         const container = $('#publicContainer');
-        // Anti-parpadeo: solo mostrar spinner en el primer render (container vacío)
+        // Anti-parpadeo: solo mostrar spinner en el primer render (container vacÃ­o)
         const isFirstRender = !container.hasChildNodes() || container.dataset.loaded !== '1';
         if (isFirstRender) {
             container.innerHTML = '<div style="padding:100px; text-align:center; font-weight:700; color:#5f6f84;">Cargando cuadrante...</div>';
@@ -679,7 +702,7 @@
             window.TurnosDB.getEmpleados()
         ]);
         const snaps = snapsResult.data;
-        // Índice de perfiles completos por ID para reconciliación y lógica de control
+        // Ãndice de perfiles completos por ID para reconciliaciÃ³n y lÃ³gica de control
         window._publicProfilesData = {};
         window._publicProfilesIndex = {};
         (empleadosResult || []).forEach(e => {
@@ -743,7 +766,7 @@
         });
         renderNightSummary(container, summaryByMonth, hasRows, start, end);
 
-        // Renderizar leyenda visual al final del contenedor público
+        // Renderizar leyenda visual al final del contenedor pÃºblico
         if (hasRows) {
             const legendDiv = document.createElement('div');
             legendDiv.className = 'public-legend';
@@ -757,9 +780,9 @@
             legendDiv.style.fontWeight = '700';
             legendDiv.style.color = 'var(--text-dim)';
             legendDiv.innerHTML = `
-                <div style="display:flex; align-items:center; gap:6px;"><span style="width:12px; height:12px; border-radius:3px; background:var(--mint-bg); border:1px solid #c7e5ca; display:inline-block;"></span> Mañana</div>
+                <div style="display:flex; align-items:center; gap:6px;"><span style="width:12px; height:12px; border-radius:3px; background:var(--mint-bg); border:1px solid #c7e5ca; display:inline-block;"></span> MaÃ±ana</div>
                 <div style="display:flex; align-items:center; gap:6px;"><span style="width:12px; height:12px; border-radius:3px; background:var(--amber-bg); border:1px solid #f3df9b; display:inline-block;"></span> Tarde</div>
-                <div style="display:flex; align-items:center; gap:6px;"><span style="width:12px; height:12px; border-radius:3px; background:#ede9fe; border:1px solid #c4b5fd; display:inline-block;"></span> ⇅ T/P = Turno Partido</div>
+                <div style="display:flex; align-items:center; gap:6px;"><span style="width:12px; height:12px; border-radius:3px; background:#ede9fe; border:1px solid #c4b5fd; display:inline-block;"></span> â‡… T/P = Turno Partido</div>
                 <div style="display:flex; align-items:center; gap:6px;"><span style="width:12px; height:12px; border-radius:3px; background:var(--slate-bg); border:1px solid #d8dee5; display:inline-block;"></span> Noche</div>
                 <div style="display:flex; align-items:center; gap:6px;"><span style="width:12px; height:12px; border-radius:3px; background:#fee2e2; border:1px solid #fecaca; display:inline-block;"></span> Descanso</div>
                 <div style="display:flex; align-items:center; gap:6px;"><span style="width:12px; height:12px; border-radius:3px; background:#e8f9ff; border:1px solid #aee6ff; display:inline-block;"></span> Vacaciones</div>
@@ -771,7 +794,7 @@
 
         applyTheme(localStorage.getItem('public-theme') || 'day');
         _lastPublicRenderTime = Date.now();
-        // Si fue un refresco silencioso, restaurar posición de scroll
+        // Si fue un refresco silencioso, restaurar posiciÃ³n de scroll
         if (opts._savedState) {
             _restorePublicState(opts._savedState);
         }
@@ -793,7 +816,7 @@
                     </div>
                 </div>
                 <div class="header-mode">
-                    <button type="button" class="mode-btn" data-theme="day" onclick="setVisualTheme('day')">Día</button>
+                    <button type="button" class="mode-btn" data-theme="day" onclick="setVisualTheme('day')">DÃ­a</button>
                     <button type="button" class="mode-btn" data-theme="night" onclick="setVisualTheme('night')">Noche</button>
                 </div>
             </div>
@@ -811,7 +834,7 @@
             d.setDate(d.getDate()+1);
         }
 
-        const days = ['DOMINGO','LUNES','MARTES','MIÉRCOLES','JUEVES','VIERNES','SÁBADO'];
+        const days = ['DOMINGO','LUNES','MARTES','MIÃ‰RCOLES','JUEVES','VIERNES','SÃBADO'];
         const todayKey = formatDateLocal(new Date());
         const columns = dates.map((f, idx) => {
             const dt = new Date(f + 'T12:00:00');
@@ -828,24 +851,31 @@
         const table = new window.VirtualTable(viewport, { columns, rowHeight: 62 });
 
         table.renderCellContent = function(cell, data, rowData, fecha) {
-            // V12.6 FIX: también revisar label como fallback antes de mostrar "—"
+            // V12.6 FIX: tambiÃ©n revisar label como fallback antes de mostrar "â€”"
             // Snapshots publicados con code='' pero label='Tarde' deben renderizarse correctamente
-            const _cellCode = String(data?.code || '').trim();
-            const _cellLabel = String(data?.label || '').trim();
-            const _cellTurno = String(data?.turno || '').trim();
-            const _hasContent = (_cellCode && _cellCode !== '—') || (_cellLabel && _cellLabel !== '—') || (_cellTurno && _cellTurno !== '—');
+            const _cellCode = fixPublicMojibake(String(data?.code || '').trim());
+            const _cellLabel = fixPublicMojibake(String(data?.label || '').trim());
+            const _cellTurno = fixPublicMojibake(String(data?.turno || '').trim());
+            const _hasContent = !isPublicEmptyShift(_cellCode) || !isPublicEmptyShift(_cellLabel) || !isPublicEmptyShift(_cellTurno);
             if (!data || !_hasContent) {
                 return cell.innerHTML = '<span class="empty-dash">—</span>';
             }
+            const cleanData = {
+                ...data,
+                code: _cellCode,
+                label: _cellLabel,
+                turno: _cellTurno
+            };
             const context = {
                 view: 'index',
                 hotel: snap.hotel,
                 weekStart: snap.semana_inicio
             };
-            const display = window.TurnosRules.getPublicCellDisplay(data, { compact: false }, rowData, context);
-            // V12.6 FIX: usar display.label como fuente de color cuando code está vacío
-            const _codeForCls = data.code || data.label || data.turno || display.label || '';
-            const cls = window.TurnosRules.shiftKey(_codeForCls, data.type);
+            const display = window.TurnosRules.getPublicCellDisplay(cleanData, { compact: false }, rowData, context);
+            display.label = isPublicEmptyShift(display.label) ? '—' : fixPublicMojibake(display.label);
+            // V12.6 FIX: usar display.label como fuente de color cuando code estÃ¡ vacÃ­o
+            const _codeForCls = cleanData.code || cleanData.label || cleanData.turno || display.label || '';
+            const cls = window.TurnosRules.shiftKey(_codeForCls, cleanData.type);
             
             cell.innerHTML = '';
             const pill = document.createElement('div');
@@ -855,8 +885,8 @@
             const customHorario = data?.horario || data?.payload?.horario || display?.horario;
             let tooltipText = window.TurnosRules?.cleanDuplicateHorarioTitle ? window.TurnosRules.cleanDuplicateHorarioTitle(display.title || '') : (display.title || '');
             if (customHorario) {
-                const shiftName = display.label !== '—' ? display.label : 'Turno';
-                if (!tooltipText || tooltipText === 'Planificación base Excel') {
+                const shiftName = display.label !== 'â€”' ? display.label : 'Turno';
+                if (!tooltipText || tooltipText === 'PlanificaciÃ³n base Excel') {
                     tooltipText = `${shiftName}: ${customHorario}`;
                 } else if (!(window.TurnosRules?.titleIncludesHorario ? window.TurnosRules.titleIncludesHorario(tooltipText, customHorario) : tooltipText.includes(customHorario))) {
                     tooltipText += ` | Horario: ${customHorario}`;
@@ -873,17 +903,17 @@
             if (display.icons) {
                 const currentText = pill.textContent;
                 display.icons.forEach(icon => {
-                    if (currentText.includes(icon)) return; // Evitar duplicado si ya está en el label
+                    if (currentText.includes(icon)) return; // Evitar duplicado si ya estÃ¡ en el label
                     
-                    if (icon === '\u{1F504}' || icon === '🔄') {
+                    if (icon === '\u{1F504}' || icon === 'ðŸ”„') {
                         pill.innerHTML += ' <span class="icon-sync">\u{1F504}</span>';
-                    } else if (icon === '⇅') {
-                        pill.innerHTML += ' <span class="icon-tp">⇅</span>';
-                    } else if (icon === '\u{1F4CC}' || icon === '📌') {
+                    } else if (icon === 'â‡…') {
+                        pill.innerHTML += ' <span class="icon-tp">â‡…</span>';
+                    } else if (icon === '\u{1F4CC}' || icon === 'ðŸ“Œ') {
                         pill.innerHTML += ' <span class="icon-pin">\u{1F4CC}</span>';
-                    } else if (icon === '\u{1F3D6}\u{FE0F}' || icon === '🏖️') {
+                    } else if (icon === '\u{1F3D6}\u{FE0F}' || icon === 'ðŸ–ï¸') {
                         pill.innerHTML += ' <span class="icon-vac">\u{1F3D6}\u{FE0F}</span>';
-                    } else if (icon === '\u{1F319}' || icon === '🌙') {
+                    } else if (icon === '\u{1F319}' || icon === 'ðŸŒ™') {
                         pill.innerHTML += ' <span class="icon-moon">\u{1F319}</span>';
                     } else {
                         pill.innerHTML += ` <span>${icon}</span>`;
@@ -897,7 +927,7 @@
             const tds = tr.children;
             const daysMap = rowData.turnosOperativos || rowData.cells || rowData.dias || {};
             
-            // Reconciliación de perfil: Mergear metadatos del perfil (tipo, rol, etc.) si existen
+            // ReconciliaciÃ³n de perfil: Mergear metadatos del perfil (tipo, rol, etc.) si existen
             const empIdForData = String(rowData.empleado_id || rowData.nombre || '').trim();
             const profileData = (window._publicProfilesData || {})[empIdForData];
             if (profileData) {
@@ -943,7 +973,7 @@
                         <div class="employee-name">${escapeHtml(displayName)}</div>
                     ${isAbsent || skipCounters ? '' : `
                     <div class="emp-badges">
-                        <span class="badge"><span class="badge-icon">🌙</span> ${nights}</span>
+                        <span class="badge"><span class="badge-icon">ðŸŒ™</span> ${nights}</span>
                         <span class="badge">D ${rests}</span>
                     </div>
                     `}
@@ -958,11 +988,11 @@
 
         const filteredRows = rows.filter(r => {
             const name = String(r.nombre || r.nombreVisible || '').trim();
-            if (!name || name === '—') return false; // V12.8: Eliminar filas sin personal
+            if (!name || name === 'â€”') return false; // V12.8: Eliminar filas sin personal
 
             const isVisible = window.TurnosRules.isPublicEmployeeVisible(r);
             
-            if (window.DEBUG_MODE && (name.includes('Próximamente') || name.includes('VACANTE'))) {
+            if (window.DEBUG_MODE && (name.includes('PrÃ³ximamente') || name.includes('VACANTE'))) {
                 console.log('[PUBLIC_ROW_FILTER]', {
                     view: 'index',
                     hotel: snap.hotel,
@@ -1039,14 +1069,14 @@
         }, 250);
     }
 
-    // Refresco silencioso periódico: preserva scroll, semana, hotel y tema
+    // Refresco silencioso periÃ³dico: preserva scroll, semana, hotel y tema
     function _silentPeriodicRefresh() {
         const idleMs = Date.now() - _lastUserInteractionAt;
         if (idleMs < USER_IDLE_THRESHOLD_MS) {
             console.log('[PUBLIC_REFRESH] Usuario activo, refresco pospuesto.');
             return;
         }
-        console.log('[PUBLIC_REFRESH] Refrescando datos sin recargar página.');
+        console.log('[PUBLIC_REFRESH] Refrescando datos sin recargar pÃ¡gina.');
         const savedState = _capturePublicState();
         console.log('[PUBLIC_REFRESH] Estado preservado', savedState);
         window.renderPublicView({ _savedState: savedState });
@@ -1072,7 +1102,7 @@
             .subscribe();
     }
 
-    // Rastrear interacción del usuario para posponer auto-refresh si está activo
+    // Rastrear interacciÃ³n del usuario para posponer auto-refresh si estÃ¡ activo
     ["scroll", "click", "touchstart", "keydown", "change"].forEach(evt => {
         window.addEventListener(evt, () => { _lastUserInteractionAt = Date.now(); }, { passive: true });
     });
@@ -1083,7 +1113,7 @@
         }
     });
 
-    // Refresco al volver a la pestaña solo si han pasado al menos 5 minutos desde el último render
+    // Refresco al volver a la pestaÃ±a solo si han pasado al menos 5 minutos desde el Ãºltimo render
     let _lastPublicRenderTime = 0;
     window.addEventListener('focus', () => {
         const now = Date.now();
@@ -1120,3 +1150,4 @@
   </script>
 </body>
 </html>
+
