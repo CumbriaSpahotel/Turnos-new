@@ -899,7 +899,7 @@ window.saveVacation = async (e) => {
         window.resetVacationForm();
         await window.renderVacations();
 
-        // --- BLOQUE E: ACCIONES RÁPIDAS ---
+        // --- BLOQUE E: ACCIONES RÃPIDAS ---
         const quickActions = $('#dashboard-quick-actions');
         if (quickActions) {
             quickActions.innerHTML = `
@@ -4612,7 +4612,7 @@ window.createPuestosPreviewModel = ({
 
     const eventosCalculados = [...eventos, ...virtualCeseEventos];
 
-    // --- RESOLUCIÓN AUTOMÁTICA DE VACACIONISTAS PARA EVENTOS SIN SUSTITUTO ---
+    // --- RESOLUCIÓN AUTOMÃTICA DE VACACIONISTAS PARA EVENTOS SIN SUSTITUTO ---
     const yaAsignadasSust = new Set();
     eventosCalculados.forEach(ev => {
         const tipo = window.normalizeTipo(ev.tipo);
@@ -4985,7 +4985,7 @@ window.createPuestosPreviewModel = ({
             const status = weekStatus.get(normTitular);
 
 
-            // CASO A: TITULAR ESTÁ AUSENTE
+            // CASO A: TITULAR ESTÃ AUSENTE
             if (status) {
                 const titularName = getDisplayName(r.empleadoId, r);
                 if (status.tipo !== 'BAJA_EMPRESA') {
@@ -5039,7 +5039,7 @@ window.createPuestosPreviewModel = ({
                 if (occupantId && !isVacante && canonicalOcc) assignedNorms.add(canonicalOcc);
 
             } 
-            // CASO B: TITULAR ESTÁ PRESENTE
+            // CASO B: TITULAR ESTÃ PRESENTE
             else {
                 const canonicalTitular = window.ShiftResolver.getCanonicalEmployeeId(normTitular, uCtx);
                 if (canonicalTitular && !assignedNorms.has(canonicalTitular)) {
@@ -9111,7 +9111,7 @@ window.renderDashboard = async () => {
             $('#stat-pending-requests').style.color = pendingReqs > 0 ? '#f59e0b' : 'inherit';
         }
 
-        // --- BLOQUE E: ACCIONES RÁPIDAS ---
+        // --- BLOQUE E: ACCIONES RÃPIDAS ---
         const quickActions = $('#dashboard-quick-actions');
         if (quickActions) {
             quickActions.innerHTML = `

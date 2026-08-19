@@ -168,7 +168,7 @@ window.escapeHtml = (text) => {
 window.fixMojibake = (value) => {
     if (value === null || value === undefined) return value;
     let s = String(value);
-    for (let i = 0; i < 3 && /[ÃƒÃ‚Ã¢]/.test(s); i++) {
+    for (let i = 0; i < 3 && /[ÃƒÃ‚â]/.test(s); i++) {
         try {
             const decoded = decodeURIComponent(escape(s));
             if (!decoded || decoded === s || decoded.includes('\uFFFD')) break;
@@ -337,7 +337,7 @@ window.normalizeV9Key = (value) => {
     s = s.replace(/[\u0000-\u001F\u007F-\u009F]/g, '');
     
     // 7. Sustituir apóstrofes y guiones raros
-    s = s.replace(/['`Â´â‚¬Ëœ']/g, "'").replace(/[â‚¬Ââ‚¬'â‚¬'â€“â€”Û¥]/g, "-");
+    s = s.replace(/['`Â´â‚¬Ëœ']/g, "'").replace(/[â‚¬Ââ‚¬'â‚¬'â€“â€”ۥ]/g, "-");
     
     // 8. Sustituir espacios no separables por espacio normal
     s = s.replace(/[\u00A0\u202F]/g, " ");
@@ -1297,7 +1297,7 @@ window.renderCustomHorariosList = async (empsList) => {
                     <td style="padding:10px 12px; font-weight:800; color:#2563eb; font-size:0.8rem;">${escapeHtml(customHorario)}</td>
                     <td style="padding:10px 12px; text-align:center;">
                         <button class="btn-premium" style="font-size:0.7rem; padding:4px 8px; margin-right:4px;" onclick="window.loadHorarioCustomEvent('${safeEvId}')" title="Cargar en el formulario para editar">âœï¸ Editar</button>
-                        <button class="btn-premium" style="font-size:0.7rem; padding:4px 8px; background:rgba(239,68,68,0.1); color:#ef4444; border:1px solid rgba(239,68,68,0.3);" onclick="window.deleteHorarioCustomEvent('${safeEvId}')" title="Eliminar este horario personalizado">🗑️ Eliminar</button>
+                        <button class="btn-premium" style="font-size:0.7rem; padding:4px 8px; background:rgba(239,68,68,0.1); color:#ef4444; border:1px solid rgba(239,68,68,0.3);" onclick="window.deleteHorarioCustomEvent('${safeEvId}')" title="Eliminar este horario personalizado">ðŸ—‘️ Eliminar</button>
                     </td>
                 </tr>
             `;
@@ -2010,7 +2010,7 @@ window.saveTurnosBaseDirect = async () => {
         await window.renderExcelView();
     } catch (err) {
         console.error(err);
-        alert('❌ Error al guardar: ' + err.message);
+        alert('âŒ Error al guardar: ' + err.message);
         if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-save"></i> Guardar cambios'; }
     }
 };
@@ -2897,7 +2897,7 @@ window.renderRequests = async () => {
 
         container.innerHTML = `
             <div class="requests-toolbar" style="display:flex; flex-wrap:wrap; gap:10px; align-items:center; margin-bottom:14px; background:white; padding:16px 20px; border-radius:18px; border:1px solid #e2e8f0; box-shadow:0 4px 6px -1px rgba(0,0,0,0.05);">
-                <div style="font-size:0.75rem; font-weight:800; color:#64748b; text-transform:uppercase; letter-spacing:0.05em; margin-right:4px;">🔎 Filtros:</div>
+                <div style="font-size:0.75rem; font-weight:800; color:#64748b; text-transform:uppercase; letter-spacing:0.05em; margin-right:4px;">ðŸ” Filtros:</div>
                 
                 <!-- Estado -->
                 <div style="display:flex; align-items:center; gap:6px; background:#f8fafc; border:1px solid #cbd5e1; border-radius:10px; padding:4px 10px;">
@@ -2906,13 +2906,13 @@ window.renderRequests = async () => {
                         <option value="all" ${window._requestsFilter === 'all' ? 'selected' : ''}>Todas las solicitudes</option>
                         <option value="pendiente" ${window._requestsFilter === 'pendiente' ? 'selected' : ''}>⏳ Pendientes</option>
                         <option value="aprobada" ${window._requestsFilter === 'aprobada' ? 'selected' : ''}>✅ Aprobadas</option>
-                        <option value="rechazada" ${window._requestsFilter === 'rechazada' ? 'selected' : ''}>❌ Rechazadas</option>
+                        <option value="rechazada" ${window._requestsFilter === 'rechazada' ? 'selected' : ''}>âŒ Rechazadas</option>
                     </select>
                 </div>
 
                 <!-- Hotel -->
                 <div style="display:flex; align-items:center; gap:6px; background:#f8fafc; border:1px solid #cbd5e1; border-radius:10px; padding:4px 10px;">
-                    <span style="font-size:0.85rem;">🏨</span>
+                    <span style="font-size:0.85rem;">ðŸ¨</span>
                     <select id="requestsHotelFilter" style="border:none; background:transparent; font-weight:700; color:#1e293b; font-size:0.83rem; outline:none; cursor:pointer;" onchange="window._requestsHotelFilter = this.value; window.applyRequestsFilters()">
                         <option value="all">Todos los hoteles</option>
                         ${hotels.map(h => `<option value="${escapeHtml(h)}" ${window._requestsHotelFilter === h ? 'selected' : ''}>${escapeHtml(h)}</option>`).join('')}
@@ -2973,7 +2973,7 @@ window.renderRequests = async () => {
 
     } catch (e) {
         console.error("[ADMIN ERROR] renderRequests:", e);
-        container.innerHTML = '<div style="padding:2rem; color:red; font-weight:800;">❌ Error cargando solicitudes: ' + e.message + '</div>';
+        container.innerHTML = '<div style="padding:2rem; color:red; font-weight:800;">âŒ Error cargando solicitudes: ' + e.message + '</div>';
     }
 };
 
@@ -3028,7 +3028,7 @@ window.applyRequestsFilters = () => {
     if (dateEnd) summaryParts.push(`Hasta: <strong>${dateEnd}</strong>`);
     if (search) summaryParts.push(`Texto: <strong>"${search}"</strong>`);
     const summaryEl = $('#requestsFilterSummary');
-    if (summaryEl) summaryEl.innerHTML = summaryParts.length ? '🔎 ' + summaryParts.join(' &nbsp;·&nbsp; ') : '';
+    if (summaryEl) summaryEl.innerHTML = summaryParts.length ? 'ðŸ” ' + summaryParts.join(' &nbsp;·&nbsp; ') : '';
 
     const listContainer = $('#requests-list');
     if (!listContainer) return;
@@ -5824,7 +5824,7 @@ window.renderPreview = async () => {
         window._lastRenderedPreviewSnapshotSource.semana_inicio = startISO;
         window._lastRenderedPreviewSnapshotSource.semana_fin = endISO;
 
-        // Cargar eventos con rango extendido Â±90 días para capturar periodos largos
+        // Cargar eventos con rango extendido ±90 días para capturar periodos largos
         // (ej. VAC Cristina 20/04â€“03/05 debe estar visible al ver semana 20/04 O 27/04)
         const extStart = new Date(start); extStart.setDate(extStart.getDate() - 90);
         const extEnd   = new Date(end);   extEnd.setDate(extEnd.getDate() + 90);
@@ -6138,7 +6138,7 @@ window.renderPreview = async () => {
                         <span>${hName}</span>
                         <span style="font-size:0.75rem; color:#94a3b8; font-weight:400;">Resolución Motor V3</span>
                     </div>
-                    <div class="cal2-header"><div>LUN</div><div>MAR</div><div>MIE</div><div>JUE</div><div>VIE</div><div>SÃB</div><div>DOM</div></div>
+                    <div class="cal2-header"><div>LUN</div><div>MAR</div><div>MIE</div><div>JUE</div><div>VIE</div><div>SÁB</div><div>DOM</div></div>
                     <div class="cal2-grid">${cells.join('')}</div>
                 </div>`;
                 area.appendChild(hotelSection);
@@ -7604,7 +7604,7 @@ window.validatePublishChanges = (changes) => {
         // 3. Turnos inválidos
         c.row.values.forEach((v, idx) => {
             const vNorm = String(v || '').toUpperCase().trim();
-            if (vNorm && !validShifts.has(vNorm) && !vNorm.includes('x ï¸')) {
+            if (vNorm && !validShifts.has(vNorm) && !vNorm.includes('x ️')) {
                 // Permitimos valores que no estén en el set si son descriptivos, 
                 // pero alertamos si parecen basura
                 if (vNorm.length > 10) errors.push(`Turno sospechoso en ${c.weekStart} (${c.displayName}): ${vNorm}`);
@@ -8627,7 +8627,7 @@ window.checkVisualRulesHealth = function() {
     const TR = window.TurnosRules;
     const tests = [
         { input: { code: 'BAJA', type: 'BAJA' }, expect: /Baja.*\u{1FA7A}/u, name: 'Baja 🩸' },
-        { input: { code: 'PERM', type: 'PERM' }, expect: /Permiso.*\u{1F5D3}/u, name: 'Permiso 🗓️' },
+        { input: { code: 'PERM', type: 'PERM' }, expect: /Permiso.*\u{1F5D3}/u, name: 'Permiso ðŸ—“️' },
         { input: { code: 'N', type: 'NORMAL' }, expect: /Noche/i, name: 'Noche label' },
         { input: { code: 'D', type: 'NORMAL' }, expect: /Descanso/i, name: 'Descanso label' },
         { input: { code: 'VAC', type: 'VAC' }, expect: /Vacaciones/i, name: 'Vacaciones label' },
