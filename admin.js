@@ -1,4 +1,4 @@
-﻿// describeCell centralizado en turnos-rules.js
+// describeCell centralizado en turnos-rules.js
 
 window.formatDisplayName = (name) => {
     if (!name) return '';
@@ -4912,7 +4912,7 @@ window.createPuestosPreviewModel = ({
             if (!tId) return;
             const normT = resolveId(tId);
             
-            let sRaw = window.getOtroEmpleadoDelCambio ? window.getOtroEmpleadoDelCambio(ev, tId) : null;
+            let sRaw = window.getOtroEmpleadoDelCambio ? window.getOtroEmpleadoDelCambio(ev, tId, uCtx) : null;
             if (!sRaw) {
                 sRaw = ev.empleado_destino_id || ev.sustituto_id || ev.sustituto || ev.payload?.sustituto_id || ev.payload?.sustituto || ev.participante_b || ev.destino_id;
             }

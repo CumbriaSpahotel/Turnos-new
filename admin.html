@@ -13,6 +13,17 @@
     <script src="flatpickr_es.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/plugins/monthSelect/index.js"></script>
 <style>
+    @media print {
+        body { background: white; margin: 0; padding: 0; }
+        .sidebar, .nav-toolbar, .header-controls, .floating-actions, .toast { display: none !important; }
+        .main-content { margin-left: 0 !important; width: 100% !important; padding: 0 !important; }
+        .section { display: none !important; }
+        .section.active { display: block !important; padding: 0 !important; margin: 0 !important; }
+        .page-header { border-bottom: none !important; padding: 0 0 20px 0 !important; margin: 0 0 20px 0 !important; }
+        #changes-table-container, #vacations-content, #employeesContent { box-shadow: none !important; border: none !important; }
+        .glass-panel { box-shadow: none !important; border: 1px solid #ccc !important; break-inside: avoid; }
+        * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+    }
     /* ESTILOS PREMIUM DASHBOARD PROMPT */
     .nav-toolbar {
         display: flex;
@@ -375,6 +386,9 @@
 
                     <!-- Action Group -->
                     <div style="display: flex; gap: 8px;">
+                        <button onclick="window.print()" style="margin:0; padding: 0 16px; font-size: 0.72rem; font-weight: 800; border-radius: 12px; background: #f8fafc; border:1px solid #e2e8f0; height: 38px; display: flex; align-items: center; gap: 8px; color: #475569; cursor: pointer; transition: transform 0.2s;">
+                            <i class="fas fa-print" style="font-size: 0.8rem;"></i> <span>IMPRIMIR</span>
+                        </button>
                         <button class="btn-publish-premium" onclick="window.openNewChangeModal()" style="margin:0; padding: 0 16px; font-size: 0.72rem; font-weight: 800; border-radius: 12px; background: linear-gradient(135deg,#6366f1,#4f46e5); border:none; height: 38px; display: flex; align-items: center; gap: 8px; box-shadow: 0 4px 12px rgba(99, 102, 241, 0.25); color: white; cursor: pointer; transition: transform 0.2s;">
                             <i class="fas fa-plus" style="font-size: 0.8rem;"></i> <span>MANUAL</span>
                         </button>
@@ -433,7 +447,14 @@
 
         <!-- VACACIONES -->
         <section id="section-vacations" class="section">
-            <header class="page-header"><div><h1 class="page-title">Control de Vacaciones</h1></div></header>
+            <header class="page-header" style="display:flex; justify-content:space-between; align-items:center;">
+                <div><h1 class="page-title">Control de Vacaciones</h1></div>
+                <div class="header-controls" style="margin-right: 30px;">
+                    <button onclick="window.print()" style="margin:0; padding: 0 16px; font-size: 0.72rem; font-weight: 800; border-radius: 12px; background: #f8fafc; border:1px solid #e2e8f0; height: 38px; display: flex; align-items: center; gap: 8px; color: #475569; cursor: pointer; transition: transform 0.2s;">
+                        <i class="fas fa-print" style="font-size: 0.8rem;"></i> <span>IMPRIMIR</span>
+                    </button>
+                </div>
+            </header>
             <div id="vacations-content" style="padding:0 30px 30px;"></div>
         </section>
 

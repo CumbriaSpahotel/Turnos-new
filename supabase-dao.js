@@ -1385,18 +1385,6 @@ window.TurnosDB = {
             this._channel.subscribe((status) => {
                 this.updateUISyncStatus(status === 'SUBSCRIBED' ? 'ok' : 'warn');
             });
-
-            // Watchdog cada 30 segundos
-            if (!window._watchdogTimer) {
-                window._watchdogTimer = setInterval(async () => {
-                    if (window.DEBUG_MODE === true) {
-                        console.warn("DAO Watchdog: Re-inicializando canal...");
-                    }
-                    await client.removeChannel(this._channel);
-                    this._channel = null;
-                    this.initRealtime();
-                }, 30000);
-            }
         } catch (err) {
             console.error("DAO Error (Realtime):", err);
             this._channel = null;

@@ -374,12 +374,17 @@ tipo=${normalized.tipo}`);
     window.isTitularOfAbsence = (...args) => window.ShiftResolver.isTitularOfAbsence(...args);
     window.eventoPerteneceAEmpleado = (...args) => window.ShiftResolver.eventoPerteneceAEmpleado(...args);
 
-    window.getOtroEmpleadoDelCambio = (evento, empleadoId) => {
-        const target = window.normalizeId(empleadoId);
-        const candidatosA = window.getEventOriginCandidates(evento).map(window.normalizeId);
-        const candidatosB = window.getEventDestinationCandidates(evento).map(window.normalizeId);
-        const isA = candidatosA.includes(target);
-        const isB = candidatosB.includes(target);
+    window.getOtroEmpleadoDelCambio = (evento, empleadoId, context = {}) => {
+        const uCtx = window.ShiftResolver.createIdentityContext(context.baseIndex || context);
+        const targetCanonical = window.ShiftResolver.getCanonicalEmployeeId(empleadoId, uCtx);
+        if (!targetCanonical) return '';
+
+        const candidatosA = window.getEventOriginCandidates(evento);
+        const candidatosB = window.getEventDestinationCandidates(evento);
+        
+        const isA = candidatosA.some(c => window.ShiftResolver.getCanonicalEmployeeId(c, uCtx) === targetCanonical);
+        const isB = candidatosB.some(c => window.ShiftResolver.getCanonicalEmployeeId(c, uCtx) === targetCanonical);
+        
         if (isA) return candidatosB[0] || '';
         if (isB) return candidatosA[0] || '';
         return '';
@@ -775,7 +780,7 @@ tipo=${normalized.tipo}`);
                     let finalTurnoOrigen = tDestRaw;
                     let finalTurnoDestino = tOrigRaw;
 
-                    if (!window.isValidShiftValue(tOrigRaw) || !window.isValidShiftValue(tDestRaw) || isLegacyCT || isIncoherente) {
+                    if (!window.isValidShiftValue(tOrigRaw) || !window.isValidShiftValue(tDestRaw) || isLegacyCT) {
                         finalTurnoOrigen = tOpB;
                         finalTurnoDestino = tOpA;
                     }

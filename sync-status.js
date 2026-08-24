@@ -76,14 +76,19 @@
 
     document.addEventListener('DOMContentLoaded', () => {
         window.setCloudStatus('connecting');
-        let tries = 0;
-        const wait = setInterval(() => {
-            tries += 1;
-            if (window.supabase || tries > 20) {
-                clearInterval(wait);
-                pingSupabase();
-                window._cloudStatusInterval = setInterval(pingSupabase, 60000);
-            }
-        }, 250);
+        if (window.supabase) {
+            pingSupabase();
+            window._cloudStatusInterval = setInterval(pingSupabase, 60000);
+        } else {
+            let tries = 0;
+            const wait = setInterval(() => {
+                tries += 1;
+                if (window.supabase || tries > 20) {
+                    clearInterval(wait);
+                    pingSupabase();
+                    window._cloudStatusInterval = setInterval(pingSupabase, 60000);
+                }
+            }, 250);
+        }
     });
 })();
