@@ -14,14 +14,45 @@
     <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/plugins/monthSelect/index.js"></script>
 <style>
     @media print {
-        body { background: white; margin: 0; padding: 0; }
-        .sidebar, .nav-toolbar, .header-controls, .floating-actions, .toast { display: none !important; }
+        body { background: white !important; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important; }
+        .sidebar, .nav-toolbar, .header-controls, .floating-actions, .toast, #upcoming-changes-sidebar { display: none !important; }
         .main-content { margin-left: 0 !important; width: 100% !important; padding: 0 !important; }
         .section { display: none !important; }
         .section.active { display: block !important; padding: 0 !important; margin: 0 !important; }
-        .page-header { border-bottom: none !important; padding: 0 0 20px 0 !important; margin: 0 0 20px 0 !important; }
-        #changes-table-container, #vacations-content, #employeesContent { box-shadow: none !important; border: none !important; }
-        .glass-panel { box-shadow: none !important; border: 1px solid #ccc !important; break-inside: avoid; }
+        
+        /* Layout fixes */
+        .section.active > div[style*="display:grid"], .section.active > div[style*="display: grid"] { 
+            display: block !important; 
+            padding: 0 !important; 
+        }
+        
+        /* Header styling */
+        .page-header { border-bottom: 2px solid #e2e8f0 !important; padding: 0 0 15px 0 !important; margin: 0 0 20px 0 !important; }
+        .page-title { font-size: 1.5rem !important; color: #0f172a !important; margin-bottom: 4px !important; }
+        .page-subtitle { font-size: 0.9rem !important; color: #64748b !important; }
+        
+        /* Table styling improvements for print */
+        table { width: 100% !important; border-collapse: collapse !important; font-size: 0.8rem !important; }
+        th { background: #f8fafc !important; color: #334155 !important; border-bottom: 2px solid #cbd5e1 !important; padding: 10px !important; font-weight: 700 !important; text-transform: uppercase !important; }
+        td { padding: 10px !important; border-bottom: 1px solid #e2e8f0 !important; color: #1e293b !important; }
+        tr:nth-child(even) td { background: #fdfdfd !important; }
+        
+        /* Remove shadows and rounded corners */
+        #changes-table-container, #vacations-content, #employeesContent, .glass-panel, div[style*="border-radius:20px"] { 
+            box-shadow: none !important; 
+            border: none !important; 
+            border-radius: 0 !important; 
+        }
+        
+        /* Badges / Pill styles for print */
+        .v-pill, .badge, span[style*="border-radius:999px"], span[style*="border-radius: 999px"] {
+            border: 1px solid #cbd5e1 !important;
+            color: #0f172a !important;
+            background: transparent !important;
+            box-shadow: none !important;
+            padding: 2px 6px !important;
+        }
+
         * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
     }
     /* ESTILOS PREMIUM DASHBOARD PROMPT */
