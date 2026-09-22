@@ -1647,7 +1647,10 @@ window.renderExcelView = async () => {
         if (preset?.search !== undefined) window.excelFilters.search = preset.search || '';
         if (preset?.onlyPending !== undefined) window.excelFilters.onlyPending = Boolean(preset.onlyPending);
         // Helper: valid internal ID
+        // También acepta empleado_id vacante (vacante-cumbria-N) como posición planificable sin persona asignada
+        const _isVacantePlaceholder = (empId) => String(empId || '').startsWith('vacante-');
         const _hasValidId = (empId) => {
+            if (_isVacantePlaceholder(empId)) return true; // posición vacante: válida para el cuadrante
             const profile = (window.empleadosGlobales || []).find(e => window.normalizeId(e.id) === window.normalizeId(empId) || window.normalizeId(e.nombre) === window.normalizeId(empId));
             const idInt = String(profile?.id_interno || '').trim();
             return /^EMP-\d{4,}$/.test(idInt);
@@ -1656,6 +1659,7 @@ window.renderExcelView = async () => {
         
         const getEmpLabel = (empId) => {
             if (!empId) return 'Desconocido';
+            if (_isVacantePlaceholder(empId)) return '⚠️ SIN NOMBRE'; // posición vacante visual
             const profile = (window.empleadosGlobales || []).find(e => window.normalizeId(e.id) === window.normalizeId(empId) || window.normalizeId(e.nombre) === window.normalizeId(empId));
             if (!profile) return `${empId} [${empId}]`;
             const idInt = profile.id_interno || profile.id || empId;
@@ -1737,7 +1741,7 @@ window.renderExcelView = async () => {
                 if (emp.nombre) _supportStaffSet.add(window.normalizeId(emp.nombre));
             }
         });
-        const _isSupport = (empId) => _supportStaffSet.has(window.normalizeId(empId));
+        const _isSupport = (empId) => !String(empId || '').startsWith('vacante-') && _supportStaffSet.has(window.normalizeId(empId));
         // Pre-compute no-ID set
         const _noIdSet = new Set();
 
