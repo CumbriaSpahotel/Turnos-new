@@ -544,8 +544,8 @@
   <script src="flatpickr_es.js"></script>
   <script src="supabase.js"></script>
   <script src="supabase-config.js?v=13.8"></script>
-  <script src="supabase-dao.js?v=13.25"></script>
-  <script src="turnos-rules.js?v=14.4"></script>
+  <script src="supabase-dao.js?v=13.26"></script>
+  <script src="turnos-rules.js?v=14.6"></script>
   <script src="shift-resolver.js?v=14.4"></script>
   <script src="publication-snapshot.js?v=1.1"></script>
   <script src="virtualizer.js"></script>
@@ -811,6 +811,7 @@
             if (hotel && s.hotel !== hotel) return;
             if (s.hotel.toUpperCase().startsWith('TEST')) return; 
             seen.add(key);
+            if (s.snapshot_json?.metadata?.public_hidden_from && s.semana_inicio >= s.snapshot_json.metadata.public_hidden_from) return;
             selectedByHotel.push(s);
         });
 
@@ -834,6 +835,10 @@
         
         const summaryByMonth = new Map();
         let hasRows = false;
+        if (selectedByHotel.length === 0) {
+            container.innerHTML = '<div style="padding:60px;text-align:center;">No hay turnos publicados para este periodo.</div>';
+            return;
+        }
         selectedByHotel.forEach(s => {
             hasRows = true;
             renderHotelSection(container, s, start, end, summaryByMonth);

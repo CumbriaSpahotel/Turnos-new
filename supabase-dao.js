@@ -1839,6 +1839,13 @@ window.TurnosDB = {
                 const key = `${item.hotel}::${item.semana_inicio}`;
                 if (seenKeys.has(key)) continue;
 
+                // A hidden latest version must not fall back to an older visible version.
+                const hiddenFrom = item.snapshot_json?.metadata?.public_hidden_from;
+                if (hiddenFrom && item.semana_inicio >= hiddenFrom) {
+                    seenKeys.add(key);
+                    continue;
+                }
+
                 // Limpiar artefactos _DUP antes de validar (no rechazar snapshots validos por duplicados residuales)
                 const cleanItem = { ...item };
                 const snapRaw = cleanItem.snapshot_json || {};

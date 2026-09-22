@@ -404,6 +404,7 @@
     };
 
     const getPublicCellDisplay = (cell, options = {}, employee = null, context = null) => {
+        if (cell?.publicHidden === true) return { label: 'No publicado', title: 'Turno oculto', icons: [], code: '—' };
         const compact = !!options.compact;
         const code = String(cell?.code || '').trim().toUpperCase();
         const type = String(cell?.type || '').trim().toUpperCase();
