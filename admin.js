@@ -1612,6 +1612,19 @@ window.goToPreviewRecord = (empId, date) => {
 // ==========================================
 // MÓDULO: MODO EXCEL (RESTAURADO)
 // ==========================================
+// Resolve support status on the shift date, not retroactively from today's profile.
+window.isExcelCoverageSupport = (emp, date) => {
+    const norm = window.normalizeId || ((raw) => String(raw || '').trim().toLowerCase());
+    const identities = [emp?.id_interno, emp?.id, emp?.empleado_id, emp?.nombre].map(norm);
+    if (identities.includes('emp-0006') || identities.includes('natalio')) return false;
+    const day = String(date || '').slice(0, 10);
+    if (identities.includes('emp-0009') || identities.includes('diana')) {
+        return /^\d{4}-\d{2}-\d{2}$/.test(day) && day >= '2027-11-12';
+    }
+    const type = norm(emp?.tipoPersonal || emp?.tipo_personal || emp?.tipo || '');
+    return type === 'apoyo' || type === 'ocasional';
+};
+
 window.renderExcelView = async () => {
     try {
     const container = $('#excel-grid-container');
@@ -1701,7 +1714,7 @@ window.renderExcelView = async () => {
                     if (String(mapped || '').trim() && mapped !== 'Pendiente de asignar') item.assigned++;
                     const code = excelShiftCoverageCode(mapped);
                     if (item[code] !== undefined) item[code]++;
-                    if (row.isSupport && ['M', 'T', 'N'].includes(code)) item.supportWorking++;
+                    if (_isSupport(row.empId, date) && ['M', 'T', 'N'].includes(code)) item.supportWorking++;
                 });
             });
             return Array.from(byDate.entries()).sort((a, b) => a[0].localeCompare(b[0])).map(([date, counts]) => {
@@ -1724,24 +1737,13 @@ window.renderExcelView = async () => {
         let totalNoId = 0;
         // PHASE 1: Group WITHOUT employee filter â€” to compute available employees
         const grouped = {};
-        const _isCoverageSupportProfile = (emp) => {
-            const norm = window.normalizeId || ((raw) => String(raw || '').trim().toLowerCase());
-            const name = norm(emp?.nombre || emp?.nombreVisible || emp?.name || emp?.empleado || '');
-            const id = norm(emp?.id || emp?.empleado_id || emp?.employee_id || '');
-            const internalId = norm(emp?.id_interno || '');
-            if (name === 'natalio' || id === 'natalio' || id === 'emp-0006' || internalId === 'emp-0006') return false;
-            const type = window.normalizeId ? window.normalizeId(emp?.tipoPersonal || emp?.tipo_personal || emp?.tipo || '') : String(emp?.tipoPersonal || emp?.tipo_personal || emp?.tipo || '').trim().toLowerCase();
-            return type === 'apoyo' || type === 'ocasional';
-        };
-        // Pre-compute support staff set for fast lookup
-        const _supportStaffSet = new Set();
+        const _coverageProfiles = new Map();
         (window.empleadosGlobales || []).forEach(emp => {
-            if (_isCoverageSupportProfile(emp)) {
-                _supportStaffSet.add(window.normalizeId(emp.id));
-                if (emp.nombre) _supportStaffSet.add(window.normalizeId(emp.nombre));
-            }
+            [emp.id, emp.nombre, emp.id_interno].filter(Boolean).forEach(id =>
+                _coverageProfiles.set(window.normalizeId(id), emp));
         });
-        const _isSupport = (empId) => !String(empId || '').startsWith('vacante-') && _supportStaffSet.has(window.normalizeId(empId));
+        const _isSupport = (empId, date) => !String(empId || '').startsWith('vacante-') &&
+            window.isExcelCoverageSupport(_coverageProfiles.get(window.normalizeId(empId)), date);
         // Pre-compute no-ID set
         const _noIdSet = new Set();
 
@@ -1753,7 +1755,7 @@ window.renderExcelView = async () => {
             const wStart = window.getWeekStartISO(record.fecha);
             const val = record.turno || 'â€”';
             const isPending = (val === 'â€”' || val === '-' || !val);
-            const isSupport = _isSupport(empId);
+            const isSupport = _isSupport(empId, record.fecha);
             const hasId = _hasValidId(empId);
             if (!hasId) _noIdSet.add(empId);
             // Count pendientes within selected date range
@@ -1879,11 +1881,12 @@ window.renderExcelView = async () => {
                                             const dbVal = row.values[offset];
                                             const mappedVal = TURNO_MAP[dbVal] || dbVal;
                                             const isPendiente = (mappedVal === 'Pendiente de asignar');
-                                            const pendClass = isPendiente ? (row.isSupport ? 'turno-pendiente-soft' : 'turno-pendiente-alerta') : '';
                                             const options = ['Pendiente de asignar', 'Mañana', 'Tarde', 'T/P', 'Noche', 'Descanso'].map(o => `<option value="${o}" ${o === mappedVal ? 'selected' : ''}>${o}</option>`).join('');
                                             const currDate = new Date(row.weekStart); currDate.setDate(currDate.getDate() + offset);
                                             const dStr = window.isoDate(currDate);
-                                            return `<td style="padding:6px; border-bottom:1px solid #f1f5f9; text-align:center;"><select class="turno-edit-select ${pendClass}" data-hotel="${row.hotel}" data-emp="${row.empId}" data-date="${dStr}" data-original="${dbVal}" data-support="${row.isSupport ? '1' : '0'}" data-valid-id="${row.hasValidId ? '1' : '0'}" style="width:110px; padding:6px; border:1px solid #e2e8f0; border-radius:8px; background:#f8fafc; text-align:center; color:#475569; font-size:0.8rem; cursor:pointer;" onchange="window.handleExcelCellChange(this)">${options}</select></td>`;
+                                            const isSupport = _isSupport(row.empId, dStr);
+                                            const pendClass = isPendiente ? (isSupport ? 'turno-pendiente-soft' : 'turno-pendiente-alerta') : '';
+                                            return `<td style="padding:6px; border-bottom:1px solid #f1f5f9; text-align:center;"><select class="turno-edit-select ${pendClass}" data-hotel="${row.hotel}" data-emp="${row.empId}" data-date="${dStr}" data-original="${dbVal}" data-support="${isSupport ? '1' : '0'}" data-valid-id="${row.hasValidId ? '1' : '0'}" style="width:110px; padding:6px; border:1px solid #e2e8f0; border-radius:8px; background:#f8fafc; text-align:center; color:#475569; font-size:0.8rem; cursor:pointer;" onchange="window.handleExcelCellChange(this)">${options}</select></td>`;
                                         }).join('')}</tr>`).join('')}</tbody></table></div></div>`;
         }).join('');
         container.innerHTML += sections || '<div style="padding: 3rem; text-align: center; color: #94a3b8; font-weight:600;">No hay registros que coincidan con los filtros.</div>';
