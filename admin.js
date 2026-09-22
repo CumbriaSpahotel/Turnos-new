@@ -563,6 +563,9 @@ window.checkSupabaseConnection = async () => {
     } catch(e) { console.warn("Error en auto-fix Natalia:", e); }
 })();
 
+window._editingVacationPeriod = null;
+window._visibleVacationPeriods = window._visibleVacationPeriods || [];
+
 window.renderVacations = async () => {
     try {
     const area = $('#vacations-content');
@@ -658,7 +661,7 @@ window.renderVacations = async () => {
             return true;
         });
         visible.sort((a,b) => a.start.localeCompare(b.start));
-        _visibleVacationPeriods = visible;
+        window._visibleVacationPeriods = visible;
 
         // Renderizado de UI
         const years = [];
@@ -888,14 +891,18 @@ window.saveVacation = async (e) => {
             }
         }
 
-        if (_editingVacationPeriod?.id) {
-            await window.TurnosDB.anularEvento(_editingVacationPeriod.id);
+        if (window._editingVacationPeriod?.ids && window._editingVacationPeriod.ids.length > 0) {
+            for (const id of window._editingVacationPeriod.ids) {
+                await window.TurnosDB.anularEvento(id);
+            }
+        } else if (window._editingVacationPeriod?.id) {
+            await window.TurnosDB.anularEvento(window._editingVacationPeriod.id);
         }
 
         await window.TurnosDB.upsertEvento(payload);
         if (window.invalidatePreviewSnapshotCache) window.invalidatePreviewSnapshotCache('vacation-saved');
         
-        statusBox.innerHTML = '<span style="color:#10b981;">âœ“ Vacaciones guardadas</span>';
+        statusBox.innerHTML = '<span style="color:#10b981;">✓ Vacaciones guardadas</span>';
         window.resetVacationForm();
         await window.renderVacations();
 
@@ -915,14 +922,14 @@ window.saveVacation = async (e) => {
         statusBox.innerHTML = `<span style="color:var(--danger);">Error: ${err.message}</span>`;
     } finally {
         btn.disabled = false;
-        btn.textContent = _editingVacationPeriod ? 'Actualizar' : 'Guardar';
+        btn.textContent = window._editingVacationPeriod ? 'Actualizar' : 'Guardar';
     }
 };
 
 window.editVacationByIndex = async (idx) => {
-    const p = _visibleVacationPeriods[idx];
+    const p = (window._visibleVacationPeriods || [])[idx];
     if (!p) return;
-    _editingVacationPeriod = p;
+    window._editingVacationPeriod = p;
     
     $('#newVacEmp').value = p.empId;
     await window.syncVacationFormHotel(); // Esperar a que se cargue el select de sustitutos
@@ -933,29 +940,44 @@ window.editVacationByIndex = async (idx) => {
     $('#newVacSub').value = p.sustituto || '';
     
     // Sincronizar Flatpickr
-    const fp = document.querySelector("#newVacRange")._flatpickr;
+    const fp = document.querySelector("#newVacRange")?._flatpickr;
     if (fp) fp.setDate([p.start, p.end]);
     
     $('#vacFormTitle').textContent = `Editando vacaciones de ${p.empId}`;
     $('#btnCreateVac').textContent = 'Actualizar';
-    $('#btnCancelEditVac').style.display = 'block';
+    const cancelBtn = $('#btnCancelEditVac');
+    if (cancelBtn) cancelBtn.style.display = 'block';
     window.scrollTo({ top: 0, behavior: 'smooth' });
 };
 
 window.resetVacationForm = () => {
-    _editingVacationPeriod = null;
+    window._editingVacationPeriod = null;
     $('#vacCreateForm')?.reset();
-    $('#vacFormTitle').textContent = 'Alta de vacaciones';
-    $('#btnCreateVac').textContent = 'Guardar';
-    $('#btnCancelEditVac').style.display = 'none';
+    if ($('#newVacStart')) $('#newVacStart').value = '';
+    if ($('#newVacEnd')) $('#newVacEnd').value = '';
+    const fp = document.querySelector("#newVacRange")?._flatpickr;
+    if (fp) fp.clear();
+    const title = $('#vacFormTitle');
+    if (title) title.textContent = 'Alta de vacaciones';
+    const btn = $('#btnCreateVac');
+    if (btn) btn.textContent = 'Guardar';
+    const cancelBtn = $('#btnCancelEditVac');
+    if (cancelBtn) cancelBtn.style.display = 'none';
 };
 
 window.cancelVacationByIndex = async (idx) => {
-    const p = _visibleVacationPeriods[idx];
+    const p = (window._visibleVacationPeriods || [])[idx];
     if (!p || !confirm(`¿Anular las vacaciones de ${p.empId}?`)) return;
     try {
-        if (p.id) await window.TurnosDB.anularEvento(p.id);
-        else await window.TurnosDB.deleteVacacionesPeriodo({ empleado_id: p.empId, fecha_inicio: p.start, fecha_fin: p.end });
+        if (p.ids && p.ids.length > 0) {
+            for (const id of p.ids) {
+                await window.TurnosDB.anularEvento(id);
+            }
+        } else if (p.id) {
+            await window.TurnosDB.anularEvento(p.id);
+        } else {
+            await window.TurnosDB.deleteVacacionesPeriodo({ empleado_id: p.empId, fecha_inicio: p.start, fecha_fin: p.end });
+        }
         await window.renderVacations();
     } catch (e) { alert('Error: ' + e.message); }
 };
@@ -11518,7 +11540,7 @@ console.log("[Admin] Validando carga v13.3...");
 });
 
 window.cancelVacationGroup = async (idx) => {
-    const p = _visibleVacationPeriods[idx];
+    const p = (window._visibleVacationPeriods || [])[idx];
     if (!p) return;
     
     const count = p.ids ? p.ids.length : 1;

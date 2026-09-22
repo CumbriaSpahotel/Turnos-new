@@ -184,19 +184,31 @@ console.log("[ShiftResolver] Iniciando carga v5.0...");
         return matches;
     };
 
+    const KNOWN_SHIFT_VALUES = new Set([
+        'm', 't', 'n', 'd', 'p', 'x', 'c',
+        'manana', 'mañana', 'tarde', 'noche', 'descanso', 'partido', 'turno partido', 'refuerzo', 'libre', 'vacaciones', 'baja',
+        '¿?', '?', '—', '-', 'null', 'undefined', 'desconocido', ''
+    ]);
+
+    window.isKnownShiftOrPlaceholder = (val) => {
+        if (!val || typeof val !== 'string') return false;
+        const clean = val.trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+        return KNOWN_SHIFT_VALUES.has(clean) || clean === '' || clean === '¿?' || clean === '?';
+    };
+
     window.getEventOriginCandidates = (evento = {}) => {
         const p = evento.payload || {};
         const tipo = String(evento.tipo || '').toUpperCase();
-        const esCambioPuntual = ['CAMBIO_TURNO', 'CT'].includes(tipo);
+        const esCambio = ['CAMBIO_TURNO', 'CT', 'INTERCAMBIO_TURNO', 'INTERCAMBIO', 'CAMBIO', 'CAMBIO_PUNTUAL'].some(t => tipo.includes(t));
         return [
             evento.empleado_id, evento.empleado_a_id, evento.origen_id,
             evento.empleado, evento.empleado_nombre, evento.nombre,
             evento.titular, evento.titular_id, evento.id_empleado, evento.solicitante,
-            esCambioPuntual ? null : evento.origen,
+            esCambio ? null : evento.origen,
             evento.participante_a, p.empleado_id, p.solicitante,
             p.solicitante_id, p.titular, p.titular_id,
-            esCambioPuntual ? null : p.origen
-        ].filter(Boolean);
+            esCambio ? null : p.origen
+        ].filter(c => c && !window.isKnownShiftOrPlaceholder(c));
     };
 
     window.getEventOriginRaw = (evento = {}) => window.getEventOriginCandidates(evento)[0] || '';
@@ -204,19 +216,19 @@ console.log("[ShiftResolver] Iniciando carga v5.0...");
     window.getEventDestinationCandidates = (evento = {}) => {
         const p = evento.payload || {};
         const tipo = String(evento.tipo || '').toUpperCase();
-        const esCambioPuntual = ['CAMBIO_TURNO', 'CT'].includes(tipo);
+        const esCambio = ['CAMBIO_TURNO', 'CT', 'INTERCAMBIO_TURNO', 'INTERCAMBIO', 'CAMBIO', 'CAMBIO_PUNTUAL'].some(t => tipo.includes(t));
         return [
             evento.empleado_destino_id, evento.empleado_b_id, evento.destino_id,
-            esCambioPuntual ? null : evento.destino,
+            esCambio ? null : evento.destino,
             evento.sustituto_id, evento.empleado_destino, evento.empleado_destino_nombre,
             evento.sustituto, evento.sustituto_nombre, evento.participante_b,
             evento.companero, evento['compañero'], evento.participante_destino, evento.destinatario,
             p.empleado_destino_id, p.empleado_b_id, p.destino_id,
-            esCambioPuntual ? null : p.destino,
+            esCambio ? null : p.destino,
             p.sustituto_id, p.empleado_destino, p.empleado_destino_nombre,
             p.sustituto, p.sustituto_nombre, p.participante_b, p.participante_destino,
             p.companero, p['compa\u00f1ero'], p.companero_id, p.destinatario, p.destinatario_id
-        ].filter(Boolean);
+        ].filter(c => c && !window.isKnownShiftOrPlaceholder(c));
     };
 
     window.getEventDestinationRaw = (evento = {}) => window.getEventDestinationCandidates(evento)[0] || '';
@@ -281,9 +293,11 @@ tipo=${normalized.tipo}`);
             idRaw = String(employeeOrId).trim();
         }
         if (!idRaw) return null;
+        if (window.isKnownShiftOrPlaceholder && window.isKnownShiftOrPlaceholder(idRaw)) return null;
         
         const norm = window.normalizeId ? window.normalizeId(idRaw) : idRaw.toLowerCase().trim();
         if (!norm || norm === '-' || norm === '—') return null;
+        if (window.isKnownShiftOrPlaceholder && window.isKnownShiftOrPlaceholder(norm)) return null;
 
         // 2. Resolve via context.resolveId
         if (context.resolveId) {
@@ -319,7 +333,9 @@ tipo=${normalized.tipo}`);
                 return norm;
             }
             
-            console.warn('[IDENTITY_RESOLUTION_FAILED] Unknown employee identity raw:', idRaw, 'normalized:', norm);
+            if (!window.isKnownShiftOrPlaceholder || !window.isKnownShiftOrPlaceholder(norm)) {
+                console.warn('[IDENTITY_RESOLUTION_FAILED] Unknown employee identity raw:', idRaw, 'normalized:', norm);
+            }
             return null;
         }
 
