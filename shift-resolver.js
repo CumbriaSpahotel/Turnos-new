@@ -926,11 +926,14 @@ tipo=${normalized.tipo}`);
         const eventIndex = { porEmpleadoFecha: new Map(), porFecha: new Map(), porHotelFecha: new Map() };
         employees.forEach(emp => {
             const id = window.normalizeId(emp.id);
-            const nombre = window.normalizeId(emp.nombre);
-            if (id && nombre) baseIndex.aliasesEmpleado.set(nombre, id);
+            if (!id) return;
+            [emp.id, emp.nombre, emp.id_interno, emp.uuid].filter(Boolean).forEach(alias => {
+                baseIndex.aliasesEmpleado.set(window.normalizeId(alias), id);
+            });
         });
         baseRows.forEach(row => {
-            const empId = window.normalizeId(row.empleadoId || row.empleado_id);
+            const rawId = window.normalizeId(row.empleadoId || row.empleado_id);
+            const empId = baseIndex.aliasesEmpleado.get(rawId) || rawId;
             const date = window.normalizeDate(row.fecha);
             if (empId && date) baseIndex.porEmpleadoFecha.set(`${empId}_${date}`, row.turno);
         });

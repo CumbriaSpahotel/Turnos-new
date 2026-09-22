@@ -9592,7 +9592,6 @@ window.loadEmployeeProfileBaseRows = async (empId, refISO) => {
     );
     if (!profile) return [];
 
-    const hotel = profile.hotel_id || profile.hotel || null;
     const refDate = new Date(`${refISO}T12:00:00`);
     const selectedYear = Number(window._employeeProfileYear || refDate.getFullYear());
     const yearsToLoad = [refDate.getFullYear(), selectedYear].filter(Number.isFinite);
@@ -9601,10 +9600,9 @@ window.loadEmployeeProfileBaseRows = async (empId, refISO) => {
     const startISO = `${startYear}-01-01`;
     const endISO = `${endYear}-12-31`;
 
-    let rows = await window.TurnosDB.fetchTurnosBase(startISO, endISO, hotel);
-    if ((!Array.isArray(rows) || rows.length === 0) && hotel) {
-        rows = await window.TurnosDB.fetchTurnosBase(startISO, endISO, null);
-    }
+    // The current employee hotel must not hide shifts from before a transfer.
+    // Keep other employees too: the resolver needs their shifts for substitutions.
+    const rows = await window.TurnosDB.fetchTurnosBase(startISO, endISO, null);
     window._employeeProfileBaseRows = Array.isArray(rows) ? rows : [];
 
     // Cargar eventos del año seleccionado y del año del mes actual
@@ -9636,6 +9634,19 @@ window.loadEmployeeProfileBaseRows = async (empId, refISO) => {
     }
 
     return window._employeeProfileBaseRows;
+};
+
+window.employeeProfileHotelsByDate = (profile, rows) => {
+    const norm = window.normalizeId;
+    const keys = new Set([profile.id, profile.nombre, profile.id_interno, profile.uuid].filter(Boolean).map(norm));
+    const hotels = new Map();
+    (rows || []).forEach(row => {
+        if (!keys.has(norm(row.empleado_id || row.empleadoId))) return;
+        const date = String(row.fecha || '').slice(0, 10);
+        const hotel = row.hotel_id || row.hotel;
+        if (date && hotel) hotels.set(date, hotel);
+    });
+    return hotels;
 };
 
 window.buildEmployeeProfileModel = (empId, refISO) => {
@@ -9679,6 +9690,9 @@ window.buildEmployeeProfileModel = (empId, refISO) => {
     });
     const eventos = [...Array.from(eventsById.values()), ...rawEventsWithoutId];
     let baseIndex = null;
+    let profileBaseRowsFlat = [];
+    const hotelsByDate = window.employeeProfileHotelsByDate(profile, window._employeeProfileBaseRows);
+    const hotelForDate = date => hotelsByDate.get(date) || hotelPrincipal;
     const employeeKeys = new Set([
         window.normalizeId(profile.id),
         window.normalizeId(profile.nombre),
@@ -9789,7 +9803,7 @@ window.buildEmployeeProfileModel = (empId, refISO) => {
         const res = window.resolveEmployeeDay({
             empleado: profile,
             empleadoId: emp.id,
-            hotel: hotelPrincipal,
+            hotel: hotelForDate(iso),
             fecha: iso,
             eventos,
             baseIndex,
@@ -9799,6 +9813,7 @@ window.buildEmployeeProfileModel = (empId, refISO) => {
         calendario.push({
             fecha: iso,
             ...res,
+            hotel: res.hotel || hotelForDate(iso),
             detalle: res,
             outsideMonth: curr.getMonth() !== refDate.getMonth()
         });
@@ -9847,7 +9862,7 @@ window.buildEmployeeProfileModel = (empId, refISO) => {
         const res = window.resolveEmployeeDay({
             empleado: profile,
             empleadoId: emp.id,
-            hotel: hotelPrincipal,
+            hotel: hotelForDate(iso),
             fecha: iso,
             eventos,
             baseIndex,
@@ -9857,6 +9872,7 @@ window.buildEmployeeProfileModel = (empId, refISO) => {
         return {
             fecha: iso,
             ...res,
+            hotel: res.hotel || hotelForDate(iso),
             detalle: res
         };
     };
@@ -10959,7 +10975,7 @@ window.renderEmployeeProfile = () => {
     } else if (currentTab === 'profile') {
         tabContent = window.renderEmployeeProfileEditForm(emp, model);
     } else if (currentTab === 'turns') {
-        const tableRows = monthRows.map(day => { const resolvedLabel = window.employeeShiftLabel(day).replace('&mdash;', 'â€”'); const finalMeta = window.employeeProfileShiftCodeMeta(resolvedLabel); const baseMeta = window.employeeProfileShiftCodeMeta(day.turnoBase || day.detalle?.turnoBase); return { fecha: day.fecha, main: `<strong>${escapeHtml(day.diaSemana || new Date(`${day.fecha}T12:00:00`).toLocaleDateString('es-ES', { weekday: 'short' }))}</strong> · ${escapeHtml(emp.hotel || model.hotelActual || 'No informado')}`, secondary: `Base: ${escapeHtml(baseMeta.label || baseMeta.code)} · Resuelto: ${escapeHtml(finalMeta.label || resolvedLabel)}${day.cambio ? ' 🔄' : ''}${finalMeta.code === 'N' ? ' 🌙' : ''}${day.sustitucion ? ' · Sustitución' : ''}${day.incidencia ? ` · ${escapeHtml(window.employeeProfileEventLabel(day.incidencia))}` : ''}`, badge: escapeHtml(day.detalle?.origen || day.incidencia?.tipo || (day.sustitucion ? 'sustitucion' : 'base')) }; });
+        const tableRows = monthRows.map(day => { const resolvedLabel = window.employeeShiftLabel(day).replace('&mdash;', 'â€”'); const finalMeta = window.employeeProfileShiftCodeMeta(resolvedLabel); const baseMeta = window.employeeProfileShiftCodeMeta(day.turnoBase || day.detalle?.turnoBase); return { fecha: day.fecha, main: `<strong>${escapeHtml(day.diaSemana || new Date(`${day.fecha}T12:00:00`).toLocaleDateString('es-ES', { weekday: 'short' }))}</strong> · ${escapeHtml(day.hotel || day.detalle?.hotel || model.hotelActual || 'No informado')}`, secondary: `Base: ${escapeHtml(baseMeta.label || baseMeta.code)} · Resuelto: ${escapeHtml(finalMeta.label || resolvedLabel)}${day.cambio ? ' 🔄' : ''}${finalMeta.code === 'N' ? ' 🌙' : ''}${day.sustitucion ? ' · Sustitución' : ''}${day.incidencia ? ` · ${escapeHtml(window.employeeProfileEventLabel(day.incidencia))}` : ''}`, badge: escapeHtml(day.detalle?.origen || day.incidencia?.tipo || (day.sustitucion ? 'sustitucion' : 'base')) }; });
         tabContent = `<div style="display:grid; grid-template-columns:1.2fr 0.9fr; gap:18px; align-items:start;"><section class="emp-card glass" style="padding:20px; border-radius:18px; border:1px solid var(--border);"><div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;"><div><h3 style="margin:0; font-size:0.9rem; font-weight:800;">Turnos del periodo</h3><div style="font-size:0.72rem; color:var(--text-dim); font-weight:700; margin-top:4px;">Navegacion mensual</div></div><div style="display:flex; gap:8px;"><button onclick="window.moveEmployeeProfilePeriod(-1)" class="btn-premium" aria-label="Mes anterior" title="Mes anterior" style="padding:8px 12px; min-width:118px; border-radius:12px; font-weight:800;"><i class="fas fa-chevron-left" style="margin-right:8px;"></i>Anterior</button><button onclick="window.moveEmployeeProfilePeriod(1)" class="btn-premium" aria-label="Mes siguiente" title="Mes siguiente" style="padding:8px 12px; min-width:118px; border-radius:12px; font-weight:800;">Siguiente<i class="fas fa-chevron-right" style="margin-left:8px;"></i></button></div></div><div style="margin-bottom:12px; font-size:0.8rem; color:var(--accent); font-weight:800; text-transform:capitalize;">${titlePeriod}</div>${renderRowsTable(tableRows, 'No hay turnos para este periodo.')}</section><section class="emp-card glass" style="padding:20px; border-radius:18px; border:1px solid var(--border);"><h3 style="margin:0 0 14px; font-size:0.9rem; font-weight:800;">Calendario</h3>${window.renderEmployeeProfileCalendar(model)}</section></div>`;
     } else if (currentTab === 'vacations') {
         const vacRows = (model.yearGroupedVacs || []).sort((a, b) => String(a.fecha_inicio || '').localeCompare(String(b.fecha_inicio || ''))).map(ev => {
