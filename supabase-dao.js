@@ -1791,7 +1791,7 @@ window.TurnosDB = {
             }
 
             // Regla específica para filas informativas de ausencia
-            if (emp.rowType === 'ausencia_informativa' && !hasAnyIncidenceInRow) return false;
+            if (emp.rowType === 'ausencia_informativa' && !hasAnyIncidenceInRow && !Object.values(cells).some(cell => cell.publicHidden === true)) return false;
         }
 
         return true;
