@@ -13,6 +13,9 @@ window.TurnosDB = {
     _channel: null,
     _syncTTL: 5 * 60 * 1000, 
     client: window.supabase || null, // Se asigna automáticamente si ya existe
+    _cachedHotels: null,
+    _cachedEmpleados: null,
+    _cachedEmpleadosTimestamp: 0,
 
     // --- UTILIDADES ---
     normalizeDate(d) {
@@ -194,8 +197,7 @@ window.TurnosDB = {
             const cache = window.localforage ? await window.localforage.getItem(cacheKey) : null;
 
             // TEMP DEBUG (OBLIGATORIO V8.2)
-            if (false && cache && (now - cache.timestamp < this._syncTTL)) {
-                console.log("DAO: Cache Hit", cacheKey);
+            if (cache && (now - cache.timestamp < this._syncTTL)) {
                 this.initRealtime();
                 return cache.raw;
             }
@@ -1037,30 +1039,21 @@ window.TurnosDB = {
     },
 
     async getHotels() {
-        const client = window.supabase;
-        try {
-            // Unificamos hoteles de la base de datos + lista base fija para evitar que desaparezcan
-            const baseHotels = ['Cumbria Spa&Hotel', 'Sercotel Guadiana'];
-            
-            const { data, error } = await client
-                .from('turnos')
-                .select('hotel_id')
-                .not('hotel_id', 'is', null);
-            
-            if (error) throw error;
-            
-            const dbHotels = (data || []).map(h => h.hotel_id);
-            const unique = Array.from(new Set([...baseHotels, ...dbHotels])).sort();
-            return unique;
-        } catch (err) {
-            console.error("DAO Error (getHotels):", err);
-            return ['Cumbria Spa&Hotel', 'Sercotel Guadiana'];
+        if (this._cachedHotels && this._cachedHotels.length > 0) {
+            return this._cachedHotels;
         }
+        const baseHotels = ['Cumbria Spa&Hotel', 'Sercotel Guadiana'];
+        this._cachedHotels = baseHotels;
+        return baseHotels;
     },
 
     // --- GESTIÓN DE EMPLEADOS (FICHAS) ---
-    async getEmpleados() {
+    async getEmpleados(forceRefresh = false) {
         const client = window.supabase;
+        const now = Date.now();
+        if (!forceRefresh && this._cachedEmpleados && (now - this._cachedEmpleadosTimestamp < 60000)) {
+            return this._cachedEmpleados;
+        }
         try {
             // Intentar con orden, si falla (400) es que la columna no existe aún
             const { data, error } = await client.from('empleados').select('*').order('orden', { ascending: true });
@@ -1070,18 +1063,26 @@ window.TurnosDB = {
                     console.warn("Columna 'orden' no encontrada (42703), usando orden alfabético.");
                     const { data: fallback, error: err2 } = await client.from('empleados').select('*').order('nombre');
                     if (err2) throw err2;
-                    return fallback || [];
+                    this._cachedEmpleados = fallback || [];
+                    this._cachedEmpleadosTimestamp = now;
+                    window.empleadosGlobales = this._cachedEmpleados;
+                    return this._cachedEmpleados;
                 }
                 throw error;
             }
-            return data || [];
+            this._cachedEmpleados = data || [];
+            this._cachedEmpleadosTimestamp = now;
+            window.empleadosGlobales = this._cachedEmpleados;
+            return this._cachedEmpleados;
         } catch (err) {
             console.error("DAO Error (getEmpleados):", err);
-            return [];
+            return this._cachedEmpleados || [];
         }
     },
 
     async upsertEmpleado(empData) {
+        this._cachedEmpleados = null;
+        this._cachedEmpleadosTimestamp = 0;
         const client = window.supabase;
         try {
             if (!empData.id) throw new Error("ID de empleado obligatorio");

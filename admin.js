@@ -6231,19 +6231,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (excelSel) excelSel.innerHTML = `<option value="all">Filtro por Hotel: Ver Todos</option>` + hotels.map(h => `<option value="${h}">${h}</option>`).join('');
     const excelMonth = $('#excelMonth');
     if (excelMonth && !excelMonth.value) excelMonth.value = (window.isoDate(new Date()) || '').slice(0, 7);
-    window.renderPreview();
 
-    // Cargar empleados inicialmente
-    if (window.populateEmployees) window.populateEmployees();
-
-    // Opcional: recargar empleados al hacer click en el menú "Empleados"
-    document.querySelectorAll('.menu a').forEach(a => {
-        a.addEventListener('click', (e) => {
-            if (a.getAttribute('href') === '#section-employees') {
-                if (window.populateEmployees) window.populateEmployees();
-            }
-        });
-    });
+    // Carga perezosa: renderizar de inmediato el Dashboard sin esperar ni cargar vistas ocultas
+    const activeSection = document.querySelector('.section.active');
+    if (!activeSection || activeSection.id === 'section-home') {
+        if (window.renderDashboard) window.renderDashboard();
+    }
 });
 
 function escapeHtml(value) {
@@ -8918,16 +8911,14 @@ window.renderDashboard = async () => {
     const today = window.isoDate(new Date());
     
     try {
-        const [eventos, peticiones, empleados, turnosHoy] = await Promise.all([
+        // Carga rápida inicial en paralelo (turnos hoy, eventos activos, peticiones, empleados y logs recientes)
+        const [eventos, peticiones, empleados, turnosHoy, logs] = await Promise.all([
             window.TurnosDB.fetchEventos(window.addIsoDays(today, -30), window.addIsoDays(today, 60)),
             window.TurnosDB.fetchPeticiones(),
             window.TurnosDB.getEmpleados(),
-            window.TurnosDB.fetchRango(today, today)
+            window.TurnosDB.fetchRango(today, today),
+            window.TurnosDB.fetchLogs ? window.TurnosDB.fetchLogs(20).catch(() => []) : Promise.resolve([])
         ]);
-        console.log('EVENTOS CARGADOS', eventos.length);
-        if (window.DEBUG_MODE) {
-            console.log('[EVENTOS SAMPLE]', eventos.slice(0, 5));
-        }
 
         const idMap = new Map();
         const nameToIds = new Map();
@@ -8961,181 +8952,8 @@ window.renderDashboard = async () => {
         if ($('#stat-integrity-score')) $('#stat-integrity-score').textContent = `${integrity}%`;
         if ($('#stat-panel-version')) $('#stat-panel-version').textContent = typeof window.getAdminPanelVersion === 'function' ? window.getAdminPanelVersion() : 'v?';
 
-        // --- BLOQUE B: RIESGO OPERATIVO (AGRUPADO) ---
-        const riskContainer = $('#risk-alerts-container');
-        const counts = { critical: conflicts.CRITICAL.length, warning: conflicts.WARNING.length, info: conflicts.INFO.length };
-        
-        const allRisks = [
-            ...conflicts.CRITICAL.map(c => ({ ...c, severity: 'critical' })),
-            ...conflicts.WARNING.map(c => ({ ...c, severity: 'warning' })),
-            ...conflicts.INFO.map(c => ({ ...c, severity: 'info' }))
-        ];
-        const pendingAssignments = window.getCurrentYearPendingAssignments
-            ? await window.getCurrentYearPendingAssignments(new Date().getFullYear())
-            : { count: 0, items: [] };
-        window._dashboardPendingAssignments = pendingAssignments.items || [];
-        if (pendingAssignments.count > 0) {
-            const sample = pendingAssignments.items.slice(0, 6)
-                .map(item => `${window.fmtDateLegacy(item.fecha)} ${item.empleado}`)
-                .join(' · ');
-            allRisks.push({
-                severity: 'warning',
-                type: 'PENDING_ASSIGNMENTS_YEAR',
-                title: 'Días pendientes de asignar',
-                desc: `${pendingAssignments.count} día(s) sin turno asignado en ${pendingAssignments.year}. ${sample}${pendingAssignments.count > 6 ? ' · ...' : ''}`,
-                action: { fn: `window.goToPendingAssignmentsExcel()`, label: 'Ir al Excel' }
-            });
-            counts.warning++;
-        }
-
-        // Auditoría de ID Interno (Fase 1)
-        const coverageRisks = window.getDailyShiftCoverageRisks
-            ? await window.getDailyShiftCoverageRisks(today, window.addIsoDays ? window.addIsoDays(today, 60) : today)
-            : [];
-        coverageRisks.forEach(risk => {
-            allRisks.push(risk);
-            counts[risk.severity] = (counts[risk.severity] || 0) + 1;
-        });
-
-        const empsSinIdInterno = (empleados || []).filter(e => (!e.id_interno || String(e.id_interno).trim() === '') && e.activo !== false && e.id !== '¿?');
-        if (empsSinIdInterno.length > 0) {
-            allRisks.push({
-                severity: 'info',
-                type: 'SIN_ID_INTERNO',
-                empId: empsSinIdInterno[0].id || empsSinIdInterno[0].nombre,
-                title: 'Mapeo de ID Interno',
-                desc: `Faltan asignar ${empsSinIdInterno.length} IDs internos persistentes.`
-            });
-        }
-
-        // Plaza Pendiente (¿?)
-        const plazaPendiente = (empleados || []).find(e => e.id === '¿?' && e.activo !== false);
-        if (plazaPendiente) {
-            allRisks.push({
-                severity: 'info',
-                type: 'PLAZA_PENDIENTE',
-                empId: '¿?',
-                title: 'Plaza Pendiente de Definir',
-                desc: `Existe un registro provisional (${plazaPendiente.id}) para planificación de coberturas.`
-            });
-        }
-
-        // --- HEALTH CHECK GLOBAL: autonomous, no dependency on _previewDate ---
-        const globalStatus = await window.getGlobalPendingPublicationStatus();
-        // Store on window so KPI counter can use the same result
-        window.__lastGlobalStatus = globalStatus;
-
-        // Merge outdated snapshots as CRITICAL risks
-        (globalStatus.outdatedSnapshots || []).forEach(os => {
-            const snapDate = os.snapshotDate ? new Date(os.snapshotDate).toLocaleDateString() : '?';
-            const msg = `Snapshot desactualizado: ${os.hotel} semana ${os.weekStart} â€” publicado ${snapDate} pero hay ${os.pendingCount} evento(s) activo(s) posteriores. Debe republicarse.`;
-            allRisks.push({ severity: 'critical', type: 'SNAPSHOT_OUTDATED', title: 'Snapshot Desactualizado',
-                desc: msg,
-                action: { fn: `window.goToRiskPreview('${os.hotel}', '${os.weekStart}')`, label: 'Ir a Vista Previa' }
-            });
-            counts.critical++;
-        });
-
-        // Weeks with events/turnos but NO snapshot at all
-        (globalStatus.byHotelWeek || []).filter(b => !b.snapshotExists).forEach(b => {
-            const formattedWeek = window.formatDateES ? window.formatDateES(b.weekStart) : b.weekStart;
-            allRisks.push({
-                severity: 'warning',
-                type: 'NO_SNAPSHOT',
-                title: 'Semana sin publicar',
-                desc: `${b.hotel} (Semana del ${formattedWeek}) tiene turnos cargados pero aún no se han publicado a los empleados.`,
-                action: { fn: `window.goToRiskPreview('${b.hotel}', '${b.weekStart}')`, label: 'Ir a Vista Previa' }
-            });
-            counts.warning++;
-        });
-
-        // Also run validateSystemHealth for visual rules, JS errors, required functions
-        // Use _previewDate if available for stale-snapshot check; global covers pending changes
-        const _healthWeekStart = window._previewDate
-            ? (window.isoDate ? window.isoDate(window.getMonday(new Date(window._previewDate + 'T12:00:00'))) : window._previewDate)
-            : today;
-        const _healthWeekEnd = window.addIsoDays ? window.addIsoDays(_healthWeekStart, 6) : _healthWeekStart;
-        const systemHealth = await window.validateSystemHealth(_healthWeekStart, _healthWeekEnd);
-        // Only carry through non-pending-change criticals/warnings (global status already covers those)
-        systemHealth.criticals.filter(m => !m.includes('Snapshot desactualizado') && !m.includes('cambio(s) pendiente')).forEach(msg => {
-            allRisks.push({ severity: 'critical', type: 'SYSTEM_HEALTH', title: 'Problema del Sistema', desc: msg });
-            counts.critical++;
-        });
-        systemHealth.warnings.filter(m => !m.includes('Snapshot desactualizado') && !m.includes('cambio(s) pendiente')).forEach(msg => {
-            allRisks.push({ severity: 'warning', type: 'SYSTEM_HEALTH', title: 'Aviso del Sistema', desc: msg });
-            counts.warning++;
-        });
-        console.log('[DASHBOARD_RISK_PENDING]', { criticalCount: counts.critical, warningCount: counts.warning,
-            outdatedSnapshots: globalStatus.totalOutdatedSnapshots, pendingChanges: globalStatus.totalPendingChanges });
-
-        if (riskContainer) {
-            if (allRisks.length === 0) {
-                riskContainer.innerHTML = `
-                    <div class="alert-card severity-info" style="cursor: default; opacity: 0.8;">
-                        <div class="alert-icon"><i class="fas fa-check-double"></i></div>
-                        <div class="alert-content">
-                            <div class="alert-title">Operación Estable</div>
-                            <div class="alert-desc">No se han detectado conflictos operativos ni riesgos en el sistema.</div>
-                        </div>
-                    </div>
-                `;
-            } else {
-                riskContainer.innerHTML = allRisks.map(r => `
-                    <div class="alert-card severity-${r.severity}">
-                        <div class="alert-icon">
-                            <i class="fas ${r.severity === 'critical' ? 'fa-exclamation-triangle' : (r.severity === 'warning' ? 'fa-exclamation-circle' : 'fa-info-circle')}"></i>
-                        </div>
-                        <div class="alert-content">
-                            <div class="alert-title">${escapeHtml(r.title)}</div>
-                            <div class="alert-desc">${escapeHtml(r.desc)}</div>
-                        </div>
-                        <div class="alert-actions">
-                            <button class="alert-btn primary" onclick="${r.action ? r.action.fn : (r.empId ? `window.goToOperationalIssue('${r.empId}', '${r.fecha || ''}', '${r.type || ''}')` : `window.switchSection('preview')`)}">
-                                ${r.action ? r.action.label : 'Ver Detalle'}
-                            </button>
-                        </div>
-                    </div>
-                `).join('');
-            }
-        }
-
-        // Badges y KPIs nuevos
-        if ($('#count-critical')) $('#count-critical').textContent = `${counts.critical} Críticos`;
-        if ($('#count-warning')) $('#count-warning').textContent = `${counts.warning} Avisos`;
-        if ($('#count-info')) $('#count-info').textContent = `${counts.info} Info`;
-
-        if ($('#stat-pending-publish')) {
-            const _finalCount = (window.__lastGlobalStatus) ? window.__lastGlobalStatus.totalPendingChanges : 0;
-            $('#stat-pending-publish').textContent = _finalCount;
-            $('#stat-pending-publish').style.color = _finalCount > 0 ? '#ef4444' : 'inherit';
-        }
-
-        if ($('#stat-published-until')) {
-            const pubDate = window.__lastGlobalStatus ? window.__lastGlobalStatus.globalPublishedUntil : null;
-            let formattedPub = 'Sin cobertura';
-            if (pubDate) {
-                const parts = String(pubDate).split('-');
-                if (parts.length === 3) {
-                    const monthsShort = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
-                    const monthIdx = parseInt(parts[1], 10) - 1;
-                    const monthStr = monthsShort[monthIdx] || parts[1];
-                    formattedPub = `${parts[2].padStart(2, '0')} ${monthStr} ${parts[0]}`;
-                } else {
-                    formattedPub = pubDate;
-                }
-            }
-            const el = $('#stat-published-until');
-            el.textContent = formattedPub;
-            el.style.fontSize = '1.1rem';
-            el.style.whiteSpace = 'nowrap';
-        }
-
-        if ($('#stat-critical-count')) {
-            $('#stat-critical-count').textContent = counts.critical;
-            $('#stat-critical-count').style.color = counts.critical > 0 ? '#ef4444' : '#10b981';
-        }
+        const pendingReqs = (peticiones || []).filter(p => p.estado === 'pendiente' || p.estado === 'PENDIENTE').length;
         if ($('#stat-pending-requests')) {
-            const pendingReqs = (peticiones || []).filter(p => p.estado === 'pendiente' || p.estado === 'PENDIENTE').length;
             $('#stat-pending-requests').textContent = pendingReqs;
             $('#stat-pending-requests').style.color = pendingReqs > 0 ? '#f59e0b' : 'inherit';
         }
@@ -9169,24 +8987,16 @@ window.renderDashboard = async () => {
         const timeline = $('#dashboard-timeline');
         if (timeline) {
             try {
-                const logs = await window.TurnosDB.fetchLogs(20);
-                
-                // Calcular actividad hoy
                 const todayISO = new Date().toISOString().split('T')[0];
-                const todayLogs = (logs || []).filter(l => l.fecha && l.fecha.startsWith(todayISO)).length;
-                // Bajas activas: count events whose period covers today (not finalized/past)
-                try {
-                    const evts = await window.TurnosDB.fetchEventos();
-                    const bajaTipos = ['BAJA','PERM','PERMISO','IT','BAJA_MEDICA','FORMACION','AUSENCIA','OTRO'];
-                    const activeBajas = (evts || []).filter(e => {
-                        if (!bajaTipos.includes((e.tipo || '').toUpperCase())) return false;
-                        const est = (e.estado || 'activo').toLowerCase();
-                        if (est === 'anulado' || est === 'rechazado') return false;
-                        const fin = e.fecha_fin || e.fecha_inicio;
-                        return e.fecha_inicio <= todayISO && fin >= todayISO;
-                    }).length;
-                    if ($('#stat-today-activity')) $('#stat-today-activity').textContent = activeBajas;
-                } catch(be) { console.warn('[Dashboard] Error counting bajas:', be); }
+                const bajaTipos = ['BAJA','PERM','PERMISO','IT','BAJA_MEDICA','FORMACION','AUSENCIA','OTRO'];
+                const activeBajas = (eventos || []).filter(e => {
+                    if (!bajaTipos.includes((e.tipo || '').toUpperCase())) return false;
+                    const est = (e.estado || 'activo').toLowerCase();
+                    if (est === 'anulado' || est === 'rechazado') return false;
+                    const fin = e.fecha_fin || e.fecha_inicio;
+                    return e.fecha_inicio <= todayISO && fin >= todayISO;
+                }).length;
+                if ($('#stat-today-activity')) $('#stat-today-activity').textContent = activeBajas;
 
                 if (!logs || logs.length === 0) {
                     timeline.innerHTML = '<div style="padding:40px; text-align:center; opacity:0.5; font-size:0.9rem;"><i class="fas fa-history fa-2x" style="display:block; margin-bottom:12px;"></i>Sin actividad reciente.</div>';
@@ -9199,7 +9009,7 @@ window.renderDashboard = async () => {
                                 </div>
                                 <div>
                                     <div style="font-weight: 800; color: #334155; font-size: 0.9rem;">${log.revertida ? 'Publicación Revertida' : 'Sincronización Cloud'}</div>
-                                    <div style="font-size: 0.75rem; color: #64748b;">${log.cambios_totales} turnos â‚¬Â¢ por ${log.usuario || 'Admin'} â‚¬Â¢ ID: ${log.id.slice(0,8)}</div>
+                                    <div style="font-size: 0.75rem; color: #64748b;">${log.cambios_totales} turnos • por ${log.usuario || 'Admin'} • ID: ${log.id ? log.id.slice(0,8) : '-'}</div>
                                 </div>
                             </div>
                             <div style="text-align: right;">
@@ -9215,6 +9025,83 @@ window.renderDashboard = async () => {
             }
         }
 
+        // --- BLOQUE B: RIESGO OPERATIVO (FASE INMEDIATA) ---
+        let allRisks = [
+            ...conflicts.CRITICAL.map(c => ({ ...c, severity: 'critical' })),
+            ...conflicts.WARNING.map(c => ({ ...c, severity: 'warning' })),
+            ...conflicts.INFO.map(c => ({ ...c, severity: 'info' }))
+        ];
+
+        const empsSinIdInterno = (empleados || []).filter(e => (!e.id_interno || String(e.id_interno).trim() === '') && e.activo !== false && e.id !== '¿?');
+        if (empsSinIdInterno.length > 0) {
+            allRisks.push({
+                severity: 'info',
+                type: 'SIN_ID_INTERNO',
+                empId: empsSinIdInterno[0].id || empsSinIdInterno[0].nombre,
+                title: 'Mapeo de ID Interno',
+                desc: `Faltan asignar ${empsSinIdInterno.length} IDs internos persistentes.`
+            });
+        }
+
+        const plazaPendiente = (empleados || []).find(e => e.id === '¿?' && e.activo !== false);
+        if (plazaPendiente) {
+            allRisks.push({
+                severity: 'info',
+                type: 'PLAZA_PENDIENTE',
+                empId: '¿?',
+                title: 'Plaza Pendiente de Definir',
+                desc: `Existe un registro provisional (${plazaPendiente.id}) para planificación de coberturas.`
+            });
+        }
+
+        const renderRiskCards = (risks) => {
+            const riskContainer = $('#risk-alerts-container');
+            const counts = { critical: 0, warning: 0, info: 0 };
+            risks.forEach(r => { counts[r.severity] = (counts[r.severity] || 0) + 1; });
+
+            if (riskContainer) {
+                if (risks.length === 0) {
+                    riskContainer.innerHTML = `
+                        <div class="alert-card severity-info" style="cursor: default; opacity: 0.8;">
+                            <div class="alert-icon"><i class="fas fa-check-double"></i></div>
+                            <div class="alert-content">
+                                <div class="alert-title">Operación Estable</div>
+                                <div class="alert-desc">No se han detectado conflictos operativos ni riesgos en el sistema.</div>
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    riskContainer.innerHTML = risks.map(r => `
+                        <div class="alert-card severity-${r.severity}">
+                            <div class="alert-icon">
+                                <i class="fas ${r.severity === 'critical' ? 'fa-exclamation-triangle' : (r.severity === 'warning' ? 'fa-exclamation-circle' : 'fa-info-circle')}"></i>
+                            </div>
+                            <div class="alert-content">
+                                <div class="alert-title">${escapeHtml(r.title)}</div>
+                                <div class="alert-desc">${escapeHtml(r.desc)}</div>
+                            </div>
+                            <div class="alert-actions">
+                                <button class="alert-btn primary" onclick="${r.action ? r.action.fn : (r.empId ? `window.goToOperationalIssue('${r.empId}', '${r.fecha || ''}', '${r.type || ''}')` : `window.switchSection('preview')`)}">
+                                    ${r.action ? r.action.label : 'Ver Detalle'}
+                                </button>
+                            </div>
+                        </div>
+                    `).join('');
+                }
+            }
+
+            if ($('#count-critical')) $('#count-critical').textContent = `${counts.critical} Críticos`;
+            if ($('#count-warning')) $('#count-warning').textContent = `${counts.warning} Avisos`;
+            if ($('#count-info')) $('#count-info').textContent = `${counts.info} Info`;
+            if ($('#stat-critical-count')) {
+                $('#stat-critical-count').textContent = counts.critical;
+                $('#stat-critical-count').style.color = counts.critical > 0 ? '#ef4444' : '#10b981';
+            }
+        };
+
+        // Renderizado inicial inmediato
+        renderRiskCards(allRisks);
+
         // --- 4. ESTADO DE SINCRONIZACIÓN ---
         const syncStatus = window.TurnosDB._channel?.status || (window.realtimeActivo ? 'ok' : 'connecting');
         if ($('#sync-cloud-status')) {
@@ -9222,19 +9109,108 @@ window.renderDashboard = async () => {
             $('#sync-cloud-status').style.color = (syncStatus === 'ok' || syncStatus === 'SUBSCRIBED') ? '#10b981' : '#f59e0b';
         }
         if ($('#sync-last-time')) $('#sync-last-time').textContent = new Date().toLocaleTimeString();
-        if ($('#sync-pending-changes')) {
-            // Use global status (same source as risk block) â€” no dependency on _previewDate
-            const _pendingCount = window.__lastGlobalStatus
-                ? window.__lastGlobalStatus.totalPendingChanges
-                : 0;
-            $('#sync-pending-changes').textContent = _pendingCount;
-            $('#sync-pending-changes').style.color = _pendingCount > 0 ? '#ef4444' : 'inherit';
-            console.log('[DASHBOARD_KPI_PENDING]', {
-                value: _pendingCount,
-                source: 'getGlobalPendingPublicationStatus',
-                scope: 'global'
-            });
-        }
+
+        // --- FASE 2 ASÍNCRONA: ANÁLISIS DE RIESGOS A LARGO PLAZO Y PUBLICACIÓN GLOBAL ---
+        (async () => {
+            try {
+                const [pendingAssignments, coverageRisks, globalStatus] = await Promise.all([
+                    window.getCurrentYearPendingAssignments ? window.getCurrentYearPendingAssignments(new Date().getFullYear()) : Promise.resolve({ count: 0, items: [] }),
+                    window.getDailyShiftCoverageRisks ? window.getDailyShiftCoverageRisks(today, window.addIsoDays ? window.addIsoDays(today, 60) : today) : Promise.resolve([]),
+                    window.getGlobalPendingPublicationStatus ? window.getGlobalPendingPublicationStatus() : Promise.resolve({ totalPendingChanges: 0, totalOutdatedSnapshots: 0, outdatedSnapshots: [], byHotelWeek: [] })
+                ]);
+
+                window.__lastGlobalStatus = globalStatus;
+                window._dashboardPendingAssignments = pendingAssignments.items || [];
+
+                if (pendingAssignments.count > 0) {
+                    const sample = pendingAssignments.items.slice(0, 6)
+                        .map(item => `${window.fmtDateLegacy(item.fecha)} ${item.empleado}`)
+                        .join(' · ');
+                    allRisks.push({
+                        severity: 'warning',
+                        type: 'PENDING_ASSIGNMENTS_YEAR',
+                        title: 'Días pendientes de asignar',
+                        desc: `${pendingAssignments.count} día(s) sin turno asignado en ${pendingAssignments.year}. ${sample}${pendingAssignments.count > 6 ? ' · ...' : ''}`,
+                        action: { fn: `window.goToPendingAssignmentsExcel()`, label: 'Ir al Excel' }
+                    });
+                }
+
+                (coverageRisks || []).forEach(risk => {
+                    allRisks.push(risk);
+                });
+
+                (globalStatus.outdatedSnapshots || []).forEach(os => {
+                    const snapDate = os.snapshotDate ? new Date(os.snapshotDate).toLocaleDateString() : '?';
+                    const msg = `Snapshot desactualizado: ${os.hotel} semana ${os.weekStart} — publicado ${snapDate} pero hay ${os.pendingCount} evento(s) activo(s) posteriores. Debe republicarse.`;
+                    allRisks.push({
+                        severity: 'critical', type: 'SNAPSHOT_OUTDATED', title: 'Snapshot Desactualizado',
+                        desc: msg,
+                        action: { fn: `window.goToRiskPreview('${os.hotel}', '${os.weekStart}')`, label: 'Ir a Vista Previa' }
+                    });
+                });
+
+                (globalStatus.byHotelWeek || []).filter(b => !b.snapshotExists).forEach(b => {
+                    const formattedWeek = window.formatDateES ? window.formatDateES(b.weekStart) : b.weekStart;
+                    allRisks.push({
+                        severity: 'warning',
+                        type: 'NO_SNAPSHOT',
+                        title: 'Semana sin publicar',
+                        desc: `${b.hotel} (Semana del ${formattedWeek}) tiene turnos cargados pero aún no se han publicado a los empleados.`,
+                        action: { fn: `window.goToRiskPreview('${b.hotel}', '${b.weekStart}')`, label: 'Ir a Vista Previa' }
+                    });
+                });
+
+                if (window.validateSystemHealth) {
+                    const _healthWeekStart = window._previewDate
+                        ? (window.isoDate ? window.isoDate(window.getMonday(new Date(window._previewDate + 'T12:00:00'))) : window._previewDate)
+                        : today;
+                    const _healthWeekEnd = window.addIsoDays ? window.addIsoDays(_healthWeekStart, 6) : _healthWeekStart;
+                    const systemHealth = await window.validateSystemHealth(_healthWeekStart, _healthWeekEnd);
+                    systemHealth.criticals.filter(m => !m.includes('Snapshot desactualizado') && !m.includes('cambio(s) pendiente')).forEach(msg => {
+                        allRisks.push({ severity: 'critical', type: 'SYSTEM_HEALTH', title: 'Problema del Sistema', desc: msg });
+                    });
+                    systemHealth.warnings.filter(m => !m.includes('Snapshot desactualizado') && !m.includes('cambio(s) pendiente')).forEach(msg => {
+                        allRisks.push({ severity: 'warning', type: 'SYSTEM_HEALTH', title: 'Aviso del Sistema', desc: msg });
+                    });
+                }
+
+                renderRiskCards(allRisks);
+
+                if ($('#stat-pending-publish')) {
+                    const _finalCount = globalStatus ? globalStatus.totalPendingChanges : 0;
+                    $('#stat-pending-publish').textContent = _finalCount;
+                    $('#stat-pending-publish').style.color = _finalCount > 0 ? '#ef4444' : 'inherit';
+                }
+
+                if ($('#stat-published-until')) {
+                    const pubDate = globalStatus ? globalStatus.globalPublishedUntil : null;
+                    let formattedPub = 'Sin cobertura';
+                    if (pubDate) {
+                        const parts = String(pubDate).split('-');
+                        if (parts.length === 3) {
+                            const monthsShort = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+                            const monthIdx = parseInt(parts[1], 10) - 1;
+                            const monthStr = monthsShort[monthIdx] || parts[1];
+                            formattedPub = `${parts[2].padStart(2, '0')} ${monthStr} ${parts[0]}`;
+                        } else {
+                            formattedPub = pubDate;
+                        }
+                    }
+                    const el = $('#stat-published-until');
+                    el.textContent = formattedPub;
+                    el.style.fontSize = '1.1rem';
+                    el.style.whiteSpace = 'nowrap';
+                }
+
+                if ($('#sync-pending-changes')) {
+                    const _pendingCount = globalStatus ? globalStatus.totalPendingChanges : 0;
+                    $('#sync-pending-changes').textContent = _pendingCount;
+                    $('#sync-pending-changes').style.color = _pendingCount > 0 ? '#ef4444' : 'inherit';
+                }
+            } catch (bgErr) {
+                console.warn('[Dashboard Background Analysis Error]', bgErr);
+            }
+        })();
 
     } catch (err) {
         console.error('[ADMIN ERROR] Dashboard Render Failure', {
