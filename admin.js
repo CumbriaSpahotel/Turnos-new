@@ -1653,7 +1653,13 @@ window.renderExcelView = async () => {
         const wStartStr = window.getWeekStartISO(dateStart);
         const wEndStr = window.isoDate(new Date(new Date(dateEnd + 'T12:00:00').getTime() + 7 * 86400000));
         
-        let dbHotels = await window.getAvailableHotels();
+        let [dbHotels, freshEmps] = await Promise.all([
+            window.getAvailableHotels(),
+            window.TurnosDB?.getEmpleados ? window.TurnosDB.getEmpleados(true) : Promise.resolve([])
+        ]);
+        if (freshEmps && freshEmps.length > 0) {
+            window.empleadosGlobales = freshEmps;
+        }
         const rawData = await window.TurnosDB.fetchTurnosBase(wStartStr, wEndStr, selectedHotel === 'all' ? null : selectedHotel);
         
         if (!window.excelFilters) window.excelFilters = { search: '', onlyPending: false };
@@ -2110,7 +2116,10 @@ window.openRefuerzoModal = async () => {
 
 window.closeRefuerzoModal = () => {
     const m = document.getElementById('modalRefuerzo');
-    if (m) { m.classList.remove('open'); setTimeout(() => m.style.display = 'none', 300); }
+    if (m) {
+        m.classList.remove('open');
+        m.style.display = 'none';
+    }
 };
 
 window.onRefuerzoEmployeeChange = () => {
@@ -2149,6 +2158,7 @@ window.saveRefuerzo = async () => {
     const status = document.getElementById('refuerzoStatus');
     const warn = document.getElementById('refuerzoWarning');
     const btn = document.getElementById('btnSaveRefuerzo');
+    if (status) status.innerHTML = '';
     if (warn) { warn.style.display = 'none'; warn.textContent = ''; }
 
     const hotel = document.getElementById('rfHotel')?.value;
@@ -2156,101 +2166,114 @@ window.saveRefuerzo = async () => {
     const tipo = document.querySelector('input[name="rfTipo"]:checked')?.value || 'dia';
     const turno = document.getElementById('rfTurno')?.value || '—';
     const horario = document.getElementById('rfHorario')?.value?.trim() || '';
-    const obs = document.getElementById('rfObs')?.value || '';
+    const obs = document.getElementById('rfObs')?.value?.trim() || '';
     const dateStart = document.getElementById('rfDateStart')?.value;
     const dateEnd = document.getElementById('rfDateEnd')?.value;
 
     // Validations
-    if (!hotel) { status.innerHTML = '<span style="color:var(--danger);">Hotel obligatorio.</span>'; return; }
-    if (!empId) { status.innerHTML = '<span style="color:var(--danger);">Empleado obligatorio.</span>'; return; }
-    if (!dateStart) { status.innerHTML = '<span style="color:var(--danger);">Fecha obligatoria.</span>'; return; }
-
-    let emp = null;
-    if (empId === '__NEW_APOYO__') {
-        const manualName = document.getElementById('rfEmpManual')?.value?.trim();
-        if (!manualName) {
-            status.innerHTML = '<span style="color:var(--danger);">Debes escribir el nombre del empleado de apoyo.</span>';
-            return;
-        }
-
-        btn.disabled = true;
-        btn.textContent = 'Verificando personal...';
-
-        const allEmps = window.empleadosGlobales || await window.TurnosDB.getEmpleados().catch(() => []);
-        emp = allEmps.find(e => 
-            (e.nombre && window.normalizeId(e.nombre) === window.normalizeId(manualName)) || 
-            (e.id && window.normalizeId(e.id) === window.normalizeId(manualName)) ||
-            (e.id_interno && window.normalizeId(e.id_interno) === window.normalizeId(manualName))
-        );
-
-        if (!emp) {
-            btn.textContent = 'Registrando apoyo...';
-            const nextId = window.nextEmployeeInternalId ? window.nextEmployeeInternalId() : 'EMP-0001';
-            const newEmpPayload = {
-                id: nextId,
-                id_interno: nextId,
-                nombre: manualName,
-                hotel: hotel,
-                hotel_id: hotel,
-                hoteles_asignados: [hotel],
-                tipo: 'apoyo',
-                tipo_personal: 'apoyo',
-                contrato: 'apoyo',
-                rol: 'apoyo',
-                rol_operativo: 'apoyo',
-                estado: 'Activo',
-                estado_empresa: 'Activo',
-                activo: true,
-                orden: 999
-            };
-            await window.TurnosDB.upsertEmpleado(newEmpPayload);
-            if (window.TurnosDB.getEmpleados) {
-                window.empleadosGlobales = await window.TurnosDB.getEmpleados();
-            }
-            emp = newEmpPayload;
-        }
-        empId = emp.id;
-    } else {
-        // Validate employee exists in DB
-        emp = (window.empleadosGlobales || await window.TurnosDB.getEmpleados().catch(() => [])).find(e => e.id === empId || e.id_interno === empId);
-        if (!emp) {
-            status.innerHTML = '<span style="color:var(--danger);">Empleado no encontrado.</span>';
-            return;
-        }
-    }
-
-    // Compute date range
-    const dates = [];
-    if (tipo === 'dia') {
-        dates.push(dateStart);
-    } else if (tipo === 'semana') {
-        // From Monday to Sunday (7 days)
-        const base = new Date(dateStart + 'T12:00:00');
-        // Find Monday of that week
-        const dow = base.getDay();
-        const mondayOffset = dow === 0 ? -6 : 1 - dow;
-        const monday = new Date(base);
-        monday.setDate(monday.getDate() + mondayOffset);
-        for (let i = 0; i < 7; i++) {
-            const d = new Date(monday);
-            d.setDate(d.getDate() + i);
-            dates.push(window.isoDate(d));
-        }
-    } else {
-        // Rango
-        if (!dateEnd) { status.innerHTML = '<span style="color:var(--danger);">Fecha fin obligatoria para rango.</span>'; return; }
-        if (dateEnd < dateStart) { status.innerHTML = '<span style="color:var(--danger);">Fecha fin no puede ser anterior a inicio.</span>'; return; }
-        const cur = new Date(dateStart + 'T12:00:00');
-        const end = new Date(dateEnd + 'T12:00:00');
-        while (cur <= end) {
-            dates.push(window.isoDate(cur));
-            cur.setDate(cur.getDate() + 1);
-        }
-        if (dates.length > 31) { status.innerHTML = '<span style="color:var(--danger);">Rango máximo: 31 días.</span>'; return; }
-    }
+    if (!hotel) { if (status) status.innerHTML = '<span style="color:var(--danger); font-weight:700;">Hotel obligatorio.</span>'; return; }
+    if (!empId) { if (status) status.innerHTML = '<span style="color:var(--danger); font-weight:700;">Empleado obligatorio.</span>'; return; }
+    if (!dateStart) { if (status) status.innerHTML = '<span style="color:var(--danger); font-weight:700;">Fecha obligatoria.</span>'; return; }
 
     try {
-        btn.disabled = true;
+        if (btn) {
+            btn.disabled = true;
+            btn.textContent = 'Procesando...';
+        }
+
+        let emp = null;
+        if (empId === '__NEW_APOYO__') {
+            const manualName = document.getElementById('rfEmpManual')?.value?.trim();
+            if (!manualName) {
+                if (status) status.innerHTML = '<span style="color:var(--danger); font-weight:700;">Debes escribir el nombre del empleado de apoyo.</span>';
+                if (btn) { btn.disabled = false; btn.textContent = 'Añadir refuerzo'; }
+                return;
+            }
+
+            btn.textContent = 'Verificando personal...';
+
+            const allEmps = window.empleadosGlobales || await (window.TurnosDB?.getEmpleados ? window.TurnosDB.getEmpleados(true) : Promise.resolve([])).catch(() => []);
+            emp = (allEmps || []).find(e => 
+                (e.nombre && window.normalizeId(e.nombre) === window.normalizeId(manualName)) || 
+                (e.id && window.normalizeId(e.id) === window.normalizeId(manualName)) ||
+                (e.id_interno && window.normalizeId(e.id_interno) === window.normalizeId(manualName))
+            );
+
+            if (!emp) {
+                btn.textContent = 'Registrando apoyo...';
+                const nextId = window.nextEmployeeInternalId ? window.nextEmployeeInternalId() : 'EMP-0001';
+                const newEmpPayload = {
+                    id: nextId,
+                    id_interno: nextId,
+                    nombre: manualName,
+                    hotel_id: hotel,
+                    tipo_personal: 'apoyo',
+                    estado_empresa: 'activo',
+                    activo: true,
+                    orden: 999
+                };
+                const { error: insErr } = await window.supabase.from('empleados').upsert(newEmpPayload, { onConflict: 'id' });
+                if (insErr) {
+                    console.warn('[REFUERZO] Direct insert warning:', insErr);
+                    if (window.TurnosDB?.upsertEmpleado) {
+                        await window.TurnosDB.upsertEmpleado(newEmpPayload).catch(() => {});
+                    }
+                }
+                if (window.TurnosDB?.getEmpleados) {
+                    window.empleadosGlobales = await window.TurnosDB.getEmpleados(true);
+                }
+                emp = (window.empleadosGlobales || []).find(e => e.id === nextId) || newEmpPayload;
+            }
+            empId = emp.id || emp.id_interno;
+        } else {
+            emp = (window.empleadosGlobales || await (window.TurnosDB?.getEmpleados ? window.TurnosDB.getEmpleados() : Promise.resolve([]))).find(e => e.id === empId || e.id_interno === empId);
+            if (!emp) {
+                if (status) status.innerHTML = '<span style="color:var(--danger); font-weight:700;">Empleado no encontrado.</span>';
+                if (btn) { btn.disabled = false; btn.textContent = 'Añadir refuerzo'; }
+                return;
+            }
+        }
+
+        // Compute date range
+        const dates = [];
+        if (tipo === 'dia') {
+            dates.push(dateStart);
+        } else if (tipo === 'semana') {
+            const base = new Date(dateStart + 'T12:00:00');
+            const dow = base.getDay();
+            const mondayOffset = dow === 0 ? -6 : 1 - dow;
+            const monday = new Date(base);
+            monday.setDate(monday.getDate() + mondayOffset);
+            for (let i = 0; i < 7; i++) {
+                const d = new Date(monday);
+                d.setDate(d.getDate() + i);
+                dates.push(window.isoDate ? window.isoDate(d) : d.toISOString().slice(0, 10));
+            }
+        } else {
+            // Rango
+            if (!dateEnd) {
+                if (status) status.innerHTML = '<span style="color:var(--danger); font-weight:700;">Fecha fin obligatoria para rango.</span>';
+                if (btn) { btn.disabled = false; btn.textContent = 'Añadir refuerzo'; }
+                return;
+            }
+            if (dateEnd < dateStart) {
+                if (status) status.innerHTML = '<span style="color:var(--danger); font-weight:700;">Fecha fin no puede ser anterior a inicio.</span>';
+                if (btn) { btn.disabled = false; btn.textContent = 'Añadir refuerzo'; }
+                return;
+            }
+            const cur = new Date(dateStart + 'T12:00:00');
+            const end = new Date(dateEnd + 'T12:00:00');
+            while (cur <= end) {
+                dates.push(window.isoDate ? window.isoDate(cur) : cur.toISOString().slice(0, 10));
+                cur.setDate(cur.getDate() + 1);
+            }
+            if (dates.length > 31) {
+                if (status) status.innerHTML = '<span style="color:var(--danger); font-weight:700;">Rango máximo: 31 días.</span>';
+                if (btn) { btn.disabled = false; btn.textContent = 'Añadir refuerzo'; }
+                return;
+            }
+        }
+
         btn.textContent = 'Comprobando...';
 
         // Check for conflicts: employee has M/T/N in another hotel same day
@@ -2258,7 +2281,7 @@ window.saveRefuerzo = async () => {
         const conflicts = [];
         const duplicates = [];
         dates.forEach(d => {
-            const existing = existingAll.filter(r => r.empleado_id === empId && r.fecha === d);
+            const existing = existingAll.filter(r => (r.empleado_id === empId || r.empleado_id === emp?.id_interno) && r.fecha === d);
             existing.forEach(r => {
                 if (r.hotel_id === hotel) {
                     duplicates.push({ date: d, turno: r.turno });
@@ -2274,8 +2297,8 @@ window.saveRefuerzo = async () => {
         // Block on conflicts
         if (conflicts.length > 0) {
             const cList = conflicts.map(c => `  ${c.date}: ${c.turno} en ${c.hotel}`).join('\n');
-            status.innerHTML = `<span style="color:var(--danger);">Conflicto de ubicación:<br><pre style="font-size:0.7rem; margin-top:4px;">${cList}</pre></span>`;
-            btn.disabled = false; btn.textContent = 'Añadir refuerzo';
+            if (status) status.innerHTML = `<span style="color:var(--danger); font-weight:700;">Conflicto de ubicación:<br><pre style="font-size:0.7rem; margin-top:4px;">${cList}</pre></span>`;
+            if (btn) { btn.disabled = false; btn.textContent = 'Añadir refuerzo'; }
             return;
         }
 
@@ -2283,13 +2306,13 @@ window.saveRefuerzo = async () => {
         if (duplicates.length > 0) {
             const dList = duplicates.map(d => `  ${d.date}: ${d.turno}`).join('\n');
             if (!confirm(`Ya existen turnos para ${emp?.nombre || empId} en ${hotel}:\n${dList}\n\n¿Quieres reemplazarlos?`)) {
-                btn.disabled = false; btn.textContent = 'Añadir refuerzo';
+                if (btn) { btn.disabled = false; btn.textContent = 'Añadir refuerzo'; }
                 return;
             }
         }
 
         // Build upsert records
-        btn.textContent = 'Guardando...';
+        btn.textContent = 'Guardando turnos...';
         const records = dates.map(d => ({
             empleado_id: empId,
             hotel_id: hotel,
@@ -2301,7 +2324,7 @@ window.saveRefuerzo = async () => {
         const { error } = await window.supabase.from('turnos').upsert(records, { onConflict: 'empleado_id,fecha' });
         if (error) throw error;
 
-        if (horario) {
+        if (horario || obs) {
             for (const d of dates) {
                 await window.TurnosDB.upsertEvento({
                     tipo: 'CAMBIO_TURNO',
@@ -2312,29 +2335,34 @@ window.saveRefuerzo = async () => {
                     fecha_fin: d,
                     turno_nuevo: turno,
                     estado: 'activo',
-                    observaciones: `Horario: ${horario}`,
+                    observaciones: [horario ? `Horario: ${horario}` : '', obs].filter(Boolean).join(' | '),
                     payload: {
                         destino: turno,
-                        horario: horario
+                        horario: horario,
+                        observaciones: obs
                     }
-                });
+                }).catch(e => console.warn('[REFUERZO] Evento warning:', e));
             }
         }
 
         if (window.addLog) window.addLog(`Refuerzo añadido: ${emp?.nombre || empId} en ${hotel} (${dates.length} día${dates.length !== 1 ? 's' : ''})`, 'info');
 
-        status.innerHTML = `<span style="color:#10b981;">âœ“ Refuerzo añadido: ${dates.length} día${dates.length !== 1 ? 's' : ''}</span>`;
-        setTimeout(async () => {
-            window.closeRefuerzoModal();
+        // Cerrar modal de forma directa e inmediata
+        window.closeRefuerzoModal();
+
+        // Actualizar vista Excel asegurando lista fresca de empleados
+        if (window.renderExcelView) {
             await window.renderExcelView();
-        }, 1000);
+        }
 
     } catch (err) {
         console.error('[REFUERZO] Error:', err);
-        status.innerHTML = `<span style="color:var(--danger);">Error: ${err.message}</span>`;
+        if (status) status.innerHTML = `<span style="color:var(--danger); font-weight:700;">Error: ${err.message || err}</span>`;
     } finally {
-        btn.disabled = false;
-        btn.textContent = 'Añadir refuerzo';
+        if (btn) {
+            btn.disabled = false;
+            btn.textContent = 'Añadir refuerzo';
+        }
     }
 };
 
