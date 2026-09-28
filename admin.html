@@ -769,9 +769,10 @@
                     <label style="display:block; font-size:0.6rem; font-weight:800; color:var(--text-dim); margin-bottom:5px;">EMPLEADO REFUERZO</label>
                     <select id="rfEmp" class="btn-premium" style="width:100%;" onchange="window.onRefuerzoEmployeeChange && window.onRefuerzoEmployeeChange()"></select>
                 </div>
-                <div id="rfEmpManualWrap" style="display:none;">
-                    <label style="display:block; font-size:0.6rem; font-weight:800; color:var(--text-dim); margin-bottom:5px;">NOMBRE OCASIONAL (SIN FICHA)</label>
-                    <input type="text" id="rfEmpManual" class="btn-premium" style="width:100%;" placeholder="Ej: Juan Pérez (extra evento)">
+                <div id="rfEmpManualWrap" style="display:none; grid-column: span 2; background: rgba(59,130,246,0.06); padding: 12px; border-radius: 12px; border: 1px dashed rgba(59,130,246,0.35);">
+                    <label style="display:block; font-size:0.65rem; font-weight:800; color:#2563eb; margin-bottom:5px;">NOMBRE DEL EMPLEADO DE APOYO (NO EN PLANTILLA)</label>
+                    <input type="text" id="rfEmpManual" class="btn-premium" style="width:100%; background:var(--surface, #fff); color:var(--text);" placeholder="Ej: Juan Pérez (apoyo evento)">
+                    <small style="display:block; font-size:0.72rem; color:var(--text-dim); margin-top:4px;">Se registrará automáticamente como personal de apoyo en el sistema.</small>
                 </div>
                 <div style="grid-column: span 2;"><label style="display:block; font-size:0.6rem; font-weight:800; color:var(--text-dim); margin-bottom:5px;">TIPO DE INSERCIÓN</label>
                     <div style="display:flex; gap:10px;" id="rfTipoInsercion">
@@ -820,7 +821,7 @@
     <script src="cambios-module.js"></script>
     <script src="js/reassignment-module.js"></script>
     <script src="js/weekly-vacancy.js?v=1.0"></script>
-    <script src="admin.js?v=14.52"></script>
+    <script src="admin.js?v=14.54"></script>
     <script src="js/annual-publication.js?v=1.0"></script>
     <script src="js/hide-publication.js?v=1.0"></script>
     <script src="bajas-module.js?v=1.2"></script>

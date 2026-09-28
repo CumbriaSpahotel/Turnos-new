@@ -1723,8 +1723,7 @@ window.renderExcelView = async () => {
                 if (counts.M < 1) missing.push('mañana');
                 if (counts.T < 1) missing.push('tarde');
                 if (counts.N < 1) missing.push('noche');
-                const requiredRest = counts.supportWorking > 0 ? 2 : 1;
-                if (counts.D < requiredRest) missing.push(requiredRest > 1 ? 'descanso extra por apoyo' : 'descanso');
+                if (counts.D < 1) missing.push('descanso');
                 if (missing.length === 0) return null;
                 return { date, counts, missing };
             }).filter(Boolean);
@@ -1965,8 +1964,7 @@ window.refreshExcelCoverageAlarms = () => {
             if (counts.M < 1) missing.push('mañana');
             if (counts.T < 1) missing.push('tarde');
             if (counts.N < 1) missing.push('noche');
-            const requiredRest = counts.supportWorking > 0 ? 2 : 1;
-            if (counts.D < requiredRest) missing.push(requiredRest > 1 ? 'descanso extra por apoyo' : 'descanso');
+            if (counts.D < 1) missing.push('descanso');
             return missing.length ? { date, counts, missing } : null;
         }).filter(Boolean);
         const box = section.querySelector('.excel-coverage-alerts');
@@ -2058,25 +2056,38 @@ window.openRefuerzoModal = async () => {
     const [hotels, emps] = await Promise.all([window.getAvailableHotels(), window.TurnosDB.getEmpleados()]);
     const selectedHotel = document.getElementById('excelHotel')?.value || 'all';
 
-    // Hotel select â€” pre-select current Excel filter
+    // Hotel select — pre-select current Excel filter
     const rfHotel = document.getElementById('rfHotel');
     if (rfHotel) {
         rfHotel.innerHTML = hotels.map(h => `<option value="${h}"${h === selectedHotel && selectedHotel !== 'all' ? ' selected' : ''}>${h}</option>`).join('');
     }
 
-    // Employee select â€” allow ANY active employee
+    // Employee select — allow ANY active employee, plus external/support option
     const rfEmp = document.getElementById('rfEmp');
     if (rfEmp) {
         const availableEmps = (emps || [])
             .filter(e => e && e.activo !== false)
             .sort((a, b) => (a.nombre || '').localeCompare(b.nombre || ''));
-        if (availableEmps.length === 0) {
-            rfEmp.innerHTML = '<option value="" disabled selected>No hay empleados disponibles</option>';
-        } else {
-            rfEmp.innerHTML = '<option value="" disabled selected>Seleccionar empleado...</option>' +
-                availableEmps.map(e => `<option value="${e.id}">${e.nombre || e.id} [${e.id_interno || e.id}]</option>`).join('');
+
+        let opts = '<option value="" disabled selected>Seleccionar empleado...</option>';
+        opts += '<option value="__NEW_APOYO__" style="font-weight:700; color:#2563eb;">➕ Personal de apoyo / extra (no en plantilla)...</option>';
+        if (availableEmps.length > 0) {
+            opts += '<optgroup label="Plantilla actual">';
+            opts += availableEmps.map(e => {
+                const tipoNorm = String(e.tipo_personal || e.tipo || '').toLowerCase();
+                const tipoTag = tipoNorm === 'apoyo' ? ' (Apoyo)' : '';
+                return `<option value="${e.id}">${e.nombre || e.id} [${e.id_interno || e.id}]${tipoTag}</option>`;
+            }).join('');
+            opts += '</optgroup>';
         }
+        rfEmp.innerHTML = opts;
     }
+
+    // Reset manual employee input
+    const rfEmpManualWrap = document.getElementById('rfEmpManualWrap');
+    const rfEmpManual = document.getElementById('rfEmpManual');
+    if (rfEmpManualWrap) rfEmpManualWrap.style.display = 'none';
+    if (rfEmpManual) rfEmpManual.value = '';
 
     // Default date from Excel period
     const ds = document.getElementById('excelDateStart')?.value || '';
@@ -2085,7 +2096,10 @@ window.openRefuerzoModal = async () => {
 
     // Reset state
     document.getElementById('rfDateEnd').value = '';
-    document.getElementById('rfTurno').value = 'â€”';
+    const rfTurno = document.getElementById('rfTurno');
+    if (rfTurno) rfTurno.value = '—';
+    const rfHorario = document.getElementById('rfHorario');
+    if (rfHorario) rfHorario.value = '';
     document.getElementById('rfObs').value = '';
     document.querySelectorAll('input[name="rfTipo"]').forEach(r => { r.checked = (r.value === 'dia'); });
     window.updateRefuerzoFechas();
@@ -2097,6 +2111,21 @@ window.openRefuerzoModal = async () => {
 window.closeRefuerzoModal = () => {
     const m = document.getElementById('modalRefuerzo');
     if (m) { m.classList.remove('open'); setTimeout(() => m.style.display = 'none', 300); }
+};
+
+window.onRefuerzoEmployeeChange = () => {
+    const rfEmp = document.getElementById('rfEmp');
+    const wrap = document.getElementById('rfEmpManualWrap');
+    const input = document.getElementById('rfEmpManual');
+    if (!rfEmp || !wrap) return;
+
+    if (rfEmp.value === '__NEW_APOYO__') {
+        wrap.style.display = 'block';
+        if (input) setTimeout(() => input.focus(), 50);
+    } else {
+        wrap.style.display = 'none';
+        if (input) input.value = '';
+    }
 };
 
 window.updateRefuerzoFechas = () => {
@@ -2123,9 +2152,9 @@ window.saveRefuerzo = async () => {
     if (warn) { warn.style.display = 'none'; warn.textContent = ''; }
 
     const hotel = document.getElementById('rfHotel')?.value;
-    const empId = document.getElementById('rfEmp')?.value;
+    let empId = document.getElementById('rfEmp')?.value;
     const tipo = document.querySelector('input[name="rfTipo"]:checked')?.value || 'dia';
-    const turno = document.getElementById('rfTurno')?.value || 'â€”';
+    const turno = document.getElementById('rfTurno')?.value || '—';
     const horario = document.getElementById('rfHorario')?.value?.trim() || '';
     const obs = document.getElementById('rfObs')?.value || '';
     const dateStart = document.getElementById('rfDateStart')?.value;
@@ -2136,11 +2165,58 @@ window.saveRefuerzo = async () => {
     if (!empId) { status.innerHTML = '<span style="color:var(--danger);">Empleado obligatorio.</span>'; return; }
     if (!dateStart) { status.innerHTML = '<span style="color:var(--danger);">Fecha obligatoria.</span>'; return; }
 
-    // Validate employee exists in DB
-    const emp = (window.empleadosGlobales || await window.TurnosDB.getEmpleados().catch(() => [])).find(e => e.id === empId || e.id_interno === empId);
-    if (!emp) {
-        status.innerHTML = '<span style="color:var(--danger);">Empleado no encontrado.</span>';
-        return;
+    let emp = null;
+    if (empId === '__NEW_APOYO__') {
+        const manualName = document.getElementById('rfEmpManual')?.value?.trim();
+        if (!manualName) {
+            status.innerHTML = '<span style="color:var(--danger);">Debes escribir el nombre del empleado de apoyo.</span>';
+            return;
+        }
+
+        btn.disabled = true;
+        btn.textContent = 'Verificando personal...';
+
+        const allEmps = window.empleadosGlobales || await window.TurnosDB.getEmpleados().catch(() => []);
+        emp = allEmps.find(e => 
+            (e.nombre && window.normalizeId(e.nombre) === window.normalizeId(manualName)) || 
+            (e.id && window.normalizeId(e.id) === window.normalizeId(manualName)) ||
+            (e.id_interno && window.normalizeId(e.id_interno) === window.normalizeId(manualName))
+        );
+
+        if (!emp) {
+            btn.textContent = 'Registrando apoyo...';
+            const nextId = window.nextEmployeeInternalId ? window.nextEmployeeInternalId() : 'EMP-0001';
+            const newEmpPayload = {
+                id: nextId,
+                id_interno: nextId,
+                nombre: manualName,
+                hotel: hotel,
+                hotel_id: hotel,
+                hoteles_asignados: [hotel],
+                tipo: 'apoyo',
+                tipo_personal: 'apoyo',
+                contrato: 'apoyo',
+                rol: 'apoyo',
+                rol_operativo: 'apoyo',
+                estado: 'Activo',
+                estado_empresa: 'Activo',
+                activo: true,
+                orden: 999
+            };
+            await window.TurnosDB.upsertEmpleado(newEmpPayload);
+            if (window.TurnosDB.getEmpleados) {
+                window.empleadosGlobales = await window.TurnosDB.getEmpleados();
+            }
+            emp = newEmpPayload;
+        }
+        empId = emp.id;
+    } else {
+        // Validate employee exists in DB
+        emp = (window.empleadosGlobales || await window.TurnosDB.getEmpleados().catch(() => [])).find(e => e.id === empId || e.id_interno === empId);
+        if (!emp) {
+            status.innerHTML = '<span style="color:var(--danger);">Empleado no encontrado.</span>';
+            return;
+        }
     }
 
     // Compute date range
@@ -8878,7 +8954,7 @@ window.getDailyShiftCoverageRisks = async function(startISO = null, endISO = nul
                     });
                     if (!hasAnyAssignment) continue;
                     const missing = ['M', 'T', 'N'].filter(code => counts[code] < 1);
-                    if (counts.D < (counts.supportWorking > 0 ? 2 : 1)) missing.push('D');
+                    if (counts.D < 1) missing.push('D');
                     if (missing.length === 0) continue;
                     const weekStart = getMondayISO(date);
                     risks.push({

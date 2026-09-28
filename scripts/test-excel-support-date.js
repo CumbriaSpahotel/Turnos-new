@@ -23,7 +23,11 @@ function rows(weekStart) {
     return [['Dani', 'N'], ['Macarena', 'M'], ['Diana', 'T'], ['Federico', 'D']].map(([empId, turno]) => ({ empId, weekStart, hasValidId: true, values: Array(7).fill(turno) }));
 }
 assert.equal(context.warnings(rows('2026-09-21')).length, 0);
-assert.deepEqual(Array.from(context.warnings(rows('2027-11-08')), w => w.date), ['2027-11-12', '2027-11-13', '2027-11-14']);
+// El apoyo no exige descanso extra: con M, T, N y D cubiertos, no hay alertas
+assert.equal(context.warnings(rows('2027-11-08')).length, 0);
+// Si falta descanso básico (D < 1), sí debe alertar
+const noRestRows = [['Dani', 'N'], ['Macarena', 'M'], ['Diana', 'T'], ['Federico', 'M']].map(([empId, turno]) => ({ empId, weekStart: '2027-11-08', hasValidId: true, values: Array(7).fill(turno) }));
+assert.equal(context.warnings(noRestRows).length, 7);
 assert.ok(source.includes('const isSupport = _isSupport(row.empId, dStr);'));
 assert.ok(source.includes('data-support="${isSupport ?'));
 console.log('OK: September coverage, date boundary, mixed week and other employee types.');
