@@ -28,7 +28,7 @@ window.invalidatePreviewSnapshotCache = (reason) => {
 };
 
 window.fmtDateLegacy = (dateStr) => {
-    if (!dateStr) return 'â€”';
+    if (!dateStr) return '—';
     const parts = String(dateStr).split('-');
     if (parts.length !== 3) return dateStr;
     return `${parts[2]}/${parts[1]}/${parts[0]}`;
@@ -83,9 +83,9 @@ const origResolveEmployeeDay = window.resolveEmployeeDay;
 window.resolveEmployeeDay = (options) => {
     if (!origResolveEmployeeDay) return null;
     const res = origResolveEmployeeDay(options);
-    // Si el empleado está cesado en esta fecha, respetar el 'â€”' sin sobreescribir
+    // Si el empleado está cesado en esta fecha, respetar el '—' sin sobreescribir
     if (res && res.esBajaEmpresa) return res;
-    if (res && (!res.turno || res.turno === 'â€”')) {
+    if (res && (!res.turno || res.turno === '—')) {
         const empId = window.normalizeId ? window.normalizeId(options.empleadoId) : String(options.empleadoId || '').trim().toLowerCase();
         const date = window.normalizeDate ? window.normalizeDate(options.fecha) : String(options.fecha || '').slice(0, 10);
         const eventos = options.eventos || [];
@@ -288,7 +288,7 @@ window.resolveId = window.resolveId || ((raw) => window.normalizeId ? window.nor
  * Busca en window.empleadosGlobales. Usado por cambios-module.js y otros módulos.
  */
 window.getEmployeeDisplayName = (idOrName) => {
-    if (!idOrName) return 'â€”';
+    if (!idOrName) return '—';
     const emps = window.empleadosGlobales || [];
     const norm = window.normalizeId ? window.normalizeId(idOrName) : String(idOrName).trim().toLowerCase();
     const found = emps.find(e =>
@@ -337,7 +337,7 @@ window.normalizeV9Key = (value) => {
     s = s.replace(/[\u0000-\u001F\u007F-\u009F]/g, '');
     
     // 7. Sustituir apóstrofes y guiones raros
-    s = s.replace(/['`Â´â‚¬Ëœ']/g, "'").replace(/[â‚¬Ââ‚¬'â‚¬'â€“â€”Û¥]/g, "-");
+    s = s.replace(/['`Â´â‚¬Ëœ']/g, "'").replace(/[â‚¬Ââ‚¬'â‚¬'–—Û¥]/g, "-");
     
     // 8. Sustituir espacios no separables por espacio normal
     s = s.replace(/[\u00A0\u202F]/g, " ");
@@ -768,12 +768,12 @@ window.renderVacations = async () => {
                             <tr style="border-top:1px solid var(--border);">
                                 <td style="padding:1rem; font-weight:700; color:var(--accent);">${p.empId}</td>
                                 <td style="padding:1rem; font-size:0.85rem;">${p.hotel}</td>
-                                <td style="padding:1rem; font-size:0.85rem; color:var(--text-dim);">${p.sustituto || 'â€”'}</td>
+                                <td style="padding:1rem; font-size:0.85rem; color:var(--text-dim);">${p.sustituto || '—'}</td>
                                 <td style="padding:1rem; text-align:center;">
                                     <span class="el-pill el-type-${p.opStatus.cls}" style="padding:4px 10px; border-radius:8px; font-weight:800; font-size:0.65rem; text-transform:uppercase;">${p.opStatus.label}</span>
                                 </td>
                                 <td style="padding:1rem; text-align:center;">
-                                    ${p.opStatus.label === 'Anulada' ? '<span style="color:var(--text-dim); font-size:0.6rem;">â€”</span>' : (
+                                    ${p.opStatus.label === 'Anulada' ? '<span style="color:var(--text-dim); font-size:0.6rem;">—</span>' : (
                                         p.diasNoComputablesBaja === p.days && p.days > 0
                                         ? '<span style="background:rgba(239,68,68,0.1); color:#ef4444; padding:4px 10px; border-radius:8px; font-weight:800; font-size:0.6rem;">SUSPENDIDA POR BAJA</span>'
                                         : p.diasNoComputablesBaja > 0 
@@ -782,7 +782,7 @@ window.renderVacations = async () => {
                                     )}
                                 </td>
                                 <td style="padding:1rem; text-align:center;">
-                                    <div style="font-weight:700;">${window.fmtDateLegacy(p.start)} â€” ${window.fmtDateLegacy(p.end)}</div>
+                                    <div style="font-weight:700;">${window.fmtDateLegacy(p.start)} — ${window.fmtDateLegacy(p.end)}</div>
                                     <div style="font-size:0.65rem; color:var(--text-dim); margin-top:4px; font-weight:700;">
                                         ${p.diasNoComputablesBaja > 0 
                                             ? `${p.diasComputables} días computables · <span style="color:#ef4444;">${p.diasNoComputablesBaja} no computables por baja/IT</span>` 
@@ -1065,10 +1065,10 @@ window.renderBajas = async () => {
                                 <td style="padding:1rem; font-weight:700;">${b.empleado_id}</td>
                                 <td style="padding:1rem; font-size:0.85rem; color:var(--text-dim);">${b.hotel_origen || 'General'}</td>
                                 <td style="padding:1rem; text-align:center;">
-                                    <div style="font-weight:600;">${window.fmtDateLegacy(b.fecha_inicio)} â€” ${window.fmtDateLegacy(b.fecha_fin || b.fecha_inicio)}</div>
+                                    <div style="font-weight:600;">${window.fmtDateLegacy(b.fecha_inicio)} — ${window.fmtDateLegacy(b.fecha_fin || b.fecha_inicio)}</div>
                                     <div style="font-size:0.65rem; color:var(--text-dim); margin-top:4px; font-weight:700;">${Math.round((new Date((b.fecha_fin || b.fecha_inicio) + 'T12:00:00') - new Date(b.fecha_inicio + 'T12:00:00')) / 86400000) + 1} DÍAS ${b.isGroup ? '(Agrupados)' : 'NATURALES'}</div>
                                 </td>
-                                <td style="padding:1rem; font-size:0.85rem;">${b.empleado_destino_id || 'â€”'}</td>
+                                <td style="padding:1rem; font-size:0.85rem;">${b.empleado_destino_id || '—'}</td>
                                 <td style="padding:1rem; text-align:center;">
                                     <span style="background:${b.estado === 'anulado' ? 'rgba(239,68,68,0.1)' : 'rgba(16,185,129,0.1)'}; color:${b.estado === 'anulado' ? '#ef4444' : '#10b981'}; padding:4px 10px; border-radius:8px; font-weight:800; font-size:0.6rem;">
                                         ${(b.estado || 'activo').toUpperCase()}
@@ -1304,10 +1304,10 @@ window.renderCustomHorariosList = async (empsList) => {
         listBody.innerHTML = customEvents.map(ev => {
             const empId = ev.empleado_id || ev.payload?.empleado_id;
             const empNombre = empsMap.get(String(empId)) || empId || 'Desconocido';
-            const fecha = ev.fecha_inicio || ev.fecha || 'â€”';
-            const hotel = ev.hotel_origen || ev.hotel_destino || ev.hotel_id || 'â€”';
+            const fecha = ev.fecha_inicio || ev.fecha || '—';
+            const hotel = ev.hotel_origen || ev.hotel_destino || ev.hotel_id || '—';
             const turno = ev.turno_nuevo || ev.payload?.destino || ev.payload?.turno || 'Turno';
-            const customHorario = ev.payload?.horario || ev.horario || (ev.observaciones ? ev.observaciones.replace('Horario:', '').trim() : 'â€”');
+            const customHorario = ev.payload?.horario || ev.horario || (ev.observaciones ? ev.observaciones.replace('Horario:', '').trim() : '—');
             const safeEvId = escapeHtml(ev.id);
 
             return `
@@ -1684,7 +1684,7 @@ window.renderExcelView = async () => {
             const idInt = profile.id_interno || profile.id || empId;
             return `${profile.nombre || empId} [${idInt}]`;
         };
-        const TURNO_MAP = { 'M': 'Mañana', 'Mañana': 'Mañana', 'T': 'Tarde', 'Tarde': 'Tarde', 'N': 'Noche', 'Noche': 'Noche', 'D': 'Descanso', 'Descanso': 'Descanso', 'TP': 'T/P', 'T/P': 'T/P', '-': 'Pendiente de asignar', 'â€”': 'Pendiente de asignar', '': 'Pendiente de asignar', null: 'Pendiente de asignar' };
+        const TURNO_MAP = { 'M': 'Mañana', 'Mañana': 'Mañana', 'T': 'Tarde', 'Tarde': 'Tarde', 'N': 'Noche', 'Noche': 'Noche', 'D': 'Descanso', 'Descanso': 'Descanso', 'TP': 'T/P', 'T/P': 'T/P', '-': 'Pendiente de asignar', '—': 'Pendiente de asignar', '': 'Pendiente de asignar', null: 'Pendiente de asignar' };
         const excelShiftCoverageCode = (value) => {
             const raw = String(value || '').trim();
             if (!raw || /pendiente|vacaciones|baja|permiso/i.test(raw)) return '';
@@ -1740,7 +1740,7 @@ window.renderExcelView = async () => {
         let totalPendientes = 0;
         let totalSupportPendientes = 0;
         let totalNoId = 0;
-        // PHASE 1: Group WITHOUT employee filter â€” to compute available employees
+        // PHASE 1: Group WITHOUT employee filter — to compute available employees
         const grouped = {};
         const _coverageProfiles = new Map();
         (window.empleadosGlobales || []).forEach(emp => {
@@ -1758,8 +1758,8 @@ window.renderExcelView = async () => {
             const h = record.hotel_id || 'Sin Hotel';
             if (selectedHotel !== 'all' && h !== selectedHotel) return;
             const wStart = window.getWeekStartISO(record.fecha);
-            const val = record.turno || 'â€”';
-            const isPending = (val === 'â€”' || val === '-' || !val);
+            const val = record.turno || '—';
+            const isPending = (val === '—' || val === '-' || !val);
             const isSupport = _isSupport(empId, record.fecha);
             const hasId = _hasValidId(empId);
             if (!hasId) _noIdSet.add(empId);
@@ -1771,7 +1771,7 @@ window.renderExcelView = async () => {
             }
             if (!grouped[h]) grouped[h] = {};
             if (!grouped[h][wStart]) grouped[h][wStart] = {};
-            if (!grouped[h][wStart][empId]) grouped[h][wStart][empId] = { values: Array(7).fill('â€”'), hasPending: false, hasSupportPending: false, isSupport, hasValidId: hasId };
+            if (!grouped[h][wStart][empId]) grouped[h][wStart][empId] = { values: Array(7).fill('—'), hasPending: false, hasSupportPending: false, isSupport, hasValidId: hasId };
             const offset = window.getDayOffsetFromWeek(wStart, record.fecha);
             if (offset >= 0 && offset <= 6) {
                 grouped[h][wStart][empId].values[offset] = val;
@@ -1990,7 +1990,7 @@ window.handleExcelCellChange = (sel) => {
     }
     const selects = document.querySelectorAll('.turno-edit-select');
     let changes = 0;
-    const REVERSE_MAP = { 'Mañana': 'M', 'Tarde': 'T', 'T/P': 'TP', 'Noche': 'N', 'Descanso': 'D', 'Pendiente de asignar': 'â€”' };
+    const REVERSE_MAP = { 'Mañana': 'M', 'Tarde': 'T', 'T/P': 'TP', 'Noche': 'N', 'Descanso': 'D', 'Pendiente de asignar': '—' };
     selects.forEach(s => {
         const currentDb = REVERSE_MAP[s.value] || s.value;
         if (s.dataset.original !== currentDb) changes++;
@@ -2012,7 +2012,7 @@ window.saveTurnosBaseDirect = async () => {
         const selects = document.querySelectorAll('select.turno-edit-select');
         const updates = [];
         const blocked = [];
-        const REVERSE_MAP = { 'Mañana': 'M', 'Tarde': 'T', 'T/P': 'TP', 'Noche': 'N', 'Descanso': 'D', 'Pendiente de asignar': 'â€”' };
+        const REVERSE_MAP = { 'Mañana': 'M', 'Tarde': 'T', 'T/P': 'TP', 'Noche': 'N', 'Descanso': 'D', 'Pendiente de asignar': '—' };
         selects.forEach(sel => {
             const original = sel.dataset.original;
             const currentDb = REVERSE_MAP[sel.value] || sel.value;
@@ -2029,7 +2029,7 @@ window.saveTurnosBaseDirect = async () => {
             }
         });
         if (blocked.length > 0) {
-            alert(`âš ï¸ No se pueden guardar turnos para empleados sin ID interno válido:\n${blocked.join(', ')}`);
+            alert(`⚠️  No se pueden guardar turnos para empleados sin ID interno válido:\n${blocked.join(', ')}`);
         }
         if (updates.length === 0) {
             alert('No hay cambios que guardar.');
@@ -2534,9 +2534,9 @@ window.renderChanges = async () => {
         if ($('#ch-stat-emps')) $('#ch-stat-emps').textContent = affectedSet.size;
 
         const shiftLabel = (value) => {
-            if (window.isInvalidLegacyChangeValue(value)) return 'â€”';
+            if (window.isInvalidLegacyChangeValue(value)) return '—';
             const raw = String(value || '').trim();
-            if (!raw) return 'â€”';
+            if (!raw) return '—';
             const norm = window.normalizeShiftValue(raw);
             if (norm === 'M') return 'Mañana';
             if (norm === 'T') return 'Tarde';
@@ -2599,7 +2599,7 @@ window.renderChanges = async () => {
                     <td style="padding:15px; font-weight:700; color:#2563eb;">
                         <button type="button" onclick="event.stopPropagation(); window.editChange('${ev.id}')" title="Editar cambio" style="border:0; background:transparent; color:#2563eb; font:inherit; font-weight:800; padding:0; cursor:pointer;">${dateFmt}</button>
                     </td>
-                    <td style="padding:15px; font-size:0.85rem; color:#64748b;">${ev.hotel_origen || 'â€”'}</td>
+                    <td style="padding:15px; font-size:0.85rem; color:#64748b;">${ev.hotel_origen || '—'}</td>
                     <td style="padding:15px;">
                         <div style="font-weight:800; font-size:0.9rem;">${empName(ev.empleado_id)}${ev.empleado_destino_id ? '<span style="color:#94a3b8; font-weight:400; margin:0 4px;"> â†” </span>' + empName(ev.empleado_destino_id) : ''}</div>
                     </td>
@@ -2608,7 +2608,7 @@ window.renderChanges = async () => {
                         <span class="panel-tag ${typeClass}" style="font-size:0.6rem; letter-spacing:0.02em;">${typeLabel}</span>
                         <div class="integrity-badge ${integrityClass}" style="font-size:0.55rem; margin-top:4px; font-weight:800;">${integrityLabel}</div>
                     </td>
-                    <td style="padding:15px; font-size:0.8rem; color:#64748b; max-width:200px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${ev.observaciones || 'â€”'}</td>
+                    <td style="padding:15px; font-size:0.8rem; color:#64748b; max-width:200px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${ev.observaciones || '—'}</td>
                     <td style="padding:15px; text-align:center;">
                         <div style="display:flex; gap:6px; justify-content:center;">
                             <button class="btn-icon" onclick="window.editChange('${ev.id}')" title="Gestionar"><i class="fas fa-edit"></i></button>
@@ -2697,12 +2697,12 @@ window.ensureChangeEditModal = () => {
 
                 <label style="display:grid; gap:7px; font-size:0.68rem; color:#64748b; font-weight:900; text-transform:uppercase;">Turno original
                     <select id="edit-change-origin" style="height:48px; border:1px solid #d5e1ef; border-radius:14px; padding:0 14px; font-size:0.95rem; font-weight:700;">
-                        <option value="">â€”</option><option value="Mañana">Mañana</option><option value="Tarde">Tarde</option><option value="T/P">T/P</option><option value="Noche">Noche</option><option value="Descanso">Descanso</option>
+                        <option value="">—</option><option value="Mañana">Mañana</option><option value="Tarde">Tarde</option><option value="T/P">T/P</option><option value="Noche">Noche</option><option value="Descanso">Descanso</option>
                     </select>
                 </label>
                 <label style="display:grid; gap:7px; font-size:0.68rem; color:#64748b; font-weight:900; text-transform:uppercase;">Turno solicitado
                     <select id="edit-change-dest" style="height:48px; border:1px solid #d5e1ef; border-radius:14px; padding:0 14px; font-size:0.95rem; font-weight:700;">
-                        <option value="">â€”</option><option value="Mañana">Mañana</option><option value="Tarde">Tarde</option><option value="T/P">T/P</option><option value="Noche">Noche</option><option value="Descanso">Descanso</option>
+                        <option value="">—</option><option value="Mañana">Mañana</option><option value="Tarde">Tarde</option><option value="T/P">T/P</option><option value="Noche">Noche</option><option value="Descanso">Descanso</option>
                     </select>
                 </label>
                 <label style="display:grid; gap:7px; font-size:0.68rem; color:#64748b; font-weight:900; text-transform:uppercase;">Tipo
@@ -4290,7 +4290,7 @@ window.renderEmployeeProfile = () => {
                             return `
                                 <div style="padding:14px; background:white; border-radius:18px; border:1px solid var(--border); border-top:4px solid ${accent}; box-shadow:0 4px 6px -1px rgba(0,0,0,0.05);">
                                     <div style="font-weight:900; font-size:0.7rem; color:${accent}; text-transform:uppercase; letter-spacing:0.05em; margin-bottom:4px;">${ev.tipo} ${ev.isGroup ? '(Agrupado)' : ''}</div>
-                                    <div style="font-weight:800; font-size:0.9rem; color:var(--text); margin-bottom:4px;">${window.fmtDateLegacy(ev.fecha_inicio)}${ev.fecha_fin && ev.fecha_fin !== ev.fecha_inicio ? ` â€” ${window.fmtDateLegacy(ev.fecha_fin)}` : ''}</div>
+                                    <div style="font-weight:800; font-size:0.9rem; color:var(--text); margin-bottom:4px;">${window.fmtDateLegacy(ev.fecha_inicio)}${ev.fecha_fin && ev.fecha_fin !== ev.fecha_inicio ? ` — ${window.fmtDateLegacy(ev.fecha_fin)}` : ''}</div>
                                     <div style="font-size:0.7rem; color:var(--text-dim); font-weight:700;">${days} D&Iacute;A${days > 1 ? 'S' : ''} NATURALES</div>
                                     <div style="margin-top:8px; font-size:0.7rem; font-style:italic; color:var(--text-dim); border-top:1px solid #f1f5f9; padding-top:8px;">${ev.observaciones || 'Sin detalles'}</div>
                                 </div>
@@ -4376,7 +4376,7 @@ window.renderEmployeeProfile = () => {
                         <div style="display:grid; grid-template-columns:1fr auto; gap:12px; align-items:center; padding:14px 16px; border:1px solid var(--border); border-radius:16px; background:rgba(255,255,255,0.9);">
                             <div>
                                 <div style="font-weight:800; font-size:0.84rem; color:var(--text);">${ev.tipo} ${ev.isGroup ? '(Agrupado)' : ''}</div>
-                                <span style="margin-left:10px; font-size:0.75rem; color:var(--text-dim);">${window.fmtDateLegacy(ev.fecha_inicio)}${ev.fecha_fin && ev.fecha_fin !== ev.fecha_inicio ? ` â€” ${window.fmtDateLegacy(ev.fecha_fin)}` : ''}</span>
+                                <span style="margin-left:10px; font-size:0.75rem; color:var(--text-dim);">${window.fmtDateLegacy(ev.fecha_inicio)}${ev.fecha_fin && ev.fecha_fin !== ev.fecha_inicio ? ` — ${window.fmtDateLegacy(ev.fecha_fin)}` : ''}</span>
                             </div>
                             <div style="font-size:0.8rem; font-weight:600; color:${ev.estado === 'anulado' ? '#ef4444' : '#10b981'};">${ev.estado || 'Finalizado'}</div>
                         </div>
@@ -4397,7 +4397,7 @@ window.renderEmployeeProfile = () => {
                             return `
                                 <div style="display:flex; justify-content:space-between; align-items:center; padding:15px; background:var(--bg2); border-radius:15px; border:1px solid var(--border);">
                                     <div>
-                                        <div style="font-weight:800; font-size:0.9rem;">${window.fmtDateLegacy(ev.fecha_inicio)}${ev.fecha_fin && ev.fecha_fin !== ev.fecha_inicio ? ` â€” ${window.fmtDateLegacy(ev.fecha_fin)}` : ''}</div>
+                                        <div style="font-weight:800; font-size:0.9rem;">${window.fmtDateLegacy(ev.fecha_inicio)}${ev.fecha_fin && ev.fecha_fin !== ev.fecha_inicio ? ` — ${window.fmtDateLegacy(ev.fecha_fin)}` : ''}</div>
                                         <div style="font-size:0.75rem; color:var(--text-dim); margin-top:3px;">${days} d&iacute;as naturales ${ev.isGroup ? '(Agrupados)' : ''}</div>
                                     </div>
                                     <span class="status-pill ${ev.estado === 'activo' ? 'activo' : 'baja'}">${ev.estado || 'activo'}</span>
@@ -4615,6 +4615,7 @@ window.createPuestosPreviewModel = ({
     dates = [],
     sourceRows = [],
     rows = [],
+    allRows = [],
     eventos = [],
     employees = []
 } = {}) => {
@@ -4642,14 +4643,25 @@ window.createPuestosPreviewModel = ({
             
             // PRIORIZAR SUPABASE: Si existe un turno en la base de datos, sobrescribe al Excel.
             const sRowCanonical = (window.ShiftResolver?.getCanonicalEmployeeId ? window.ShiftResolver.getCanonicalEmployeeId(sRow.empleadoId || sRow.displayName, { employees }) : null) || window.normalizeId(sRow.empleadoId);
-            const overrideDbRow = (rows || []).find(r => {
-                if (r.fecha !== date) return false;
+            const matchEmp = (r) => {
                 const rCanonical = (window.ShiftResolver?.getCanonicalEmployeeId ? window.ShiftResolver.getCanonicalEmployeeId(r.empleado_id, { employees }) : null) || window.normalizeId(r.empleado_id);
                 return (sRowCanonical && rCanonical && sRowCanonical === rCanonical) || 
                        window.normalizeId(r.empleado_id) === window.normalizeId(sRow.empleadoId) || 
                        window.normalizeId(r.empleado_id) === window.normalizeId(sRow.displayName);
-            });
-            const turno = overrideDbRow ? overrideDbRow.turno : turnoExcel;
+            };
+
+            const overrideDbRow = (rows || []).find(r => r.fecha === date && matchEmp(r) && (!r.hotel_id || window.normalizeId(r.hotel_id) === window.normalizeId(hotel)));
+            const otherHotelDbRow = (allRows.length > 0 ? allRows : (rows || [])).find(r => r.fecha === date && matchEmp(r) && r.hotel_id && window.normalizeId(r.hotel_id) !== window.normalizeId(hotel));
+
+            let turno = null;
+            if (overrideDbRow) {
+                turno = overrideDbRow.turno;
+            } else if (otherHotelDbRow) {
+                turno = '—';
+            } else {
+                turno = turnoExcel;
+            }
+            if (sRow.values) sRow.values[idx] = turno;
 
             baseRowsFlat.push({
                 empleadoId: sRow.empleadoId,
@@ -4986,12 +4998,12 @@ window.createPuestosPreviewModel = ({
                     });
 
 
-                    // CESE DE EMPRESA: Si el empleado está dado de baja, respetar el 'â€”' sin sobreescribir con el turno base del titular
+                    // CESE DE EMPRESA: Si el empleado está dado de baja, respetar el '—' sin sobreescribir con el turno base del titular
                     if (res.esBajaEmpresa) {
                         return { ...res, _finalState: res };
                     }
 
-                    const isBaseDescanso = !turnoBase || turnoBase === 'D' || turnoBase === 'Descanso' || turnoBase === 'â€”';
+                    const isBaseDescanso = !turnoBase || turnoBase === 'D' || turnoBase === 'Descanso' || turnoBase === '—';
                     const shouldKeepResolvedTurno = res.intercambio || res.origen === 'CAMBIO_TURNO' || res.origen === 'INTERCAMBIO_TURNO' || isBaseDescanso || !!res.horario;
                     const turnoOperativo = shouldKeepResolvedTurno ? res.turno : (turnoBase || res.turno);
 
@@ -5142,6 +5154,9 @@ window.createPuestosPreviewModel = ({
                 if (status.sustitutoId) {
                     occupantId = status.sustitutoId;
                     isSustitucion = true;
+                } else if (status.payload?.cobertura === 'interna' || status.payload?.sin_vacante === true || status.payload?.cobertura_interna === true || (status.tipo === 'VAC' && !status.sustitutoId)) {
+                    // Cobertura asumida internamente por la plantilla o sin sustituto: no generar fila vacante operativa
+                    return;
                 } else {
                     occupantId = 'VACANTE-' + normTitular;
                     isVacante = true;
@@ -5193,7 +5208,7 @@ window.createPuestosPreviewModel = ({
                             : false
                     );
                     if (allTerminated) {
-                        // Empleado cesado en toda la semana â€” omitir fila
+                        // Empleado cesado en toda la semana — omitir fila
                         assignedNorms.add(canonicalTitular);
                     } else {
                         const titularName = getDisplayName(r.empleadoId, r);
@@ -5658,7 +5673,7 @@ window.getTurnoEmpleadoLabel = (turnoEmpleado) => {
     if (turnoEmpleado.incidencia === 'PERM') return 'Permiso';
 
     const key = window.TurnosRules?.shiftKey(turnoEmpleado.turno || '', 'NORMAL') || '';
-    return window.TurnosRules?.definitions?.[key]?.label || turnoEmpleado.turno || 'â€”';
+    return window.TurnosRules?.definitions?.[key]?.label || turnoEmpleado.turno || '—';
 };
 
 window.renderEmpleadoRowHeader = (employee, { showVacationIcon = false, isCompact = false } = {}) => {
@@ -5668,7 +5683,7 @@ window.renderEmpleadoRowHeader = (employee, { showVacationIcon = false, isCompac
     if (employee?.isVacante) {
         return `
         <div style="display:flex; flex-direction:column; gap:2px;">
-            <span style="font-weight:800; color:#ef4444; font-size:0.82rem; line-height:1.3;">âš ï¸ VACANTE</span>
+            <span style="font-weight:800; color:#ef4444; font-size:0.82rem; line-height:1.3;">⚠️  VACANTE</span>
         </div>`;
     }
 
@@ -5716,6 +5731,7 @@ window.renderEmpleadoCell = (turnoEmpleado, { isCompact = false } = {}) => {
     // Capsule definitions (Shifts & Incidences)
     // NOTA: Las claves coinciden exactamente con las que devuelve TurnosRules.shiftKey (minúsculas)
     const capsuleStyles = {
+        mn:   { bg: '#fef3c7', color: '#92400e', border: '#fcd34d', label: 'Mañana + Noche', icon: '☀️🌙' },
         v:    { bg: '#e0f2fe', color: '#0369a1', border: '#7dd3fc', label: 'Vacaciones', icon: '\u{1F3D6}\u{FE0F}' },
         b:    { bg: '#fee2e2', color: '#b91c1c', border: '#fca5a5', label: 'Baja', icon: '' },
         perm: { bg: '#ffedd5', color: '#9a3412', border: '#fdba74', label: 'Permiso', icon: '' },
@@ -5727,7 +5743,7 @@ window.renderEmpleadoCell = (turnoEmpleado, { isCompact = false } = {}) => {
     };
 
     const sKey = window.TurnosRules?.shiftKey?.(turnoVisible, 'NORMAL') || String(turnoVisible);
-    // sKey ya viene en minúsculas desde shiftKey â€” NO convertir a mayúsculas
+    // sKey ya viene en minúsculas desde shiftKey — NO convertir a mayúsculas
     const styleKey = sKey.toLowerCase();
     const style = capsuleStyles[styleKey] || { bg: '#f8fafc', color: '#475569', border: '#e2e8f0', label: turnoVisible || '-', icon: '' };
 
@@ -5941,7 +5957,7 @@ window.renderPreview = async () => {
                     const mm = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"][d.getMonth()];
                     return `${dd} de ${mm}`;
                 };
-                display.textContent = `${fmt(start)} â€” ${fmt(end)} ${end.getFullYear()}`;
+                display.textContent = `${fmt(start)} — ${fmt(end)} ${end.getFullYear()}`;
             }
         } else {
             const [y, m] = rawMonth.split('-').map(Number);
@@ -5958,7 +5974,7 @@ window.renderPreview = async () => {
         window._lastRenderedPreviewSnapshotSource.semana_fin = endISO;
 
         // Cargar eventos con rango extendido Â±90 días para capturar periodos largos
-        // (ej. VAC Cristina 20/04â€“03/05 debe estar visible al ver semana 20/04 O 27/04)
+        // (ej. VAC Cristina 20/04–03/05 debe estar visible al ver semana 20/04 O 27/04)
         const extStart = new Date(start); extStart.setDate(extStart.getDate() - 90);
         const extEnd   = new Date(end);   extEnd.setDate(extEnd.getDate() + 90);
         const extStartISO = window.isoDate(extStart);
@@ -6054,7 +6070,8 @@ window.renderPreview = async () => {
                 hotel: hName,
                 dates: columns.map(c => c.date),
                 sourceRows: hotelSourceRows,
-                rows: data,
+                rows: data.filter(r => !r.hotel_id || window.normalizeId(r.hotel_id) === window.normalizeId(hName)),
+                allRows: data,
                 eventos,
                 employees: profiles
             });
@@ -6396,7 +6413,7 @@ window.debugVacCristina = (fechaTest = '2026-04-20') => {
                     ? '-R PROBLEMA DE DATOS: no hay eventos de Cristina en eventosActivos -  fallo en fetch/query'
                     : todosVAC.filter(e => JSON.stringify(e).toLowerCase().includes('cristina')).length === 0
                         ? '-R PROBLEMA DE MATCHING: hay eventos de Cristina pero ninguno de tipo VAC -  posible discrepancia campo tipo'
-                        : 'âš ï¸ PROBLEMA DE MOTOR/RENDER: el evento VAC existe y matchea pero resolveEmployeeDay no lo aplica'
+                        : '⚠️  PROBLEMA DE MOTOR/RENDER: el evento VAC existe y matchea pero resolveEmployeeDay no lo aplica'
         );
         return testResult;
     } else {
@@ -6584,8 +6601,8 @@ window.buildEmployeeLineModel = (empleado) => {
     let nextShift = normalizedHistory.find(h => h.fecha > todayISO && isWorkLikeShift(h)) || null;
     const id = profile.id || stats.id || stats.emp || '';
     
-    let todayLabel = todayShift?.turno || 'â€”';
-    let nextLabel = nextShift?.turno || 'â€”';
+    let todayLabel = todayShift?.turno || '—';
+    let nextLabel = nextShift?.turno || '—';
 
     const baseIndex = window._lastBaseIndex || window._baseIndex || null;
     const allEventsForResolving = window.eventosActivos || window.eventosGlobales || events || [];
@@ -6602,7 +6619,7 @@ window.buildEmployeeLineModel = (empleado) => {
             allEvents: allEventsForResolving,
             resolveId
         });
-        if (resHoy && resHoy.turno && resHoy.turno !== 'â€”') {
+        if (resHoy && resHoy.turno && resHoy.turno !== '—') {
             const cls = window.TurnosRules ? (window.TurnosRules.shiftKey(resHoy.turno, resHoy.incidencia) || 'x') : 'x';
             todayShift = {
                 turno: resHoy.turno,
@@ -6612,11 +6629,11 @@ window.buildEmployeeLineModel = (empleado) => {
             todayLabel = resHoy.turno;
         } else {
             todayShift = null;
-            todayLabel = 'â€”';
+            todayLabel = '—';
         }
 
         nextShift = null;
-        nextLabel = 'â€”';
+        nextLabel = '—';
         let curr = new Date(todayISO + 'T12:00:00');
         for (let d = 1; d <= 30; d++) {
             curr.setDate(curr.getDate() + 1);
@@ -6631,7 +6648,7 @@ window.buildEmployeeLineModel = (empleado) => {
                 allEvents: allEventsForResolving,
                 resolveId
             });
-            if (res && res.turno && res.turno !== 'â€”') {
+            if (res && res.turno && res.turno !== '—') {
                 const cls = window.TurnosRules ? (window.TurnosRules.shiftKey(res.turno, res.incidencia) || 'x') : 'x';
                 nextShift = {
                     turno: res.turno,
@@ -6698,8 +6715,8 @@ window.buildEmployeeLineModel = (empleado) => {
     if (isExcedencia) {
         todayShift = null;
         nextShift = null;
-        todayLabel = 'â€”';
-        nextLabel = 'â€”';
+        todayLabel = '—';
+        nextLabel = '—';
     }
 
     const bajas = (stats.b || 0) + (stats.p || 0);
@@ -6751,8 +6768,8 @@ window.renderEmployeeLine = (line) => {
     const nextDate = nextShiftDateVal ? new Date(`${nextShiftDateVal}T12:00:00`).toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit' }) : '';
     const id = escapeHtml(line.id || 'N/A');
     
-    const todayText = line.todayLabel || line.todayShift?.turno || line.turnoHoy?.turno || 'â€”';
-    const nextText = line.nextLabel || line.nextShift?.turno || line.proximoTurno?.turno || 'â€”';
+    const todayText = line.todayLabel || line.todayShift?.turno || line.turnoHoy?.turno || '—';
+    const nextText = line.nextLabel || line.nextShift?.turno || line.proximoTurno?.turno || '—';
     return `
         <div class="emp-line-row advanced" style="display:grid; grid-template-columns: 110px 2fr 1.1fr 1.4fr 0.9fr 0.9fr 0.9fr 0.9fr 0.9fr 140px; gap:10px; align-items:center; padding:14px 12px; border-bottom:1px solid var(--border); background:var(--surface);" onclick="window.openEmpDrawer('${id}')">
             <span class="el-id" style="display:flex; flex-direction:column; gap:2px;">
@@ -7744,7 +7761,7 @@ window.validatePublishChanges = (changes) => {
 // [REPLACED] Old validateSystemHealth (V1, schema: OK/CRITICAL/WARNING) removed.
 // The authoritative definition is window.validateSystemHealth (schema: ok/criticals/warnings)
 // defined in the DASHBOARD section below. JS last-write wins, but having two definitions
-// is confusing â€” the V1 below is superseded by the V2 in the dashboard block.
+// is confusing — the V1 below is superseded by the V2 in the dashboard block.
 
 
 window.buildPublicationSnapshotPreview = async (weekStart, hotelName = 'all') => {
@@ -7814,6 +7831,7 @@ window.buildPublicationSnapshotPreview = async (weekStart, hotelName = 'all') =>
                     dates: dates,
                     sourceRows: weekExcelRows,
                     rows: data.filter(r => r.hotel_id === hName),
+                    allRows: data,
                     eventos,
                     employees: profiles
                 });
@@ -8301,7 +8319,7 @@ window.buildPublicationSnapshotPreview = async (weekStart, hotelName = 'all') =>
                 });
             };
 
-            // Helper: check all valid marker fields â€” 🔄 lives in icons[], not cell.code
+            // Helper: check all valid marker fields — 🔄 lives in icons[], not cell.code
             const hasCambioMarker = (cell) => {
                 if (!cell) return false;
                 const iconsArr = Array.isArray(cell.icons) ? cell.icons : [];
@@ -8329,7 +8347,7 @@ window.buildPublicationSnapshotPreview = async (weekStart, hotelName = 'all') =>
                     hasMarker
                 });
                 if (cell && !hasMarker) {
-                    // Only warn â€” not block â€” when marker is truly absent
+                    // Only warn — not block — when marker is truly absent
                     warnings.push('[AVISO] Intercambio sin marker para ' + rowOrig.nombreVisible + ' el ' + evStart + ' (icons=' + JSON.stringify(cell.icons) + ')');
                 }
             }
@@ -8359,7 +8377,7 @@ window.buildPublicationSnapshotPreview = async (weekStart, hotelName = 'all') =>
         const id = r.empleado_id || r.nombreVisible;
         if (!allEmps[id]) allEmps[id] = [];
         Object.entries(r.cells).forEach(([fecha, c]) => {
-            if (c.code && c.code !== 'â€”' && c.code !== '') {
+            if (c.code && c.code !== '—' && c.code !== '') {
                 allEmps[id].push({ fecha, hotel: s.hotel_nombre });
             }
         });
@@ -8849,7 +8867,7 @@ window.validateSystemHealth = async function(weekStart, weekEnd) {
             health.criticals.push('TurnosDB no inicializado');
         }
 
-        // 7. Stale snapshot check â€” detect when published snapshot predates active events
+        // 7. Stale snapshot check — detect when published snapshot predates active events
         try {
             if (window.TurnosDB && window.TurnosDB.client) {
                 const hotelsToAudit = ['Sercotel Guadiana', 'Cumbria Spa&Hotel'];
@@ -8876,7 +8894,7 @@ window.validateSystemHealth = async function(weekStart, weekEnd) {
                         if (newerActive.length > 0) {
                             health.ok = false;
                             health.criticals.push(
-                                `Snapshot desactualizado: ${hotel} semana ${weekStart} â€” ` +
+                                `Snapshot desactualizado: ${hotel} semana ${weekStart} — ` +
                                 `publicado ${lastPubDate.toLocaleDateString()} pero hay ${newerActive.length} evento(s) activo(s) posteriores. ` +
                                 `Debe republicarse.`
                             );
@@ -8975,7 +8993,7 @@ window.getDailyShiftCoverageRisks = async function(startISO = null, endISO = nul
                         if (String(row.rowType || 'operativo').toLowerCase() === 'placeholder') return;
                         const cell = (row.cells || row.dias || row.days || {})[date];
                         const rawCellText = String(cell?.code || cell?.turno || cell?.label || '').trim();
-                        if (rawCellText && rawCellText !== '-' && rawCellText !== 'â€”') hasAnyAssignment = true;
+                        if (rawCellText && rawCellText !== '-' && rawCellText !== '—') hasAnyAssignment = true;
                         const code = codeOf(cell);
                         if (counts[code] !== undefined) counts[code] += 1;
                         if (isSupportRow(row) && ['M', 'T', 'N'].includes(code)) counts.supportWorking += 1;
@@ -9648,7 +9666,7 @@ window.employeeProfileActorLabel = (ev) => {
 window.employeeProfileDateRangeLabel = (start, end) => {
     if (!start) return 'No informado';
     if (!end || end === start) return window.fmtDateLegacy(start);
-    return `${window.fmtDateLegacy(start)} â€” ${window.fmtDateLegacy(end)}`;
+    return `${window.fmtDateLegacy(start)} — ${window.fmtDateLegacy(end)}`;
 };
 
 window.employeeProfileShiftCodeMeta = (value) => {
@@ -9661,7 +9679,7 @@ window.employeeProfileShiftCodeMeta = (value) => {
     if (code === 'TP' || raw === 'T/P') return { code: 'TP', cls: 'tp', label: 'T/P' };
     if (code.startsWith('VAC')) return { code: 'VAC', cls: 'v', label: 'Vacaciones' };
     if (code.startsWith('BAJA') || code.startsWith('IT') || code.startsWith('PERM')) return { code: 'BAJA', cls: 'b', label: 'Baja / Permiso' };
-    return { code: raw || 'â€”', cls: 'x', label: raw || 'â€”' };
+    return { code: raw || '—', cls: 'x', label: raw || '—' };
 };
 
 window.loadEmployeeProfileBaseRows = async (empId, refISO) => {
@@ -10299,7 +10317,7 @@ window.buildEmployeeProfileModel = (empId, refISO) => {
     }) || null;
     const futureWorkingDays = monthDays.filter(day => day.fecha > todayISO && ['M', 'T', 'N'].includes(window.employeeProfileShiftCodeMeta(day.turno || day.detalle?.turno).code));
     const nextShiftDay = futureWorkingDays[0] || null;
-    const futureAssignedDays = monthDays.filter(day => day.fecha > todayISO && window.employeeProfileShiftCodeMeta(day.turnoBase || day.detalle?.turnoBase).code !== 'â€”');
+    const futureAssignedDays = monthDays.filter(day => day.fecha > todayISO && window.employeeProfileShiftCodeMeta(day.turnoBase || day.detalle?.turnoBase).code !== '—');
     const kpiDays = yearDays;
     const turnosBase = kpiDays.filter(day => ['M', 'T', 'N', 'D', 'TP'].includes(window.employeeProfileShiftCodeMeta(day.turnoBase || day.detalle?.turnoBase).code));
     const workedDays = kpiDays.filter(day => ['M', 'T', 'N', 'TP'].includes(window.employeeProfileShiftCodeMeta(day.turno || day.detalle?.turno).code));
@@ -10953,8 +10971,8 @@ window.renderEmployeeProfile = () => {
     const emp = model.emp;
     const refDate = new Date(`${refISO}T12:00:00`);
     const titlePeriod = refDate.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' });
-    const currentShiftLabel = model.hoy ? window.employeeShiftLabel(model.hoy).replace('&mdash;', 'â€”') : 'No informado';
-    const nextShiftLabel = model.proximoTurno ? `${window.employeeShiftLabel(model.proximoTurno).replace('&mdash;', 'â€”')} · ${window.fmtDateLegacy(model.proximoTurno.fecha)}` : 'Sin turno futuro';
+    const currentShiftLabel = model.hoy ? window.employeeShiftLabel(model.hoy).replace('&mdash;', '—') : 'No informado';
+    const nextShiftLabel = model.proximoTurno ? `${window.employeeShiftLabel(model.proximoTurno).replace('&mdash;', '—')} · ${window.fmtDateLegacy(model.proximoTurno.fecha)}` : 'Sin turno futuro';
     const incidenciaLabel = model.incidenciaActiva ? window.employeeProfileEventLabel(model.incidenciaActiva) : 'Sin incidencia';
     const assignedHotels = Array.isArray(emp.hoteles_asignados) ? emp.hoteles_asignados.filter(Boolean) : (typeof emp.hoteles_asignados === 'string' ? emp.hoteles_asignados.split(/[,;|]/).map(h => h.trim()).filter(Boolean) : []);
     const assignedHotelLabel = assignedHotels.length > 1 ? 'Ambos hoteles' : (assignedHotels[0] || emp.hotel || 'No informado');
@@ -11006,7 +11024,7 @@ window.renderEmployeeProfile = () => {
         `;
     }
     const monthRows = (model.calendario || []).filter(day => !day.outsideMonth);
-    const renderRowsTable = (rows, emptyText) => rows.length > 0 ? `<div style="display:grid; gap:10px;">${rows.map(row => `<div style="display:grid; grid-template-columns:92px 1fr 1fr 120px; gap:12px; align-items:center; padding:12px 14px; border:1px solid var(--border); border-radius:14px; background:white;"><strong style="font-size:0.78rem; color:var(--text);">${escapeHtml(window.fmtDateLegacy(row.fecha))}</strong><span style="font-size:0.78rem; color:var(--text);">${row.main}</span><span style="font-size:0.76rem; color:var(--text-dim);">${row.secondary || 'â€”'}</span><span style="font-size:0.74rem; color:${row.badgeColor || 'var(--accent)'}; font-weight:700; text-align:right;">${row.badge || 'â€”'}</span></div>`).join('')}</div>` : `<div style="padding:26px; text-align:center; opacity:0.45; font-size:0.82rem;">${emptyText}</div>`;
+    const renderRowsTable = (rows, emptyText) => rows.length > 0 ? `<div style="display:grid; gap:10px;">${rows.map(row => `<div style="display:grid; grid-template-columns:92px 1fr 1fr 120px; gap:12px; align-items:center; padding:12px 14px; border:1px solid var(--border); border-radius:14px; background:white;"><strong style="font-size:0.78rem; color:var(--text);">${escapeHtml(window.fmtDateLegacy(row.fecha))}</strong><span style="font-size:0.78rem; color:var(--text);">${row.main}</span><span style="font-size:0.76rem; color:var(--text-dim);">${row.secondary || '—'}</span><span style="font-size:0.74rem; color:${row.badgeColor || 'var(--accent)'}; font-weight:700; text-align:right;">${row.badge || '—'}</span></div>`).join('')}</div>` : `<div style="padding:26px; text-align:center; opacity:0.45; font-size:0.82rem;">${emptyText}</div>`;
     const alertHTML = model.alerts.length > 0 ? `<section class="emp-card glass" style="padding:18px 20px; border-radius:18px; border:1px solid var(--border);"><h3 style="margin:0 0 12px; font-size:0.88rem; font-weight:800;">Alertas</h3><div style="display:grid; gap:10px;">${model.alerts.map(alert => `<div class="emp-alert-box" style="display:flex; align-items:flex-start; gap:10px; padding:11px 13px; border-radius:13px; border:1px solid ${alert.level === 'danger' ? 'rgba(239,68,68,0.25)' : 'rgba(245,158,11,0.25)'}; background:${alert.level === 'danger' ? 'rgba(239,68,68,0.06)' : 'rgba(245,158,11,0.06)'};"><i class="fas ${alert.level === 'danger' ? 'fa-triangle-exclamation' : 'fa-circle-info'}" style="color:${alert.level === 'danger' ? '#dc2626' : '#d97706'};"></i><span style="font-size:0.8rem; font-weight:600; color:var(--text);">${escapeHtml(alert.text)}</span></div>`).join('')}</div></section>` : '';
     const headerHTML = `<div class="emp-premium-header"><div class="emp-header-info"><div class="emp-avatar" style="background:var(--accent); color:white; width:52px; height:52px; border-radius:15px; display:flex; align-items:center; justify-content:center; font-size:1.3rem; font-weight:800; box-shadow:0 8px 16px rgba(0,0,0,0.08);">${escapeHtml((emp.nombre || 'E').charAt(0))}</div><div class="emp-title-block"><h2 style="margin:0; font-size:1.2rem; font-weight:800; color:var(--text);">${escapeHtml(emp.nombre)}</h2><div style="margin-top:4px; font-size:0.74rem; color:#94a3b8; font-weight:600;">${escapeHtml(emp.id_interno || 'No informado')}</div><div style="display:flex; flex-wrap:wrap; gap:8px; margin-top:10px;"><span class="status-pill ${model.typeMeta.cls}">${escapeHtml(model.typeMeta.label)}</span><span class="status-pill ${model.laborStatus.cls}">${escapeHtml(model.laborStatus.label)}</span><span class="status-pill ${model.currentRoleMeta.cls}">${escapeHtml(model.currentRoleMeta.label)}</span><span class="status-pill activo">${escapeHtml(assignedHotelLabel)}</span></div></div></div><div class="emp-header-actions" style="display:grid; gap:4px; text-align:right; max-width:230px;"><div style="font-size:0.72rem; color:var(--text-dim); font-weight:700; text-transform:uppercase;">Edición</div><div style="font-size:0.82rem; color:var(--text); font-weight:700;">ID protegido</div><div style="font-size:0.72rem; color:var(--text-dim); line-height:1.35;">El ID interno no se edita. El resto de datos se gestiona desde la pesta&ntilde;a Ficha.</div></div></div>`;
     const pendingTopDays = ((model.pendingPolicy && model.pendingPolicy.dayList) || []);
@@ -11055,7 +11073,7 @@ window.renderEmployeeProfile = () => {
     } else if (currentTab === 'profile') {
         tabContent = window.renderEmployeeProfileEditForm(emp, model);
     } else if (currentTab === 'turns') {
-        const tableRows = monthRows.map(day => { const resolvedLabel = window.employeeShiftLabel(day).replace('&mdash;', 'â€”'); const finalMeta = window.employeeProfileShiftCodeMeta(resolvedLabel); const baseMeta = window.employeeProfileShiftCodeMeta(day.turnoBase || day.detalle?.turnoBase); return { fecha: day.fecha, main: `<strong>${escapeHtml(day.diaSemana || new Date(`${day.fecha}T12:00:00`).toLocaleDateString('es-ES', { weekday: 'short' }))}</strong> · ${escapeHtml(day.hotel || day.detalle?.hotel || model.hotelActual || 'No informado')}`, secondary: `Base: ${escapeHtml(baseMeta.label || baseMeta.code)} · Resuelto: ${escapeHtml(finalMeta.label || resolvedLabel)}${day.cambio ? ' 🔄' : ''}${finalMeta.code === 'N' ? ' 🌙' : ''}${day.sustitucion ? ' · Sustitución' : ''}${day.incidencia ? ` · ${escapeHtml(window.employeeProfileEventLabel(day.incidencia))}` : ''}`, badge: escapeHtml(day.detalle?.origen || day.incidencia?.tipo || (day.sustitucion ? 'sustitucion' : 'base')) }; });
+        const tableRows = monthRows.map(day => { const resolvedLabel = window.employeeShiftLabel(day).replace('&mdash;', '—'); const finalMeta = window.employeeProfileShiftCodeMeta(resolvedLabel); const baseMeta = window.employeeProfileShiftCodeMeta(day.turnoBase || day.detalle?.turnoBase); return { fecha: day.fecha, main: `<strong>${escapeHtml(day.diaSemana || new Date(`${day.fecha}T12:00:00`).toLocaleDateString('es-ES', { weekday: 'short' }))}</strong> · ${escapeHtml(day.hotel || day.detalle?.hotel || model.hotelActual || 'No informado')}`, secondary: `Base: ${escapeHtml(baseMeta.label || baseMeta.code)} · Resuelto: ${escapeHtml(finalMeta.label || resolvedLabel)}${day.cambio ? ' 🔄' : ''}${finalMeta.code === 'N' ? ' 🌙' : ''}${day.sustitucion ? ' · Sustitución' : ''}${day.incidencia ? ` · ${escapeHtml(window.employeeProfileEventLabel(day.incidencia))}` : ''}`, badge: escapeHtml(day.detalle?.origen || day.incidencia?.tipo || (day.sustitucion ? 'sustitucion' : 'base')) }; });
         tabContent = `<div style="display:grid; grid-template-columns:1.2fr 0.9fr; gap:18px; align-items:start;"><section class="emp-card glass" style="padding:20px; border-radius:18px; border:1px solid var(--border);"><div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;"><div><h3 style="margin:0; font-size:0.9rem; font-weight:800;">Turnos del periodo</h3><div style="font-size:0.72rem; color:var(--text-dim); font-weight:700; margin-top:4px;">Navegacion mensual</div></div><div style="display:flex; gap:8px;"><button onclick="window.moveEmployeeProfilePeriod(-1)" class="btn-premium" aria-label="Mes anterior" title="Mes anterior" style="padding:8px 12px; min-width:118px; border-radius:12px; font-weight:800;"><i class="fas fa-chevron-left" style="margin-right:8px;"></i>Anterior</button><button onclick="window.moveEmployeeProfilePeriod(1)" class="btn-premium" aria-label="Mes siguiente" title="Mes siguiente" style="padding:8px 12px; min-width:118px; border-radius:12px; font-weight:800;">Siguiente<i class="fas fa-chevron-right" style="margin-left:8px;"></i></button></div></div><div style="margin-bottom:12px; font-size:0.8rem; color:var(--accent); font-weight:800; text-transform:capitalize;">${titlePeriod}</div>${renderRowsTable(tableRows, 'No hay turnos para este periodo.')}</section><section class="emp-card glass" style="padding:20px; border-radius:18px; border:1px solid var(--border);"><h3 style="margin:0 0 14px; font-size:0.9rem; font-weight:800;">Calendario</h3>${window.renderEmployeeProfileCalendar(model)}</section></div>`;
     } else if (currentTab === 'vacations') {
         const vacRows = (model.yearGroupedVacs || []).sort((a, b) => String(a.fecha_inicio || '').localeCompare(String(b.fecha_inicio || ''))).map(ev => {

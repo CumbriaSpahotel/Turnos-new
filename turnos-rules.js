@@ -84,6 +84,17 @@
         if (text.startsWith('baja') || text.includes('baja')) return 'b';
         if (text.startsWith('perm') || text.includes('permiso')) return 'perm';
 
+        // 1.5 Turnos dobles / compuestos (ej. M/N, Mañana + Noche)
+        if (
+            text === 'mn' ||
+            text === 'm/n' ||
+            text === 'm+n' ||
+            text === 'm-n' ||
+            text === 'm y n' ||
+            (text.includes('m') && text.includes('n') && (text.includes('/') || text.includes('+') || text.includes(' y '))) ||
+            (text.includes('manana') && text.includes('noche'))
+        ) return 'mn';
+
         // 2. Turno Partido (Coincidencia exacta e inequívoca, antes de otros turnos para no chocar con "tp" o "t/p")
         if (
             text === 'p' ||
@@ -108,6 +119,13 @@
     };
 
     const definitions = {
+        mn: {
+            label: 'Mañana + Noche',
+            icon: '☀️🌙',
+            publicClass: 'v-doble',
+            mobileClass: 'mn',
+            adminStyle: 'background:#fef3c7; color:#92400e; border:1px solid #fcd34d;'
+        },
         m: {
             label: 'Mañana',
             icon: '\u{2600}\u{FE0F}',

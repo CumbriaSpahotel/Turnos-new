@@ -695,8 +695,15 @@ tipo=${normalized.tipo}`);
                 result.absenceType = tipo;
                 result.isCoverageMarker = true;
                 result.origen = tipo;
-                result.turno = window.getTurnoBaseDeEmpleado(tId, date, baseIndex) || '—';
-                const coverShift = window.normalizeShiftValue(result.turno);
+                const coverTurno = window.getTurnoBaseDeEmpleado(tId, date, baseIndex) || '—';
+                const coverShift = window.normalizeShiftValue(coverTurno);
+                if (turnoBase && (String(turnoBase).includes('/') || String(turnoBase).includes('+') || String(turnoBase).toLowerCase().includes('mn'))) {
+                    result.turno = turnoBase;
+                } else if (ev.payload?.doble_turno && turnoBase && coverTurno) {
+                    result.turno = `${turnoBase}/${coverTurno}`;
+                } else {
+                    result.turno = coverTurno;
+                }
                 
                 // REGLA 📌 V12.8: Solo para Baja o Permiso. NO para Vacaciones.
                 const motivoReal = window.normalizeTipo(ev.payload?.incidencia_cubierta || ev.payload?.motivo || tipo);
