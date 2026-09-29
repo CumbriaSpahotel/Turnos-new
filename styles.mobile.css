@@ -122,6 +122,7 @@ td {
 .p-d { background: #f1f5f9; color: #475569; }
 .p-v { background: #fae8ff; color: #86198f; }
 .p-b { background: #fee2e2; color: #991b1b; }
+.p-mn { background: #fef3c7; color: #92400e; border: 1px solid #fcd34d; }
 
 .pill-sub { border: 2px solid var(--accent); }
 

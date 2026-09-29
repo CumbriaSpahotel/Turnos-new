@@ -378,6 +378,10 @@
       sourceReason.includes("OVERRIDE")
     );
 
+    if (visualClass === "mn" || normalized === "MN" || normalized === "M/N" || normalized.includes("MAÑANA + NOCHE") || normalized.includes("MANANA + NOCHE")) {
+      const changeHtml = hasChange ? '<span class="change-indicator-bottom" aria-label="Cambio de turno">↺</span>' : '';
+      return `M/N${changeHtml}`;
+    }
     const shortByClass = { m: "M", t: "T", n: "N", d: "D" };
     if (visualClass === "p") return "T/P";
 
@@ -419,6 +423,7 @@
     const rawCode = String(cell?.code || cell?.turno || cell?.turnoFinal || cell?.label || "").trim();
     const canonical = window.normalizeShiftValue ? window.normalizeShiftValue(rawCode) : rawCode.toUpperCase();
     if (canonical === "TP" || canonical === "P") return "p";
+    if (canonical === "MN" || canonical === "M/N" || canonical === "M+N" || rawCode.toUpperCase().includes("MAÑANA + NOCHE") || rawCode.toUpperCase().includes("MANANA + NOCHE")) return "mn";
     const rawTitle = `${displayText || ""} ${cell?.title || ""}`.toUpperCase();
     if (rawTitle.includes("T/P") || rawTitle.includes("TURNO PARTIDO")) return "p";
     return getMobileShiftToken(displayText, visualClass);
@@ -571,7 +576,8 @@
                       dates.forEach(f => {
                         const d = daysMap[f] || {};
                         const code = String(d.code || d.turno || d.turnoFinal || d.label || '').trim().toUpperCase();
-                        if (code.startsWith('N') || code.includes('NOCHE') || code.includes('/N') || code.includes('+N') || code === 'MN') nights++;
+                        const isNight = window.TurnosRules?.isNightShift ? window.TurnosRules.isNightShift(d) : (code.startsWith('N') || code.includes('NOCHE') || code.includes('/N') || code.includes('+N') || code === 'MN');
+                        if (isNight) nights++;
                         if (code === 'D' || code === 'DESCANSO') rests++;
                       });
                     }

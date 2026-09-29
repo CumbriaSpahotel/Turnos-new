@@ -908,6 +908,7 @@
     .d, .badge-shift[data-shift="d"] { background: linear-gradient(180deg, #fb7185, #dc2626) !important; color: #ffffff !important; box-shadow: 0 8px 18px rgba(220, 38, 38, 0.18) !important; border-color: rgba(255,255,255,0.38) !important; }
     .v, .badge-shift[data-shift="v"] { background: linear-gradient(180deg, #34d399, #059669) !important; color: #ffffff !important; }
     .b { background: linear-gradient(180deg, #f87171, #dc2626) !important; color: #ffffff !important; border: 1px dashed rgba(255,255,255,0.46) !important; }
+    .mn, .badge-shift[data-shift="mn"] { background: linear-gradient(180deg, #f59e0b, #d97706) !important; color: #ffffff !important; font-size: 0.78rem !important; font-weight: 800 !important; box-shadow: 0 4px 12px rgba(217, 119, 6, 0.25) !important; }
 
     .badge-shift[data-shift="v"] {
       font-size: 1rem !important;
@@ -1604,12 +1605,12 @@
   <script src="xlsx.full.min.js"></script>
   <script src="supabase-config.js?v=13.30"></script>
   <script src="supabase-dao.js?v=13.26"></script>
-  <script src="turnos-rules.js?v=14.6"></script>
-  <script src="shift-resolver.js?v=13.33"></script>
+  <script src="turnos-rules.js?v=14.8"></script>
+  <script src="shift-resolver.js?v=14.6"></script>
   <script src="turnos-engine.js?v=13.30"></script>
   <script src="excel-loader.js?v=13.30"></script>
   <script src="plantilla_mobile_adapter.js?v=13.30"></script>
-  <script src="mobile.app.js?v=13.34"></script>
+  <script src="mobile.app.js?v=14.1"></script>
 
   <script>
     if (window.location.protocol === 'file:') {
@@ -1642,7 +1643,7 @@
     });
 
     if ('serviceWorker' in navigator && window.location.protocol !== 'file:') {
-      navigator.serviceWorker.register('sw.js?v=13.30').catch(err => console.log("SW Error:", err));
+      navigator.serviceWorker.register('sw.js?v=14.1').catch(err => console.log("SW Error:", err));
     }
   </script>
 </body>
