@@ -5146,7 +5146,15 @@ window.createPuestosPreviewModel = ({
                 }
             }
 
-            const v9Order = window.getV9ExcelOrder(hotel, r.week_start || firstDate, r.empleadoId) || 500;
+            let v9Order = window.getV9ExcelOrder(hotel, r.week_start || firstDate, r.empleadoId);
+            if (v9Order === null || v9Order === undefined) {
+                const hKey = window.normalizeV9Key ? window.normalizeV9Key(hotel) : String(hotel || '').trim().toLowerCase();
+                const wKey = r.week_start || firstDate;
+                const weekData = window.v9ExcelOrderMap && window.v9ExcelOrderMap[hKey] ? window.v9ExcelOrderMap[hKey][wKey] : null;
+                const maxWeekOrder = weekData ? Math.max(0, ...Object.values(weekData).map(it => it.order || 0)) : 0;
+                const pOrder = (empProfile?.orden && empProfile.orden > 0) ? empProfile.orden : ((empProfile?.tipo_personal === 'apoyo') ? 50 : 99);
+                v9Order = maxWeekOrder > 0 ? (maxWeekOrder + 10 + pOrder) : (pOrder || 999);
+            }
             const status = weekStatus.get(normTitular);
 
 
@@ -5187,6 +5195,7 @@ window.createPuestosPreviewModel = ({
                     return;
                 }
 
+                const occProfile = employees.find(e => window.normalizeId(e.id) === normOcc || window.normalizeId(e.nombre) === normOcc);
                 const occName = isVacante ? 'VACANTE' : getDisplayName(occupantId, { nombre: status.rawSust });
                 operationalRows.push({
                     ...r,
@@ -5198,6 +5207,7 @@ window.createPuestosPreviewModel = ({
                     isVacante,
                     isSustitucion,
                     puestoOrden: v9Order,
+                    tipo_personal: occProfile?.tipo_personal || 'fijo',
                     rowType: 'operativo',
                     titularOriginal: titularName,
                     titularOriginalId: r.empleadoId,
@@ -5239,6 +5249,7 @@ window.createPuestosPreviewModel = ({
                             nombreVisible: titularName,
                             displayName: titularName,
                             puestoOrden: v9Order,
+                            tipo_personal: empProfile?.tipo_personal || r.tipo_personal || 'fijo',
                             rowType: 'operativo',
                             titularOriginal: titularName
                         });
@@ -5268,7 +5279,14 @@ window.createPuestosPreviewModel = ({
                     return cId === window.ShiftResolver.getCanonicalEmployeeId(sub.normTitular, uCtx);
                 });
                 const titularName = titularProfile?.nombre || getDisplayName(sub.normTitular);
-                const v9Order = window.getV9ExcelOrder(hotel, firstDate, sub.normSust) || empProfile?.orden || empProfile?.display_order || 999;
+                let v9Order = window.getV9ExcelOrder(hotel, firstDate, sub.normSust);
+                if (v9Order === null || v9Order === undefined) {
+                    const hKey = window.normalizeV9Key ? window.normalizeV9Key(hotel) : String(hotel || '').trim().toLowerCase();
+                    const weekData = window.v9ExcelOrderMap && window.v9ExcelOrderMap[hKey] ? window.v9ExcelOrderMap[hKey][firstDate] : null;
+                    const maxWeekOrder = weekData ? Math.max(0, ...Object.values(weekData).map(it => it.order || 0)) : 0;
+                    const pOrder = (empProfile?.orden && empProfile.orden > 0) ? empProfile.orden : ((empProfile?.tipo_personal === 'apoyo') ? 50 : 99);
+                    v9Order = maxWeekOrder > 0 ? (maxWeekOrder + 10 + pOrder) : (pOrder || 999);
+                }
                 
                 operationalRows.push({
                     empleadoId: sub.normSust,
@@ -5278,6 +5296,7 @@ window.createPuestosPreviewModel = ({
                     displayName: displayName,
                     rowIndex: v9Order,
                     puestoOrden: v9Order,
+                    tipo_personal: empProfile?.tipo_personal || 'apoyo',
                     rowType: 'operativo',
                     weekStart: firstDate,
                     values: new Array(dates.length).fill(null),
@@ -5307,12 +5326,14 @@ window.createPuestosPreviewModel = ({
             const canonicalEmp = window.ShiftResolver.getCanonicalEmployeeId(normEmpId, uCtx);
             if (canonicalEmp && assignedNorms.has(canonicalEmp)) return;
 
+            const empProfile = employees.find(e => window.normalizeId(e.id) === normEmpId || window.normalizeId(e.nombre) === normEmpId);
             const empName = getDisplayName(empId);
             extraRefuerzoRows.push({ 
                 hotel, 
                 employee_id: empId, 
                 nombre: empName, 
                 puestoOrden: 2000, 
+                tipo_personal: empProfile?.tipo_personal || 'apoyo',
                 rowType: 'refuerzo',
                 origenOrden: 'refuerzo_explicito',
                 evento_id: ev.id
@@ -5329,6 +5350,16 @@ window.createPuestosPreviewModel = ({
             const ordenA = Number.isFinite(a.puestoOrden) ? a.puestoOrden : Number.MAX_SAFE_INTEGER;
             const ordenB = Number.isFinite(b.puestoOrden) ? b.puestoOrden : Number.MAX_SAFE_INTEGER;
             if (ordenA !== ordenB) return ordenA - ordenB;
+
+            // Tiebreaker 1: fijo > apoyo > ocasional
+            const tipoRank = (e) => {
+                const t = String(e.tipo_personal || e.tipoPersonal || e.tipo || 'fijo').toLowerCase();
+                if (t === 'fijo') return 0;
+                if (t === 'apoyo') return 1;
+                return 2;
+            };
+            const rankDiff = tipoRank(a) - tipoRank(b);
+            if (rankDiff !== 0) return rankDiff;
 
             const rolA = String(a.rol || a.puesto || '').toLowerCase();
             const rolB = String(b.rol || b.puesto || '').toLowerCase();
@@ -8713,7 +8744,7 @@ window.getGlobalPendingPublicationStatus = async function() {
         try {
             const turnosRes = await window.TurnosDB.client
                 .from('turnos')
-                .select('hotel_id, fecha')
+                .select('hotel_id, fecha, updated_at')
                 .gte('fecha', rangeStart)
                 .lte('fecha', rangeEnd);
             const turnosData = turnosRes.data || [];
@@ -8727,22 +8758,44 @@ window.getGlobalPendingPublicationStatus = async function() {
 
                 const hotel = normHotel(t.hotel_id);
                 const key = hotel + '::' + weekStart;
-                if (!turnosGrouped.has(key)) turnosGrouped.set(key, { hotel, weekStart, count: 0 });
+                if (!turnosGrouped.has(key)) turnosGrouped.set(key, { hotel, weekStart, count: 0, turnos: [] });
                 turnosGrouped.get(key).count++;
+                turnosGrouped.get(key).turnos.push(t);
             });
 
             for (const [key, group] of turnosGrouped) {
-                // Si ya procesamos este hotel+semana via eventos, saltar
-                if (grouped.has(key)) continue;
-                // Si ya hay un snapshot publicado para esta semana, no contar
-                if (snapMap.has(key)) continue;
-                // No hay snapshot â†’ combinacion unica hotel/semana sin publicar
-                result.totalPendingChanges += 1;
-                result.byHotelWeek.push({
-                    hotel: group.hotel, weekStart: group.weekStart,
-                    snapshotExists: false, pendingCount: group.count,
-                    isOutdated: false, source: 'turnos_sin_snapshot'
-                });
+                const snap = snapMap.get(key);
+                if (!snap) {
+                    if (grouped.has(key)) continue;
+                    result.totalPendingChanges += 1;
+                    result.byHotelWeek.push({
+                        hotel: group.hotel, weekStart: group.weekStart,
+                        snapshotExists: false, pendingCount: group.count,
+                        isOutdated: false, source: 'turnos_sin_snapshot'
+                    });
+                } else if (!grouped.has(key)) {
+                    const snapDate = new Date(snap.created_at);
+                    const newerTurnos = (group.turnos || []).filter(t => {
+                        const d = t.updated_at;
+                        return d && (new Date(d).getTime() - snapDate.getTime() > 5000);
+                    });
+                    if (newerTurnos.length > 0) {
+                        result.totalPendingChanges += 1;
+                        result.totalOutdatedSnapshots++;
+                        result.outdatedSnapshots.push({
+                            hotel: group.hotel, weekStart: group.weekStart,
+                            snapshotId: snap.id, snapshotDate: snap.created_at,
+                            pendingCount: newerTurnos.length,
+                            source: 'turnos_actualizados'
+                        });
+                        result.byHotelWeek.push({
+                            hotel: group.hotel, weekStart: group.weekStart,
+                            snapshotExists: true, snapshotDate: snap.created_at,
+                            pendingCount: newerTurnos.length, isOutdated: true,
+                            source: 'turnos_actualizados'
+                        });
+                    }
+                }
             }
         } catch (turnosErr) {
             console.warn('[GLOBAL_STATUS] No se pudo revisar turnos sin snapshot:', turnosErr.message);
@@ -9089,7 +9142,20 @@ window.renderDashboard = async () => {
 
         if ($('#stat-cloud-status')) $('#stat-cloud-status').textContent = 'Conectado';
         if ($('#stat-last-sync')) $('#stat-last-sync').textContent = new Date().toLocaleTimeString();
-        if ($('#stat-pending-diff')) $('#stat-pending-diff').textContent = changes.length;
+        const localExcelChanges = changes.length;
+        if ($('#stat-pending-publish')) {
+            $('#stat-pending-publish').textContent = localExcelChanges;
+            $('#stat-pending-publish').style.color = localExcelChanges > 0 ? '#ef4444' : 'inherit';
+        }
+        if (localExcelChanges > 0) {
+            allRisks.push({
+                severity: 'warning',
+                type: 'LOCAL_EXCEL_CHANGES',
+                title: 'Cambios en Excel sin publicar',
+                desc: `Hay ${localExcelChanges} fila(s) con cambios pendientes en la planificación de Excel que aún no se han publicado como Snapshot.`,
+                action: { fn: `window.switchSection('preview')`, label: 'Ir a Publicar' }
+            });
+        }
         if ($('#stat-integrity-score')) $('#stat-integrity-score').textContent = `${integrity}%`;
         if ($('#stat-panel-version')) $('#stat-panel-version').textContent = typeof window.getAdminPanelVersion === 'function' ? window.getAdminPanelVersion() : 'v?';
 
@@ -9317,8 +9383,10 @@ window.renderDashboard = async () => {
 
                 renderRiskCards(allRisks);
 
+                const localExcelChanges = window.getExcelDiff ? window.getExcelDiff().length : 0;
                 if ($('#stat-pending-publish')) {
-                    const _finalCount = globalStatus ? globalStatus.totalPendingChanges : 0;
+                    const _globalChanges = globalStatus ? (globalStatus.totalPendingChanges || 0) : 0;
+                    const _finalCount = _globalChanges + localExcelChanges;
                     $('#stat-pending-publish').textContent = _finalCount;
                     $('#stat-pending-publish').style.color = _finalCount > 0 ? '#ef4444' : 'inherit';
                 }

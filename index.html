@@ -678,20 +678,47 @@
           font-size: 13px;
       }
 
+      .pdf-week-page {
+          background: #ffffff;
+          box-sizing: border-box;
+          width: 100%;
+          min-height: 260mm;
+          display: flex;
+          flex-direction: column;
+          justify-content: space-between;
+          page-break-after: always;
+          break-after: page;
+          page-break-inside: avoid;
+          break-inside: avoid;
+      }
+      .pdf-week-page:last-child {
+          page-break-after: avoid !important;
+          break-after: avoid !important;
+      }
+      .pdf-page-divider {
+          margin: 24px 0;
+          border-top: 2px dashed #cbd5e1;
+          text-align: center;
+      }
+
       @media print {
           @page {
               size: A4 portrait;
               margin: 8mm 6mm;
           }
           .pdf-week-page {
+              min-height: 275mm !important;
+              margin: 0 !important;
+              padding: 0 !important;
               page-break-after: always !important;
               break-after: page !important;
-              margin-bottom: 0 !important;
-              padding: 0 !important;
           }
           .pdf-week-page:last-child {
               page-break-after: avoid !important;
               break-after: avoid !important;
+          }
+          .pdf-page-divider {
+              display: none !important;
           }
           html, body {
               background: #ffffff !important;
@@ -1200,123 +1227,182 @@
         const sortedWeeks = [...weeksMap.entries()].sort((a, b) => a[0].localeCompare(b[0]));
         const dayNames = ['LUN', 'MAR', 'MIÉ', 'JUE', 'VIE', 'SÁB', 'DOM'];
 
+        // Si es un solo hotel, caben hasta 3 semanas por hoja A4 vertical
+        // Si son ambos hoteles, 1 semana (con los 2 hoteles) por hoja
+        const weeksPerPage = hotelFilter ? 3 : 1;
+        const pageChunks = [];
+        for (let i = 0; i < sortedWeeks.length; i += weeksPerPage) {
+            pageChunks.push(sortedWeeks.slice(i, i + weeksPerPage));
+        }
+
         let fullHtml = '';
 
-        sortedWeeks.forEach(([semanaInicio, hotelSnaps], weekIdx) => {
-            // Calcular los 7 días exactos de ESTA semana concreta
-            const weekDates = [];
-            let wd = new Date(semanaInicio + 'T12:00:00');
-            for (let i = 0; i < 7; i++) {
-                weekDates.push(formatDateLocal(wd));
-                wd.setDate(wd.getDate() + 1);
-            }
-            const weekEndDate = weekDates[6];
-            const formattedStart = semanaInicio.split('-').reverse().join('/');
-            const formattedEnd = weekEndDate.split('-').reverse().join('/');
-
-            // Orden canónico de hoteles: Cumbria primero, Guadiana después
-            hotelSnaps.sort((a, b) => a.hotel.localeCompare(b.hotel, 'es'));
-
-            const isLastWeek = weekIdx === sortedWeeks.length - 1;
+        pageChunks.forEach((chunk, pageIdx) => {
+            const isLastPage = pageIdx === pageChunks.length - 1;
             const hotelsTitle = hotelFilter || 'CUMBRIA SPA&HOTEL / SERCOTEL GUADIANA';
 
+            // Fechas del periodo de ESTA página
+            const firstWeekStart = chunk[0][0];
+            const lastWeekStart = chunk[chunk.length - 1][0];
+            let lwd = new Date(lastWeekStart + 'T12:00:00');
+            lwd.setDate(lwd.getDate() + 6);
+            const lastWeekEnd = formatDateLocal(lwd);
+
+            const formattedPageStart = firstWeekStart.split('-').reverse().join('/');
+            const formattedPageEnd = lastWeekEnd.split('-').reverse().join('/');
+            const pagePeriodText = chunk.length === 1
+                ? `SEMANA DEL ${formattedPageStart} AL ${formattedPageEnd}`
+                : `PERIODO DEL ${formattedPageStart} AL ${formattedPageEnd} (${chunk.length} SEMANAS)`;
+
+            // Ajuste dinámico de dimensiones según cuántas semanas hay en esta hoja para aprovechar el A4 vertical
+            const numWeeksInPage = chunk.length;
+            let rowHeight = '32px';
+            let thHeight = '30px';
+            let empFontSize = '11px';
+            let pillFontSize = '13px';
+            let weekMarginBottom = '16px';
+            let weekHeaderPadding = '5px 10px';
+            let hotelTitleSize = '12px';
+            let dayTitleSize = '9px';
+            let dayNumSize = '10.5px';
+
+            if (numWeeksInPage >= 3) {
+                rowHeight = '23px';
+                thHeight = '23px';
+                empFontSize = '10px';
+                pillFontSize = '12px';
+                weekMarginBottom = '8px';
+                weekHeaderPadding = '3px 8px';
+                hotelTitleSize = '11px';
+                dayTitleSize = '8px';
+                dayNumSize = '9.5px';
+            } else if (numWeeksInPage === 2) {
+                rowHeight = '27px';
+                thHeight = '26px';
+                empFontSize = '10.5px';
+                pillFontSize = '12.5px';
+                weekMarginBottom = '12px';
+                weekHeaderPadding = '4px 8px';
+                hotelTitleSize = '11.5px';
+                dayTitleSize = '8.5px';
+                dayNumSize = '10px';
+            }
+
             fullHtml += `
-                <div class="pdf-week-page" style="page-break-after:${isLastWeek ? 'avoid' : 'always'}; break-after:${isLastWeek ? 'avoid' : 'page'}; ${isLastWeek ? '' : 'margin-bottom:30px; padding-bottom:15px; border-bottom:2px dashed #cbd5e1;'}">
-                    <div style="display:flex; justify-content:space-between; align-items:baseline; border-bottom:2px solid #0f172a; padding-bottom:6px; margin-bottom:12px;">
-                        <div>
-                            <span style="font-size:13.5px; font-weight:800; color:#0f172a; letter-spacing:0.03em; text-transform:uppercase;">CUADRANTES DE TURNOS RECEPCIÓN</span>
-                            <span style="font-size:9.5px; font-weight:700; color:#475569; margin-left:6px;">• ${escapeHtml(hotelsTitle)}</span>
+                <div class="pdf-week-page" style="page-break-after:${isLastPage ? 'avoid' : 'always'}; break-after:${isLastPage ? 'avoid' : 'page'};">
+                    <div class="pdf-page-body" style="flex:1 0 auto;">
+                        <div style="display:flex; justify-content:space-between; align-items:baseline; border-bottom:2px solid #0f172a; padding-bottom:4px; margin-bottom:8px;">
+                            <div>
+                                <span style="font-size:13px; font-weight:800; color:#0f172a; letter-spacing:0.03em; text-transform:uppercase;">CUADRANTES DE TURNOS RECEPCIÓN</span>
+                                <span style="font-size:9.5px; font-weight:700; color:#475569; margin-left:6px;">• ${escapeHtml(hotelsTitle)}</span>
+                            </div>
+                            <div style="font-size:10px; font-weight:800; color:#0f172a; text-transform:uppercase;">
+                                ${pagePeriodText}
+                            </div>
                         </div>
-                        <div style="font-size:10.5px; font-weight:800; color:#0f172a; text-transform:uppercase;">
-                            SEMANA DEL ${formattedStart} AL ${formattedEnd}
-                        </div>
-                    </div>
             `;
 
-            hotelSnaps.forEach(s => {
-                fullHtml += `
-                    <div style="margin-bottom:16px; page-break-inside:avoid;">
-                        <div style="display:flex; justify-content:space-between; align-items:center; background:#f8fafc; padding:6px 10px; border-radius:4px; margin-bottom:6px; border:1px solid #cbd5e1; border-left:4px solid #0f172a;">
-                            <span style="font-size:12px; font-weight:800; text-transform:uppercase; color:#0f172a;">${escapeHtml(s.hotel)}</span>
-                            <span style="font-size:9.5px; font-weight:700; color:#334155;">SEMANA DEL ${formattedStart} AL ${formattedEnd}</span>
-                        </div>
-                        <table style="width:100%; border-collapse:collapse; table-layout:fixed; font-size:11px; text-align:center; background:#ffffff;">
-                            <thead>
-                                <tr style="background:#f1f5f9; height:32px;">
-                                    <th style="width:150px; text-align:left; padding-left:10px; border:1px solid #cbd5e1; color:#0f172a; font-size:9.5px; font-weight:800;">EMPLEADO</th>
-                `;
+            chunk.forEach(([semanaInicio, hotelSnaps]) => {
+                // Calcular los 7 días exactos de ESTA semana concreta
+                const weekDates = [];
+                let wd = new Date(semanaInicio + 'T12:00:00');
+                for (let i = 0; i < 7; i++) {
+                    weekDates.push(formatDateLocal(wd));
+                    wd.setDate(wd.getDate() + 1);
+                }
+                const weekEndDate = weekDates[6];
+                const formattedStart = semanaInicio.split('-').reverse().join('/');
+                const formattedEnd = weekEndDate.split('-').reverse().join('/');
 
-                weekDates.forEach((dStr, idx) => {
-                    const dt = new Date(dStr + 'T12:00:00');
-                    const isWeekend = dt.getDay() === 0 || dt.getDay() === 6;
-                    const dayNum = String(dt.getDate()).padStart(2, '0');
-                    const monthNum = String(dt.getMonth() + 1).padStart(2, '0');
+                // Orden canónico de hoteles: Cumbria primero, Guadiana después
+                hotelSnaps.sort((a, b) => a.hotel.localeCompare(b.hotel, 'es'));
+
+                hotelSnaps.forEach(s => {
                     fullHtml += `
-                        <th style="border:1px solid #cbd5e1; ${isWeekend ? 'background:#e2ebf0;' : ''} padding:3px;">
-                            <div style="font-size:9px; color:#475569; font-weight:700;">${dayNames[idx]}</div>
-                            <div style="font-size:10.5px; font-weight:800; color:#0f172a;">${dayNum}/${monthNum}</div>
-                        </th>
-                    `;
-                });
-
-                fullHtml += `</tr></thead><tbody>`;
-
-                const rawRows = s.snapshot_json.rows || s.snapshot_json.empleados || [];
-                const filteredRows = rawRows.filter(r => {
-                    const name = String(r.nombre || r.nombreVisible || '').trim();
-                    if (!name || name === '—') return false;
-                    return window.TurnosRules ? window.TurnosRules.isPublicEmployeeVisible(r) : true;
-                });
-                const sorted = window.TurnosRules ? window.TurnosRules.sortEmployees(filteredRows) : filteredRows;
-
-                sorted.forEach(r => {
-                    const empIdForData = String(r.empleado_id || r.nombre || '').trim();
-                    const profileData = (window._publicProfilesData || {})[empIdForData];
-                    if (profileData) {
-                        const pTipo = (profileData.tipo || profileData.tipo_personal || "").toLowerCase();
-                        if (pTipo.includes('apoyo')) {
-                            r.tipo = pTipo;
-                        } else {
-                            r.tipo = r.tipo || r.tipo_personal || r.tipoPersonal || profileData.tipo || profileData.tipo_personal;
-                        }
-                        r.rol = r.rol || r.rol_operativo || r.rolOperativo || profileData.rol || profileData.rol_operativo;
-                        r.puesto = r.puesto || r.categoria || profileData.puesto || profileData.categoria;
-                        r.categoria = r.categoria || profileData.categoria;
-                        r.activo = (r.activo !== undefined) ? r.activo : profileData.activo;
-                    }
-
-                    const daysMap = r.turnosOperativos || r.cells || r.dias || {};
-                    const profilesIdx = window._publicProfilesIndex || {};
-                    const empId = String(r.empleado_id || r.nombre || '').trim();
-                    const resolvedName = profilesIdx[empId] || r.nombreVisible || r.nombre || 'Empleado';
-                    const displayName = formatDisplayName(resolvedName);
-
-                    fullHtml += `<tr style="height:34px;">`;
-                    fullHtml += `
-                        <td style="text-align:left; padding-left:10px; border:1px solid #cbd5e1; font-weight:700; font-size:11px; color:#0f172a;">
-                            <span>${escapeHtml(displayName)}</span>
-                        </td>
+                        <div style="margin-bottom:${weekMarginBottom}; page-break-inside:avoid;">
+                            <div style="display:flex; justify-content:space-between; align-items:center; background:#f8fafc; padding:${weekHeaderPadding}; border-radius:4px; margin-bottom:4px; border:1px solid #cbd5e1; border-left:4px solid #0f172a;">
+                                <span style="font-size:${hotelTitleSize}; font-weight:800; text-transform:uppercase; color:#0f172a;">${escapeHtml(s.hotel)}</span>
+                                <span style="font-size:9.5px; font-weight:700; color:#334155;">SEMANA DEL ${formattedStart} AL ${formattedEnd}</span>
+                            </div>
+                            <table style="width:100%; border-collapse:collapse; table-layout:fixed; font-size:11px; text-align:center; background:#ffffff;">
+                                <thead>
+                                    <tr style="background:#f1f5f9; height:${thHeight};">
+                                        <th style="width:140px; text-align:left; padding-left:8px; border:1px solid #cbd5e1; color:#0f172a; font-size:9px; font-weight:800;">EMPLEADO</th>
                     `;
 
-                    weekDates.forEach(f => {
-                        const cellData = daysMap[f];
-                        const context = { view: 'index', hotel: s.hotel, weekStart: s.semana_inicio };
-                        const { initial, cls } = getShiftInitialAndClass(cellData, r, context);
+                    weekDates.forEach((dStr, idx) => {
+                        const dt = new Date(dStr + 'T12:00:00');
+                        const isWeekend = dt.getDay() === 0 || dt.getDay() === 6;
+                        const dayNum = String(dt.getDate()).padStart(2, '0');
+                        const monthNum = String(dt.getMonth() + 1).padStart(2, '0');
                         fullHtml += `
-                            <td style="border:1px solid #cbd5e1; padding:2px; vertical-align:middle; background:#ffffff;">
-                                <span class="v-pill v-pill-${cls}">${escapeHtml(initial)}</span>
-                            </td>
+                            <th style="border:1px solid #cbd5e1; ${isWeekend ? 'background:#e2ebf0;' : ''} padding:2px;">
+                                <div style="font-size:${dayTitleSize}; color:#475569; font-weight:700; line-height:1.1;">${dayNames[idx]}</div>
+                                <div style="font-size:${dayNumSize}; font-weight:800; color:#0f172a; line-height:1.1;">${dayNum}/${monthNum}</div>
+                            </th>
                         `;
                     });
 
-                    fullHtml += `</tr>`;
-                });
+                    fullHtml += `</tr></thead><tbody>`;
 
-                fullHtml += `</tbody></table></div>`;
+                    const rawRows = s.snapshot_json.rows || s.snapshot_json.empleados || [];
+                    const filteredRows = rawRows.filter(r => {
+                        const name = String(r.nombre || r.nombreVisible || '').trim();
+                        if (!name || name === '—') return false;
+                        return window.TurnosRules ? window.TurnosRules.isPublicEmployeeVisible(r) : true;
+                    });
+                    const sorted = window.TurnosRules ? window.TurnosRules.sortEmployees(filteredRows) : filteredRows;
+
+                    sorted.forEach(r => {
+                        const empIdForData = String(r.empleado_id || r.nombre || '').trim();
+                        const profileData = (window._publicProfilesData || {})[empIdForData];
+                        if (profileData) {
+                            const pTipo = (profileData.tipo || profileData.tipo_personal || "").toLowerCase();
+                            if (pTipo.includes('apoyo')) {
+                                r.tipo = pTipo;
+                            } else {
+                                r.tipo = r.tipo || r.tipo_personal || r.tipoPersonal || profileData.tipo || profileData.tipo_personal;
+                            }
+                            r.rol = r.rol || r.rol_operativo || r.rolOperativo || profileData.rol || profileData.rol_operativo;
+                            r.puesto = r.puesto || r.categoria || profileData.puesto || profileData.categoria;
+                            r.categoria = r.categoria || profileData.categoria;
+                            r.activo = (r.activo !== undefined) ? r.activo : profileData.activo;
+                        }
+
+                        const daysMap = r.turnosOperativos || r.cells || r.dias || {};
+                        const profilesIdx = window._publicProfilesIndex || {};
+                        const empId = String(r.empleado_id || r.nombre || '').trim();
+                        const resolvedName = profilesIdx[empId] || r.nombreVisible || r.nombre || 'Empleado';
+                        const displayName = formatDisplayName(resolvedName);
+
+                        fullHtml += `<tr style="height:${rowHeight};">`;
+                        fullHtml += `
+                            <td style="text-align:left; padding-left:8px; border:1px solid #cbd5e1; font-weight:700; font-size:${empFontSize}; color:#0f172a; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+                                <span>${escapeHtml(displayName)}</span>
+                            </td>
+                        `;
+
+                        weekDates.forEach(f => {
+                            const cellData = daysMap[f];
+                            const context = { view: 'index', hotel: s.hotel, weekStart: s.semana_inicio };
+                            const { initial, cls } = getShiftInitialAndClass(cellData, r, context);
+                            fullHtml += `
+                                <td style="border:1px solid #cbd5e1; padding:1px; vertical-align:middle; background:#ffffff;">
+                                    <span class="v-pill v-pill-${cls}" style="font-size:${pillFontSize};">${escapeHtml(initial)}</span>
+                                </td>
+                            `;
+                        });
+
+                        fullHtml += `</tr>`;
+                    });
+
+                    fullHtml += `</tbody></table></div>`;
+                });
             });
 
             fullHtml += `
-                    <div style="display:flex; justify-content:center; gap:16px; flex-wrap:wrap; margin-top:10px; padding-top:8px; border-top:1px solid #cbd5e1; font-size:9.5px; font-weight:700; color:#334155;">
+                    </div>
+                    <div class="pdf-page-footer" style="margin-top:auto; padding-top:4px; border-top:1px solid #cbd5e1; display:flex; justify-content:center; gap:16px; flex-wrap:wrap; font-size:8.5px; font-weight:700; color:#475569; letter-spacing:0.02em;">
                         <span><strong>M</strong>: Mañana</span>
                         <span><strong>T</strong>: Tarde</span>
                         <span><strong>N</strong>: Noche</span>
@@ -1326,6 +1412,7 @@
                         <span><strong>P</strong>: Turno Partido</span>
                     </div>
                 </div>
+                ${isLastPage ? '' : '<div data-html2canvas-ignore="true" class="pdf-page-divider"><span style="background:#f1f5f9; padding:2px 10px; font-size:9.5px; color:#64748b; font-weight:700; border-radius:10px;">PÁGINA SIGUIENTE</span></div>'}
             `;
         });
 
@@ -1835,7 +1922,7 @@
   </script>
   <script>
     if ('serviceWorker' in navigator && window.location.protocol !== 'file:') {
-      navigator.serviceWorker.register('sw.js?v=13.32').catch(err => console.log("SW Error:", err));
+      navigator.serviceWorker.register('sw.js?v=13.34').catch(err => console.log("SW Error:", err));
     }
   </script>
 </body>
