@@ -564,187 +564,131 @@
           to { transform: rotate(360deg); }
       }
 
-      /* Contenedor A4 para exportación PDF e Impresión */
-      #pdfExportContainer {
+      /* Modal de vista previa y descarga A4 Vertical */
+      #pdfModalOverlay {
           position: fixed;
-          left: -99999px;
           top: 0;
-          width: 1060px;
-          background: #ffffff;
-          color: #0c2138;
-          padding: 10px 14px;
-          font-family: 'Manrope', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-          z-index: -9999;
+          left: 0;
+          width: 100vw;
+          height: 100vh;
+          background: rgba(15, 23, 36, 0.65);
+          backdrop-filter: blur(5px);
+          z-index: 99999;
+          display: none;
+          flex-direction: column;
+          align-items: center;
+          overflow-y: auto;
+          padding: 24px 12px 40px;
           box-sizing: border-box;
       }
 
-      .pdf-header {
+      .pdf-modal-toolbar {
+          width: 720px;
+          max-width: 98%;
           display: flex;
           justify-content: space-between;
           align-items: center;
-          border-bottom: 2px solid #1f4f82;
-          padding-bottom: 4px;
-          margin-bottom: 8px;
+          background: #ffffff;
+          padding: 10px 16px;
+          border-radius: 12px;
+          margin-bottom: 14px;
+          box-shadow: 0 10px 25px rgba(0,0,0,0.18);
+          box-sizing: border-box;
       }
-      .pdf-title {
-          font-size: 13px;
+
+      .pdf-modal-title {
           font-weight: 800;
-          color: #1f4f82;
-          text-transform: uppercase;
-          letter-spacing: 0.03em;
+          font-size: 0.95rem;
+          color: #0c2138;
+          display: flex;
+          align-items: center;
+          gap: 6px;
       }
-      .pdf-sub {
-          font-size: 9.5px;
-          font-weight: 700;
-          color: #64748b;
-      }
-      .pdf-hotel {
-          margin-bottom: 9px;
-          page-break-inside: avoid;
-      }
-      .hotel-title-bar {
+
+      .pdf-modal-actions {
           display: flex;
           align-items: center;
           gap: 8px;
-          margin-bottom: 4px;
       }
-      .hotel-logo-img {
-          width: 24px;
-          height: 24px;
-          object-fit: contain;
-          border: 1px solid #cbd5e1;
-          border-radius: 4px;
-          padding: 2px;
-          background: #ffffff;
-      }
-      .hotel-name {
-          font-size: 11px;
-          font-weight: 800;
-          text-transform: uppercase;
-          color: #0c2138;
-      }
-      .hotel-week {
-          font-size: 9px;
-          font-weight: 700;
-          color: #1f4f82;
-          margin-left: 8px;
-          text-transform: uppercase;
-      }
-      .pdf-table {
-          width: 100%;
-          border-collapse: collapse;
-          table-layout: fixed;
-          background: #ffffff;
-      }
-      .pdf-table th, .pdf-table td {
-          border: 1px solid #cbd5e1;
-          padding: 3px 4px;
-          font-size: 9.5px;
-          text-align: center;
-          vertical-align: middle;
-          box-sizing: border-box;
-      }
-      .pdf-table th {
-          background: #e9f2fa;
-          color: #475569;
-          font-weight: 700;
-          height: 24px;
-      }
-      .pdf-table th.col-emp {
-          width: 170px;
-          text-align: left;
-          padding-left: 8px;
-      }
-      .pdf-table th.col-weekend {
-          background: #e2ebf5;
-      }
-      .th-day {
-          font-size: 8.5px;
-          text-transform: uppercase;
-          color: #64748b;
-          line-height: 1.1;
-      }
-      .th-date {
-          font-size: 9.5px;
-          font-weight: 800;
-          color: #0c2138;
-          line-height: 1.1;
-      }
-      .pdf-table td.td-emp {
-          text-align: left;
-          padding-left: 8px;
-          font-weight: 700;
-          color: #0c2138;
-          font-size: 10px;
-          height: 23px;
-      }
-      .emp-wrap {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-      }
-      .pdf-badge {
-          display: inline-block;
-          font-size: 8px;
-          font-weight: 700;
-          padding: 1px 4px;
-          border-radius: 4px;
-          background: #f1f5f9;
-          border: 1px solid #cbd5e1;
-          color: #475569;
-          margin-left: 3px;
-          white-space: nowrap;
-      }
-      .pdf-pill {
-          display: inline-block;
-          padding: 2px 6px;
-          border-radius: 999px;
-          font-weight: 700;
-          font-size: 9px;
-          min-width: 62px;
-          text-align: center;
-          border: 1px solid transparent;
-          line-height: 1.15;
-          white-space: nowrap;
-      }
-      .pdf-pill-m { background: #d8efda; color: #0b6044; border-color: #bbf7d0; }
-      .pdf-pill-t { background: #ffefbd; color: #9d6a00; border-color: #fde68a; }
-      .pdf-pill-n { background: #e2e8f0; color: #1e293b; border-color: #cbd5e1; }
-      .pdf-pill-d { background: #fee2e2; color: #991b1b; border-color: #fecaca; }
-      .pdf-pill-p { background: #ede9fe; color: #5b21b6; border-color: #ddd6fe; }
-      .pdf-pill-v { background: #e0f2fe; color: #0369a1; border-color: #bae6fd; }
-      .pdf-pill-b { background: #f3e8ff; color: #6b21a8; border-color: #e9d5ff; }
-      .pdf-pill-perm { background: #fdf4ff; color: #86198f; border-color: #f5d0fe; }
-      .pdf-pill-mn { background: #fef3c7; color: #92400e; border-color: #fcd34d; }
-      .pdf-pill-ct { background: #e2e8f0; color: #1e293b; border-color: #cbd5e1; }
-      .pdf-pill-dash { color: #94a3b8; font-weight: 600; font-size: 11px; }
 
-      .pdf-legend {
-          display: flex;
-          justify-content: center;
-          gap: 10px;
-          flex-wrap: wrap;
-          margin-top: 8px;
-          font-size: 8.5px;
+      .btn-modal-action {
+          padding: 7px 14px;
+          border-radius: 8px;
           font-weight: 700;
-          color: #64748b;
-      }
-      .pdf-legend-item {
+          font-size: 0.8rem;
+          cursor: pointer;
           display: inline-flex;
           align-items: center;
-          gap: 4px;
+          gap: 6px;
+          border: 1px solid transparent;
+          outline: none;
+          transition: all 0.15s ease;
       }
-      .pdf-legend-dot {
-          width: 9px;
-          height: 9px;
-          border-radius: 2px;
+      .btn-modal-download {
+          background: #1f4f82;
+          color: #ffffff;
+      }
+      .btn-modal-download:hover {
+          background: #163b63;
+      }
+      .btn-modal-print {
+          background: #f1f5f9;
+          color: #0c2138;
+          border-color: #cbd5e1;
+      }
+      .btn-modal-print:hover {
+          background: #e2e8f0;
+      }
+      .btn-modal-close {
+          background: transparent;
+          color: #64748b;
+          border-color: #cbd5e1;
+          padding: 7px 10px;
+      }
+      .btn-modal-close:hover {
+          background: #f1f5f9;
+          color: #0c2138;
+      }
+
+      /* Hoja A4 Vertical (720px de ancho para renderizado 1:1) */
+      #pdfSheetContent {
+          width: 720px;
+          max-width: 98%;
+          background: #ffffff;
+          color: #0c2138;
+          padding: 18px 20px;
+          border-radius: 8px;
+          box-shadow: 0 15px 35px rgba(0,0,0,0.25);
+          box-sizing: border-box;
+          font-family: 'Manrope', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      }
+
+      /* Píldoras con iniciales M, T, N, D, B, V, P */
+      .v-pill {
           display: inline-block;
+          width: 24px;
+          height: 22px;
+          line-height: 22px;
+          text-align: center;
+          border-radius: 4px;
+          font-weight: 800;
+          font-size: 11px;
+          box-sizing: border-box;
       }
+      .v-pill-m { background: #d8efda; color: #0b6044; border: 1px solid #bbf7d0; }
+      .v-pill-t { background: #ffefbd; color: #9d6a00; border: 1px solid #fde68a; }
+      .v-pill-n { background: #e2e8f0; color: #1e293b; border: 1px solid #cbd5e1; }
+      .v-pill-d { background: #fee2e2; color: #991b1b; border: 1px solid #fecaca; }
+      .v-pill-b { background: #f3e8ff; color: #6b21a8; border: 1px solid #e9d5ff; }
+      .v-pill-v { background: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd; }
+      .v-pill-p { background: #ede9fe; color: #5b21b6; border: 1px solid #ddd6fe; }
+      .v-pill-perm { background: #fdf4ff; color: #86198f; border: 1px solid #f5d0fe; }
+      .v-pill-dash { color: #94a3b8; font-weight: 700; font-size: 12px; }
 
       @media print {
           @page {
-              size: A4 landscape;
-              margin: 6mm 8mm;
+              size: A4 portrait;
+              margin: 8mm 6mm;
           }
           html, body {
               background: #ffffff !important;
@@ -754,18 +698,23 @@
               -webkit-print-color-adjust: exact !important;
               print-color-adjust: exact !important;
           }
-          .site-toolbar, #publicContainer, .flatpickr-calendar, .public-legend {
+          .site-toolbar, #publicContainer, .flatpickr-calendar, .public-legend, .pdf-modal-toolbar {
               display: none !important;
           }
-          #pdfExportContainer {
-              display: block !important;
+          #pdfModalOverlay {
               position: static !important;
-              left: 0 !important;
-              top: 0 !important;
-              width: 100% !important;
-              visibility: visible !important;
-              z-index: 1 !important;
+              background: transparent !important;
               padding: 0 !important;
+              display: block !important;
+              overflow: visible !important;
+          }
+          #pdfSheetContent {
+              box-shadow: none !important;
+              border: none !important;
+              padding: 0 !important;
+              width: 100% !important;
+              max-width: 100% !important;
+              display: block !important;
           }
       }
   </style>
@@ -800,7 +749,27 @@
   </div>
 
   <div id="publicContainer" class="public-main"></div>
-  <div id="pdfExportContainer"></div>
+  
+  <!-- Modal A4 Vertical para Cuadrante de Ambos Hoteles -->
+  <div id="pdfModalOverlay">
+    <div class="pdf-modal-toolbar">
+      <div class="pdf-modal-title">
+        <span>📄 Cuadrante Semanal (A4 Vertical) - Ambos Hoteles</span>
+      </div>
+      <div class="pdf-modal-actions">
+        <button id="btnModalDownload" class="btn-modal-action btn-modal-download" onclick="ejecutarDescargaPdfDirecta()">
+          <span>📥 Descargar PDF</span>
+        </button>
+        <button class="btn-modal-action btn-modal-print" onclick="window.print()">
+          <span>🖨️ Imprimir</span>
+        </button>
+        <button class="btn-modal-action btn-modal-close" onclick="cerrarPdfModal()">
+          ✕
+        </button>
+      </div>
+    </div>
+    <div id="pdfSheetContent"></div>
+  </div>
 
   <script src="flatpickr.js"></script>
   <script src="flatpickr_es.js"></script>
@@ -1154,9 +1123,7 @@
             document.body.appendChild(exportContainer);
         }
         if (allHotelsForPdf.length > 0) {
-            renderPdfExportHtml(exportContainer, allHotelsForPdf, start, end).catch(err => {
-                console.warn('[PDF_CONTAINER_SYNC_WARN]', err);
-            });
+            
         }
 
         applyTheme(localStorage.getItem('public-theme') || 'day');
@@ -1169,27 +1136,53 @@
     };
 
     
-    // ── PDF Export: Funciones para descarga A4 de ambos hoteles ────────────────
-    const _logoBase64Cache = {};
-    async function getLogoBase64(url) {
-        if (_logoBase64Cache[url]) return _logoBase64Cache[url];
-        try {
-            const res = await fetch(url);
-            const blob = await res.blob();
-            return new Promise((resolve) => {
-                const reader = new FileReader();
-                reader.onloadend = () => {
-                    _logoBase64Cache[url] = reader.result;
-                    resolve(reader.result);
-                };
-                reader.readAsDataURL(blob);
-            });
-        } catch (e) {
-            return url;
+    // ── PDF Export: A4 Vertical con iniciales M, T, N, D, B, V (Ambos Hoteles) ──
+    let _activePdfWeekRange = null;
+
+    function getShiftInitialAndClass(cellData, rowData, context) {
+        const _cellCode = fixPublicMojibake(String(cellData?.code || '').trim());
+        const _cellLabel = fixPublicMojibake(String(cellData?.label || '').trim());
+        const _cellTurno = fixPublicMojibake(String(cellData?.turno || '').trim());
+        const _hasContent = !isPublicEmptyShift(_cellCode) || !isPublicEmptyShift(_cellLabel) || !isPublicEmptyShift(_cellTurno);
+        if (!cellData || !_hasContent) {
+            return { initial: '—', cls: 'dash' };
         }
+        const cleanData = {
+            ...cellData,
+            code: _cellCode,
+            label: _cellLabel,
+            turno: _cellTurno
+        };
+        const display = window.TurnosRules.getPublicCellDisplay(cleanData, { compact: false }, rowData, context);
+        const _codeForCls = cleanData.code || cleanData.label || cleanData.turno || display.label || '';
+        const cls = window.TurnosRules.shiftKey(_codeForCls, cleanData.type);
+
+        let initial = '—';
+        if (cls === 'm' || cls === 'manana') initial = 'M';
+        else if (cls === 't' || cls === 'tarde') initial = 'T';
+        else if (cls === 'n' || cls === 'noche') initial = 'N';
+        else if (cls === 'd' || cls === 'descanso') initial = 'D';
+        else if (cls === 'b' || cls === 'baja') initial = 'B';
+        else if (cls === 'v' || cls === 'vac') initial = 'V';
+        else if (cls === 'p' || cls === 'partido') initial = 'P';
+        else if (cls === 'perm' || cls === 'permiso') initial = 'P';
+        else if (cls === 'mn') initial = 'MN';
+        else {
+            const raw = (display.label || cleanData.label || cleanData.code || '').trim().toUpperCase();
+            if (raw.startsWith('M')) initial = 'M';
+            else if (raw.startsWith('T')) initial = 'T';
+            else if (raw.startsWith('N')) initial = 'N';
+            else if (raw.startsWith('D')) initial = 'D';
+            else if (raw.startsWith('B')) initial = 'B';
+            else if (raw.startsWith('V')) initial = 'V';
+            else if (raw.startsWith('P')) initial = 'P';
+            else initial = raw.charAt(0) || '—';
+        }
+
+        return { initial, cls };
     }
 
-    async function renderPdfExportHtml(container, selectedHotels, start, end) {
+    function renderVerticalA4Html(selectedHotels, start, end) {
         const dates = [];
         let d = new Date(start + 'T12:00:00');
         for (let i = 0; i < 7; i++) {
@@ -1197,51 +1190,45 @@
             d.setDate(d.getDate() + 1);
         }
 
-        const dayNames = ['LUNES', 'MARTES', 'MIÉRCOLES', 'JUEVES', 'VIERNES', 'SÁBADO', 'DOMINGO'];
-        const monthsShort = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+        const dayLetters = ['L', 'M', 'X', 'J', 'V', 'S', 'D'];
+        const dayNames = ['LUN', 'MAR', 'MIÉ', 'JUE', 'VIE', 'SÁB', 'DOM'];
         const formattedStart = start.split('-').reverse().join('/');
         const formattedEnd = end.split('-').reverse().join('/');
 
-        const [cumbriaLogo, guadianaLogo] = await Promise.all([
-            getLogoBase64('cumbria logo.jpg'),
-            getLogoBase64('guadiana logo.jpg')
-        ]);
-
         let html = `
-            <div class="pdf-header">
+            <div style="display:flex; justify-content:space-between; align-items:baseline; border-bottom:2px solid #1f4f82; padding-bottom:5px; margin-bottom:10px;">
                 <div>
-                    <span class="pdf-title">Cuadrantes de Turnos Recepción</span>
-                    <span class="pdf-sub"> • Sercotel Guadiana / Cumbria Spa&Hotel</span>
+                    <span style="font-size:13px; font-weight:800; color:#1f4f82; letter-spacing:0.03em; text-transform:uppercase;">CUADRANTES DE TURNOS RECEPCIÓN</span>
+                    <span style="font-size:9.5px; font-weight:700; color:#64748b; margin-left:6px;">• CUMBRIA SPA&HOTEL / SERCOTEL GUADIANA</span>
                 </div>
-                <div class="pdf-sub">Semana del ${formattedStart} al ${formattedEnd}</div>
+                <div style="font-size:10px; font-weight:800; color:#1f4f82; text-transform:uppercase;">
+                    SEMANA DEL ${formattedStart} AL ${formattedEnd}
+                </div>
             </div>
         `;
 
         for (const s of selectedHotels) {
-            const isGuadiana = s.hotel.includes('Sercotel');
-            const logoSrc = isGuadiana ? guadianaLogo : cumbriaLogo;
-
             html += `
-                <div class="pdf-hotel">
-                    <div class="hotel-title-bar">
-                        <img class="hotel-logo-img" src="${logoSrc}" alt="Logo">
-                        <span class="hotel-name">${escapeHtml(s.hotel)}</span>
-                        <span class="hotel-week">SEMANA DEL ${formattedStart} AL ${formattedEnd}</span>
+                <div style="margin-bottom:12px; page-break-inside:avoid;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; background:#f1f5f9; padding:4px 8px; border-radius:5px; margin-bottom:5px; border-left:4px solid #1f4f82;">
+                        <span style="font-size:11.5px; font-weight:800; text-transform:uppercase; color:#0c2138;">${escapeHtml(s.hotel)}</span>
+                        <span style="font-size:9px; font-weight:700; color:#1f4f82;">SEMANA DEL ${formattedStart} AL ${formattedEnd}</span>
                     </div>
-                    <table class="pdf-table">
+                    <table style="width:100%; border-collapse:collapse; table-layout:fixed; font-size:10px; text-align:center; background:#ffffff;">
                         <thead>
-                            <tr>
-                                <th class="col-emp">EMPLEADO</th>
+                            <tr style="background:#e9f2fa; height:24px;">
+                                <th style="width:145px; text-align:left; padding-left:8px; border:1px solid #cbd5e1; color:#334155; font-size:9px; font-weight:800;">EMPLEADO</th>
             `;
 
             dates.forEach((dStr, idx) => {
                 const dt = new Date(dStr + 'T12:00:00');
                 const isWeekend = dt.getDay() === 0 || dt.getDay() === 6;
-                const subtitle = `${dt.getDate()}/${monthsShort[dt.getMonth()]}/${String(dt.getFullYear()).slice(-2)}`;
+                const dayNum = String(dt.getDate()).padStart(2, '0');
+                const monthNum = String(dt.getMonth() + 1).padStart(2, '0');
                 html += `
-                    <th class="${isWeekend ? 'col-weekend' : ''}">
-                        <div class="th-day">${dayNames[idx]}</div>
-                        <div class="th-date">${subtitle}</div>
+                    <th style="border:1px solid #cbd5e1; ${isWeekend ? 'background:#e2ebf5;' : ''} padding:2px;">
+                        <div style="font-size:8.5px; color:#64748b; font-weight:700;">${dayNames[idx]}</div>
+                        <div style="font-size:9.5px; font-weight:800; color:#0c2138;">${dayNum}/${monthNum}</div>
                     </th>
                 `;
             });
@@ -1296,15 +1283,14 @@
                 const resolvedName = profilesIdx[empId] || r.nombreVisible || r.nombre || 'Empleado';
                 const displayName = formatDisplayName(resolvedName);
 
-                html += `<tr>`;
+                html += `<tr style="height:23px;">`;
                 html += `
-                    <td class="td-emp">
-                        <div class="emp-wrap">
+                    <td style="text-align:left; padding-left:8px; border:1px solid #cbd5e1; font-weight:700; font-size:9.5px; color:#0c2138;">
+                        <div style="display:flex; justify-content:space-between; align-items:center;">
                             <span>${escapeHtml(displayName)}</span>
                             ${showCounters ? `
-                                <span>
-                                    <span class="pdf-badge">🌙 ${nights}</span>
-                                    <span class="pdf-badge">D ${rests}</span>
+                                <span style="font-size:8px; font-weight:700; color:#64748b; background:#f1f5f9; border:1px solid #cbd5e1; padding:1px 4px; border-radius:3px; white-space:nowrap; margin-left:3px;">
+                                    🌙 ${nights} D ${rests}
                                 </span>
                             ` : ''}
                         </div>
@@ -1313,44 +1299,13 @@
 
                 dates.forEach(f => {
                     const cellData = daysMap[f];
-                    const _cellCode = fixPublicMojibake(String(cellData?.code || '').trim());
-                    const _cellLabel = fixPublicMojibake(String(cellData?.label || '').trim());
-                    const _cellTurno = fixPublicMojibake(String(cellData?.turno || '').trim());
-                    const _hasContent = !isPublicEmptyShift(_cellCode) || !isPublicEmptyShift(_cellLabel) || !isPublicEmptyShift(_cellTurno);
-
-                    if (!cellData || !_hasContent) {
-                        html += `<td><span class="pdf-pill-dash">—</span></td>`;
-                        return;
-                    }
-
-                    const cleanData = {
-                        ...cellData,
-                        code: _cellCode,
-                        label: _cellLabel,
-                        turno: _cellTurno
-                    };
-                    const context = {
-                        view: 'index',
-                        hotel: s.hotel,
-                        weekStart: s.semana_inicio
-                    };
-
-                    const display = window.TurnosRules.getPublicCellDisplay(cleanData, { compact: false }, r, context);
-                    const labelText = isPublicEmptyShift(display.label) ? '—' : fixPublicMojibake(display.label);
-                    const _codeForCls = cleanData.code || cleanData.label || cleanData.turno || labelText || '';
-                    const cls = window.TurnosRules.shiftKey(_codeForCls, cleanData.type);
-
-                    let iconsStr = '';
-                    if (display.icons && display.icons.length) {
-                        display.icons.forEach(ic => {
-                            ic = fixPublicMojibake(ic);
-                            if (ic && !labelText.includes(ic)) {
-                                iconsStr += ` ${ic}`;
-                            }
-                        });
-                    }
-
-                    html += `<td><span class="pdf-pill pdf-pill-${cls}">${escapeHtml(labelText)}${escapeHtml(iconsStr)}</span></td>`;
+                    const context = { view: 'index', hotel: s.hotel, weekStart: s.semana_inicio };
+                    const { initial, cls } = getShiftInitialAndClass(cellData, r, context);
+                    html += `
+                        <td style="border:1px solid #cbd5e1; padding:1px; vertical-align:middle;">
+                            <span class="v-pill v-pill-${cls}">${escapeHtml(initial)}</span>
+                        </td>
+                    `;
                 });
 
                 html += `</tr>`;
@@ -1360,20 +1315,71 @@
         }
 
         html += `
-            <div class="pdf-legend">
-                <span class="pdf-legend-item"><span class="pdf-legend-dot" style="background:#d8efda; border:1px solid #bbf7d0;"></span> Mañana</span>
-                <span class="pdf-legend-item"><span class="pdf-legend-dot" style="background:#ffefbd; border:1px solid #fde68a;"></span> Tarde</span>
-                <span class="pdf-legend-item"><span class="pdf-legend-dot" style="background:#ede9fe; border:1px solid #ddd6fe;"></span> T/P = Turno Partido</span>
-                <span class="pdf-legend-item"><span class="pdf-legend-dot" style="background:#e2e8f0; border:1px solid #cbd5e1;"></span> Noche</span>
-                <span class="pdf-legend-item"><span class="pdf-legend-dot" style="background:#fee2e2; border:1px solid #fecaca;"></span> Descanso</span>
-                <span class="pdf-legend-item"><span class="pdf-legend-dot" style="background:#e0f2fe; border:1px solid #bae6fd;"></span> Vacaciones</span>
-                <span class="pdf-legend-item"><span class="pdf-legend-dot" style="background:#f3e8ff; border:1px solid #e9d5ff;"></span> Baja</span>
-                <span class="pdf-legend-item"><span class="pdf-legend-dot" style="background:#fdf4ff; border:1px solid #f5d0fe;"></span> Permiso</span>
+            <div style="display:flex; justify-content:center; gap:10px; flex-wrap:wrap; margin-top:8px; padding-top:6px; border-top:1px solid #e2e8f0; font-size:8.5px; font-weight:700; color:#475569;">
+                <span style="display:inline-flex; align-items:center; gap:4px;"><span class="v-pill v-pill-m" style="width:18px; height:16px; line-height:16px; font-size:9px;">M</span> Mañana</span>
+                <span style="display:inline-flex; align-items:center; gap:4px;"><span class="v-pill v-pill-t" style="width:18px; height:16px; line-height:16px; font-size:9px;">T</span> Tarde</span>
+                <span style="display:inline-flex; align-items:center; gap:4px;"><span class="v-pill v-pill-n" style="width:18px; height:16px; line-height:16px; font-size:9px;">N</span> Noche</span>
+                <span style="display:inline-flex; align-items:center; gap:4px;"><span class="v-pill v-pill-d" style="width:18px; height:16px; line-height:16px; font-size:9px;">D</span> Descanso</span>
+                <span style="display:inline-flex; align-items:center; gap:4px;"><span class="v-pill v-pill-b" style="width:18px; height:16px; line-height:16px; font-size:9px;">B</span> Baja</span>
+                <span style="display:inline-flex; align-items:center; gap:4px;"><span class="v-pill v-pill-v" style="width:18px; height:16px; line-height:16px; font-size:9px;">V</span> Vacaciones</span>
+                <span style="display:inline-flex; align-items:center; gap:4px;"><span class="v-pill v-pill-p" style="width:18px; height:16px; line-height:16px; font-size:9px;">P</span> Turno Partido</span>
             </div>
         `;
 
-        container.innerHTML = html;
+        return html;
     }
+
+    window.cerrarPdfModal = () => {
+        const overlay = document.getElementById('pdfModalOverlay');
+        if (overlay) overlay.style.display = 'none';
+    };
+
+    window.ejecutarDescargaPdfDirecta = async () => {
+        const sheet = document.getElementById('pdfSheetContent');
+        const btn = document.getElementById('btnModalDownload');
+        if (!sheet) return;
+        const originalText = btn ? btn.innerHTML : '';
+        if (btn) {
+            btn.disabled = true;
+            btn.innerHTML = '<span>Generando archivo...</span>';
+        }
+
+        try {
+            const range = _activePdfWeekRange || _picker.selectedDates;
+            const start = formatDateLocal(range[0]);
+            const end = formatDateLocal(range[1]);
+            const filename = `Cuadrante_Semana_${start}_a_${end}.pdf`;
+
+            const opt = {
+                margin: [8, 6, 8, 6],
+                filename: filename,
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: {
+                    scale: 2,
+                    useCORS: true,
+                    letterRendering: true,
+                    logging: false
+                },
+                jsPDF: {
+                    unit: 'mm',
+                    format: 'a4',
+                    orientation: 'portrait'
+                }
+            };
+
+            if (window.html2pdf) {
+                await html2pdf().from(sheet).set(opt).save();
+                if (btn) btn.innerHTML = '<span>Descargado ✓</span>';
+                setTimeout(() => { if (btn) { btn.disabled = false; btn.innerHTML = originalText; } }, 2000);
+            } else {
+                window.print();
+            }
+        } catch (err) {
+            console.error('[PDF_DOWNLOAD_ERROR]', err);
+            alert('No se pudo descargar automáticamente. Puedes usar el botón "Imprimir" para Guardar como PDF con tu navegador.');
+            if (btn) { btn.disabled = false; btn.innerHTML = originalText; }
+        }
+    };
 
     window.descargarCuadrantePDF = async () => {
         const btn = document.getElementById('btnDownloadPdf');
@@ -1385,27 +1391,8 @@
                     <circle cx="12" cy="12" r="10" stroke-opacity="0.25"></circle>
                     <path d="M12 2a10 10 0 0 1 10 10" stroke-linecap="round"></path>
                 </svg>
-                <span>Generando PDF...</span>
+                <span>Cargando...</span>
             `;
-        }
-
-        const overlay = document.createElement('div');
-        overlay.id = 'pdf-render-overlay';
-        overlay.style.cssText = 'position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(15,23,36,0.45); backdrop-filter:blur(4px); z-index:99999; display:flex; align-items:center; justify-content:center;';
-        overlay.innerHTML = `
-            <div style="background:#ffffff; color:#0c2138; padding:28px 36px; border-radius:18px; box-shadow:0 24px 48px rgba(0,0,0,0.22); text-align:center; max-width:380px; font-family:'Manrope',sans-serif;">
-                <div style="width:42px; height:42px; border:4px solid #e2e8f0; border-top-color:#1f4f82; border-radius:50%; margin:0 auto 16px; animation:pdfSpin 0.8s linear infinite;"></div>
-                <div style="font-size:1.12rem; font-weight:800; margin-bottom:6px; letter-spacing:-0.01em;">Generando PDF A4</div>
-                <div style="font-size:0.85rem; font-weight:600; color:#64748b;">Preparando cuadrante semanal de ambos hoteles...</div>
-            </div>
-        `;
-        document.body.appendChild(overlay);
-
-        let exportContainer = document.getElementById('pdfExportContainer');
-        if (!exportContainer) {
-            exportContainer = document.createElement('div');
-            exportContainer.id = 'pdfExportContainer';
-            document.body.appendChild(exportContainer);
         }
 
         try {
@@ -1413,8 +1400,8 @@
             if (range.length < 2) throw new Error('Por favor selecciona una semana.');
             const start = formatDateLocal(range[0]);
             const end = formatDateLocal(range[1]);
+            _activePdfWeekRange = [range[0], range[1]];
 
-            // Cargar publicaciones de ambos hoteles
             const [snapsResult, empleadosResult] = await Promise.all([
                 window.TurnosDB.client
                     .from('publicaciones_cuadrante')
@@ -1465,51 +1452,19 @@
 
             selectedHotels.sort((a, b) => a.hotel.localeCompare(b.hotel, 'es'));
 
-            await renderPdfExportHtml(exportContainer, selectedHotels, start, end);
+            const overlay = document.getElementById('pdfModalOverlay');
+            const sheet = document.getElementById('pdfSheetContent');
+            if (!overlay || !sheet) return;
 
-            // Posicionar temporalmente detrás del overlay pero en viewport visible para que html2canvas capture todo
-            exportContainer.style.position = 'fixed';
-            exportContainer.style.left = '0';
-            exportContainer.style.top = '0';
-            exportContainer.style.width = '1060px';
-            exportContainer.style.zIndex = '99990';
-            exportContainer.style.visibility = 'visible';
+            sheet.innerHTML = renderVerticalA4Html(selectedHotels, start, end);
+            overlay.style.display = 'flex';
 
-            const filename = `Cuadrante_Semana_${start}_a_${end}.pdf`;
-            const opt = {
-                margin: [6, 8, 6, 8],
-                filename: filename,
-                image: { type: 'jpeg', quality: 0.98 },
-                html2canvas: {
-                    scale: 2,
-                    useCORS: true,
-                    letterRendering: true,
-                    logging: false,
-                    windowWidth: 1120,
-                    scrollX: 0,
-                    scrollY: 0
-                },
-                jsPDF: {
-                    unit: 'mm',
-                    format: 'a4',
-                    orientation: 'landscape'
-                },
-                pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
-            };
-
-            if (window.html2pdf) {
-                await window.html2pdf().from(exportContainer).set(opt).save();
-            } else {
-                window.print();
-            }
+            // Ejecutar automáticamente la descarga directa
+            ejecutarDescargaPdfDirecta();
         } catch (err) {
             console.error('[PDF_EXPORT_ERROR]', err);
-            alert('Ocurrió un error al generar el PDF: ' + err.message);
+            alert('Ocurrió un error al preparar el PDF: ' + err.message);
         } finally {
-            exportContainer.style.position = 'fixed';
-            exportContainer.style.left = '-99999px';
-            exportContainer.style.zIndex = '-9999';
-            if (overlay && overlay.parentNode) overlay.remove();
             if (btn) {
                 btn.disabled = false;
                 btn.innerHTML = originalText;
