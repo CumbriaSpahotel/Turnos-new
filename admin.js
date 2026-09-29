@@ -4884,7 +4884,9 @@ window.createPuestosPreviewModel = ({
             normTitular: normTitularReal,
             sustitutoRaw,
             fi,
-            ff
+            ff,
+            doble_turno: !!(ev.payload?.doble_turno || ev.doble_turno),
+            ev
         });
     });
 
@@ -4982,9 +4984,26 @@ window.createPuestosPreviewModel = ({
                         return (rCan && rCan === cob.normTitular) || window.normalizeId(r.empleadoId) === cob.normTitular || window.normalizeId(r.displayName) === cob.normTitular;
                     });
                     const dateIdx = dates.indexOf(fecha);
-                    const turnoBase = (titularRow && dateIdx !== -1) ? (titularRow.values[dateIdx] || null) : null;
+                    const titularTurnoBase = (titularRow && dateIdx !== -1) ? (titularRow.values[dateIdx] || null) : null;
                     const profile = employees.find(e => window.normalizeId(e.id) === normEmpId || window.normalizeId(e.nombre) === normEmpId);
                     
+                    // Buscar si el sustituto tiene turno propio en DB o en su fila base
+                    const empRow = sourceRows.find(r => {
+                        const rCan = (window.ShiftResolver?.getCanonicalEmployeeId ? window.ShiftResolver.getCanonicalEmployeeId(r.empleadoId || r.displayName, { employees }) : null) || window.normalizeId(r.empleadoId);
+                        return (rCan && rCan === normEmpId) || window.normalizeId(r.empleadoId) === normEmpId || window.normalizeId(r.displayName) === normEmpId;
+                    });
+                    const empOwnTurno = (empRow && dateIdx !== -1) ? (empRow.values[dateIdx] || null) : null;
+                    const empOverrideDb = (rows || []).find(r => r.fecha === fecha && (window.normalizeId(r.empleado_id) === normEmpId || window.normalizeId(r.empleado_id) === window.normalizeId(empleadoId)));
+
+                    let turnoBase = titularTurnoBase;
+                    if (empOverrideDb && empOverrideDb.turno) {
+                        turnoBase = empOverrideDb.turno;
+                    } else if (empOwnTurno && (String(empOwnTurno).includes('/') || String(empOwnTurno).includes('+') || String(empOwnTurno).toLowerCase().includes('mn'))) {
+                        turnoBase = empOwnTurno;
+                    } else if (cob.doble_turno || cob.ev?.payload?.doble_turno) {
+                        turnoBase = `${empOwnTurno || 'M'}/${titularTurnoBase || 'N'}`;
+                    }
+
                     const res = window.resolveEmployeeDay({
                         empleado: profile || { id: empleadoId, nombre: getDisplayName(empleadoId) },
                         empleadoId,
@@ -5004,7 +5023,8 @@ window.createPuestosPreviewModel = ({
                     }
 
                     const isBaseDescanso = !turnoBase || turnoBase === 'D' || turnoBase === 'Descanso' || turnoBase === '—';
-                    const shouldKeepResolvedTurno = res.intercambio || res.origen === 'CAMBIO_TURNO' || res.origen === 'INTERCAMBIO_TURNO' || isBaseDescanso || !!res.horario;
+                    const isDobleTurno = turnoBase && (String(turnoBase).includes('/') || String(turnoBase).includes('+') || String(turnoBase).toLowerCase().includes('mn'));
+                    const shouldKeepResolvedTurno = isDobleTurno || res.intercambio || res.origen === 'CAMBIO_TURNO' || res.origen === 'INTERCAMBIO_TURNO' || isBaseDescanso || !!res.horario;
                     const turnoOperativo = shouldKeepResolvedTurno ? res.turno : (turnoBase || res.turno);
 
                     const finalRes = {
@@ -5154,12 +5174,11 @@ window.createPuestosPreviewModel = ({
                 if (status.sustitutoId) {
                     occupantId = status.sustitutoId;
                     isSustitucion = true;
-                } else if (status.payload?.cobertura === 'interna' || status.payload?.sin_vacante === true || status.payload?.cobertura_interna === true || (status.tipo === 'VAC' && !status.sustitutoId)) {
-                    // Cobertura asumida internamente por la plantilla o sin sustituto: no generar fila vacante operativa
-                    return;
                 } else {
-                    occupantId = 'VACANTE-' + normTitular;
-                    isVacante = true;
+                    // Si no hay un sustituto explícito asignado al evento,
+                    // la ausencia se cubre internamente con la plantilla o los turnos de cuadrante.
+                    // Bajo ninguna circunstancia generar una fila operativa vacante fantasma.
+                    return;
                 }
 
                 const normOcc = resolveId(occupantId);
