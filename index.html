@@ -663,32 +663,35 @@
           font-family: 'Manrope', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
       }
 
-      /* Píldoras con iniciales M, T, N, D, B, V, P */
+      /* Píldoras con iniciales M, T, N, D, B, V, P (Sin colores, texto negro nítido y casilla más grande) */
       .v-pill {
           display: inline-block;
-          width: 24px;
-          height: 22px;
-          line-height: 22px;
-          text-align: center;
-          border-radius: 4px;
           font-weight: 800;
-          font-size: 11px;
-          box-sizing: border-box;
+          font-size: 13px;
+          color: #000000;
+          text-align: center;
+          line-height: 1;
       }
-      .v-pill-m { background: #d8efda; color: #0b6044; border: 1px solid #bbf7d0; }
-      .v-pill-t { background: #ffefbd; color: #9d6a00; border: 1px solid #fde68a; }
-      .v-pill-n { background: #e2e8f0; color: #1e293b; border: 1px solid #cbd5e1; }
-      .v-pill-d { background: #fee2e2; color: #991b1b; border: 1px solid #fecaca; }
-      .v-pill-b { background: #f3e8ff; color: #6b21a8; border: 1px solid #e9d5ff; }
-      .v-pill-v { background: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd; }
-      .v-pill-p { background: #ede9fe; color: #5b21b6; border: 1px solid #ddd6fe; }
-      .v-pill-perm { background: #fdf4ff; color: #86198f; border: 1px solid #f5d0fe; }
-      .v-pill-dash { color: #94a3b8; font-weight: 700; font-size: 12px; }
+      .v-pill-dash {
+          color: #94a3b8;
+          font-weight: 600;
+          font-size: 13px;
+      }
 
       @media print {
           @page {
               size: A4 portrait;
               margin: 8mm 6mm;
+          }
+          .pdf-week-page {
+              page-break-after: always !important;
+              break-after: page !important;
+              margin-bottom: 0 !important;
+              padding: 0 !important;
+          }
+          .pdf-week-page:last-child {
+              page-break-after: avoid !important;
+              break-after: avoid !important;
           }
           html, body {
               background: #ffffff !important;
@@ -1182,151 +1185,151 @@
         return { initial, cls };
     }
 
-    function renderVerticalA4Html(selectedHotels, start, end) {
-        const dates = [];
-        let d = new Date(start + 'T12:00:00');
-        for (let i = 0; i < 7; i++) {
-            dates.push(formatDateLocal(d));
-            d.setDate(d.getDate() + 1);
-        }
+    function renderVerticalA4Html(selectedHotels, rangeStart, rangeEnd, hotelFilter) {
+        // Agrupar publicaciones por semana_inicio
+        const weeksMap = new Map();
+        selectedHotels.forEach(s => {
+            if (hotelFilter && s.hotel !== hotelFilter) return;
+            if (!weeksMap.has(s.semana_inicio)) {
+                weeksMap.set(s.semana_inicio, []);
+            }
+            weeksMap.get(s.semana_inicio).push(s);
+        });
 
-        const dayLetters = ['L', 'M', 'X', 'J', 'V', 'S', 'D'];
+        // Ordenar semanas cronológicamente
+        const sortedWeeks = [...weeksMap.entries()].sort((a, b) => a[0].localeCompare(b[0]));
         const dayNames = ['LUN', 'MAR', 'MIÉ', 'JUE', 'VIE', 'SÁB', 'DOM'];
-        const formattedStart = start.split('-').reverse().join('/');
-        const formattedEnd = end.split('-').reverse().join('/');
 
-        let html = `
-            <div style="display:flex; justify-content:space-between; align-items:baseline; border-bottom:2px solid #1f4f82; padding-bottom:5px; margin-bottom:10px;">
-                <div>
-                    <span style="font-size:13px; font-weight:800; color:#1f4f82; letter-spacing:0.03em; text-transform:uppercase;">CUADRANTES DE TURNOS RECEPCIÓN</span>
-                    <span style="font-size:9.5px; font-weight:700; color:#64748b; margin-left:6px;">• CUMBRIA SPA&HOTEL / SERCOTEL GUADIANA</span>
-                </div>
-                <div style="font-size:10px; font-weight:800; color:#1f4f82; text-transform:uppercase;">
-                    SEMANA DEL ${formattedStart} AL ${formattedEnd}
-                </div>
-            </div>
-        `;
+        let fullHtml = '';
 
-        for (const s of selectedHotels) {
-            html += `
-                <div style="margin-bottom:12px; page-break-inside:avoid;">
-                    <div style="display:flex; justify-content:space-between; align-items:center; background:#f1f5f9; padding:4px 8px; border-radius:5px; margin-bottom:5px; border-left:4px solid #1f4f82;">
-                        <span style="font-size:11.5px; font-weight:800; text-transform:uppercase; color:#0c2138;">${escapeHtml(s.hotel)}</span>
-                        <span style="font-size:9px; font-weight:700; color:#1f4f82;">SEMANA DEL ${formattedStart} AL ${formattedEnd}</span>
+        sortedWeeks.forEach(([semanaInicio, hotelSnaps], weekIdx) => {
+            // Calcular los 7 días exactos de ESTA semana concreta
+            const weekDates = [];
+            let wd = new Date(semanaInicio + 'T12:00:00');
+            for (let i = 0; i < 7; i++) {
+                weekDates.push(formatDateLocal(wd));
+                wd.setDate(wd.getDate() + 1);
+            }
+            const weekEndDate = weekDates[6];
+            const formattedStart = semanaInicio.split('-').reverse().join('/');
+            const formattedEnd = weekEndDate.split('-').reverse().join('/');
+
+            // Orden canónico de hoteles: Cumbria primero, Guadiana después
+            hotelSnaps.sort((a, b) => a.hotel.localeCompare(b.hotel, 'es'));
+
+            const isLastWeek = weekIdx === sortedWeeks.length - 1;
+            const hotelsTitle = hotelFilter || 'CUMBRIA SPA&HOTEL / SERCOTEL GUADIANA';
+
+            fullHtml += `
+                <div class="pdf-week-page" style="page-break-after:${isLastWeek ? 'avoid' : 'always'}; break-after:${isLastWeek ? 'avoid' : 'page'}; ${isLastWeek ? '' : 'margin-bottom:30px; padding-bottom:15px; border-bottom:2px dashed #cbd5e1;'}">
+                    <div style="display:flex; justify-content:space-between; align-items:baseline; border-bottom:2px solid #0f172a; padding-bottom:6px; margin-bottom:12px;">
+                        <div>
+                            <span style="font-size:13.5px; font-weight:800; color:#0f172a; letter-spacing:0.03em; text-transform:uppercase;">CUADRANTES DE TURNOS RECEPCIÓN</span>
+                            <span style="font-size:9.5px; font-weight:700; color:#475569; margin-left:6px;">• ${escapeHtml(hotelsTitle)}</span>
+                        </div>
+                        <div style="font-size:10.5px; font-weight:800; color:#0f172a; text-transform:uppercase;">
+                            SEMANA DEL ${formattedStart} AL ${formattedEnd}
+                        </div>
                     </div>
-                    <table style="width:100%; border-collapse:collapse; table-layout:fixed; font-size:10px; text-align:center; background:#ffffff;">
-                        <thead>
-                            <tr style="background:#e9f2fa; height:24px;">
-                                <th style="width:145px; text-align:left; padding-left:8px; border:1px solid #cbd5e1; color:#334155; font-size:9px; font-weight:800;">EMPLEADO</th>
             `;
 
-            dates.forEach((dStr, idx) => {
-                const dt = new Date(dStr + 'T12:00:00');
-                const isWeekend = dt.getDay() === 0 || dt.getDay() === 6;
-                const dayNum = String(dt.getDate()).padStart(2, '0');
-                const monthNum = String(dt.getMonth() + 1).padStart(2, '0');
-                html += `
-                    <th style="border:1px solid #cbd5e1; ${isWeekend ? 'background:#e2ebf5;' : ''} padding:2px;">
-                        <div style="font-size:8.5px; color:#64748b; font-weight:700;">${dayNames[idx]}</div>
-                        <div style="font-size:9.5px; font-weight:800; color:#0c2138;">${dayNum}/${monthNum}</div>
-                    </th>
-                `;
-            });
-
-            html += `</tr></thead><tbody>`;
-
-            const rawRows = s.snapshot_json.rows || s.snapshot_json.empleados || [];
-            const filteredRows = rawRows.filter(r => {
-                const name = String(r.nombre || r.nombreVisible || '').trim();
-                if (!name || name === '—') return false;
-                return window.TurnosRules ? window.TurnosRules.isPublicEmployeeVisible(r) : true;
-            });
-            const sorted = window.TurnosRules ? window.TurnosRules.sortEmployees(filteredRows) : filteredRows;
-
-            for (const r of sorted) {
-                const empIdForData = String(r.empleado_id || r.nombre || '').trim();
-                const profileData = (window._publicProfilesData || {})[empIdForData];
-                if (profileData) {
-                    const pTipo = (profileData.tipo || profileData.tipo_personal || "").toLowerCase();
-                    if (pTipo.includes('apoyo')) {
-                        r.tipo = pTipo;
-                    } else {
-                        r.tipo = r.tipo || r.tipo_personal || r.tipoPersonal || profileData.tipo || profileData.tipo_personal;
-                    }
-                    r.rol = r.rol || r.rol_operativo || r.rolOperativo || profileData.rol || profileData.rol_operativo;
-                    r.puesto = r.puesto || r.categoria || profileData.puesto || profileData.categoria;
-                    r.categoria = r.categoria || profileData.categoria;
-                    r.activo = (r.activo !== undefined) ? r.activo : profileData.activo;
-                }
-
-                const daysMap = r.turnosOperativos || r.cells || r.dias || {};
-                const showCounters = window.TurnosRules ? window.TurnosRules.shouldShowNightRestControls(r, {
-                    view: 'index',
-                    hotel: s.hotel,
-                    weekStart: s.semana_inicio
-                }) : true;
-
-                let nights = 0, rests = 0;
-                if (showCounters) {
-                    dates.forEach(f => {
-                        const cellData = daysMap[f] || {};
-                        const isNight = window.TurnosRules?.isNightShift ? window.TurnosRules.isNightShift(cellData) : ((cellData.code || '').toUpperCase().startsWith('N'));
-                        if (isNight) nights++;
-                        const c = (cellData.code || cellData.turno || '').toUpperCase();
-                        const lbl = (cellData.label || '').toUpperCase();
-                        if (c === 'D' || c === 'DESCANSO' || lbl === 'DESCANSO') rests++;
-                    });
-                }
-
-                const profilesIdx = window._publicProfilesIndex || {};
-                const empId = String(r.empleado_id || r.nombre || '').trim();
-                const resolvedName = profilesIdx[empId] || r.nombreVisible || r.nombre || 'Empleado';
-                const displayName = formatDisplayName(resolvedName);
-
-                html += `<tr style="height:23px;">`;
-                html += `
-                    <td style="text-align:left; padding-left:8px; border:1px solid #cbd5e1; font-weight:700; font-size:9.5px; color:#0c2138;">
-                        <div style="display:flex; justify-content:space-between; align-items:center;">
-                            <span>${escapeHtml(displayName)}</span>
-                            ${showCounters ? `
-                                <span style="font-size:8px; font-weight:700; color:#64748b; background:#f1f5f9; border:1px solid #cbd5e1; padding:1px 4px; border-radius:3px; white-space:nowrap; margin-left:3px;">
-                                    🌙 ${nights} D ${rests}
-                                </span>
-                            ` : ''}
+            hotelSnaps.forEach(s => {
+                fullHtml += `
+                    <div style="margin-bottom:16px; page-break-inside:avoid;">
+                        <div style="display:flex; justify-content:space-between; align-items:center; background:#f8fafc; padding:6px 10px; border-radius:4px; margin-bottom:6px; border:1px solid #cbd5e1; border-left:4px solid #0f172a;">
+                            <span style="font-size:12px; font-weight:800; text-transform:uppercase; color:#0f172a;">${escapeHtml(s.hotel)}</span>
+                            <span style="font-size:9.5px; font-weight:700; color:#334155;">SEMANA DEL ${formattedStart} AL ${formattedEnd}</span>
                         </div>
-                    </td>
+                        <table style="width:100%; border-collapse:collapse; table-layout:fixed; font-size:11px; text-align:center; background:#ffffff;">
+                            <thead>
+                                <tr style="background:#f1f5f9; height:32px;">
+                                    <th style="width:150px; text-align:left; padding-left:10px; border:1px solid #cbd5e1; color:#0f172a; font-size:9.5px; font-weight:800;">EMPLEADO</th>
                 `;
 
-                dates.forEach(f => {
-                    const cellData = daysMap[f];
-                    const context = { view: 'index', hotel: s.hotel, weekStart: s.semana_inicio };
-                    const { initial, cls } = getShiftInitialAndClass(cellData, r, context);
-                    html += `
-                        <td style="border:1px solid #cbd5e1; padding:1px; vertical-align:middle;">
-                            <span class="v-pill v-pill-${cls}">${escapeHtml(initial)}</span>
-                        </td>
+                weekDates.forEach((dStr, idx) => {
+                    const dt = new Date(dStr + 'T12:00:00');
+                    const isWeekend = dt.getDay() === 0 || dt.getDay() === 6;
+                    const dayNum = String(dt.getDate()).padStart(2, '0');
+                    const monthNum = String(dt.getMonth() + 1).padStart(2, '0');
+                    fullHtml += `
+                        <th style="border:1px solid #cbd5e1; ${isWeekend ? 'background:#e2ebf0;' : ''} padding:3px;">
+                            <div style="font-size:9px; color:#475569; font-weight:700;">${dayNames[idx]}</div>
+                            <div style="font-size:10.5px; font-weight:800; color:#0f172a;">${dayNum}/${monthNum}</div>
+                        </th>
                     `;
                 });
 
-                html += `</tr>`;
-            }
+                fullHtml += `</tr></thead><tbody>`;
 
-            html += `</tbody></table></div>`;
-        }
+                const rawRows = s.snapshot_json.rows || s.snapshot_json.empleados || [];
+                const filteredRows = rawRows.filter(r => {
+                    const name = String(r.nombre || r.nombreVisible || '').trim();
+                    if (!name || name === '—') return false;
+                    return window.TurnosRules ? window.TurnosRules.isPublicEmployeeVisible(r) : true;
+                });
+                const sorted = window.TurnosRules ? window.TurnosRules.sortEmployees(filteredRows) : filteredRows;
 
-        html += `
-            <div style="display:flex; justify-content:center; gap:10px; flex-wrap:wrap; margin-top:8px; padding-top:6px; border-top:1px solid #e2e8f0; font-size:8.5px; font-weight:700; color:#475569;">
-                <span style="display:inline-flex; align-items:center; gap:4px;"><span class="v-pill v-pill-m" style="width:18px; height:16px; line-height:16px; font-size:9px;">M</span> Mañana</span>
-                <span style="display:inline-flex; align-items:center; gap:4px;"><span class="v-pill v-pill-t" style="width:18px; height:16px; line-height:16px; font-size:9px;">T</span> Tarde</span>
-                <span style="display:inline-flex; align-items:center; gap:4px;"><span class="v-pill v-pill-n" style="width:18px; height:16px; line-height:16px; font-size:9px;">N</span> Noche</span>
-                <span style="display:inline-flex; align-items:center; gap:4px;"><span class="v-pill v-pill-d" style="width:18px; height:16px; line-height:16px; font-size:9px;">D</span> Descanso</span>
-                <span style="display:inline-flex; align-items:center; gap:4px;"><span class="v-pill v-pill-b" style="width:18px; height:16px; line-height:16px; font-size:9px;">B</span> Baja</span>
-                <span style="display:inline-flex; align-items:center; gap:4px;"><span class="v-pill v-pill-v" style="width:18px; height:16px; line-height:16px; font-size:9px;">V</span> Vacaciones</span>
-                <span style="display:inline-flex; align-items:center; gap:4px;"><span class="v-pill v-pill-p" style="width:18px; height:16px; line-height:16px; font-size:9px;">P</span> Turno Partido</span>
-            </div>
-        `;
+                sorted.forEach(r => {
+                    const empIdForData = String(r.empleado_id || r.nombre || '').trim();
+                    const profileData = (window._publicProfilesData || {})[empIdForData];
+                    if (profileData) {
+                        const pTipo = (profileData.tipo || profileData.tipo_personal || "").toLowerCase();
+                        if (pTipo.includes('apoyo')) {
+                            r.tipo = pTipo;
+                        } else {
+                            r.tipo = r.tipo || r.tipo_personal || r.tipoPersonal || profileData.tipo || profileData.tipo_personal;
+                        }
+                        r.rol = r.rol || r.rol_operativo || r.rolOperativo || profileData.rol || profileData.rol_operativo;
+                        r.puesto = r.puesto || r.categoria || profileData.puesto || profileData.categoria;
+                        r.categoria = r.categoria || profileData.categoria;
+                        r.activo = (r.activo !== undefined) ? r.activo : profileData.activo;
+                    }
 
-        return html;
+                    const daysMap = r.turnosOperativos || r.cells || r.dias || {};
+                    const profilesIdx = window._publicProfilesIndex || {};
+                    const empId = String(r.empleado_id || r.nombre || '').trim();
+                    const resolvedName = profilesIdx[empId] || r.nombreVisible || r.nombre || 'Empleado';
+                    const displayName = formatDisplayName(resolvedName);
+
+                    fullHtml += `<tr style="height:34px;">`;
+                    fullHtml += `
+                        <td style="text-align:left; padding-left:10px; border:1px solid #cbd5e1; font-weight:700; font-size:11px; color:#0f172a;">
+                            <span>${escapeHtml(displayName)}</span>
+                        </td>
+                    `;
+
+                    weekDates.forEach(f => {
+                        const cellData = daysMap[f];
+                        const context = { view: 'index', hotel: s.hotel, weekStart: s.semana_inicio };
+                        const { initial, cls } = getShiftInitialAndClass(cellData, r, context);
+                        fullHtml += `
+                            <td style="border:1px solid #cbd5e1; padding:2px; vertical-align:middle; background:#ffffff;">
+                                <span class="v-pill v-pill-${cls}">${escapeHtml(initial)}</span>
+                            </td>
+                        `;
+                    });
+
+                    fullHtml += `</tr>`;
+                });
+
+                fullHtml += `</tbody></table></div>`;
+            });
+
+            fullHtml += `
+                    <div style="display:flex; justify-content:center; gap:16px; flex-wrap:wrap; margin-top:10px; padding-top:8px; border-top:1px solid #cbd5e1; font-size:9.5px; font-weight:700; color:#334155;">
+                        <span><strong>M</strong>: Mañana</span>
+                        <span><strong>T</strong>: Tarde</span>
+                        <span><strong>N</strong>: Noche</span>
+                        <span><strong>D</strong>: Descanso</span>
+                        <span><strong>B</strong>: Baja</span>
+                        <span><strong>V</strong>: Vacaciones</span>
+                        <span><strong>P</strong>: Turno Partido</span>
+                    </div>
+                </div>
+            `;
+        });
+
+        return fullHtml;
     }
 
     window.cerrarPdfModal = () => {
@@ -1348,7 +1351,9 @@
             const range = _activePdfWeekRange || _picker.selectedDates;
             const start = formatDateLocal(range[0]);
             const end = formatDateLocal(range[1]);
-            const filename = `Cuadrante_Semana_${start}_a_${end}.pdf`;
+            const hotelFilter = document.getElementById('hotelSelect')?.value || '';
+            const hotelSuffix = hotelFilter ? '_' + hotelFilter.replace(/\s+/g, '_') : '_Ambos_Hoteles';
+            const filename = `Cuadrante${hotelSuffix}_${start}_a_${end}.pdf`;
 
             const opt = {
                 margin: [8, 6, 8, 6],
@@ -1364,7 +1369,8 @@
                     unit: 'mm',
                     format: 'a4',
                     orientation: 'portrait'
-                }
+                },
+                pagebreak: { mode: ['css', 'legacy'] }
             };
 
             if (window.html2pdf) {
@@ -1397,21 +1403,28 @@
 
         try {
             const range = _picker.selectedDates;
-            if (range.length < 2) throw new Error('Por favor selecciona una semana.');
+            if (range.length < 2) throw new Error('Por favor selecciona una semana o rango de fechas.');
             const start = formatDateLocal(range[0]);
             const end = formatDateLocal(range[1]);
             _activePdfWeekRange = [range[0], range[1]];
+            const currentHotel = document.getElementById('hotelSelect')?.value || '';
+
+            let snapsQuery = window.TurnosDB.client
+                .from('publicaciones_cuadrante')
+                .select('*')
+                .eq('estado', 'activo')
+                .gte('semana_inicio', start)
+                .lte('semana_inicio', end)
+                .order('semana_inicio', { ascending: true })
+                .order('hotel', { ascending: true })
+                .order('version', { ascending: false });
+
+            if (currentHotel) {
+                snapsQuery = snapsQuery.eq('hotel', currentHotel);
+            }
 
             const [snapsResult, empleadosResult] = await Promise.all([
-                window.TurnosDB.client
-                    .from('publicaciones_cuadrante')
-                    .select('*')
-                    .eq('estado', 'activo')
-                    .gte('semana_inicio', start)
-                    .lte('semana_inicio', end)
-                    .order('semana_inicio', { ascending: true })
-                    .order('hotel', { ascending: true })
-                    .order('version', { ascending: false }),
+                snapsQuery,
                 (!window._publicProfilesData || Object.keys(window._publicProfilesData).length === 0)
                     ? window.TurnosDB.getEmpleados()
                     : Promise.resolve(null)
@@ -1439,6 +1452,7 @@
             (snapsResult.data || []).forEach(s => {
                 const key = `${s.hotel}_${s.semana_inicio}`;
                 if (seen.has(key)) return;
+                if (currentHotel && s.hotel !== currentHotel) return;
                 if (s.hotel.toUpperCase().startsWith('TEST')) return;
                 seen.add(key);
                 if (s.snapshot_json?.metadata?.public_hidden_from && s.semana_inicio >= s.snapshot_json.metadata.public_hidden_from) return;
@@ -1446,17 +1460,20 @@
             });
 
             if (selectedHotels.length === 0) {
-                alert('No hay cuadrantes activos para descargar en esta semana.');
+                alert('No hay cuadrantes activos para descargar en este periodo.');
                 return;
             }
-
-            selectedHotels.sort((a, b) => a.hotel.localeCompare(b.hotel, 'es'));
 
             const overlay = document.getElementById('pdfModalOverlay');
             const sheet = document.getElementById('pdfSheetContent');
             if (!overlay || !sheet) return;
 
-            sheet.innerHTML = renderVerticalA4Html(selectedHotels, start, end);
+            const modalTitleEl = document.querySelector('.pdf-modal-title');
+            if (modalTitleEl) {
+                const hotelLabel = currentHotel || 'Ambos Hoteles';
+                modalTitleEl.innerHTML = `<span>📄 Cuadrante Semanal (A4 Vertical) - ${escapeHtml(hotelLabel)}</span>`;
+            }
+            sheet.innerHTML = renderVerticalA4Html(selectedHotels, start, end, currentHotel);
             overlay.style.display = 'flex';
 
             // Ejecutar automáticamente la descarga directa
@@ -1818,7 +1835,7 @@
   </script>
   <script>
     if ('serviceWorker' in navigator && window.location.protocol !== 'file:') {
-      navigator.serviceWorker.register('sw.js?v=13.30').catch(err => console.log("SW Error:", err));
+      navigator.serviceWorker.register('sw.js?v=13.32').catch(err => console.log("SW Error:", err));
     }
   </script>
 </body>
