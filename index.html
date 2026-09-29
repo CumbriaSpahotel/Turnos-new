@@ -545,7 +545,7 @@
   <script src="supabase.js"></script>
   <script src="supabase-config.js?v=13.8"></script>
   <script src="supabase-dao.js?v=13.26"></script>
-  <script src="turnos-rules.js?v=14.7"></script>
+  <script src="turnos-rules.js?v=14.8"></script>
   <script src="shift-resolver.js?v=14.6"></script>
   <script src="publication-snapshot.js?v=1.1"></script>
   <script src="virtualizer.js"></script>
@@ -1034,9 +1034,11 @@
             if (!skipCounters) {
                 dates.forEach(f => {
                     const d = daysMap[f] || {};
-                    const c = (d.code || '').toUpperCase();
-                    if (c.startsWith('N')) nights++;
-                    if (c === 'D' || c === 'DESCANSO') rests++;
+                    const isNight = window.TurnosRules?.isNightShift ? window.TurnosRules.isNightShift(d) : ((d.code || '').toUpperCase().startsWith('N') || (d.code || '').toUpperCase().includes('/N') || (d.code || '').toUpperCase() === 'MN' || (d.label || '').toUpperCase().includes('NOCHE'));
+                    if (isNight) nights++;
+                    const c = (d.code || d.turno || '').toUpperCase();
+                    const lbl = (d.label || '').toUpperCase();
+                    if (c === 'D' || c === 'DESCANSO' || lbl === 'DESCANSO') rests++;
                 });
             }
 

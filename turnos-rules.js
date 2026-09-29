@@ -848,7 +848,19 @@
         return false;
     };
 
+        const isNightShift = (val) => {
+        if (!val) return false;
+        if (typeof val === 'object') {
+            const code = String(val.code || val.turno || val.turnoFinal || '').trim().toUpperCase();
+            const lbl = String(val.label || '').trim().toUpperCase();
+            return code.startsWith('N') || code.includes('/N') || code.includes('+N') || code.includes('N/') || code === 'MN' || lbl.includes('NOCHE');
+        }
+        const s = String(val).trim().toUpperCase();
+        return s.startsWith('N') || s.includes('/N') || s.includes('+N') || s.includes('N/') || s === 'MN' || s.includes('NOCHE');
+    };
+
     window.TurnosRules = {
+        isNightShift,
         normalizeText,
         titleIncludesHorario,
         cleanDuplicateHorarioTitle,

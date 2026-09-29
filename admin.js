@@ -9694,6 +9694,7 @@ window.employeeProfileShiftCodeMeta = (value) => {
     if (code === 'M') return { code: 'M', cls: 'm', label: 'Mañana' };
     if (code === 'T') return { code: 'T', cls: 't', label: 'Tarde' };
     if (code === 'N') return { code: 'N', cls: 'n', label: 'Noche' };
+    if (code === 'MN' || code === 'M/N' || code === 'M+N') return { code: 'MN', cls: 'mn', label: 'Mañana + Noche', isNight: true };
     if (code === 'D') return { code: 'D', cls: 'd', label: 'Descanso' };
     if (code === 'TP' || raw === 'T/P') return { code: 'TP', cls: 'tp', label: 'T/P' };
     if (code.startsWith('VAC')) return { code: 'VAC', cls: 'v', label: 'Vacaciones' };
@@ -10342,7 +10343,7 @@ window.buildEmployeeProfileModel = (empId, refISO) => {
     const workedDays = kpiDays.filter(day => ['M', 'T', 'N', 'TP'].includes(window.employeeProfileShiftCodeMeta(day.turno || day.detalle?.turno).code));
     const morningDays = workedDays.filter(day => window.employeeProfileShiftCodeMeta(day.turno || day.detalle?.turno).code === 'M').length;
     const tardeDays = workedDays.filter(day => window.employeeProfileShiftCodeMeta(day.turno || day.detalle?.turno).code === 'T').length;
-    const nightDays = workedDays.filter(day => window.employeeProfileShiftCodeMeta(day.turno || day.detalle?.turno).code === 'N').length;
+    const nightDays = workedDays.filter(day => (window.employeeProfileShiftCodeMeta(day.turno || day.detalle?.turno).code === 'N' || window.employeeProfileShiftCodeMeta(day.turno || day.detalle?.turno).isNight)).length;
     const restDays = kpiDays.filter(day => window.employeeProfileShiftCodeMeta(day.turno || day.detalle?.turno).code === 'D').length;
     const buildWeeklyRestBalance = (days) => {
         const byWeek = new Map();

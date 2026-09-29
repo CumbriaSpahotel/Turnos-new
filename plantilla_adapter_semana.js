@@ -178,7 +178,7 @@
       weekDays.forEach(day => {
         const raw = grid[emp]?.[day];
         const label = typeof raw === "string" ? raw : (raw?.TurnoOriginal || "");
-        if (/^n(oche)?/i.test(label || "")) nights++;
+        if (/^n(oche)?/i.test(label || "") || /noche|\/n|\+n|\bmn\b/i.test(label || "")) nights++;
         if (/^descanso/i.test(label || "")) rests++;
       });
       const badges = `<span class="emp-badges">

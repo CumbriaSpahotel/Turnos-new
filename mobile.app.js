@@ -571,7 +571,7 @@
                       dates.forEach(f => {
                         const d = daysMap[f] || {};
                         const code = String(d.code || d.turno || d.turnoFinal || d.label || '').trim().toUpperCase();
-                        if (code.startsWith('N') || code.includes('NOCHE')) nights++;
+                        if (code.startsWith('N') || code.includes('NOCHE') || code.includes('/N') || code.includes('+N') || code === 'MN') nights++;
                         if (code === 'D' || code === 'DESCANSO') rests++;
                       });
                     }

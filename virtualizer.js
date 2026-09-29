@@ -161,7 +161,7 @@ class VirtualTable {
         if (showControls) {
             rowData.cells.forEach(c => {
                 const t = String(c.turno || '').toLowerCase();
-                if (t.includes('noche') || t === 'n') nights++;
+                if (t.includes('noche') || t === 'n' || t.includes('/n') || t.includes('+n') || t.includes('mn')) nights++;
                 if (t.includes('descanso') || t === 'd') rests++;
             });
         }
