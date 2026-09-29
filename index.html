@@ -682,7 +682,7 @@
           background: #ffffff;
           box-sizing: border-box;
           width: 100%;
-          min-height: 260mm;
+          min-height: 265mm;
           display: flex;
           flex-direction: column;
           justify-content: space-between;
@@ -1254,39 +1254,61 @@
                 ? `SEMANA DEL ${formattedPageStart} AL ${formattedPageEnd}`
                 : `PERIODO DEL ${formattedPageStart} AL ${formattedPageEnd} (${chunk.length} SEMANAS)`;
 
-            // Ajuste dinámico de dimensiones según cuántas semanas hay en esta hoja para aprovechar el A4 vertical
-            const numWeeksInPage = chunk.length;
-            let rowHeight = '32px';
-            let thHeight = '30px';
-            let empFontSize = '11px';
-            let pillFontSize = '13px';
-            let weekMarginBottom = '16px';
-            let weekHeaderPadding = '5px 10px';
-            let hotelTitleSize = '12px';
-            let dayTitleSize = '9px';
-            let dayNumSize = '10.5px';
+            // Contar tablas y filas totales en esta página para ajustar dinámicamente el tamaño al folio A4
+            let totalTablesInPage = 0;
+            let totalRowsInPage = 0;
+            chunk.forEach(([_, hotelSnaps]) => {
+                totalTablesInPage += hotelSnaps.length;
+                hotelSnaps.forEach(s => {
+                    const raw = s.snapshot_json?.rows || s.snapshot_json?.empleados || [];
+                    const visible = raw.filter(r => {
+                        const name = String(r.nombre || r.nombreVisible || '').trim();
+                        if (!name || name === '—') return false;
+                        return window.TurnosRules ? window.TurnosRules.isPublicEmployeeVisible(r) : true;
+                    });
+                    totalRowsInPage += Math.max(visible.length, 1);
+                });
+            });
 
-            if (numWeeksInPage >= 3) {
-                rowHeight = '23px';
-                thHeight = '23px';
-                empFontSize = '10px';
-                pillFontSize = '12px';
-                weekMarginBottom = '8px';
-                weekHeaderPadding = '3px 8px';
-                hotelTitleSize = '11px';
-                dayTitleSize = '8px';
-                dayNumSize = '9.5px';
-            } else if (numWeeksInPage === 2) {
-                rowHeight = '27px';
-                thHeight = '26px';
-                empFontSize = '10.5px';
-                pillFontSize = '12.5px';
-                weekMarginBottom = '12px';
-                weekHeaderPadding = '4px 8px';
-                hotelTitleSize = '11.5px';
-                dayTitleSize = '8.5px';
-                dayNumSize = '10px';
+            // Altura disponible en píxeles para A4 vertical (281mm útiles = ~1060px, margen de seguridad a 1010px)
+            const maxPageHeight = 1010;
+            const pageHeaderHeight = 36;
+            const pageFooterHeight = 28;
+            const bannerHeightPerTable = totalTablesInPage >= 3 ? 24 : (totalTablesInPage === 2 ? 26 : 28);
+            const marginBetweenTables = totalTablesInPage >= 3 ? 14 : (totalTablesInPage === 2 ? 22 : 28);
+            const thHeightNum = totalTablesInPage >= 3 ? 28 : (totalTablesInPage === 2 ? 32 : 36);
+
+            const totalOverhead = pageHeaderHeight + pageFooterHeight + 
+                (totalTablesInPage * (bannerHeightPerTable + thHeightNum)) + 
+                (Math.max(totalTablesInPage - 1, 0) * marginBetweenTables);
+            
+            const availableHeightForRows = maxPageHeight - totalOverhead;
+            const calculatedRowH = Math.floor(availableHeightForRows / Math.max(totalRowsInPage, 1));
+
+            let maxRowH = 50;
+            let minRowH = 28;
+            if (totalTablesInPage === 1) {
+                maxRowH = 55;
+                minRowH = 40;
+            } else if (totalTablesInPage === 2) {
+                maxRowH = 48;
+                minRowH = 34;
+            } else {
+                maxRowH = 42;
+                minRowH = 28;
             }
+
+            const targetRowH = Math.max(minRowH, Math.min(maxRowH, calculatedRowH));
+            const rowHeight = `${targetRowH}px`;
+            const thHeight = `${thHeightNum}px`;
+            const weekMarginBottom = `${marginBetweenTables}px`;
+            const weekHeaderPadding = totalTablesInPage >= 3 ? '4px 8px' : (totalTablesInPage === 2 ? '5px 10px' : '6px 12px');
+
+            const empFontSize = targetRowH >= 46 ? '12.5px' : (targetRowH >= 38 ? '11.5px' : '10.5px');
+            const pillFontSize = targetRowH >= 46 ? '16px' : (targetRowH >= 38 ? '14.5px' : '13px');
+            const hotelTitleSize = targetRowH >= 46 ? '12px' : (targetRowH >= 38 ? '11.5px' : '10.5px');
+            const dayTitleSize = targetRowH >= 46 ? '9.5px' : (targetRowH >= 38 ? '9px' : '8.5px');
+            const dayNumSize = targetRowH >= 46 ? '11.5px' : (targetRowH >= 38 ? '11px' : '10px');
 
             fullHtml += `
                 <div class="pdf-week-page" style="page-break-after:${isLastPage ? 'avoid' : 'always'}; break-after:${isLastPage ? 'avoid' : 'page'};">
@@ -1402,7 +1424,7 @@
 
             fullHtml += `
                     </div>
-                    <div class="pdf-page-footer" style="margin-top:auto; padding-top:4px; border-top:1px solid #cbd5e1; display:flex; justify-content:center; gap:16px; flex-wrap:wrap; font-size:8.5px; font-weight:700; color:#475569; letter-spacing:0.02em;">
+                    <div class="pdf-page-footer" style="margin-top:auto; padding-top:6px; padding-bottom:2px; border-top:1px solid #cbd5e1; display:flex; justify-content:center; gap:16px; flex-wrap:wrap; font-size:9px; font-weight:700; color:#475569; letter-spacing:0.02em;">
                         <span><strong>M</strong>: Mañana</span>
                         <span><strong>T</strong>: Tarde</span>
                         <span><strong>N</strong>: Noche</span>
