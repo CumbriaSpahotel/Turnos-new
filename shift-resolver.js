@@ -701,6 +701,8 @@ tipo=${normalized.tipo}`);
                     result.turno = turnoBase;
                 } else if (ev.payload?.doble_turno && turnoBase && coverTurno) {
                     result.turno = `${turnoBase}/${coverTurno}`;
+                } else if (turnoBase && turnoBase !== '—') {
+                    result.turno = turnoBase;
                 } else {
                     result.turno = coverTurno;
                 }

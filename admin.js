@@ -5022,10 +5022,11 @@ window.createPuestosPreviewModel = ({
                         return { ...res, _finalState: res };
                     }
 
-                    const isBaseDescanso = !turnoBase || turnoBase === 'D' || turnoBase === 'Descanso' || turnoBase === '—';
+                    const isExplicitDescanso = turnoBase === 'D' || turnoBase === 'Descanso';
+                    const isBaseDescanso = !turnoBase || turnoBase === '—';
                     const isDobleTurno = turnoBase && (String(turnoBase).includes('/') || String(turnoBase).includes('+') || String(turnoBase).toLowerCase().includes('mn'));
                     const shouldKeepResolvedTurno = isDobleTurno || res.intercambio || res.origen === 'CAMBIO_TURNO' || res.origen === 'INTERCAMBIO_TURNO' || isBaseDescanso || !!res.horario;
-                    const turnoOperativo = shouldKeepResolvedTurno ? res.turno : (turnoBase || res.turno);
+                    const turnoOperativo = (isExplicitDescanso && !res.intercambio && res.origen !== 'CAMBIO_TURNO' && res.origen !== 'INTERCAMBIO_TURNO') ? 'D' : (shouldKeepResolvedTurno ? res.turno : (turnoBase || res.turno));
 
                     const finalRes = {
                         ...res,
@@ -6233,10 +6234,10 @@ window.renderPreview = async () => {
             if (renderEmployeeTable) {
                 const isWeekly = (new Date(endISO) - new Date(startISO)) < (8 * 24 * 60 * 60 * 1000);
                 const tableClass = isWeekly ? 'preview-table-premium' : 'preview-table-compact';
-                const thWidth = isWeekly ? '220px' : '180px';
-                const thPadding = isWeekly ? '15px 25px' : '10px 15px';
-                const cellPadding = isWeekly ? '8px' : '4px';
-                const minColWidth = isWeekly ? '145px' : '85px';
+                const thWidth = isWeekly ? '175px' : '160px';
+                const thPadding = isWeekly ? '10px 14px' : '8px 10px';
+                const cellPadding = isWeekly ? '6px 4px' : '4px';
+                const minColWidth = isWeekly ? '110px' : '85px';
 
                 const hotelSection = document.createElement('div');
                 hotelSection.innerHTML = `
