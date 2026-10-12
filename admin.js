@@ -5221,9 +5221,17 @@ window.createPuestosPreviewModel = ({
                 const canonicalTitular = window.ShiftResolver.getCanonicalEmployeeId(normTitular, uCtx);
                 if (canonicalTitular && !assignedNorms.has(canonicalTitular)) {
                     // --- PRIORIDAD SUSTITUTO: Si este titular presente es un sustituto activo esta semana, omitir su fila base
-                    // para permitir que ocupe de forma exclusiva la posición del titular al que sustituye ---
+                    // para permitir que ocupe de forma exclusiva la posición del titular al que sustituye,
+                    // ÚNICAMENTE si el titular ausente está en sourceRows para poder ser ocupado. ---
                     if (activeSubstitutes.has(canonicalTitular)) {
-                        return;
+                        const subInfo = activeSubstitutes.get(canonicalTitular);
+                        const titularInSource = subInfo && sourceRows.some(sr => {
+                            const cId = window.ShiftResolver.getCanonicalEmployeeId(resolveId(sr.empleadoId), uCtx);
+                            return cId === window.ShiftResolver.getCanonicalEmployeeId(subInfo.normTitular, uCtx);
+                        });
+                        if (titularInSource) {
+                            return;
+                        }
                     }
 
                     // --- CESE CHECK: Si el empleado está dado de baja en TODOS los días de la semana, ocultar la fila ---
@@ -5262,12 +5270,6 @@ window.createPuestosPreviewModel = ({
         // 2.5 AÑADIR FILAS DE SUSTITUTOS ADICIONALES QUE NO TIENEN PUESTO OPERATIVO EN LA BASE Y NO HAN SIDO AGREGADOS
         activeSubstitutes.forEach((sub, canonicalSust) => {
             if (!assignedNorms.has(canonicalSust)) {
-                // Check if they are already in Excel template base rows
-                const alreadyInExcel = sourceRows.some(r => {
-                    const cId = window.ShiftResolver.getCanonicalEmployeeId(resolveId(r.empleadoId), uCtx);
-                    return cId === canonicalSust;
-                });
-                if (alreadyInExcel) return;
 
                 const empProfile = employees.find(e => {
                     const cId = window.ShiftResolver.getCanonicalEmployeeId(e.id, uCtx);
@@ -6098,9 +6100,18 @@ window.renderPreview = async () => {
             if (hotelSourceRows.length === 0 && data && data.length > 0) {
                 const hotelData = data.filter(r => r.hotel_id === hName);
                 if (hotelData.length > 0) {
-                    const empsInHotel = [...new Set(hotelData.map(r => r.empleado_id))];
+                    const empsFromTurnos = hotelData.map(r => r.empleado_id);
+                    const empsFromEvents = (eventos || []).filter(ev => {
+                        if (window.normalizeEstado && window.normalizeEstado(ev.estado) === 'anulado') return false;
+                        if (window.eventoPerteneceAHotel && !window.eventoPerteneceAHotel(ev, hName)) return false;
+                        const evStart = window.normalizeDate ? window.normalizeDate(ev.fecha_inicio) : (ev.fecha_inicio || '');
+                        const evEnd = window.normalizeDate ? window.normalizeDate(ev.fecha_fin || ev.fecha_inicio) : (ev.fecha_fin || ev.fecha_inicio || '');
+                        return evStart <= endISO && evEnd >= startISO;
+                    }).map(ev => ev.empleado_id || ev.titular_id || ev.participante_a || ev.empleado).filter(Boolean);
+
+                    const empsInHotel = [...new Set([...empsFromTurnos, ...empsFromEvents])];
                     empsInHotel.forEach((empId, idx) => {
-                        const empProfile = (profiles || []).find(p => p.id === empId || p.nombre === empId);
+                        const empProfile = (profiles || []).find(p => p.id === empId || p.nombre === empId || p.id_interno === empId);
                         const row = {
                             empleadoId: empId,
                             displayName: empProfile?.nombre || empId,
@@ -7849,7 +7860,16 @@ window.buildPublicationSnapshotPreview = async (weekStart, hotelName = 'all') =>
                 // --- GENERAR SOURCE ROWS SINTÉTICOS SI NO HAY EXCEL ---
                 if (weekExcelRows.length === 0) {
                     const hotelDataDb = (data || []).filter(r => r.hotel_id === hName);
-                    let empsInHotel = [...new Set(hotelDataDb.map(r => r.empleado_id))];
+                    const empsFromTurnos = hotelDataDb.map(r => r.empleado_id);
+                    const empsFromEvents = (eventos || []).filter(ev => {
+                        if (window.normalizeEstado && window.normalizeEstado(ev.estado) === 'anulado') return false;
+                        if (window.eventoPerteneceAHotel && !window.eventoPerteneceAHotel(ev, hName)) return false;
+                        const evStart = window.normalizeDate ? window.normalizeDate(ev.fecha_inicio) : (ev.fecha_inicio || '');
+                        const evEnd = window.normalizeDate ? window.normalizeDate(ev.fecha_fin || ev.fecha_inicio) : (ev.fecha_fin || ev.fecha_inicio || '');
+                        return evStart <= weekEnd && evEnd >= weekStart;
+                    }).map(ev => ev.empleado_id || ev.titular_id || ev.participante_a || ev.empleado).filter(Boolean);
+
+                    let empsInHotel = [...new Set([...empsFromTurnos, ...empsFromEvents])];
                     if (empsInHotel.length === 0 && profiles && profiles.length > 0) {
                         const normH = window.normalizeId ? window.normalizeId(hName) : String(hName).toLowerCase();
                         empsInHotel = profiles.filter(p => {
