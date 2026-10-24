@@ -5148,11 +5148,13 @@ window.createPuestosPreviewModel = ({
             // FILTRO DE PERTENENCIA A HOTEL: Si este empleado de la fila de Excel base
             // pertenece a otro hotel en la plantilla de Supabase, y no es de tipo 'sustituto' o 'apoyo',
             // y no tiene este hotel asignado en sus hoteles_asignados, lo omitimos.
-            const empProfile = employees.find(e =>
-                window.normalizeId(e.id) === normTitular ||
-                window.normalizeId(e.nombre) === normTitular ||
-                window.normalizeId(e.id_interno) === normTitular
-            );
+            const normTitularKey = window.normalizeId ? window.normalizeId(normTitular) : String(normTitular || '').trim().toLowerCase();
+            const empProfile = employees.find(e => {
+                const nId = window.normalizeId ? window.normalizeId(e.id) : String(e.id || '').toLowerCase();
+                const nNom = window.normalizeId ? window.normalizeId(e.nombre) : String(e.nombre || '').toLowerCase();
+                const nInt = window.normalizeId ? window.normalizeId(e.id_interno) : String(e.id_interno || '').toLowerCase();
+                return nId === normTitularKey || nNom === normTitularKey || nInt === normTitularKey;
+            });
             if (empProfile) {
                 const empHotelId = window.normalizeId(empProfile.hotel_id);
                 const currentHotelId = window.normalizeId(hotel);
@@ -6133,7 +6135,26 @@ window.renderPreview = async () => {
                         return evStart <= endISO && evEnd >= startISO;
                     }).map(ev => ev.empleado_id || ev.titular_id || ev.participante_a || ev.empleado).filter(Boolean);
 
-                    const empsInHotel = [...new Set([...empsFromTurnos, ...empsFromEvents])];
+                    const empsInHotel = [...new Set([...empsFromTurnos, ...empsFromEvents])].filter(empId => {
+                        const normEmp = window.normalizeId ? window.normalizeId(empId) : String(empId || '').toLowerCase();
+                        const hasTurnos = hotelData.some(r => (window.normalizeId ? window.normalizeId(r.empleado_id) : String(r.empleado_id || '').toLowerCase()) === normEmp);
+                        if (hasTurnos) return true;
+                        const p = (profiles || []).find(prof => {
+                            const nId = window.normalizeId ? window.normalizeId(prof.id) : String(prof.id || '').toLowerCase();
+                            const nNom = window.normalizeId ? window.normalizeId(prof.nombre) : String(prof.nombre || '').toLowerCase();
+                            const nInt = window.normalizeId ? window.normalizeId(prof.id_interno) : String(prof.id_interno || '').toLowerCase();
+                            return nId === normEmp || nNom === normEmp || nInt === normEmp;
+                        });
+                        if (p) {
+                            const pHotel = window.normalizeId ? window.normalizeId(p.hotel_id) : String(p.hotel_id || '').toLowerCase();
+                            const curHotel = window.normalizeId ? window.normalizeId(hName) : String(hName || '').toLowerCase();
+                            if (pHotel && pHotel !== curHotel) {
+                                const asignados = String(p.hoteles_asignados || '').toLowerCase();
+                                if (!asignados.includes(curHotel)) return false;
+                            }
+                        }
+                        return true;
+                    });
                     empsInHotel.forEach((empId, idx) => {
                         const empProfile = (profiles || []).find(p => p.id === empId || p.nombre === empId || p.id_interno === empId);
                         const row = {
@@ -7893,7 +7914,26 @@ window.buildPublicationSnapshotPreview = async (weekStart, hotelName = 'all') =>
                         return evStart <= weekEnd && evEnd >= weekStart;
                     }).map(ev => ev.empleado_id || ev.titular_id || ev.participante_a || ev.empleado).filter(Boolean);
 
-                    let empsInHotel = [...new Set([...empsFromTurnos, ...empsFromEvents])];
+                    let empsInHotel = [...new Set([...empsFromTurnos, ...empsFromEvents])].filter(empId => {
+                        const normEmp = window.normalizeId ? window.normalizeId(empId) : String(empId || '').toLowerCase();
+                        const hasTurnos = hotelDataDb.some(r => (window.normalizeId ? window.normalizeId(r.empleado_id) : String(r.empleado_id || '').toLowerCase()) === normEmp);
+                        if (hasTurnos) return true;
+                        const p = (profiles || []).find(prof => {
+                            const nId = window.normalizeId ? window.normalizeId(prof.id) : String(prof.id || '').toLowerCase();
+                            const nNom = window.normalizeId ? window.normalizeId(prof.nombre) : String(prof.nombre || '').toLowerCase();
+                            const nInt = window.normalizeId ? window.normalizeId(prof.id_interno) : String(prof.id_interno || '').toLowerCase();
+                            return nId === normEmp || nNom === normEmp || nInt === normEmp;
+                        });
+                        if (p) {
+                            const pHotel = window.normalizeId ? window.normalizeId(p.hotel_id) : String(p.hotel_id || '').toLowerCase();
+                            const curHotel = window.normalizeId ? window.normalizeId(hName) : String(hName || '').toLowerCase();
+                            if (pHotel && pHotel !== curHotel) {
+                                const asignados = String(p.hoteles_asignados || '').toLowerCase();
+                                if (!asignados.includes(curHotel)) return false;
+                            }
+                        }
+                        return true;
+                    });
                     if (empsInHotel.length === 0 && profiles && profiles.length > 0) {
                         const normH = window.normalizeId ? window.normalizeId(hName) : String(hName).toLowerCase();
                         empsInHotel = profiles.filter(p => {

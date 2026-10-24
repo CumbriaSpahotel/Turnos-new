@@ -168,6 +168,10 @@ console.log("[ShiftResolver] Iniciando carga v5.0...");
     };
 
     window.getEventoHotel = (evento = {}) => {
+        const tipo = String(evento.tipo || '').toUpperCase();
+        if (tipo === 'CAMBIO_HOTEL' || tipo === 'TRASLADO_HOTEL') {
+            return evento.hotel_destino || evento.hotel || evento.hotel_id || evento.hotel_origen || '';
+        }
         return evento.hotel || evento.hotel_id || evento.hotel_origen || evento.hotel_destino ||
             evento.payload?.hotel || evento.payload?.hotel_id || evento.payload?.hotel_origen || '';
     };
