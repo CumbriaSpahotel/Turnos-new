@@ -7487,6 +7487,14 @@ window.hasPendingPublicationChanges = async function({ weekStart, weekEnd, hotel
                         snapshotDiff = true;
                         pendingCount = 1;
                     }
+
+                    // DETECTAR CAMBIO EN EL ORDEN DE FILAS DE EMPLEADOS
+                    const orderNew = (newSnap.rows || []).map(r => r.employee_id || r.empleado_id || r.empleado_nombre || r.nombre).join(',');
+                    const orderSaved = (savedSnap.rows || []).map(r => r.employee_id || r.empleado_id || r.empleado_nombre || r.nombre).join(',');
+                    if (orderNew !== orderSaved) {
+                        snapshotDiff = true;
+                        pendingCount = Math.max(pendingCount, 1);
+                    }
                 } else if (newSnap && !savedSnap) {
                     // Snapshot existe pero no tiene datos guardados â†’ publicar de nuevo
                     snapshotDiff = true;
