@@ -29307,47 +29307,6 @@
   },
   {
     "hotel": "Sercotel Guadiana",
-    "week_start": "2026-10-19",
-    "empleado_id": "Cristina",
-    "empleado_nombre": "Cristina",
-    "excel_row_index": 466,
-    "order": 466
-  },
-  {
-    "hotel": "Sercotel Guadiana",
-    "week_start": "2026-10-19",
-    "empleado_id": "Dani",
-    "empleado_nombre": "Dani",
-    "excel_row_index": 467,
-    "order": 467
-  },
-  {
-    "hotel": "Sercotel Guadiana",
-    "week_start": "2026-10-19",
-    "empleado_id": "Macarena",
-    "empleado_nombre": "Macarena",
-    "excel_row_index": 468,
-    "order": 468
-  },
-  {
-    "hotel": "Sercotel Guadiana",
-    "week_start": "2026-10-19",
-    "empleado_id": "Federico",
-    "empleado_nombre": "Federico",
-    "excel_row_index": 469,
-    "order": 469
-  },
-  {
-    "hotel": "Sercotel Guadiana",
-    "week_start": "2026-10-19",
-    "empleado_id": "Sergio Sánchez",
-    "empleado_nombre": "S. Sánchez",
-    "excel_row_index": 470,
-    "order": 470,
-    "display_name": "S. Sánchez"
-  },
-  {
-    "hotel": "Sercotel Guadiana",
     "week_start": "2026-10-26",
     "empleado_id": "Macarena",
     "empleado_nombre": "Macarena",
@@ -51671,5 +51630,68 @@
     "excel_row_index": 492,
     "order": 492,
     "display_name": "S. Sánchez"
+  },
+  {
+    "hotel": "Sercotel Guadiana",
+    "week_start": "2026-10-19",
+    "empleado_id": "Cristina",
+    "empleado_nombre": "Cristina",
+    "excel_row_index": 466,
+    "order": 466,
+    "display_name": "Cristina"
+  },
+  {
+    "hotel": "Sercotel Guadiana",
+    "week_start": "2026-10-19",
+    "empleado_id": "Diana",
+    "empleado_nombre": "Diana",
+    "excel_row_index": 467,
+    "order": 467,
+    "display_name": "Diana"
+  },
+  {
+    "hotel": "Sercotel Guadiana",
+    "week_start": "2026-10-19",
+    "empleado_id": "Dani",
+    "empleado_nombre": "Dani",
+    "excel_row_index": 468,
+    "order": 468,
+    "display_name": "Dani"
+  },
+  {
+    "hotel": "Sercotel Guadiana",
+    "week_start": "2026-10-19",
+    "empleado_id": "Elena",
+    "empleado_nombre": "Elena",
+    "excel_row_index": 469,
+    "order": 469,
+    "display_name": "Elena"
+  },
+  {
+    "hotel": "Sercotel Guadiana",
+    "week_start": "2026-10-19",
+    "empleado_id": "EMP-0018",
+    "empleado_nombre": "Elena",
+    "excel_row_index": 469,
+    "order": 469,
+    "display_name": "Elena"
+  },
+  {
+    "hotel": "Sercotel Guadiana",
+    "week_start": "2026-10-19",
+    "empleado_id": "Sergio Sánchez",
+    "empleado_nombre": "S. Sánchez",
+    "excel_row_index": 470,
+    "order": 470,
+    "display_name": "S. Sánchez"
+  },
+  {
+    "hotel": "Sercotel Guadiana",
+    "week_start": "2026-10-19",
+    "empleado_id": "Macarena",
+    "empleado_nombre": "Macarena",
+    "excel_row_index": 471,
+    "order": 471,
+    "display_name": "Macarena"
   }
 ]

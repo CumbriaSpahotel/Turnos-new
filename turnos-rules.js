@@ -682,15 +682,16 @@
             return code && code !== '—' && code !== '' && code !== 'SIN_TURNO';
         });
 
-        // 2. REGLA OBLIGATORIA: Próximamente es visible si es operativo (incluso con ID ¿?)
+        // 2. REGLA OBLIGATORIA: Próximamente y Vacante son visibles si son operativos (con turnos reales)
         const isProximamente = name.includes('proximamente') || name.includes('próximamente');
-        if (isProximamente && hasOperationalTurns) {
-            if (window.DEBUG_MODE) console.log('[PUBLIC_ROW_FILTER] Permitiendo Próximamente operativo', { name, id });
+        const isVacante = name.includes('vacante') || id.includes('vacante');
+        if ((isProximamente || isVacante) && hasOperationalTurns) {
+            if (window.DEBUG_MODE) console.log('[PUBLIC_ROW_FILTER] Permitiendo Próximamente/Vacante operativo', { name, id });
             return true;
         }
 
-        // 3. Bloqueos de placeholders técnicos puros
-        if (name === 'vacante' || name.includes('vacante') || id === 'vacante') return false;
+        // 3. Bloqueos de placeholders técnicos puros (sin turnos operativos)
+        if (isVacante && !hasOperationalTurns) return false;
         if ((name === '¿?' || id === '¿?') && !isProximamente) return false;
 
         // 4. Si es un sustituto operativo con turnos reales, es visible

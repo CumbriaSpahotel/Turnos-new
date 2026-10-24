@@ -9,6 +9,28 @@
    - Manejo de errores en TODAS las operaciones.
 */
 
+// Blindaje de seguridad para turnos posteriores
+window.checkBlindajeTurnosPosteriores = function(fechas) {
+    try {
+        const dates = Array.isArray(fechas) ? fechas : [fechas];
+        const BLINDAJE_DATE = '2026-10-26';
+        const hasPosterior = dates.some(f => f && String(f).slice(0, 10) >= BLINDAJE_DATE);
+        if (!hasPosterior) return true;
+        if (window._blindajeUnlockedSession) return true;
+
+        const pass = window.prompt("🔒 SEGURIDAD: Los turnos posteriores (>= 26/10/2026) están blindados.\nIngrese la contraseña para autorizar el cambio:");
+        if (pass === '1234') {
+            window._blindajeUnlockedSession = true;
+            setTimeout(() => { window._blindajeUnlockedSession = false; }, 5 * 60 * 1000);
+            return true;
+        }
+        alert("❌ Contraseña incorrecta. Los turnos posteriores están protegidos y no han sido modificados.");
+        return false;
+    } catch (_) {
+        return false;
+    }
+};
+
 window.TurnosDB = {
     _channel: null,
     _syncTTL: 5 * 60 * 1000, 
@@ -878,6 +900,10 @@ window.TurnosDB = {
         const client = window.supabase;
         try {
             if (!empleado_id || !fecha) throw new Error("ID de empleado y Fecha son obligatorios");
+            const normFecha = this.normalizeDate(fecha);
+            if (window.checkBlindajeTurnosPosteriores && !window.checkBlindajeTurnosPosteriores(normFecha)) {
+                throw new Error("Operación cancelada por blindaje de turnos posteriores");
+            }
 
             const { data: { session } } = await client.auth.getSession();
             const userEmail = updatedByOverride || session?.user?.email || 'WEB_ADMIN';
@@ -910,6 +936,10 @@ window.TurnosDB = {
         const client = window.supabase;
         try {
             if (!flatData || !flatData.length) return;
+            const fechas = flatData.map(r => r.fecha);
+            if (window.checkBlindajeTurnosPosteriores && !window.checkBlindajeTurnosPosteriores(fechas)) {
+                throw new Error("Operación cancelada por blindaje de turnos posteriores");
+            }
 
             const { data: { session } } = await client.auth.getSession();
             const userEmail = session?.user?.email || 'EXCEL_IMPORT';

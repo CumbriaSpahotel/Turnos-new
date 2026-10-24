@@ -806,8 +806,8 @@
   <script src="html2pdf.bundle.min.js"></script>
   <script src="supabase.js"></script>
   <script src="supabase-config.js?v=13.8"></script>
-  <script src="supabase-dao.js?v=13.28"></script>
-  <script src="turnos-rules.js?v=14.9"></script>
+  <script src="supabase-dao.js?v=13.30"></script>
+  <script src="turnos-rules.js?v=14.10"></script>
   <script src="shift-resolver.js?v=14.65"></script>
   <script src="publication-snapshot.js?v=1.1"></script>
   <script src="virtualizer.js"></script>
@@ -880,7 +880,9 @@
     // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     const formatDisplayName = (name) => {
         if (!name) return '';
-        return name.replace(/_DUP_.*$/, '').replace(/_CT$/, '').replace(/_/g, ' ').trim();
+        let clean = name.replace(/_DUP_.*$/, '').replace(/_CT$/, '').replace(/_/g, ' ').trim();
+        if (clean.toLowerCase().includes('vacante')) return 'Vacante';
+        return clean;
     };
     const monthNamesFull = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
 
@@ -1803,7 +1805,18 @@
             }
             return isVisible;
         });
-        const sorted = window.TurnosRules.sortEmployees(filteredRows);
+        // Respetar estrictamente el orden del snapshot publicado (tanto web como móvil)
+        const sorted = filteredRows.slice().sort((a, b) => {
+            const isAbsA = a.rowType === 'ausencia_informativa' || a.isAbsence;
+            const isAbsB = b.rowType === 'ausencia_informativa' || b.isAbsence;
+            if (isAbsA !== isAbsB) return isAbsA ? 1 : -1;
+
+            const orderA = Number.isFinite(Number(a.orden)) ? Number(a.orden) : (Number.isFinite(Number(a.puestoOrden)) ? Number(a.puestoOrden) : null);
+            const orderB = Number.isFinite(Number(b.orden)) ? Number(b.orden) : (Number.isFinite(Number(b.puestoOrden)) ? Number(b.puestoOrden) : null);
+            if (orderA !== null && orderB !== null && orderA !== orderB) return orderA - orderB;
+
+            return rows.indexOf(a) - rows.indexOf(b);
+        });
 
         sorted.forEach(rowData => {
             const showCounters = window.TurnosRules ? window.TurnosRules.shouldShowNightRestControls(rowData, { view: 'index' }) : true;

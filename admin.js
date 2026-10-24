@@ -1,3 +1,34 @@
+
+// REORDENACIÓN MANUAL DE FILAS EN VISTA PREVIA
+window.movePreviewRow = (hotel, weekStart, currentIndex, delta) => {
+    const manualOrderKey = 'admin_custom_order_' + hotel + '_' + weekStart;
+    const hData = window._lastRenderedPreviewSnapshotSource?.hoteles?.find(h => h.hotel === hotel);
+    const rows = hData?.empleados;
+    if (!rows || rows.length === 0) return;
+
+    const newIndex = currentIndex + delta;
+    if (newIndex < 0 || newIndex >= rows.length) return;
+
+    if (rows[currentIndex].rowType === 'ausencia_informativa' || rows[newIndex].rowType === 'ausencia_informativa') {
+        return;
+    }
+
+    const currentIds = rows.map(r => r.empleado_id || r.nombre);
+    const [moved] = currentIds.splice(currentIndex, 1);
+    currentIds.splice(newIndex, 0, moved);
+
+    localStorage.setItem(manualOrderKey, JSON.stringify(currentIds));
+    if (window.invalidatePreviewSnapshotCache) window.invalidatePreviewSnapshotCache('manual_move');
+    window.renderPreview();
+};
+
+window.resetPreviewRowOrder = (hotel, weekStart) => {
+    const manualOrderKey = 'admin_custom_order_' + hotel + '_' + weekStart;
+    localStorage.removeItem(manualOrderKey);
+    if (window.invalidatePreviewSnapshotCache) window.invalidatePreviewSnapshotCache('reset_order');
+    window.renderPreview();
+};
+
 // describeCell centralizado en turnos-rules.js
 
 window.formatDisplayName = (name) => {
@@ -6224,6 +6255,35 @@ window.renderPreview = async () => {
 
             if (!deduplicatedList.length) continue;
 
+            // ORDEN MANUAL PERSONALIZADO (▲/▼)
+            const manualOrderKey = 'admin_custom_order_' + hName + '_' + startISO;
+            let manualOrder = null;
+            try {
+                const rawCustom = localStorage.getItem(manualOrderKey);
+                if (rawCustom) manualOrder = JSON.parse(rawCustom);
+            } catch (_) {}
+
+            if (Array.isArray(manualOrder) && manualOrder.length > 0) {
+                deduplicatedList.sort((a, b) => {
+                    const isAbsA = a.rowType === 'ausencia_informativa' || a.isAbsentInformative ? 1 : 0;
+                    const isAbsB = b.rowType === 'ausencia_informativa' || b.isAbsentInformative ? 1 : 0;
+                    if (isAbsA !== isAbsB) return isAbsA - isAbsB;
+
+                    const idA = a.employee_id || a.nombre;
+                    const idB = b.employee_id || b.nombre;
+                    const idxA = manualOrder.indexOf(idA);
+                    const idxB = manualOrder.indexOf(idB);
+                    const posA = idxA !== -1 ? idxA : 999;
+                    const posB = idxB !== -1 ? idxB : 999;
+                    if (posA !== posB) return posA - posB;
+                    return (a.puestoOrden || 0) - (b.puestoOrden || 0);
+                });
+                deduplicatedList.forEach((emp, i) => {
+                    emp.puestoOrden = (emp.rowType === 'ausencia_informativa' || emp.isAbsentInformative ? 1000 : 100) + i;
+                    emp.orden = emp.puestoOrden;
+                });
+            }
+
             // TAREA CODEX: Cachear el resultado final para publicación exacta
             const hotelSnapshot = {
                 hotel: hName,
@@ -6311,10 +6371,17 @@ window.renderPreview = async () => {
                                 </tr>
                             </thead>
                             <tbody>
-                                ${deduplicatedList.map(employee => `
+                                ${deduplicatedList.map((employee, empIdx) => `
                                     <tr style="border-bottom:1px solid #f1f5f9;">
-                                        <td style="padding:${isWeekly ? '12px 25px' : '8px 15px'}; background:white; position:sticky; left:0; z-index:5; border-right:1px solid #f1f5f9;">
-                                            ${window.renderEmpleadoRowHeader(employee, { showVacationIcon: true, isCompact: !isWeekly })}
+                                        <td style="padding:${isWeekly ? '10px 16px' : '8px 15px'}; background:white; position:sticky; left:0; z-index:5; border-right:1px solid #f1f5f9;">
+                                            <div style="display:flex; align-items:center; justify-content:space-between; gap:6px;">
+                                                <div style="flex:1;">${window.renderEmpleadoRowHeader(employee, { showVacationIcon: true, isCompact: !isWeekly })}</div>
+                                                ${isWeekly && !employee.isAbsentInformative ? `
+                                                <div style="display:flex; flex-direction:column; gap:2px; opacity:0.85;">
+                                                    <button type="button" title="Subir posición" onclick="window.movePreviewRow('${escapeHtml(hName)}', '${startISO}', ${empIdx}, -1)" style="border:1px solid #cbd5e1; background:#f1f5f9; color:#1e293b; width:20px; height:18px; border-radius:3px; cursor:pointer; font-size:10px; font-weight:800; line-height:1; display:flex; align-items:center; justify-content:center; padding:0;">▲</button>
+                                                    <button type="button" title="Bajar posición" onclick="window.movePreviewRow('${escapeHtml(hName)}', '${startISO}', ${empIdx}, 1)" style="border:1px solid #cbd5e1; background:#f1f5f9; color:#1e293b; width:20px; height:18px; border-radius:3px; cursor:pointer; font-size:10px; font-weight:800; line-height:1; display:flex; align-items:center; justify-content:center; padding:0;">▼</button>
+                                                </div>` : ''}
+                                            </div>
                                         </td>
                                         ${columns.map(c => {
                                             const isWeekend = c.dayName === 'SAB' || c.dayName === 'DOM';
@@ -7997,6 +8064,35 @@ window.buildPublicationSnapshotPreview = async (weekStart, hotelName = 'all') =>
                     seen.add(key);
                     return true;
                 });
+
+                // APLICAR ORDEN MANUAL PERSONALIZADO EN SNAPSHOT PARA PUBLICACIÓN FIEL 1:1
+                const manualOrderKeyPub = 'admin_custom_order_' + hName + '_' + weekStart;
+                let manualOrderPub = null;
+                try {
+                    const rawCustom = localStorage.getItem(manualOrderKeyPub);
+                    if (rawCustom) manualOrderPub = JSON.parse(rawCustom);
+                } catch (_) {}
+
+                if (Array.isArray(manualOrderPub) && manualOrderPub.length > 0) {
+                    deduplicated.sort((a, b) => {
+                        const isAbsA = a.rowType === 'ausencia_informativa' || a.isAbsentInformative ? 1 : 0;
+                        const isAbsB = b.rowType === 'ausencia_informativa' || b.isAbsentInformative ? 1 : 0;
+                        if (isAbsA !== isAbsB) return isAbsA - isAbsB;
+
+                        const idA = a.employee_id || a.nombre;
+                        const idB = b.employee_id || b.nombre;
+                        const idxA = manualOrderPub.indexOf(idA);
+                        const idxB = manualOrderPub.indexOf(idB);
+                        const posA = idxA !== -1 ? idxA : 999;
+                        const posB = idxB !== -1 ? idxB : 999;
+                        if (posA !== posB) return posA - posB;
+                        return (a.puestoOrden || 0) - (b.puestoOrden || 0);
+                    });
+                    deduplicated.forEach((emp, i) => {
+                        emp.puestoOrden = (emp.rowType === 'ausencia_informativa' || emp.isAbsentInformative ? 1000 : 100) + i;
+                        emp.orden = emp.puestoOrden;
+                    });
+                }
 
                 hotelData = deduplicated.map((emp, idx) => {
                     const daysMap = {};
