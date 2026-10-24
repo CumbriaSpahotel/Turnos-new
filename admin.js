@@ -28,6 +28,27 @@ window.changeExcelWeek = (deltaWeeks) => {
 
 
 // REORDENACIÓN MANUAL DE FILAS EN VISTA PREVIA
+window.findManualOrderIndex = (manualList, emp) => {
+    if (!Array.isArray(manualList) || !manualList.length || !emp) return -1;
+    const rawId = String(emp.employee_id || emp.empleado_id || emp.id || '').trim();
+    const rawNom = String(emp.nombre || emp.nombreVisible || emp.displayName || '').trim();
+    const normId = window.normalizeId ? window.normalizeId(rawId) : rawId.toLowerCase();
+    const normNom = window.normalizeId ? window.normalizeId(rawNom) : rawNom.toLowerCase();
+
+    for (let i = 0; i < manualList.length; i++) {
+        const item = String(manualList[i] || '').trim();
+        const normItem = window.normalizeId ? window.normalizeId(item) : item.toLowerCase();
+        if (normItem && (normItem === normId || normItem === normNom)) return i;
+        if (item && (item === rawId || item === rawNom)) return i;
+
+        // Aliases específicos conocidos
+        if ((normItem === 'elena' || normItem === 'emp-0018') && (normId === 'elena' || normId === 'emp-0018' || normNom === 'elena')) return i;
+        if ((normItem === 'sandra' || normItem === 'emp-0017') && (normId === 'sandra' || normId === 'emp-0017' || normNom.includes('sánchez') || normNom.includes('sanchez'))) return i;
+        if ((normItem.includes('sanchez') || normItem.includes('sánchez')) && (normNom.includes('sanchez') || normNom.includes('sánchez'))) return i;
+    }
+    return -1;
+};
+
 window.movePreviewRow = (hotel, weekStart, currentIndex, delta) => {
     const manualOrderKey = 'admin_custom_order_' + hotel + '_' + weekStart;
     const hData = window._lastRenderedPreviewSnapshotSource?.hoteles?.find(h => h.hotel === hotel);
@@ -41,7 +62,7 @@ window.movePreviewRow = (hotel, weekStart, currentIndex, delta) => {
         return;
     }
 
-    const currentIds = rows.map(r => r.empleado_id || r.nombre);
+    const currentIds = rows.map(r => r.nombreVisible || r.nombre || r.empleado_id);
     const [moved] = currentIds.splice(currentIndex, 1);
     currentIds.splice(newIndex, 0, moved);
 
@@ -4891,60 +4912,7 @@ window.createPuestosPreviewModel = ({
     });
 
 
-    // Ahora asignamos automáticamente a las ausencias que no tienen
-    eventosCalculados.forEach(ev => {
-        const tipo = window.normalizeTipo(ev.tipo);
-        if (!['VAC', 'BAJA', 'PERM', 'PERMISO', 'FORMACION'].includes(tipo)) return;
-        if (window.normalizeEstado(ev.estado) === 'anulado') return;
-        if (window.eventoPerteneceAHotel && !window.eventoPerteneceAHotel(ev, hotel)) return;
-        
-        const sRaw = ev.empleado_destino_id || ev.sustituto_id || ev.sustituto || ev.payload?.sustituto_id || ev.payload?.sustituto || ev.participante_b || ev.destino_id;
-        if (!sRaw) {
-            if (ev._skipAutoSustituto) return;
-            const evHotel = window.normalizeId(ev.hotel_origen || ev.hotel || hotel);
-            const tId = ev.empleado_id || ev.titular_id || ev.participante_a || ev.empleado;
-            if (!tId) return;
-
-            const vacacionista = employees.find(e => {
-                if (window.normalizeId(e.id) === window.normalizeId(tId) || window.normalizeId(e.nombre) === window.normalizeId(tId)) return false;
-                
-                // Excluir si el vacacionista candidato está cesado en la fecha del evento
-                const isVacTerminated = window.TurnosRules?.isEmployeeTerminated
-                    ? window.TurnosRules.isEmployeeTerminated(e, ev.fecha_inicio)
-                    : false;
-                if (isVacTerminated) return false;
-
-                const tipoNorm = String(e.tipo_personal || e.tipo || e.contrato || '').toLowerCase();
-                const puestoNorm = String(e.puesto || '').toLowerCase();
-
-                const esVacacionista = tipoNorm.includes('sustituto') || puestoNorm.includes('vacac');
-                if (!esVacacionista) return false;
-                
-                const hoteles = String(e.hoteles_asignados || e.hotel_id || '').toLowerCase();
-                const matchHotel = hoteles.includes(evHotel) || window.normalizeId(e.hotel_id) === evHotel;
-                if (!matchHotel) return false;
-
-                const cId = window.ShiftResolver?.getCanonicalEmployeeId ? window.ShiftResolver.getCanonicalEmployeeId(window.normalizeId(e.id), { baseIndex: { aliasesEmpleado: new Map() } }) : window.normalizeId(e.id);
-                if (yaAsignadasSust.has(cId)) return false;
-
-                // Excluir si el candidato ya tiene su propio puesto/fila en sourceRows
-                const candId = resolveId(e.id);
-                const hasOwnRow = sourceRows.some(sr => {
-                    const srId = resolveId(sr.empleadoId);
-                    return srId === candId || (window.ShiftResolver?.getCanonicalEmployeeId && window.ShiftResolver.getCanonicalEmployeeId(srId, { baseIndex: { aliasesEmpleado: new Map() } }) === cId);
-                });
-                if (hasOwnRow) return false;
-
-                return true;
-            });
-
-            if (vacacionista) {
-                ev.empleado_destino_id = vacacionista.id;
-                const canonicalSust = window.ShiftResolver?.getCanonicalEmployeeId ? window.ShiftResolver.getCanonicalEmployeeId(window.normalizeId(vacacionista.id), { baseIndex: { aliasesEmpleado: new Map() } }) : window.normalizeId(vacacionista.id);
-                yaAsignadasSust.add(canonicalSust);
-            }
-        }
-    });
+    // Ausencias sin sustituto explícito se gestionan internamente sin generar filas operativas fantasmas.
 
     // B) Construir mapa de sustituciones por ausencia (VAC, BAJA, PERMISO, FORMACION, BAJA_EMPRESA)
 
@@ -6311,10 +6279,8 @@ window.renderPreview = async () => {
                     const isAbsB = b.rowType === 'ausencia_informativa' || b.isAbsentInformative ? 1 : 0;
                     if (isAbsA !== isAbsB) return isAbsA - isAbsB;
 
-                    const idA = a.employee_id || a.nombre;
-                    const idB = b.employee_id || b.nombre;
-                    const idxA = manualOrder.indexOf(idA);
-                    const idxB = manualOrder.indexOf(idB);
+                    const idxA = window.findManualOrderIndex ? window.findManualOrderIndex(manualOrder, a) : -1;
+                    const idxB = window.findManualOrderIndex ? window.findManualOrderIndex(manualOrder, b) : -1;
                     const posA = idxA !== -1 ? idxA : 999;
                     const posB = idxB !== -1 ? idxB : 999;
                     if (posA !== posB) return posA - posB;
@@ -8121,10 +8087,8 @@ window.buildPublicationSnapshotPreview = async (weekStart, hotelName = 'all') =>
                         const isAbsB = b.rowType === 'ausencia_informativa' || b.isAbsentInformative ? 1 : 0;
                         if (isAbsA !== isAbsB) return isAbsA - isAbsB;
 
-                        const idA = a.employee_id || a.nombre;
-                        const idB = b.employee_id || b.nombre;
-                        const idxA = manualOrderPub.indexOf(idA);
-                        const idxB = manualOrderPub.indexOf(idB);
+                        const idxA = window.findManualOrderIndex ? window.findManualOrderIndex(manualOrderPub, a) : -1;
+                        const idxB = window.findManualOrderIndex ? window.findManualOrderIndex(manualOrderPub, b) : -1;
                         const posA = idxA !== -1 ? idxA : 999;
                         const posB = idxB !== -1 ? idxB : 999;
                         if (posA !== posB) return posA - posB;
