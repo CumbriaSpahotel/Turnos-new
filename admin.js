@@ -4925,7 +4925,17 @@ window.createPuestosPreviewModel = ({
                 if (!matchHotel) return false;
 
                 const cId = window.ShiftResolver?.getCanonicalEmployeeId ? window.ShiftResolver.getCanonicalEmployeeId(window.normalizeId(e.id), { baseIndex: { aliasesEmpleado: new Map() } }) : window.normalizeId(e.id);
-                return !yaAsignadasSust.has(cId);
+                if (yaAsignadasSust.has(cId)) return false;
+
+                // Excluir si el candidato ya tiene su propio puesto/fila en sourceRows
+                const candId = resolveId(e.id);
+                const hasOwnRow = sourceRows.some(sr => {
+                    const srId = resolveId(sr.empleadoId);
+                    return srId === candId || (window.ShiftResolver?.getCanonicalEmployeeId && window.ShiftResolver.getCanonicalEmployeeId(srId, { baseIndex: { aliasesEmpleado: new Map() } }) === cId);
+                });
+                if (hasOwnRow) return false;
+
+                return true;
             });
 
             if (vacacionista) {
@@ -7864,8 +7874,7 @@ window.publishToSupabase = async () => {
         const base = new Date(rawDate + 'T12:00:00');
         const weekStart = window.isoDate(window.getMonday(base));
 
-        // 1. Generar Snapshots finales (SIEMPRE frescos, sin caché)
-        if (window.invalidatePreviewSnapshotCache) window.invalidatePreviewSnapshotCache('publish_fresh');
+        // 1. Generar Snapshots finales (preservando el preview visual revisado por el usuario)
         const snapshots = await window.buildPublicationSnapshotPreview(weekStart, hotelSel);
         const weekEnd = window.addIsoDays(weekStart, 6);
         const pendingResult = await window.hasPendingPublicationChanges({
@@ -7986,6 +7995,7 @@ window.validatePublishChanges = (changes) => {
 
 
 window.buildPublicationSnapshotPreview = async (weekStart, hotelName = 'all') => {
+        if (window.loadV9ExcelOrderMap) await window.loadV9ExcelOrderMap();
         const cache = window._lastRenderedPreviewSnapshotSource;
         const hotels = await window.TurnosDB.getHotels();
         const hotelsToProcess = hotelName === 'all' ? hotels : [hotelName];
@@ -8200,11 +8210,22 @@ window.buildPublicationSnapshotPreview = async (weekStart, hotelName = 'all') =>
                     ...emp,
                     rowType: emp.rowType || 'operativo',
                     puestoOrden: emp.puestoOrden || emp.orden || 999,
+                    orden: emp.orden || emp.puestoOrden || 999,
                     nombreVisible: emp.nombreVisible || emp.nombre,
                     nombre: emp.nombre,
                     cells: emp.cells || emp.dias,
                     dias: emp.cells || emp.dias
                 }));
+            }
+
+            // GARANTIZAR ORDEN 1..N EN EL SNAPSHOT FINAL:
+            // Respetar estrictamente el orden del array visual (que refleja la vista previa y cualquier reordenación manual)
+            if (Array.isArray(hotelData)) {
+                hotelData.forEach((emp, i) => {
+                    const isAbs = emp.rowType === 'ausencia_informativa' || emp.isAbsentInformative || emp.isAbsence;
+                    emp.puestoOrden = isAbs ? (1000 + i + 1) : (i + 1);
+                    emp.orden = emp.puestoOrden;
+                });
             }
 
             snapshots.push({
