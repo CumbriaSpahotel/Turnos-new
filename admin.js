@@ -395,6 +395,20 @@ window.loadV9ExcelOrderMap = async () => {
         if (!index[h][w]) index[h][w] = {};
         
         index[h][w][e] = item;
+        if (item.empleado_nombre) index[h][w][window.normalizeV9Key(item.empleado_nombre)] = item;
+        if (item.display_name) index[h][w][window.normalizeV9Key(item.display_name)] = item;
+        if (e === 'emp-0018' || e === 'elena') {
+            index[h][w]['emp-0018'] = item;
+            index[h][w]['elena'] = item;
+        }
+        if (e === 'emp-0017' || e === 'sandra') {
+            index[h][w]['emp-0017'] = item;
+            index[h][w]['sandra'] = item;
+        }
+        if (e.includes('sanchez') || e.includes('sánchez')) {
+            index[h][w]['sergio sanchez'] = item;
+            index[h][w]['s. sanchez'] = item;
+        }
     });
     
     window.v9ExcelOrderMap = index; // Guardamos la estructura anidada
@@ -415,7 +429,16 @@ window.getV9ExcelOrder = (hotel, weekStart, empleado) => {
     const weekData = hotelData[wKey];
     if (!weekData) return null;
     
-    const item = weekData[eKey];
+    let item = weekData[eKey];
+    if (!item) {
+        if (eKey === 'elena') item = weekData['emp-0018'];
+        else if (eKey === 'emp-0018') item = weekData['elena'];
+        else if (eKey === 'sandra') item = weekData['emp-0017'];
+        else if (eKey === 'emp-0017') item = weekData['sandra'];
+        else if (eKey.includes('sanchez') || eKey.includes('sánchez')) {
+            item = weekData['s. sanchez'] || weekData['sergio sanchez'];
+        }
+    }
     return item ? item.order : null;
 };
 
