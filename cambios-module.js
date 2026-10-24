@@ -69,11 +69,13 @@
                 
                 CambiosModule.init();
 
-                let [events, hotels, requests] = await Promise.all([
-                    window.TurnosDB.fetchEventos(),
+                let [allEventsIncludingAnulados, hotels, requests] = await Promise.all([
+                    window.TurnosDB.fetchEventos(null, null, true),
                     window.TurnosDB.getHotels(),
                     window.TurnosDB.fetchPeticiones ? window.TurnosDB.fetchPeticiones() : Promise.resolve([])
                 ]);
+                const isEventoAnulado = (ev) => String(ev?.estado || '').toLowerCase() === 'anulado';
+                let events = (allEventsIncludingAnulados || []).filter(ev => !isEventoAnulado(ev));
 
                 const normalizeChangeKey = (item) => [
                     item.fecha_inicio || item.fecha || '',
@@ -83,8 +85,10 @@
                     item.turno_nuevo || item.destino || ''
                 ].map(v => String(v || '').trim().toLowerCase()).join('|');
 
-                const eventPetitionIds = new Set((events || []).map(ev => ev.payload?.peticion_id).filter(Boolean));
-                const eventKeys = new Set((events || [])
+                // Una peticion aprobada solo se sincroniza si NUNCA genero eventos. Si sus eventos
+                // estan anulados, la anulacion fue intencionada y no debe resucitarse.
+                const eventPetitionIds = new Set((allEventsIncludingAnulados || []).map(ev => ev.payload?.peticion_id).filter(Boolean));
+                const eventKeys = new Set((allEventsIncludingAnulados || [])
                     .filter(ev => ['CAMBIO_TURNO', 'INTERCAMBIO_TURNO', 'INTERCAMBIO_HOTEL'].includes(ev.tipo))
                     .map(ev => normalizeChangeKey(ev)));
 
@@ -117,7 +121,8 @@
                             await window.TurnosDB.actualizarEstadoPeticion(item.req.id, 'aprobada');
                         }
                         if (window.invalidatePreviewSnapshotCache) window.invalidatePreviewSnapshotCache('requests-approved');
-                        events = await window.TurnosDB.fetchEventos();
+                        allEventsIncludingAnulados = await window.TurnosDB.fetchEventos(null, null, true);
+                        events = (allEventsIncludingAnulados || []).filter(ev => !isEventoAnulado(ev));
                     } finally {
                         window._syncingApprovedChangeRequests = false;
                     }
