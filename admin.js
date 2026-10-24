@@ -5155,7 +5155,14 @@ window.createPuestosPreviewModel = ({
                 const nInt = window.normalizeId ? window.normalizeId(e.id_interno) : String(e.id_interno || '').toLowerCase();
                 return nId === normTitularKey || nNom === normTitularKey || nInt === normTitularKey;
             });
-            if (empProfile) {
+            // FILTRO DE PERTENENCIA A HOTEL:
+            // Solo aplica a partir de la reestructuracion (26/10/2026 en adelante).
+            // Para fechas anteriores (< 2026-10-26), se respetan los hoteles historicos (Federico en Guadiana, Cristina en Cumbria).
+            // Ademas, si el empleado tiene turnos reales en esta semana en este hotel, NUNCA se omite.
+            const hasRealShifts = Array.isArray(r.values) && r.values.some(v => v && v !== '—' && v !== '-' && v !== '');
+            const isPostTransfer = (r.week_start || r.weekStart || firstDate) >= '2026-10-26';
+
+            if (isPostTransfer && !hasRealShifts && empProfile) {
                 const empHotelId = window.normalizeId(empProfile.hotel_id);
                 const currentHotelId = window.normalizeId(hotel);
                 if (empHotelId && empHotelId !== currentHotelId) {
@@ -6139,6 +6146,7 @@ window.renderPreview = async () => {
                         const normEmp = window.normalizeId ? window.normalizeId(empId) : String(empId || '').toLowerCase();
                         const hasTurnos = hotelData.some(r => (window.normalizeId ? window.normalizeId(r.empleado_id) : String(r.empleado_id || '').toLowerCase()) === normEmp);
                         if (hasTurnos) return true;
+                        if (startISO < '2026-10-26') return true;
                         const p = (profiles || []).find(prof => {
                             const nId = window.normalizeId ? window.normalizeId(prof.id) : String(prof.id || '').toLowerCase();
                             const nNom = window.normalizeId ? window.normalizeId(prof.nombre) : String(prof.nombre || '').toLowerCase();
@@ -7926,6 +7934,7 @@ window.buildPublicationSnapshotPreview = async (weekStart, hotelName = 'all') =>
                         const normEmp = window.normalizeId ? window.normalizeId(empId) : String(empId || '').toLowerCase();
                         const hasTurnos = hotelDataDb.some(r => (window.normalizeId ? window.normalizeId(r.empleado_id) : String(r.empleado_id || '').toLowerCase()) === normEmp);
                         if (hasTurnos) return true;
+                        if (weekStart < '2026-10-26') return true;
                         const p = (profiles || []).find(prof => {
                             const nId = window.normalizeId ? window.normalizeId(prof.id) : String(prof.id || '').toLowerCase();
                             const nNom = window.normalizeId ? window.normalizeId(prof.nombre) : String(prof.nombre || '').toLowerCase();
