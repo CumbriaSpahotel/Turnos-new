@@ -601,9 +601,112 @@
             return type.includes('fijo') || type.includes('apoyo') || type.includes('sustituto') || type.includes('temporal') || type.includes('eventual') || type.includes('cobertura');
         }
 
+        // ===== Plantilla real por hotel y fecha =====
+        // Los perfiles pueden tener varios hoteles asignados (p.ej. traslados Federico/Cristina),
+        // así que la pertenencia se decide por el cuadrante real de ese hotel en la semana de la fecha.
+        const _rosterCache = new Map();
+        let _loadEmployeesToken = 0;
+
+        function rosterNorm(value) {
+            if (value === null || value === undefined || value === '') return '';
+            return window.normalizeId ? window.normalizeId(value) : normalizeEmployeeText(value);
+        }
+
+        function todayISO() {
+            const d = new Date();
+            return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+        }
+
+        function isRealShiftValue(value) {
+            const v = String(value || '').trim();
+            return !!v && v !== '-' && v !== '—';
+        }
+
+        function eventHotelOf(ev) {
+            if (window.getEventoHotel) {
+                const h = window.getEventoHotel(ev);
+                if (h) return h;
+            }
+            return ev?.hotel_origen || ev?.hotel_id || ev?.hotel || ev?.payload?.hotel_id || ev?.payload?.hotel || '';
+        }
+
+        async function getHotelRosterKeys(hotel, dateStr) {
+            if (!hotel || !dateStr) return null;
+            const weekStart = getWeekStartISO(dateStr);
+            const weekEnd = addDaysISO(weekStart, 6);
+            const cacheKey = `${hotel}|${weekStart}`;
+            if (_rosterCache.has(cacheKey)) return _rosterCache.get(cacheKey);
+
+            const keys = new Set();
+            const hotelNorm = rosterNorm(hotel);
+            const sameHotel = (h) => {
+                const n = rosterNorm(h);
+                return !!n && (n === hotelNorm || n.includes(hotelNorm) || hotelNorm.includes(n));
+            };
+
+            // 1. Turnos base del hotel en la semana (fuente principal)
+            try {
+                const rows = window.TurnosDB?.fetchTurnosBase
+                    ? await window.TurnosDB.fetchTurnosBase(weekStart, weekEnd, hotel)
+                    : [];
+                (rows || []).forEach(r => {
+                    if (!sameHotel(r.hotel_id || hotel)) return;
+                    if (!isRealShiftValue(r.turno)) return;
+                    const k = rosterNorm(r.empleado_id);
+                    if (k) keys.add(k);
+                });
+            } catch (err) {
+                console.warn('[Solicitud] No se pudo leer turnos del hotel', err);
+            }
+
+            // 2. Eventos del hotel en la semana (sustitutos que cubren aquí, titulares ausentes)
+            try {
+                const eventos = window.TurnosDB?.fetchEventos ? await window.TurnosDB.fetchEventos(weekStart, weekEnd) : [];
+                (eventos || []).forEach(ev => {
+                    const estado = normalizeEmployeeText(ev.estado);
+                    if (estado === 'anulado') return;
+                    const start = String(ev.fecha_inicio || '').slice(0, 10);
+                    const end = String(ev.fecha_fin || ev.fecha_inicio || '').slice(0, 10);
+                    if (!start || start > weekEnd || end < weekStart) return;
+                    if (!sameHotel(eventHotelOf(ev))) return;
+                    const tipo = String(ev.tipo || '').toUpperCase();
+                    // CAMBIO_HOTEL: el titular SALE de este hotel -> no se añade.
+                    if (tipo.includes('CAMBIO_HOTEL') || tipo.includes('INTERCAMBIO')) return;
+                    [ev.empleado_id, ev.titular_id,
+                     ev.empleado_destino_id, ev.sustituto_id, ev.sustituto,
+                     ev.payload?.sustituto, ev.payload?.empleado_destino_id]
+                        .map(rosterNorm).filter(Boolean).forEach(k => keys.add(k));
+                });
+            } catch (err) {
+                console.warn('[Solicitud] No se pudo leer eventos del hotel', err);
+            }
+
+            // 3. Fallback: Excel del hotel para esa semana (solo si la BD no tiene cuadrante)
+            if (keys.size === 0) {
+                const excelRows = await getExcelBaseRowsForSelection(hotel, [dateStr], _emps.map(e => e.id)).catch(() => []);
+                excelRows.forEach(r => { if (isRealShiftValue(r.turno)) keys.add(rosterNorm(r.empleadoId)); });
+            }
+
+            const result = keys.size ? keys : null;
+            _rosterCache.set(cacheKey, result);
+            return result;
+        }
+
+        function employeeInRoster(emp, rosterKeys, hotel) {
+            if (!rosterKeys) {
+                // Sin cuadrante disponible: usar solo el hotel principal del perfil.
+                const primary = rosterNorm(emp.hotel_id || emp.hotel_principal || emp.hotel);
+                return primary ? primary === rosterNorm(hotel) : employeeBelongsToHotel(emp, hotel);
+            }
+            // Resolver aliases: el cuadrante puede usar nombre, id o código interno (EMP-XXXX).
+            const aliases = [emp.id, emp.nombre, emp.id_interno, emp.uuid].map(rosterNorm).filter(Boolean);
+            return aliases.some(a => rosterKeys.has(a));
+        }
+
         async function loadEmployees() {
             const hotel = $("#sel_hotel").value;
-            const targetDate = $("#general-date")?.value || null;
+            const token = ++_loadEmployeesToken;
+            const targetDate = $("#general-date")?.value || todayISO();
             const solSelect = $("#solicitante");
             const compSelect = $("#companero");
 
@@ -612,7 +715,11 @@
                     _emps = await window.TurnosDB.getEmpleados();
                 }
 
+                const rosterKeys = await getHotelRosterKeys(hotel, targetDate);
+                if (token !== _loadEmployeesToken) return; // hay una carga más reciente en curso
+
                 const hotelEmps = _emps.filter(e =>
+                    employeeInRoster(e, rosterKeys, hotel) &&
                     employeeBelongsToHotel(e, hotel) &&
                     isActiveEmployee(e, targetDate) &&
                     isTitularEmployee(e)
@@ -949,59 +1056,17 @@
             const compSelect = $("#companero");
             if (!hotel || !solId || !date || !compSelect) return;
             
-            let candidates = _emps.filter(e =>
+            // Solo compañeros que realmente están en el cuadrante de ESTE hotel esa semana
+            // (resolviendo aliases: nombre / id / EMP-XXXX). Evita mostrar trasladados.
+            const rosterKeys = await getHotelRosterKeys(hotel, date);
+            const candidates = _emps.filter(e =>
                 e.id !== solId &&
                 employeeBelongsToHotel(e, hotel) &&
+                employeeInRoster(e, rosterKeys, hotel) &&
                 isActiveEmployee(e, date) &&
                 isTitularEmployee(e) &&
                 isFixedOrSupportEmployee(e)
             );
-
-            try {
-                const weekStart = window.getWeekStartISO ? window.getWeekStartISO(date) : date;
-                const d = new Date(`${weekStart}T12:00:00`);
-                d.setDate(d.getDate() + 6);
-                const weekEnd = d.toISOString().slice(0, 10);
-                
-                const { rows, eventos } = await window.TurnosDB.fetchRangoCalculado(weekStart, weekEnd);
-                let workingEmpIds = new Set();
-                
-                (rows || []).forEach(r => {
-                    if (r.turno && r.turno !== '-' && r.turno !== '—') {
-                        workingEmpIds.add(String(r.empleado_id).toLowerCase());
-                    }
-                });
-                
-                (eventos || []).forEach(ev => {
-                    if (ev.empleado_destino_id) workingEmpIds.add(String(ev.empleado_destino_id).toLowerCase());
-                    if (ev.sustituto_id) workingEmpIds.add(String(ev.sustituto_id).toLowerCase());
-                    if (ev.sustituto) workingEmpIds.add(String(ev.sustituto).toLowerCase());
-                    if (ev.empleado_id) workingEmpIds.add(String(ev.empleado_id).toLowerCase());
-                    if (ev.titular_id) workingEmpIds.add(String(ev.titular_id).toLowerCase());
-                });
-
-                if (workingEmpIds.size > 0) {
-                    candidates = _emps.filter(e => {
-                        if (e.id === solId) return false;
-                        if (!employeeBelongsToHotel(e, hotel)) return false;
-                        if (!isActiveEmployee(e, date)) return false;
-                        
-                        const empIdLower = String(e.id).toLowerCase();
-                        const empNameLower = String(e.nombre || '').toLowerCase();
-                        let isWorking = workingEmpIds.has(empIdLower);
-                        if (!isWorking) {
-                           for(let wId of workingEmpIds) {
-                               if(wId === empNameLower || empNameLower.includes(wId) || wId.includes(empNameLower)) {
-                                   isWorking = true; break;
-                               }
-                           }
-                        }
-                        return isWorking;
-                    });
-                }
-            } catch (err) {
-                console.warn("Error consultando cuadrante, usando fallback", err);
-            }
 
             if (!candidates.length) {
                 compSelect.innerHTML = '<option value="">No hay compañeros disponibles</option>';
