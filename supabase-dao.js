@@ -1496,33 +1496,8 @@ window.TurnosDB = {
     },
 
     async fetchAjustesDescanso(empleadoId, anio = null, limit = 50) {
-        const client = window.supabase;
-        try {
-            let query = client
-                .from('descanso_ajustes_log')
-                .select('*')
-                .eq('empleado_id', empleadoId)
-                .order('created_at', { ascending: false })
-                .limit(limit);
-
-            if (anio) query = query.eq('anio', Number(anio));
-
-            const { data, error } = await query;
-            if (error) throw error;
-            return data || [];
-        } catch (err) {
-            if (err.code === 'PGRST205' || String(err.message || '').includes('schema cache')) {
-                // Tabla opcional de auditoria de descansos no migrada aun en Supabase
-                return [];
-            }
-            console.error("[ADMIN ERROR] DAO fetchAjustesDescanso", {
-                message: err.message,
-                code: err.code,
-                empleadoId,
-                anio
-            });
-            return [];
-        }
+        // La tabla descanso_ajustes_log no existe en Supabase; retornamos [] directamente sin disparar error 404
+        return [];
     },
 
     async insertLog(logData) {

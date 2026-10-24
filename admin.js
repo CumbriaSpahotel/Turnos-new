@@ -1,4 +1,32 @@
 
+// NAVEGACIÓN SEMANAL EN PERIODO DE MODO EXCEL (◀ / ▶)
+window.changeExcelWeek = (deltaWeeks) => {
+    const curStart = document.getElementById('excelDateStart')?.value;
+    if (!curStart) return;
+
+    const baseD = new Date(curStart + 'T12:00:00');
+    baseD.setDate(baseD.getDate() + (deltaWeeks * 7));
+    
+    const monday = window.getMonday(baseD);
+    const sunday = new Date(monday);
+    sunday.setDate(sunday.getDate() + 6);
+
+    const newStart = window.isoDate(monday);
+    const newEnd = window.isoDate(sunday);
+
+    if (document.getElementById('excelDateStart')) document.getElementById('excelDateStart').value = newStart;
+    if (document.getElementById('excelDateEnd')) document.getElementById('excelDateEnd').value = newEnd;
+    
+    window._excelPreset = {
+        dateStart: newStart,
+        dateEnd: newEnd,
+        hotel: document.getElementById('excelHotel')?.value || 'all'
+    };
+
+    window.renderExcelView();
+};
+
+
 // REORDENACIÓN MANUAL DE FILAS EN VISTA PREVIA
 window.movePreviewRow = (hotel, weekStart, currentIndex, delta) => {
     const manualOrderKey = 'admin_custom_order_' + hotel + '_' + weekStart;
@@ -1879,7 +1907,11 @@ window.renderExcelView = async () => {
                 <div class="toolbar-group"><label>Hotel</label><select id="excelHotel" class="toolbar-input" onchange="window.renderExcelView()"><option value="all">Ver Todos</option>${dbHotels.map(h => `<option value="${h}" ${h === selectedHotel ? 'selected' : ''}>${h}</option>`).join('')}</select></div>
                 <div class="toolbar-group">
                     <label>Periodo</label>
-                    <input type="text" id="excelRangePicker" class="toolbar-input" placeholder="Seleccionar periodo..." readonly style="width:220px; cursor:pointer;">
+                    <div style="display:flex; align-items:center; gap:4px;">
+                        <button type="button" class="btn-nav-week" onclick="window.changeExcelWeek(-1)" title="Semana anterior" style="border:1px solid #cbd5e1; background:#f8fafc; color:#334155; width:32px; height:36px; border-radius:8px; cursor:pointer; font-weight:900; font-size:14px; display:flex; align-items:center; justify-content:center; transition:all 0.15s; box-shadow:0 1px 2px rgba(0,0,0,0.05);" onmouseover="this.style.background='#e2e8f0'; this.style.borderColor='#94a3b8';" onmouseout="this.style.background='#f8fafc'; this.style.borderColor='#cbd5e1';">◀</button>
+                        <input type="text" id="excelRangePicker" class="toolbar-input" placeholder="Seleccionar periodo..." readonly style="width:190px; cursor:pointer; text-align:center; font-weight:700;">
+                        <button type="button" class="btn-nav-week" onclick="window.changeExcelWeek(1)" title="Semana siguiente" style="border:1px solid #cbd5e1; background:#f8fafc; color:#334155; width:32px; height:36px; border-radius:8px; cursor:pointer; font-weight:900; font-size:14px; display:flex; align-items:center; justify-content:center; transition:all 0.15s; box-shadow:0 1px 2px rgba(0,0,0,0.05);" onmouseover="this.style.background='#e2e8f0'; this.style.borderColor='#94a3b8';" onmouseout="this.style.background='#f8fafc'; this.style.borderColor='#cbd5e1';">▶</button>
+                    </div>
                     <input type="hidden" id="excelDateStart" value="${dateStart}">
                     <input type="hidden" id="excelDateEnd" value="${dateEnd}">
                 </div>
