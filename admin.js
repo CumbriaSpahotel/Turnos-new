@@ -5371,13 +5371,13 @@ window.createPuestosPreviewModel = ({
 
         // Sort rows deterministically:
         operationalRows.sort((a, b) => {
-            const isSubA = a.isSubstituteRow ? 1 : 0;
-            const isSubB = b.isSubstituteRow ? 1 : 0;
-            if (isSubA !== isSubB) return isSubA - isSubB;
-            
             const ordenA = Number.isFinite(a.puestoOrden) ? a.puestoOrden : Number.MAX_SAFE_INTEGER;
             const ordenB = Number.isFinite(b.puestoOrden) ? b.puestoOrden : Number.MAX_SAFE_INTEGER;
             if (ordenA !== ordenB) return ordenA - ordenB;
+            
+            const isSubA = a.isSubstituteRow ? 1 : 0;
+            const isSubB = b.isSubstituteRow ? 1 : 0;
+            if (isSubA !== isSubB) return isSubA - isSubB;
 
             // Tiebreaker 1: fijo > apoyo > ocasional
             const tipoRank = (e) => {

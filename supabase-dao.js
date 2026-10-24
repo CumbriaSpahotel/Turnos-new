@@ -1481,6 +1481,10 @@ window.TurnosDB = {
             if (error) throw error;
             return data || [];
         } catch (err) {
+            if (err.code === 'PGRST205' || String(err.message || '').includes('schema cache')) {
+                // Tabla opcional de auditoria de descansos no migrada aun en Supabase
+                return [];
+            }
             console.error("[ADMIN ERROR] DAO fetchAjustesDescanso", {
                 message: err.message,
                 code: err.code,
