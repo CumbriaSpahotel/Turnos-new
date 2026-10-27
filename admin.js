@@ -7526,6 +7526,10 @@ window.hasPendingPublicationChanges = async function({ weekStart, weekEnd, hotel
             // Un snapshot con rows vacíos o fechas fuera de rango se trata como inexistente.
             const isSnapContentValid = (snap, wStart) => {
                 if (!snap) return false;
+                if (snap.semana_inicio) {
+                    const dt = new Date(snap.semana_inicio + 'T12:00:00');
+                    if (dt.getDay() !== 1) return false; // Solo cuadrantes que empiezan en Lunes
+                }
                 const savedJson = snap.snapshot_json;
                 if (!savedJson) return true; // fallback: sin json â†’ asumir válido (comportamiento legacy)
                 const rows = savedJson.rows || savedJson.cuadrante || [];
@@ -8825,6 +8829,10 @@ window.getGlobalPendingPublicationStatus = async function() {
         // Helper para validar que el contenido del snapshot corresponda realmente a la semana
         const isSnapshotContentValid = (s) => {
             if (!s) return false;
+            if (s.semana_inicio) {
+                const dt = new Date(s.semana_inicio + 'T12:00:00');
+                if (dt.getDay() !== 1) return false; // Solo cuadrantes que empiezan en Lunes
+            }
             if (!s.snapshot_json) return true; // fallback por si no tiene json completo
             const rows = s.snapshot_json.rows || s.snapshot_json.cuadrante || [];
             if (!Array.isArray(rows) || rows.length === 0) return false;

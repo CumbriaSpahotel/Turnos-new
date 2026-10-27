@@ -1745,6 +1745,8 @@ window.TurnosDB = {
         // Rechaza snapshots publicados con datos de otra semana (bug V141: semana=06-08 pero dias=05-18)
         const semanaRef = snapshot.semana_inicio || data.semana_inicio || null;
         if (semanaRef) {
+            const refDate = new Date(semanaRef + 'T12:00:00');
+            if (refDate.getDay() !== 1) return false; // Semanas válidas siempre empiezan en Lunes
             const allDiaKeys = new Set();
             emps.forEach(e => Object.keys(e.dias || e.cells || {}).forEach(k => allDiaKeys.add(k)));
             if (allDiaKeys.size > 0) {

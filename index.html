@@ -803,7 +803,7 @@
   <script src="html2pdf.bundle.min.js"></script>
   <script src="supabase.js"></script>
   <script src="supabase-config.js?v=13.8"></script>
-  <script src="supabase-dao.js?v=13.31"></script>
+  <script src="supabase-dao.js?v=13.32"></script>
   <script src="turnos-rules.js?v=14.10"></script>
   <script src="shift-resolver.js?v=14.65"></script>
   <script src="publication-snapshot.js?v=1.1"></script>
@@ -1014,6 +1014,10 @@
         const hotel = $('#hotelSelect').value;
         const range = _picker.selectedDates;
         if (range.length < 2) return;
+        if (range[0].getTime() === range[1].getTime()) {
+            setWeekRange(range[0]);
+            return;
+        }
         const start = formatDateLocal(range[0]);
         const end = formatDateLocal(range[1]);
 
@@ -1067,6 +1071,12 @@
         const seen = new Set();
         const selectedByHotel = [];
         snaps.forEach(s => {
+            // Regla de negocio: las semanas de cuadrante siempre empiezan en Lunes
+            const dt = new Date(s.semana_inicio + 'T12:00:00');
+            if (dt.getDay() !== 1) {
+                console.warn('[INDEX] Omitiendo cuadrante que no empieza en lunes:', s.hotel, s.semana_inicio);
+                return;
+            }
             const key = `${s.hotel}_${s.semana_inicio}`;
             if (seen.has(key)) return;
             if (hotel && s.hotel !== hotel) return;
@@ -1136,6 +1146,8 @@
         const allHotelsForPdf = [];
         const seenPdf = new Set();
         snaps.forEach(s => {
+            const dt = new Date(s.semana_inicio + 'T12:00:00');
+            if (dt.getDay() !== 1) return;
             const key = `${s.hotel}_${s.semana_inicio}`;
             if (seenPdf.has(key)) return;
             if (s.hotel.toUpperCase().startsWith('TEST')) return;
@@ -1569,6 +1581,8 @@
             const seen = new Set();
             const selectedHotels = [];
             (snapsResult.data || []).forEach(s => {
+                const dt = new Date(s.semana_inicio + 'T12:00:00');
+                if (dt.getDay() !== 1) return;
                 const key = `${s.hotel}_${s.semana_inicio}`;
                 if (seen.has(key)) return;
                 if (currentHotel && s.hotel !== currentHotel) return;
@@ -1962,7 +1976,7 @@
   </script>
   <script>
     if ('serviceWorker' in navigator && window.location.protocol !== 'file:') {
-      navigator.serviceWorker.register('sw.js?v=13.34').catch(err => console.log("SW Error:", err));
+      navigator.serviceWorker.register('sw.js?v=13.35').catch(err => console.log("SW Error:", err));
     }
   </script>
 </body>
