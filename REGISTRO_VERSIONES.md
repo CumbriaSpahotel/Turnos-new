@@ -1,7 +1,7 @@
 # 📋 Registro de Versiones del Sistema (Turnos Web)
 
-**Versión Global Actual:** `v14.77`  
-**Última Actualización:** 2026-10-27  
+**Versión Global Actual:** `v14.78`  
+**Última Actualización:** 2026-10-28  
 
 ---
 
@@ -21,6 +21,7 @@
 
 | Versión | Fecha | Módulos / Archivos Modificados | Descripción del Cambio |
 | :---: | :---: | :--- | :--- |
+| **`v14.78`** | 2026-10-28 | `admin.js`, `turnos-rules.js` | Ocultar en cuadrante y vistas a empleados sin turnos ni ausencias en la semana (Natalio) |
 | **`v14.77`** | 2026-10-27 | Módulos del sistema | Prueba de bump automático |
 | **`v14.76`** | 2026-10-27 | `.agents/AGENTS.md`, `CHECKLIST_ANTES_DE_CERRAR.md`, `package.json`, `scripts/bump-version.js` | Implementación del sistema automático de versionado global y registro de cambios |
 | **`v14.75`** | 2026-10-27 | `admin.js`, `index.html`, `supabase-dao.js`, `service-worker.js` | Filtrado estricto de cuadrantes para validar que la semana inicie en lunes y ajustes en sincronización de peticiones anuladas. |

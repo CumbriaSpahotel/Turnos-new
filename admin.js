@@ -5489,6 +5489,16 @@ window.createPuestosPreviewModel = ({
             return profile ? window.TurnosRules.isEmployeeTerminated(profile, dates[0]) : false;
         };
 
+        const hasAnyActivityInPeriod = (empId) => {
+            return dates.some(d => {
+                const res = getTurnoEmpleadoExtended(empId, d);
+                if (!res) return false;
+                if (res.incidencia || res.isAbsent) return true;
+                const rawTurno = String(res.turno || res.turnoFinal || '').trim();
+                return rawTurno && rawTurno !== '—' && rawTurno !== '-' && rawTurno !== '\u2014';
+            });
+        };
+
         return [...operationalRows, ...absentRows, ...extraRefuerzoRows].filter(r => {
             const validId = r.employee_id && !String(r.employee_id).includes('---') && !String(r.employee_id).includes('___');
             const isGhost = /^#?_dup_/i.test(r.employee_id) || /^#?_dup_/i.test(r.nombre);
@@ -5496,6 +5506,10 @@ window.createPuestosPreviewModel = ({
             if (!validId || !validName || isGhost) return false;
             // Ocultar empleados dados de baja antes del inicio de la semana
             if (isCesadoEnSemana(r)) return false;
+            // Ocultar empleados que no tengan ningún turno, descanso ni ausencia en todo el periodo
+            if (!r.isAbsentInformative && r.rowType !== 'ausencia_informativa' && !hasAnyActivityInPeriod(r.employee_id)) {
+                return false;
+            }
             return true;
         });
 
@@ -6193,7 +6207,33 @@ window.renderPreview = async () => {
                         const normEmp = window.normalizeId ? window.normalizeId(empId) : String(empId || '').toLowerCase();
                         const hasTurnos = hotelData.some(r => (window.normalizeId ? window.normalizeId(r.empleado_id) : String(r.empleado_id || '').toLowerCase()) === normEmp);
                         if (hasTurnos) return true;
-                        if (startISO < '2026-10-26') return true;
+                        // Si no tiene turnos directos, solo incluir si tiene una ausencia relevante en este hotel (VAC/BAJA/PERM)
+                        const hasRelevantEvent = (eventos || []).some(ev => {
+                            if (window.normalizeEstado && window.normalizeEstado(ev.estado) === 'anulado') return false;
+                            if (window.eventoPerteneceAHotel && !window.eventoPerteneceAHotel(ev, hName)) return false;
+                            const evStart = window.normalizeDate ? window.normalizeDate(ev.fecha_inicio) : (ev.fecha_inicio || '');
+                            const evEnd = window.normalizeDate ? window.normalizeDate(ev.fecha_fin || ev.fecha_inicio) : (ev.fecha_fin || ev.fecha_inicio || '');
+                            if (!(evStart <= endISO && evEnd >= startISO)) return false;
+                            const t = window.normalizeTipo ? window.normalizeTipo(ev.tipo) : String(ev.tipo || '').toUpperCase();
+                            if (!['VAC', 'BAJA', 'PERM', 'PERMISO', 'FORMACION'].includes(t)) return false;
+                            const tId = window.normalizeId ? window.normalizeId(ev.empleado_id || ev.titular_id) : String(ev.empleado_id || '').toLowerCase();
+                            return tId === normEmp;
+                        });
+                        if (hasRelevantEvent) return true;
+                        if (startISO < '2026-10-26') {
+                            const p = (profiles || []).find(prof => {
+                                const nId = window.normalizeId ? window.normalizeId(prof.id) : String(prof.id || '').toLowerCase();
+                                const nNom = window.normalizeId ? window.normalizeId(prof.nombre) : String(prof.nombre || '').toLowerCase();
+                                const nInt = window.normalizeId ? window.normalizeId(prof.id_interno) : String(prof.id_interno || '').toLowerCase();
+                                return nId === normEmp || nNom === normEmp || nInt === normEmp;
+                            });
+                            if (p) {
+                                const pHotel = window.normalizeId ? window.normalizeId(p.hotel_id) : String(p.hotel_id || '').toLowerCase();
+                                const curHotel = window.normalizeId ? window.normalizeId(hName) : String(hName || '').toLowerCase();
+                                if (pHotel === curHotel) return true;
+                            }
+                            return false;
+                        }
                         const p = (profiles || []).find(prof => {
                             const nId = window.normalizeId ? window.normalizeId(prof.id) : String(prof.id || '').toLowerCase();
                             const nNom = window.normalizeId ? window.normalizeId(prof.nombre) : String(prof.nombre || '').toLowerCase();
@@ -6263,6 +6303,19 @@ window.renderPreview = async () => {
                 if (/^#?_dup_/i.test(rawName) || /^#?_dup_/i.test(key)) {
                     return;
                 }
+
+                // Ocultar empleados que no tengan turnos ni ausencias en las columnas visibles
+                const hasVisibleActivity = columns.some(c => {
+                    const resolved = previewModel.getTurnoEmpleado(emp.employee_id, c.date);
+                    if (!resolved) return false;
+                    if (resolved.incidencia || resolved.isAbsent) return true;
+                    const t = String(resolved.turno || resolved.turnoFinal || '').trim();
+                    return t && t !== '—' && t !== '-' && t !== '\u2014';
+                });
+                if (!hasVisibleActivity && !emp.isAbsentInformative && emp.rowType !== 'ausencia_informativa') {
+                    return;
+                }
+
                 if (!seenEmps.has(key)) {
                     seenEmps.add(key);
                     deduplicatedList.push(emp);
@@ -8019,7 +8072,33 @@ window.buildPublicationSnapshotPreview = async (weekStart, hotelName = 'all') =>
                         const normEmp = window.normalizeId ? window.normalizeId(empId) : String(empId || '').toLowerCase();
                         const hasTurnos = hotelDataDb.some(r => (window.normalizeId ? window.normalizeId(r.empleado_id) : String(r.empleado_id || '').toLowerCase()) === normEmp);
                         if (hasTurnos) return true;
-                        if (weekStart < '2026-10-26') return true;
+                        // Si no tiene turnos directos, solo incluir si tiene una ausencia relevante en este hotel (VAC/BAJA/PERM)
+                        const hasRelevantEvent = (eventos || []).some(ev => {
+                            if (window.normalizeEstado && window.normalizeEstado(ev.estado) === 'anulado') return false;
+                            if (window.eventoPerteneceAHotel && !window.eventoPerteneceAHotel(ev, hName)) return false;
+                            const evStart = window.normalizeDate ? window.normalizeDate(ev.fecha_inicio) : (ev.fecha_inicio || '');
+                            const evEnd = window.normalizeDate ? window.normalizeDate(ev.fecha_fin || ev.fecha_inicio) : (ev.fecha_fin || ev.fecha_inicio || '');
+                            if (!(evStart <= weekEnd && evEnd >= weekStart)) return false;
+                            const t = window.normalizeTipo ? window.normalizeTipo(ev.tipo) : String(ev.tipo || '').toUpperCase();
+                            if (!['VAC', 'BAJA', 'PERM', 'PERMISO', 'FORMACION'].includes(t)) return false;
+                            const tId = window.normalizeId ? window.normalizeId(ev.empleado_id || ev.titular_id) : String(ev.empleado_id || '').toLowerCase();
+                            return tId === normEmp;
+                        });
+                        if (hasRelevantEvent) return true;
+                        if (weekStart < '2026-10-26') {
+                            const p = (profiles || []).find(prof => {
+                                const nId = window.normalizeId ? window.normalizeId(prof.id) : String(prof.id || '').toLowerCase();
+                                const nNom = window.normalizeId ? window.normalizeId(prof.nombre) : String(prof.nombre || '').toLowerCase();
+                                const nInt = window.normalizeId ? window.normalizeId(prof.id_interno) : String(prof.id_interno || '').toLowerCase();
+                                return nId === normEmp || nNom === normEmp || nInt === normEmp;
+                            });
+                            if (p) {
+                                const pHotel = window.normalizeId ? window.normalizeId(p.hotel_id) : String(p.hotel_id || '').toLowerCase();
+                                const curHotel = window.normalizeId ? window.normalizeId(hName) : String(hName || '').toLowerCase();
+                                if (pHotel === curHotel) return true;
+                            }
+                            return false;
+                        }
                         const p = (profiles || []).find(prof => {
                             const nId = window.normalizeId ? window.normalizeId(prof.id) : String(prof.id || '').toLowerCase();
                             const nNom = window.normalizeId ? window.normalizeId(prof.nombre) : String(prof.nombre || '').toLowerCase();
@@ -8079,6 +8158,14 @@ window.buildPublicationSnapshotPreview = async (weekStart, hotelName = 'all') =>
                 const deduplicated = emps.filter(e => {
                     const key = e.employee_id;
                     if (seen.has(key)) return false;
+                    const hasActivity = dates.some(d => {
+                        const resolved = previewModel.getTurnoEmpleado(e.employee_id, d);
+                        if (!resolved) return false;
+                        if (resolved.incidencia || resolved.isAbsent) return true;
+                        const t = String(resolved.turno || resolved.turnoFinal || '').trim();
+                        return t && t !== '—' && t !== '-' && t !== '\u2014';
+                    });
+                    if (!hasActivity && !e.isAbsentInformative && e.rowType !== 'ausencia_informativa') return false;
                     seen.add(key);
                     return true;
                 });

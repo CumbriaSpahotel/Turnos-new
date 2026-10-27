@@ -720,6 +720,17 @@
         // 7. Ocultar bajas definitivas (No pertenecen a la empresa)
         if (String(employee.estado || '').includes('Baja Empresa')) return false;
 
+        // 8. Ocultar empleados sin ningún turno operativo ni ausencia en la semana
+        const hasAbsenceTurns = employee.isAbsentInformative || employee.rowType === 'ausencia_informativa' || turns.some(t => {
+            if (t.isAbsence) return true;
+            const code = String(t.code || t.turno || t.turnoFinal || t.label || '').toUpperCase();
+            return ['VAC', 'BAJA', 'PERM', 'FORM', 'IT'].some(a => code.includes(a));
+        });
+
+        if (!hasOperationalTurns && !hasAbsenceTurns) {
+            return false;
+        }
+
         // Caso por defecto: se muestra
         return true;
     };
