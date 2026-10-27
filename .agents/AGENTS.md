@@ -5,8 +5,9 @@
 - Utiliza siempre el mapa de aliases (`baseIndex.aliasesEmpleado`) para asegurar que los nombres crudos de los empleados (ej. `'Sandra'`) coincidan correctamente con sus IDs de base de datos o códigos internos (ej. `'EMP-0017'`), y viceversa.
 - Pasa siempre el `context` completo que contiene la `baseIndex` a funciones auxiliares de comprobación de identidad como `eventoPerteneceAEmpleado` y `isTitularOfAbsence`.
 
-## Control de versiones y registro de módulos
-- Cada vez que se realice una modificación en cualquier módulo del sistema:
-  1. Incrementar el número de versión del módulo en su cabecera / documentación y en las llamadas de carga de scripts (`?v=...`) en `admin.html`, `index.html` y cualquier otro HTML relevante para invalidar la caché de los navegadores.
-  2. Actualizar inmediatamente su número de versión y fecha de actualización en el archivo `REGISTRO_MODULOS.md`.
-
+## Control de versión única global del sistema (AUTOMÁTICO E IMPERATIVO)
+- El sistema utiliza una **única versión global** para todo el proyecto (ej. `v14.75`).
+- **Automatización obligatoria en cada mejora/modificación**: En CADA sesión o tarea en la que se realice una modificación, mejora o corrección en cualquier módulo, vista, script o estilo:
+  1. Ejecutar de forma automática e imperativa: `node scripts/bump-version.js "<descripción concisa del cambio>"`.
+  2. Dicho script incrementa la versión global, actualiza [REGISTRO_VERSIONES.md](file:///c:/Users/comun/Documents/GitHub/Turnos-new/REGISTRO_VERSIONES.md) con la fecha y lista de archivos modificados, y sincroniza las etiquetas `?v=...` en `admin.html`, `index.html` y demás vistas para invalidar la caché de los clientes.
+  3. Ninguna tarea debe cerrarse sin haber ejecutado automáticamente este proceso si hubo cambios de código.

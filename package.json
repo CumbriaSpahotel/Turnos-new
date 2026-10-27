@@ -1,6 +1,7 @@
 {
   "scripts": {
-    "regression-check": "node scripts/regression-check.js"
+    "regression-check": "node scripts/regression-check.js",
+    "bump-version": "node scripts/bump-version.js"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.108.2",

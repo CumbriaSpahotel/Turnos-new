@@ -1,5 +1,11 @@
 # Checklist obligatorio antes de cerrar una tarea
 
+## Control de Versión Global Automático
+
+- [ ] Si hubo cambios en módulos/vistas: ejecutado `node scripts/bump-version.js "<descripción>"`
+- [ ] [REGISTRO_VERSIONES.md](file:///c:/Users/comun/Documents/GitHub/Turnos-new/REGISTRO_VERSIONES.md) actualizado con la nueva versión, fecha y detalle
+- [ ] Parámetros de carga `?v=...` sincronizados en `admin.html` e `index.html`
+
 ## Errores de consola
 
 - [ ] No hay Uncaught SyntaxError
