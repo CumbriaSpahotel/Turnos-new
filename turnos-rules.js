@@ -780,8 +780,14 @@
             return false;
         }
         const isNatalio = employeeId === 'natalio' || normalizeText(name) === 'natalio' || normalizeText(employee.id_interno || '') === 'emp-0006';
+        const isDiana = employeeId === 'diana' ||
+            normId === 'diana' ||
+            normId === 'emp-0009' ||
+            normInternalId === 'emp-0009' ||
+            normName === 'diana' ||
+            normalizeText(employee.id_interno || '') === 'emp-0009';
         const isSupport = type.includes('apoyo') || type.includes('ocasional') || role.includes('apoyo') || role.includes('ocasional') || puesto.includes('apoyo') || puesto.includes('ocasional');
-        if (isSupport && !isNatalio) {
+        if (isSupport && !isNatalio && !isDiana) {
             logVisibility(false, 'excluded_support_staff_robust');
             return false;
         }

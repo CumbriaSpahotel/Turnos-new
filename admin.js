@@ -6433,8 +6433,8 @@ window.renderPreview = async () => {
                         tipo: employee.tipoPersonal || employee.tipo || 'fijo',
                         tipo_personal: employee.tipoPersonal || employee.tipo || 'fijo',
                         excludeCounters: (
-                            String(employee.tipoPersonal || employee.tipo || '').toLowerCase().includes('apoyo') ||
-                            String(employee.tipoPersonal || employee.tipo || '').toLowerCase().includes('ocasional')
+                            (String(employee.tipoPersonal || employee.tipo || '').toLowerCase().includes('apoyo') ||
+                            String(employee.tipoPersonal || employee.tipo || '').toLowerCase().includes('ocasional')) && !['natalio', 'diana', 'emp-0006', 'emp-0009'].includes(String(employee.employee_id || employee.id || employee.nombre || '').toLowerCase().trim())
                         ),
                         hasVacationInVisibleRange: Object.values(daysMap).some(d => d.code === 'VAC' || d.origen === 'VAC'),
                         hasBajaInVisibleRange: Object.values(daysMap).some(d => (d.code || d.type || '').includes('BAJA') || (d.code || d.type || '').includes('IT')),

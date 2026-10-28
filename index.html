@@ -111,6 +111,55 @@
           color: var(--text-dim);
           text-transform: uppercase;
       }
+      .toolbar-last-update {
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          font-size: 0.72rem;
+          font-weight: 600;
+          color: #0369a1;
+          background: #f0f9ff;
+          border: 1px solid #bae6fd;
+          border-radius: 6px;
+          padding: 2px 8px;
+          margin-top: 5px;
+          width: fit-content;
+          letter-spacing: -0.01em;
+          line-height: 1.35;
+      }
+      .toolbar-last-update strong {
+          font-weight: 800;
+          color: #0284c7;
+      }
+      .hotel-meta-row {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          flex-wrap: wrap;
+          margin-top: 4px;
+      }
+      .hotel-meta-sep {
+          color: var(--text-dim);
+          font-size: 0.75rem;
+          opacity: 0.5;
+      }
+      .hotel-last-update-badge {
+          display: inline-flex;
+          align-items: center;
+          font-size: 0.72rem;
+          font-weight: 600;
+          color: #475569;
+          background: #f1f5f9;
+          border: 1px solid #cbd5e1;
+          border-radius: 6px;
+          padding: 2px 8px;
+          letter-spacing: -0.01em;
+          line-height: 1.35;
+      }
+      .hotel-last-update-badge strong {
+          font-weight: 800;
+          color: #1e293b;
+      }
 
       .toolbar-controls { display: flex; align-items: center; gap: 10px; }
       .toolbar-controls > div:first-child {
@@ -190,6 +239,22 @@
       body.night-mode .btn-request {
           background: #6aa8ff;
           color: #071525;
+      }
+      body.night-mode .toolbar-last-update {
+          background: rgba(14, 165, 233, 0.12);
+          border-color: rgba(56, 189, 248, 0.25);
+          color: #7dd3fc;
+      }
+      body.night-mode .toolbar-last-update strong {
+          color: #38bdf8;
+      }
+      body.night-mode .hotel-last-update-badge {
+          background: #1e293b;
+          border-color: #334155;
+          color: #94a3b8;
+      }
+      body.night-mode .hotel-last-update-badge strong {
+          color: #f1f5f9;
       }
 
       .public-main { padding: 22px 0 34px; }

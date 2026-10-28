@@ -70,7 +70,11 @@ console.log("[ShiftResolver] Iniciando carga v5.0...");
 
     window.isEmpleadoOcasionalOApoyo = (emp) => {
         if (!emp) return false;
-        if (emp.excludeCounters) return true;
+        const normName = String(emp.nombre || emp.displayName || emp.id || '').toLowerCase().trim();
+                const normId = String(emp.id || emp.empleadoId || emp.employee_id || emp.id_interno || '').toLowerCase().trim();
+                if (normName === 'diana' || normId === 'diana' || normId === 'emp-0009') return false;
+                if (normName === 'natalio' || normId === 'natalio' || normId === 'emp-0006') return false;
+                if (emp.excludeCounters) return true;
         const structuralType = window.getEmployeeStructuralType(emp);
         return structuralType === 'apoyo' || structuralType === 'ocasional';
     };
