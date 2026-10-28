@@ -50,15 +50,50 @@ window.findManualOrderIndex = (manualList, emp) => {
 };
 
 window.movePreviewRow = (hotel, weekStart, currentIndex, delta) => {
+    const normHotel = window.normalizeId ? window.normalizeId(hotel) : String(hotel || '').trim().toLowerCase();
     const manualOrderKey = 'admin_custom_order_' + hotel + '_' + weekStart;
-    const hData = window._lastRenderedPreviewSnapshotSource?.hoteles?.find(h => h.hotel === hotel);
-    const rows = hData?.empleados;
-    if (!rows || rows.length === 0) return;
+    
+    // 1. Obtener empleados del último render (snapshot o backup en memoria)
+    let hData = window._lastRenderedPreviewSnapshotSource?.hoteles?.find(h => 
+        (window.normalizeId ? window.normalizeId(h.hotel) : String(h.hotel || '').trim().toLowerCase()) === normHotel
+    );
+    let rows = hData?.empleados;
+    if (!rows || rows.length === 0) {
+        rows = window._lastRenderedEmployees?.[hotel + '_' + weekStart] ||
+               window._lastRenderedEmployees?.[normHotel + '_' + weekStart];
+    }
+    // Fallback: extraer directamente del DOM de la tabla
+    if (!rows || rows.length === 0) {
+        const tables = Array.from(document.querySelectorAll('table[data-hotel]'));
+        const targetTable = tables.find(t => (window.normalizeId ? window.normalizeId(t.dataset.hotel) : String(t.dataset.hotel || '').toLowerCase().trim()) === normHotel);
+        if (targetTable) {
+            const trs = targetTable.querySelectorAll('tbody tr[data-emp-id]');
+            if (trs.length) {
+                rows = Array.from(trs).map(tr => ({
+                    empleado_id: tr.dataset.empId,
+                    nombre: tr.dataset.empName || tr.dataset.empId,
+                    nombreVisible: tr.dataset.empName || tr.dataset.empId,
+                    rowType: tr.dataset.isAbs === '1' ? 'ausencia_informativa' : 'operativo',
+                    isAbsentInformative: tr.dataset.isAbs === '1'
+                }));
+            }
+        }
+    }
+    if (!rows || rows.length === 0) {
+        console.warn('[movePreviewRow] No hay filas disponibles para reordenar en', hotel, weekStart);
+        return;
+    }
 
     const newIndex = currentIndex + delta;
     if (newIndex < 0 || newIndex >= rows.length) return;
 
-    if (rows[currentIndex].rowType === 'ausencia_informativa' || rows[newIndex].rowType === 'ausencia_informativa') {
+    const cur = rows[currentIndex];
+    const nxt = rows[newIndex];
+    const isAbsCur = cur?.rowType === 'ausencia_informativa' || cur?.isAbsentInformative;
+    const isAbsNxt = nxt?.rowType === 'ausencia_informativa' || nxt?.isAbsentInformative;
+
+    // No mover ausencias informativas ni intercambiar un puesto operativo con una ausencia informativa
+    if (isAbsCur || isAbsNxt) {
         return;
     }
 
@@ -6391,6 +6426,8 @@ window.renderPreview = async () => {
                         nombre: employee.nombre || employee.employee_id,
                         nombreVisible: employee.nombreVisible || employee.displayName || employee.nombre || employee.employee_id,
                         empleado_id: employee.employee_id,
+                        rowType: employee.rowType || (employee.isAbsentInformative ? 'ausencia_informativa' : 'operativo'),
+                        isAbsentInformative: !!employee.isAbsentInformative,
                         // ORDEN: usar puestoOrden del modelo (Excel map), nunca idx secuencial
                         orden: employee.puestoOrden || (idx + 1),
                         tipo: employee.tipoPersonal || employee.tipo || 'fijo',
@@ -6407,6 +6444,14 @@ window.renderPreview = async () => {
                 })
             };
             window._lastRenderedPreviewSnapshotSource.hoteles.push(hotelSnapshot);
+            window._lastRenderedEmployees = window._lastRenderedEmployees || {};
+            window._lastRenderedEmployees[hName + '_' + startISO] = deduplicatedList.map(e => ({
+                empleado_id: e.employee_id,
+                nombre: e.nombre || e.employee_id,
+                nombreVisible: e.nombreVisible || e.displayName || e.nombre || e.employee_id,
+                rowType: e.rowType || (e.isAbsentInformative ? 'ausencia_informativa' : 'operativo'),
+                isAbsentInformative: !!e.isAbsentInformative
+            }));
 
             const renderEmployeeTable = true;
 
@@ -6426,7 +6471,7 @@ window.renderPreview = async () => {
                         <h2 style="margin:0; font-size:1.1rem; color:#1e293b; font-weight:800;">${hName} <span style="color:#94a3b8; font-size:0.85rem;">${isWeekly ? `Semana ${window.fmtDateLegacy(startISO)}` : `${window.fmtDateLegacy(startISO)} - ${window.fmtDateLegacy(endISO)}`}</span></h2>
                     </div>
                     <div style="overflow-x:auto;">
-                        <table class="${tableClass}" style="width:100%; border-collapse:collapse;">
+                        <table class="${tableClass}" data-hotel="${escapeHtml(hName)}" data-week="${startISO}" style="width:100%; border-collapse:collapse;">
                             <thead>
                                 <tr style="background:#f8fafc;">
                                     <th style="padding:${thPadding}; text-align:left; border-bottom:1px solid #f1f5f9; width:${thWidth}; color:#64748b; font-size:0.7rem; text-transform:uppercase; position:sticky; left:0; background:#f8fafc; z-index:10; border-right:1px solid #f1f5f9;">Empleado</th>
@@ -6439,7 +6484,7 @@ window.renderPreview = async () => {
                             </thead>
                             <tbody>
                                 ${deduplicatedList.map((employee, empIdx) => `
-                                    <tr style="border-bottom:1px solid #f1f5f9;">
+                                    <tr data-emp-idx="${empIdx}" data-emp-id="${escapeHtml(employee.employee_id)}" data-emp-name="${escapeHtml(employee.nombreVisible || employee.displayName || employee.nombre || employee.employee_id)}" data-is-abs="${employee.rowType === 'ausencia_informativa' || employee.isAbsentInformative ? '1' : '0'}" style="border-bottom:1px solid #f1f5f9;">
                                         <td style="padding:${isWeekly ? '10px 16px' : '8px 15px'}; background:white; position:sticky; left:0; z-index:5; border-right:1px solid #f1f5f9;">
                                             <div style="display:flex; align-items:center; justify-content:space-between; gap:6px;">
                                                 <div style="flex:1;">${window.renderEmpleadoRowHeader(employee, { showVacationIcon: true, isCompact: !isWeekly })}</div>

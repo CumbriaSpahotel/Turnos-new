@@ -3,7 +3,10 @@
     function mask(publication, from) {
         if (!/^\d{4}-\d{2}-\d{2}$/.test(from || '') || Number.isNaN(Date.parse(from)) || new Date(from).toISOString().slice(0, 10) !== from) throw new Error('Fecha no válida.');
         const snapshot = JSON.parse(JSON.stringify(publication.snapshot_json));
-        if (!snapshot || !(snapshot.rows || snapshot.empleados)?.length) throw new Error('La publicación no tiene un formato compatible.');
+        if (!snapshot || typeof snapshot !== 'object') throw new Error('La publicación no tiene un formato compatible.');
+        const list = snapshot.rows || snapshot.empleados;
+        if (!Array.isArray(list)) throw new Error('La publicación no tiene un formato compatible.');
+        if (!list.length) return { snapshot, changed: false };
         let changed = false;
         for (const field of ['rows', 'empleados']) {
             for (const row of snapshot[field] || []) {
@@ -37,12 +40,14 @@
         }
         const seen = new Set();
         const plans = [];
+        const allowedHotels = hotel === 'all' ? ['Cumbria Spa&Hotel', 'Sercotel Guadiana'] : [hotel];
         for (const item of all) {
+            if (!allowedHotels.includes(item.hotel)) continue;
             const key = `${item.hotel}|${item.semana_inicio}`;
             if (seen.has(key)) continue;
             seen.add(key);
             const masked = mask(item, from);
-            if (masked.changed) plans.push({ item, snapshot: masked.snapshot });
+            if (masked && masked.changed) plans.push({ item, snapshot: masked.snapshot });
         }
         let completed = 0;
         try {
@@ -93,6 +98,9 @@
                 [...form.elements].forEach(el => { el.disabled = false; });
                 root.invalidatePreviewSnapshotCache?.('hide_publications');
                 root.__lastGlobalStatus = null;
+                if (typeof root.renderPreview === 'function') {
+                    root.renderPreview();
+                }
             }
         };
         dialog.showModal();
