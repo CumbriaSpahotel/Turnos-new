@@ -819,6 +819,7 @@
     <div class="toolbar-brand">
       <div class="toolbar-title">Cuadrantes de turnos Recepción</div>
       <div class="toolbar-subtitle">Sercotel Guadiana / Cumbria Spa&Hotel</div>
+      <div id="globalLastUpdate" class="toolbar-last-update" style="display:none;"></div>
     </div>
     <div class="toolbar-controls">
       <div style="display:flex; background:#2a2e35; border-radius:8px; padding:2px; border:1px solid #3b4048;">
@@ -867,11 +868,11 @@
   <script src="flatpickr_es.js"></script>
   <script src="html2pdf.bundle.min.js"></script>
   <script src="supabase.js"></script>
-  <script src="supabase-config.js?v=14.79"></script>
-  <script src="supabase-dao.js?v=14.79"></script>
-  <script src="turnos-rules.js?v=14.79"></script>
-  <script src="shift-resolver.js?v=14.79"></script>
-  <script src="publication-snapshot.js?v=14.79"></script>
+  <script src="supabase-config.js?v=14.81"></script>
+  <script src="supabase-dao.js?v=14.81"></script>
+  <script src="turnos-rules.js?v=14.81"></script>
+  <script src="shift-resolver.js?v=14.81"></script>
+  <script src="publication-snapshot.js?v=14.81"></script>
   <script src="virtualizer.js"></script>
   <script>
     let _picker;
@@ -1075,6 +1076,105 @@
         });
     }
 
+    function formatModDateTime(date) {
+        if (!date) return '';
+        const d = (date instanceof Date) ? date : new Date(date);
+        if (isNaN(d.getTime())) return '';
+        const pad = n => String(n).padStart(2, '0');
+        const day = pad(d.getDate());
+        const month = pad(d.getMonth() + 1);
+        const year = d.getFullYear();
+        const hours = pad(d.getHours());
+        const minutes = pad(d.getMinutes());
+        return `${day}/${month}/${year} ${hours}:${minutes}`;
+    }
+
+    async function fetchLatestModifications() {
+        if (window._latestModCache && (Date.now() - window._latestModCache.ts < 30000)) {
+            return window._latestModCache.data;
+        }
+        try {
+            const client = window.TurnosDB?.client;
+            if (!client) return null;
+            const [pubsRes, evtsRes, turnosRes] = await Promise.all([
+                client.from('publicaciones_cuadrante')
+                    .select('hotel, fecha_publicacion, updated_at, created_at')
+                    .eq('estado', 'activo')
+                    .order('fecha_publicacion', { ascending: false })
+                    .limit(10),
+                client.from('eventos_cuadrante')
+                    .select('hotel_origen, hotel_destino, updated_at, created_at')
+                    .order('updated_at', { ascending: false })
+                    .limit(10),
+                client.from('turnos')
+                    .select('hotel_id, updated_at')
+                    .order('updated_at', { ascending: false })
+                    .limit(10)
+            ]);
+
+            const hotels = ['Cumbria Spa&Hotel', 'Sercotel Guadiana'];
+            const res = {
+                global: { date: null, hotel: null },
+                byHotel: {}
+            };
+            hotels.forEach(h => { res.byHotel[h] = null; });
+
+            function consider(dateStr, hotelName) {
+                if (!dateStr) return;
+                const d = new Date(dateStr);
+                if (isNaN(d.getTime())) return;
+                if (!res.global.date || d > res.global.date) {
+                    res.global.date = d;
+                    res.global.hotel = hotelName || null;
+                }
+                if (hotelName && res.byHotel[hotelName] !== undefined) {
+                    if (!res.byHotel[hotelName] || d > res.byHotel[hotelName]) {
+                        res.byHotel[hotelName] = d;
+                    }
+                }
+            }
+
+            (pubsRes.data || []).forEach(p => consider(p.fecha_publicacion || p.updated_at || p.created_at, p.hotel));
+            (evtsRes.data || []).forEach(e => consider(e.updated_at || e.created_at, e.hotel_origen || e.hotel_destino));
+            (turnosRes.data || []).forEach(t => consider(t.updated_at, t.hotel_id));
+
+            window._latestModCache = { data: res, ts: Date.now() };
+            return res;
+        } catch (err) {
+            console.warn('[LAST_MOD_FETCH_ERROR]', err);
+            return null;
+        }
+    }
+
+    function updateGlobalLastModifiedIndicator(selectedHotel, modInfo) {
+        const el = document.getElementById('globalLastUpdate');
+        if (!el) return;
+        if (!modInfo) {
+            el.style.display = 'none';
+            return;
+        }
+        let targetDate = null;
+        let targetHotel = null;
+
+        if (selectedHotel && modInfo.byHotel && modInfo.byHotel[selectedHotel]) {
+            targetDate = modInfo.byHotel[selectedHotel];
+            targetHotel = selectedHotel;
+        } else if (modInfo.global && modInfo.global.date) {
+            targetDate = modInfo.global.date;
+            targetHotel = modInfo.global.hotel;
+        }
+
+        if (!targetDate) {
+            el.style.display = 'none';
+            return;
+        }
+
+        const dateStr = formatModDateTime(targetDate);
+        const hotelSuffix = targetHotel ? ` <span style="font-weight:600; opacity:0.85;">(${targetHotel})</span>` : '';
+        el.innerHTML = `<span>Última modificación: <strong>${dateStr}</strong>${hotelSuffix}</span>`;
+        el.style.display = 'inline-flex';
+    }
+
     window.renderPublicView = async (opts = {}) => {
         const hotel = $('#hotelSelect').value;
         const range = _picker.selectedDates;
@@ -1093,7 +1193,7 @@
             container.innerHTML = '<div style="padding:100px; text-align:center; font-weight:700; color:#5f6f84;">Cargando cuadrante...</div>';
         }
 
-        const [snapsResult, empleadosResult] = await Promise.all([
+        const [snapsResult, empleadosResult, modInfo] = await Promise.all([
             window.TurnosDB.client
                 .from('publicaciones_cuadrante')
                 .select('*')
@@ -1103,9 +1203,11 @@
                 .order('semana_inicio', { ascending: true })
                 .order('hotel', { ascending: true })
                 .order('version', { ascending: false }),
-            window.TurnosDB.getEmpleados()
+            window.TurnosDB.getEmpleados(),
+            fetchLatestModifications()
         ]);
         const snaps = snapsResult.data;
+        updateGlobalLastModifiedIndicator(hotel, modInfo);
         // Índice de perfiles completos por ID para reconciliación y lógica de control
         window._publicProfilesData = {};
         window._publicProfilesIndex = {};
@@ -1177,7 +1279,7 @@
         }
         selectedByHotel.forEach(s => {
             hasRows = true;
-            renderHotelSection(container, s, start, end, summaryByMonth);
+            renderHotelSection(container, s, start, end, summaryByMonth, modInfo);
         });
         renderNightSummary(container, summaryByMonth, hasRows, start, end);
 
@@ -1684,11 +1786,15 @@
         }
     };
 
-    function renderHotelSection(container, snap, rangeStart, rangeEnd, summaryByMonth) {
+    function renderHotelSection(container, snap, rangeStart, rangeEnd, summaryByMonth, modInfo) {
         const div = document.createElement('div');
         div.className = 'hotel-card';
         const logoUrl = snap.hotel.includes('Sercotel') ? 'guadiana logo.jpg' : 'cumbria logo.jpg';
         const formattedWeek = snap.semana_inicio.split('-').reverse().join('/');
+
+        const hotelModDate = modInfo?.byHotel?.[snap.hotel] || (snap.fecha_publicacion ? new Date(snap.fecha_publicacion) : null);
+        const formattedHotelMod = hotelModDate ? formatModDateTime(hotelModDate) : '';
+        const hotelBadgeHtml = formattedHotelMod ? `<span class="hotel-last-update-badge" title="Última modificación registrada para este hotel">Última modif.: <strong>${formattedHotelMod}</strong></span>` : '';
 
         div.innerHTML = `
             <div class="hotel-header">
@@ -1696,7 +1802,10 @@
                     <div class="hotel-logo"><img src="${logoUrl}"></div>
                     <div class="hotel-info">
                         <h2>${snap.hotel}</h2>
-                        <div class="week-label">SEMANA DEL ${formattedWeek}</div>
+                        <div class="hotel-meta-row">
+                            <span class="week-label">SEMANA DEL ${formattedWeek}</span>
+                            ${hotelBadgeHtml}
+                        </div>
                     </div>
                 </div>
                 <div class="header-mode">
@@ -2041,7 +2150,7 @@
   </script>
   <script>
     if ('serviceWorker' in navigator && window.location.protocol !== 'file:') {
-      navigator.serviceWorker.register('sw.js?v=14.79').catch(err => console.log("SW Error:", err));
+      navigator.serviceWorker.register('sw.js?v=14.81').catch(err => console.log("SW Error:", err));
     }
   </script>
 </body>

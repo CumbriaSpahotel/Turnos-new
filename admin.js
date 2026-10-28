@@ -7389,7 +7389,7 @@ window.renderEmployeeHistoryItem = (h) => `
  * Motor de Conflictos V3: Análisis contextual y agrupado.
  * Evita ruido y prioriza la operativa real.
  */
-window.detectarConflictosOperativos = async (fecha, hotel, inputEventos = null, inputResolveId = null) => {
+window.detectarConflictosOperativos = async (fecha, hotel, inputEventos = null, inputResolveId = null, inputTurnos = null, inputEmpleados = null) => {
     const groupedConflicts = {
         CRITICAL: [],
         WARNING: [],
@@ -7399,18 +7399,28 @@ window.detectarConflictosOperativos = async (fecha, hotel, inputEventos = null, 
     // V12.5.2: Garantizar contexto si no se pasa explícitamente (ej. desde publicación)
     let eventos = inputEventos;
     let resolveId = inputResolveId;
-    let emps = (window._employeeLineModels || []).filter(e => e.activo !== false && (hotel === 'TODOS' || e.hotel === hotel));
+    let turnos = inputTurnos;
+    let empleados = inputEmpleados;
+
+    if (!empleados && window.TurnosDB?.getEmpleados) {
+        empleados = await window.TurnosDB.getEmpleados();
+    }
+    if (!turnos && window.TurnosDB?.fetchRango) {
+        turnos = await window.TurnosDB.fetchRango(fecha, fecha);
+    }
+    let emps = (window._employeeLineModels && window._employeeLineModels.length > 0)
+        ? window._employeeLineModels.filter(e => e.activo !== false && (hotel === 'TODOS' || e.hotel === hotel))
+        : (empleados || []).filter(e => e.activo !== false && (hotel === 'TODOS' || e.hotel_id === hotel || e.hotel === hotel));
     
-    if (!eventos) {
+    if (!eventos && window.TurnosDB?.fetchEventos) {
         const today = window.isoDate(new Date());
         eventos = await window.TurnosDB.fetchEventos(window.addIsoDays(today, -30), window.addIsoDays(today, 60));
     }
 
-    if (!resolveId) {
-        const profiles = await window.TurnosDB.getEmpleados();
+    if (!resolveId && empleados) {
         const idMap = new Map();
         const nameToIds = new Map();
-        profiles.forEach(p => {
+        empleados.forEach(p => {
             const normId = window.normalizeId(p.id);
             const normName = window.normalizeId(p.nombre);
             idMap.set(normId, p.id);
@@ -7513,34 +7523,90 @@ window.detectarConflictosOperativos = async (fecha, hotel, inputEventos = null, 
     }
 
     // 3. Cobertura Crítica (Turnos Clave)
-    const shiftsBySlot = {};
-    for (const emp of emps) {
-        const infoArr = window.resolverTurnoFinal ? window.resolverTurnoFinal({ 
-            empleado: emp,
-            empleadoId: (emp.id || emp.nombre),
-            fecha,
-            eventos: emp.events
-        }) : null;
-        const info = (Array.isArray(infoArr) ? infoArr[0] : infoArr) || null;
-        if (info && info.turno && info.turno !== 'D') {
-            const key = `${info.turno}_${emp.puesto}`;
-            if (!shiftsBySlot[key]) shiftsBySlot[key] = [];
-            shiftsBySlot[key].push(emp.nombre);
-        }
-    }
+    const targetHotels = (hotel === 'TODOS' || !hotel)
+        ? ['Cumbria Spa&Hotel', 'Sercotel Guadiana']
+        : [hotel];
 
-    // Verificar "Noche Recepción"
-    const nocheRecepcion = Object.keys(shiftsBySlot).find(k => k.includes('Noche') && k.includes('Recep'));
-    if (!nocheRecepcion) {
-        groupedConflicts.CRITICAL.push({
-            type: 'COBERTURA',
-            title: 'Turno Clave sin Cobertura',
-            desc: 'No hay nadie asignado al turno de Noche en Recepción hoy.',
-            suggestion: 'Asignar un recepcionista o retén de emergencia.'
+    const absenceTypes = ['VAC', 'BAJA', 'IT', 'PERMISO', 'PERM', 'FORMACION', 'AUSENCIA'];
+    const activeAbsenceByEmp = new Map();
+    (eventos || []).forEach(ev => {
+        const evTipo = String(ev.tipo || '').toUpperCase().trim();
+        const evEstado = String(ev.estado || 'activo').toLowerCase().trim();
+        if (evEstado === 'anulado' || evEstado === 'rechazado') return;
+        const fin = ev.fecha_fin || ev.fecha_inicio;
+        if (ev.fecha_inicio <= fecha && fin >= fecha && absenceTypes.includes(evTipo)) {
+            const titularKey = String(ev.empleado_id || '').toLowerCase().trim();
+            activeAbsenceByEmp.set(titularKey, ev);
+        }
+    });
+
+    targetHotels.forEach(h => {
+        let hasNoche = false;
+
+        // A. Turnos registrados para la fecha en este hotel
+        (turnos || []).forEach(t => {
+            const tHotel = t.hotel_id || t.hotel;
+            if (tHotel !== h) return;
+            const shiftCode = String(t.turno || '').toUpperCase().trim();
+            if (shiftCode === 'N' || shiftCode.includes('NOCHE')) {
+                const empKey = String(t.empleado_id || '').toLowerCase().trim();
+                const absence = activeAbsenceByEmp.get(empKey);
+                if (!absence || absence.empleado_destino_id || absence.sustituto) {
+                    hasNoche = true;
+                }
+            }
         });
-    }
+
+        // B. Eventos de sustitución/cobertura con turno Noche
+        if (!hasNoche) {
+            (eventos || []).forEach(ev => {
+                const evHotel = ev.hotel_destino || ev.hotel_origen;
+                if (evHotel !== h) return;
+                const fin = ev.fecha_fin || ev.fecha_inicio;
+                if (ev.fecha_inicio <= fecha && fin >= fecha) {
+                    const shiftNuevo = String(ev.turno_nuevo || '').toUpperCase().trim();
+                    if (shiftNuevo === 'N' || shiftNuevo.includes('NOCHE')) {
+                        hasNoche = true;
+                    }
+                }
+            });
+        }
+
+        // C. Snapshot publicado en caché si existe
+        if (!hasNoche && window._adminSnapshotsCache) {
+            Object.values(window._adminSnapshotsCache).forEach(snap => {
+                if (snap.hotel !== h) return;
+                (snap.snapshot_json?.rows || []).forEach(r => {
+                    const cell = r.cells?.[fecha] || r.dias?.[fecha];
+                    const code = String(cell?.code || cell?.turno || cell?.label || '').toUpperCase().trim();
+                    if (code === 'N' || code.includes('NOCHE')) {
+                        hasNoche = true;
+                    }
+                });
+            });
+        }
+
+        if (!hasNoche) {
+            groupedConflicts.CRITICAL.push({
+                type: 'COBERTURA',
+                hotel: h,
+                title: 'Turno Clave sin Cobertura',
+                desc: `No hay nadie asignado al turno de Noche en Recepción en ${h} hoy.`,
+                suggestion: `Asignar un recepcionista o retén de emergencia para ${h}.`
+            });
+        }
+    });
 
     // 4. Duplicidad (Solo si hay capacidad definida)
+    const shiftsBySlot = {};
+    for (const emp of emps) {
+        const empTurno = (turnos || []).find(t => (t.empleado_id === emp.id || t.empleado_id === emp.nombre));
+        if (empTurno && empTurno.turno && empTurno.turno !== 'D') {
+            const key = `${empTurno.turno}_${emp.puesto || 'Recepción'}`;
+            if (!shiftsBySlot[key]) shiftsBySlot[key] = [];
+            shiftsBySlot[key].push(emp.nombre || emp.id);
+        }
+    }
     Object.entries(shiftsBySlot).forEach(([key, names]) => {
         const puestoKey = key.split('_')[1];
         const capacidad = window._puestosCapacityMap ? window._puestosCapacityMap[puestoKey] : null;
@@ -9491,7 +9557,7 @@ window.renderDashboard = async () => {
             return (ids && ids.size === 1) ? Array.from(ids)[0] : norm;
         };
 
-        const conflicts = await window.detectarConflictosOperativos(today, 'TODOS', (typeof eventos !== 'undefined' ? eventos : []), resolveId);
+        const conflicts = await window.detectarConflictosOperativos(today, 'TODOS', (typeof eventos !== 'undefined' ? eventos : []), resolveId, turnosHoy, empleados);
         const changes = window.getExcelDiff ? window.getExcelDiff() : [];
 
         // --- BLOQUE A: ESTADO DEL SISTEMA ---

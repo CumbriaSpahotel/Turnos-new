@@ -1,6 +1,6 @@
 # 📋 Registro de Versiones del Sistema (Turnos Web)
 
-**Versión Global Actual:** `v14.79`  
+**Versión Global Actual:** `v14.81`  
 **Última Actualización:** 2026-10-28  
 
 ---
@@ -21,6 +21,8 @@
 
 | Versión | Fecha | Módulos / Archivos Modificados | Descripción del Cambio |
 | :---: | :---: | :--- | :--- |
+| **`v14.81`** | 2026-10-28 | `admin.html`, `admin.js`, `index.html`, `live.mobile.html` | Correccion de falso positivo en deteccion de turno de noche sin cobertura en dashboard |
+| **`v14.80`** | 2026-10-28 | `index.html` | Fecha de ultima modificacion general y por hotel en vista publica, seguimiento de noches/descansos para Diana y verificacion de vacaciones 2-8 nov |
 | **`v14.79`** | 2026-10-28 | `admin.js`, `js/hide-publication.js` | Correccion de flechas para cambiar posicion de empleados y compatibilidad en ocultar turnos publicados |
 | **`v14.78`** | 2026-10-28 | `admin.js`, `turnos-rules.js` | Ocultar en cuadrante y vistas a empleados sin turnos ni ausencias en la semana (Natalio) |
 | **`v14.77`** | 2026-10-27 | Módulos del sistema | Prueba de bump automático |
