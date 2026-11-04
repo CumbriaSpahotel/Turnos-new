@@ -1,7 +1,7 @@
 # 📋 Registro de Versiones del Sistema (Turnos Web)
 
-**Versión Global Actual:** `v14.81`  
-**Última Actualización:** 2026-10-28  
+**Versión Global Actual:** `v14.82`  
+**Última Actualización:** 2026-11-04  
 
 ---
 
@@ -21,6 +21,7 @@
 
 | Versión | Fecha | Módulos / Archivos Modificados | Descripción del Cambio |
 | :---: | :---: | :--- | :--- |
+| **`v14.82`** | 2026-11-04 | `scripts/apply_federico_natalio_shifts.js` | Reasignacion turnos semana 09/11/2026: Federico asume turnos de Natalio en Cumbria |
 | **`v14.81`** | 2026-10-28 | `admin.html`, `admin.js`, `index.html`, `live.mobile.html` | Correccion de falso positivo en deteccion de turno de noche sin cobertura en dashboard |
 | **`v14.80`** | 2026-10-28 | `index.html` | Fecha de ultima modificacion general y por hotel en vista publica, seguimiento de noches/descansos para Diana y verificacion de vacaciones 2-8 nov |
 | **`v14.79`** | 2026-10-28 | `admin.js`, `js/hide-publication.js` | Correccion de flechas para cambiar posicion de empleados y compatibilidad en ocultar turnos publicados |
