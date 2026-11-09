@@ -1,5 +1,6 @@
 {
   "scripts": {
+    "paygold": "node paygold-server.js",
     "regression-check": "node scripts/regression-check.js",
     "bump-version": "node scripts/bump-version.js"
   },
