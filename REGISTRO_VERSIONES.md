@@ -1,6 +1,6 @@
 # 📋 Registro de Versiones del Sistema (Turnos Web)
 
-**Versión Global Actual:** `v14.85`  
+**Versión Global Actual:** `v14.87`  
 **Última Actualización:** 2026-11-09  
 
 ---
@@ -21,6 +21,8 @@
 
 | Versión | Fecha | Módulos / Archivos Modificados | Descripción del Cambio |
 | :---: | :---: | :--- | :--- |
+| **`v14.87`** | 2026-11-09 | `admin.html`, `admin.js`, `data/v9_excel_order_map.js`, `data/v9_excel_order_map.json`, `index.html`, `live.mobile.html`, `scripts/apply_guadiana_16nov_shifts.js`, `scripts/assign_vacante_guadiana_marcos.js` | Asignacion definitiva vacante Guadiana a Marcos (EMP-0020) desde 23/11/2026 |
+| **`v14.86`** | 2026-11-09 | `scripts/apply_guadiana_16nov_shifts.js` | Reasignacion turnos semana 16/11/2026 Guadiana: Elena asume turnos Natalio y Marcos asume Elena |
 | **`v14.85`** | 2026-11-09 | `scripts/apply_guadiana_09nov_shifts.js`, `scripts/inspect_cells.js`, `scripts/inspect_full_pub.js`, `scripts/inspect_guadiana_09nov.js` | Ajuste turnos 09/11/2026 Guadiana: Macarena Manana, Elena Tarde, Dani Noche (v158) |
 | **`v14.84`** | 2026-11-09 | `admin.html`, `admin.js`, `index.html`, `live.mobile.html` | Mejora guardado y publicacion Modo Excel con resolucion de aliases e invalidacion de cache |
 | **`v14.83`** | 2026-11-09 | Módulos del sistema | --help |

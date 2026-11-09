@@ -520,6 +520,10 @@ window.loadV9ExcelOrderMap = async () => {
             index[h][w]['emp-0017'] = item;
             index[h][w]['sandra'] = item;
         }
+        if (e === 'emp-0020' || e === 'marcos') {
+            index[h][w]['emp-0020'] = item;
+            index[h][w]['marcos'] = item;
+        }
         if (e.includes('sanchez') || e.includes('sánchez')) {
             index[h][w]['sergio sanchez'] = item;
             index[h][w]['s. sanchez'] = item;
