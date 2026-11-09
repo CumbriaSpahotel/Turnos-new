@@ -1,6 +1,6 @@
 # 📋 Registro de Versiones del Sistema (Turnos Web)
 
-**Versión Global Actual:** `v14.84`  
+**Versión Global Actual:** `v14.85`  
 **Última Actualización:** 2026-11-09  
 
 ---
@@ -21,6 +21,7 @@
 
 | Versión | Fecha | Módulos / Archivos Modificados | Descripción del Cambio |
 | :---: | :---: | :--- | :--- |
+| **`v14.85`** | 2026-11-09 | `scripts/apply_guadiana_09nov_shifts.js`, `scripts/inspect_cells.js`, `scripts/inspect_full_pub.js`, `scripts/inspect_guadiana_09nov.js` | Ajuste turnos 09/11/2026 Guadiana: Macarena Manana, Elena Tarde, Dani Noche (v158) |
 | **`v14.84`** | 2026-11-09 | `admin.html`, `admin.js`, `index.html`, `live.mobile.html` | Mejora guardado y publicacion Modo Excel con resolucion de aliases e invalidacion de cache |
 | **`v14.83`** | 2026-11-09 | Módulos del sistema | --help |
 | **`v14.82`** | 2026-11-04 | `scripts/apply_federico_natalio_shifts.js` | Reasignacion turnos semana 09/11/2026: Federico asume turnos de Natalio en Cumbria |
