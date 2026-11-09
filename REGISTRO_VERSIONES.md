@@ -1,7 +1,7 @@
 # 📋 Registro de Versiones del Sistema (Turnos Web)
 
-**Versión Global Actual:** `v14.82`  
-**Última Actualización:** 2026-11-04  
+**Versión Global Actual:** `v14.84`  
+**Última Actualización:** 2026-11-09  
 
 ---
 
@@ -21,6 +21,8 @@
 
 | Versión | Fecha | Módulos / Archivos Modificados | Descripción del Cambio |
 | :---: | :---: | :--- | :--- |
+| **`v14.84`** | 2026-11-09 | `admin.html`, `admin.js`, `index.html`, `live.mobile.html` | Mejora guardado y publicacion Modo Excel con resolucion de aliases e invalidacion de cache |
+| **`v14.83`** | 2026-11-09 | Módulos del sistema | --help |
 | **`v14.82`** | 2026-11-04 | `scripts/apply_federico_natalio_shifts.js` | Reasignacion turnos semana 09/11/2026: Federico asume turnos de Natalio en Cumbria |
 | **`v14.81`** | 2026-10-28 | `admin.html`, `admin.js`, `index.html`, `live.mobile.html` | Correccion de falso positivo en deteccion de turno de noche sin cobertura en dashboard |
 | **`v14.80`** | 2026-10-28 | `index.html` | Fecha de ultima modificacion general y por hotel en vista publica, seguimiento de noches/descansos para Diana y verificacion de vacaciones 2-8 nov |

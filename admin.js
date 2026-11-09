@@ -2180,6 +2180,9 @@ window.saveTurnosBaseDirect = async () => {
         }
         const { error } = await window.supabase.from('turnos').upsert(updates, { onConflict: 'empleado_id,fecha' });
         if (error) throw error;
+        if (window.localforage) await window.localforage.clear();
+        if (window.invalidatePreviewSnapshotCache) window.invalidatePreviewSnapshotCache('excel_base_direct_saved');
+        window.__lastGlobalStatus = null;
         window.pendingChangesCount = 0;
         alert('✅ Cambios base guardados correctamente.');
         await window.renderExcelView();
@@ -6287,13 +6290,21 @@ window.renderPreview = async () => {
                     });
                     empsInHotel.forEach((empId, idx) => {
                         const empProfile = (profiles || []).find(p => p.id === empId || p.nombre === empId || p.id_interno === empId);
+                        const norm = window.normalizeId || ((v) => String(v || '').trim().toLowerCase());
+                        const empAliases = new Set([
+                            norm(empId),
+                            norm(empProfile?.id),
+                            norm(empProfile?.nombre),
+                            norm(empProfile?.id_interno),
+                            norm(empProfile?.uuid)
+                        ].filter(Boolean));
                         const row = {
                             empleadoId: empId,
                             displayName: empProfile?.nombre || empId,
                             rowIndex: empProfile?.orden ?? empProfile?.display_order ?? empProfile?.sort_order ?? 999,
                             weekStart: startISO,
                             values: columns.map(c => {
-                                const found = hotelData.find(r => r.empleado_id === empId && r.fecha === c.date);
+                                const found = hotelData.find(r => r.fecha === c.date && empAliases.has(norm(r.empleado_id)));
                                 return found ? found.turno : null;
                             })
                         };
@@ -7812,11 +7823,27 @@ window.hasPendingPublicationChanges = async function({ weekStart, weekEnd, hotel
 };
 
 window.showPublishPreview = async () => {
+    // Sincronizar contexto si se invoca desde Gestión Excel
+    const activeSec = document.querySelector('.section.active')?.id || '';
+    if (activeSec === 'section-excel') {
+        const excelHotel = $('#excelHotel')?.value;
+        if (excelHotel && $('#prevHotel')) $('#prevHotel').value = excelHotel;
+        const excelDate = $('#excelDateStart')?.value;
+        if (excelDate) window._previewDate = excelDate;
+
+        if (window.pendingChangesCount > 0) {
+            const saveBefore = confirm(`Tienes ${window.pendingChangesCount} cambio(s) en Modo Excel sin guardar en la base de datos. ¿Deseas guardarlos automáticamente antes de publicar?`);
+            if (saveBefore) {
+                await window.saveTurnosBaseDirect();
+            }
+        }
+    }
+
     // 1. Identificar rango y hotel
     const hotelSel = $('#prevHotel')?.value || 'all';
-    const rawDate = window._previewDate;
+    const rawDate = window._previewDate || $('#excelDateStart')?.value;
     if (!rawDate) {
-        alert('Por favor, selecciona una semana en Vista Previa primero.');
+        alert('Por favor, selecciona una semana primero.');
         return;
     }
     const base = new Date(rawDate + 'T12:00:00');
@@ -8237,13 +8264,21 @@ window.buildPublicationSnapshotPreview = async (weekStart, hotelName = 'all') =>
                     if (empsInHotel.length > 0) {
                         empsInHotel.forEach((empId, idx) => {
                             const empProfile = (profiles || []).find(p => p.id === empId || p.nombre === empId || p.id_interno === empId);
+                            const norm = window.normalizeId || ((v) => String(v || '').trim().toLowerCase());
+                            const empAliases = new Set([
+                                norm(empId),
+                                norm(empProfile?.id),
+                                norm(empProfile?.nombre),
+                                norm(empProfile?.id_interno),
+                                norm(empProfile?.uuid)
+                            ].filter(Boolean));
                             const row = {
                                 empleadoId: empId,
                                 displayName: empProfile?.nombre || empId,
                                 rowIndex: empProfile?.orden ?? empProfile?.display_order ?? empProfile?.sort_order ?? idx,
                                 weekStart: weekStart,
                                 values: dates.map(c => {
-                                    const found = hotelDataDb.find(r => r.empleado_id === empId && r.fecha === c);
+                                    const found = hotelDataDb.find(r => r.fecha === c && empAliases.has(norm(r.empleado_id)));
                                     return found ? found.turno : null;
                                 })
                             };
