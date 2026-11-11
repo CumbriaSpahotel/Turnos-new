@@ -1,7 +1,7 @@
 # 📋 Registro de Versiones del Sistema (Turnos Web)
 
-**Versión Global Actual:** `v14.89`  
-**Última Actualización:** 2026-11-09  
+**Versión Global Actual:** `v14.90`  
+**Última Actualización:** 2026-11-11  
 
 ---
 
@@ -21,6 +21,7 @@
 
 | Versión | Fecha | Módulos / Archivos Modificados | Descripción del Cambio |
 | :---: | :---: | :--- | :--- |
+| **`v14.90`** | 2026-11-11 | `admin.css`, `admin.html`, `admin.js` | Menú lateral minimizable y fechas del cuadrante en formato dd/mes/aa |
 | **`v14.89`** | 2026-11-09 | `admin.html`, `index.html`, `live.mobile.html`, `package.json`, `service-worker.js`, `sw.js`, `paygold-config.js`, `paygold-server.js`, `paygold-service.js`, `paygold.html` | Modulo e interfaz PayGold Redsys REST para Hotel Guadiana (168355840) |
 | **`v14.88`** | 2026-11-09 | `admin.html`, `index.html`, `live.mobile.html`, `service-worker.js`, `sw.js` | Correccion critica en Service Worker: evitar interceptar Supabase/admin y eliminar TypeError convert Response |
 | **`v14.87`** | 2026-11-09 | `admin.html`, `admin.js`, `data/v9_excel_order_map.js`, `data/v9_excel_order_map.json`, `index.html`, `live.mobile.html`, `scripts/apply_guadiana_16nov_shifts.js`, `scripts/assign_vacante_guadiana_marcos.js` | Asignacion definitiva vacante Guadiana a Marcos (EMP-0020) desde 23/11/2026 |

@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TurnosWeb - Panel de Control Administrativo</title>
     <link rel="icon" type="image/png" href="admin_icon_premium.png">
-    <link rel="stylesheet" href="admin.css?v=14.89">
+    <link rel="stylesheet" href="admin.css?v=14.90">
     <link rel="stylesheet" href="flatpickr.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/plugins/monthSelect/style.css">
     <script src="xlsx.full.min.js"></script>
@@ -167,7 +167,8 @@
             </div>
         </div>
 
-        <nav class="sidebar-nav">
+        <button type="button" id="sidebarToggle" class="sidebar-toggle" aria-expanded="true" aria-controls="adminSidebarNav" title="Minimizar menú" aria-label="Minimizar menú">«</button>
+        <nav class="sidebar-nav" id="adminSidebarNav">
             <div class="nav-group-label">CUADRANTE</div>
             <button class="menu-item active" onclick="switchSection('home')">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
@@ -725,7 +726,7 @@
                         </div>
                         <div style="display:flex; justify-content:space-between; align-items:center; padding:10px 0; border-bottom:1px solid var(--border);">
                             <span style="font-size:0.8rem; font-weight:600;">Versión Aplicación</span>
-                            <span style="font-size:0.75rem; font-weight:800; color:var(--text-dim);">v14.89 (Premium)</span>
+                            <span style="font-size:0.75rem; font-weight:800; color:var(--text-dim);">v14.90 (Premium)</span>
                         </div>
                         <div style="margin-top:10px;">
                             <label style="display:block; font-size:0.7rem; font-weight:800; color:var(--text-dim); text-transform:uppercase; margin-bottom:8px;">Modo Depuración (Console)</label>
@@ -816,25 +817,25 @@
 
     <!-- SCRIPTS -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="supabase-config.js?v=14.89"></script>
-    <script src="data/v9_excel_order_map.js?v=14.89"></script>
+    <script src="supabase-config.js?v=14.90"></script>
+    <script src="data/v9_excel_order_map.js?v=14.90"></script>
     <script src="localforage.js"></script>
-    <script src="supabase-dao.js?v=14.89"></script>
-    <script src="turnos-rules.js?v=14.89"></script>
-    <script src="shift-resolver.js?v=14.89"></script>
-    <script src="publication-snapshot.js?v=14.89"></script>
-    <script src="turnos-engine.js?v=14.89"></script>
-    <script src="excel-loader.js?v=14.89"></script>
-    <script src="cambios-module.js?v=14.89"></script>
+    <script src="supabase-dao.js?v=14.90"></script>
+    <script src="turnos-rules.js?v=14.90"></script>
+    <script src="shift-resolver.js?v=14.90"></script>
+    <script src="publication-snapshot.js?v=14.90"></script>
+    <script src="turnos-engine.js?v=14.90"></script>
+    <script src="excel-loader.js?v=14.90"></script>
+    <script src="cambios-module.js?v=14.90"></script>
     <script src="js/reassignment-module.js"></script>
-    <script src="js/weekly-vacancy.js?v=14.89"></script>
-    <script src="admin.js?v=14.89"></script>
-    <script src="js/annual-publication.js?v=14.89"></script>
-    <script src="js/hide-publication.js?v=14.89"></script>
-    <script src="bajas-module.js?v=14.89"></script>
-    <script src="vacaciones-module.js?v=14.89"></script>
-    <script src="sync-gaps.js?v=14.89"></script>
-    <script src="sync-status.js?v=14.89"></script>
+    <script src="js/weekly-vacancy.js?v=14.90"></script>
+    <script src="admin.js?v=14.90"></script>
+    <script src="js/annual-publication.js?v=14.90"></script>
+    <script src="js/hide-publication.js?v=14.90"></script>
+    <script src="bajas-module.js?v=14.90"></script>
+    <script src="vacaciones-module.js?v=14.90"></script>
+    <script src="sync-gaps.js?v=14.90"></script>
+    <script src="sync-status.js?v=14.90"></script>
     <script>
       if ('serviceWorker' in navigator && window.location.protocol !== 'file:') {
         navigator.serviceWorker.getRegistrations().then(regs => { for (const r of regs) r.update(); });

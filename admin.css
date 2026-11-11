@@ -4357,3 +4357,17 @@ input, select, textarea { color: var(--text); }
     transform: translateY(0);
   }
 }
+
+/* Menú lateral plegable: conserva los accesos por icono. */
+.sidebar-toggle { position:relative; z-index:1; align-self:flex-end; margin:8px 14px 0; width:36px; height:32px; border:1px solid #475569; border-radius:8px; background:#111b36; color:white; cursor:pointer; font-size:22px; }
+.sidebar-toggle:focus-visible { outline:2px solid #60a5fa; outline-offset:2px; }
+body.sidebar-collapsed { --sidebar-w:72px; }
+.sidebar-collapsed .sidebar-brand { padding:20px; justify-content:center; }
+.sidebar-collapsed .brand-text, .sidebar-collapsed .nav-group-label,
+.sidebar-collapsed .menu-item > span:not(.menu-badge), .sidebar-collapsed .btn-publish-premium > span { display:none; }
+.sidebar-collapsed .sidebar-toggle { align-self:center; margin:8px 0; }
+.sidebar-collapsed .sidebar-nav { padding:10px 6px; }
+.sidebar-collapsed .menu-item { position:relative; justify-content:center; padding:12px; }
+.sidebar-collapsed .menu-badge { position:absolute; top:0; right:0; }
+.sidebar-collapsed .sidebar-footer { padding:14px 8px; }
+.excel-cell-date { display:block; margin-bottom:4px; white-space:nowrap; color:#64748b; font-size:0.7rem; }

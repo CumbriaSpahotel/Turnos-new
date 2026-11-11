@@ -1,3 +1,38 @@
+// Preferencia visual local; no modifica ni publica turnos.
+window.formatExcelDate = (iso) => {
+    const match = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(iso || ''));
+    if (!match) return '';
+    const months = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+    return match[3] + '/' + months[Number(match[2]) - 1] + '/' + match[1].slice(-2);
+};
+(() => {
+    const initSidebar = () => {
+        const toggle = document.getElementById('sidebarToggle');
+        if (!toggle) return;
+        document.querySelectorAll('.sidebar .menu-item, .sidebar .btn-publish-premium').forEach(button => {
+            const label = button.querySelector('span')?.textContent.trim();
+            if (label) { button.title = label; button.setAttribute('aria-label', label); }
+        });
+        const apply = collapsed => {
+            document.body.classList.toggle('sidebar-collapsed', collapsed);
+            toggle.setAttribute('aria-expanded', String(!collapsed));
+            toggle.title = collapsed ? 'Ampliar menú' : 'Minimizar menú';
+            toggle.setAttribute('aria-label', toggle.title);
+            toggle.textContent = collapsed ? '»' : '«';
+        };
+        let collapsed = false;
+        try { collapsed = localStorage.getItem('turnos.sidebarCollapsed') === '1'; } catch (_) {}
+        apply(collapsed);
+        toggle.addEventListener('click', () => {
+            const next = !document.body.classList.contains('sidebar-collapsed');
+            apply(next);
+            try { localStorage.setItem('turnos.sidebarCollapsed', next ? '1' : '0'); } catch (_) {}
+        });
+    };
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initSidebar);
+    else initSidebar();
+})();
+
 
 // NAVEGACIÓN SEMANAL EN PERIODO DE MODO EXCEL (◀ / ▶)
 window.changeExcelWeek = (deltaWeeks) => {
@@ -2028,7 +2063,7 @@ window.renderExcelView = async () => {
                     <div style="padding:16px 20px; font-weight:800; color:#1e293b; background:#f8fafc; border-bottom:1px solid #e2e8f0; display:flex; justify-content:space-between;"><span>${hotel}</span><span style="font-size:0.7rem; color:#64748b; font-weight:600;">MOSTRANDO ${rows.length} FILAS</span></div>
                     ${renderExcelCoverageWarnings(coverageWarnings)}
                     <div style="overflow:auto;"><table style="width:100%; border-collapse:collapse; min-width:980px;"><thead><tr style="background:#f8fafc;"><th style="padding:12px; border-bottom:1px solid #e2e8f0; text-align:left; font-size:0.7rem; color:#64748b; text-transform:uppercase;">Semana</th><th style="padding:12px; border-bottom:1px solid #e2e8f0; text-align:left; font-size:0.7rem; color:#64748b; text-transform:uppercase;">Empleado</th>${['LUN', 'MAR', 'MIE', 'JUE', 'VIE', 'SAB', 'DOM'].map(day => `<th style="padding:12px 8px; border-bottom:1px solid #e2e8f0; text-align:center; font-size:0.7rem; color:#64748b;">${day}</th>`).join('')}</tr></thead><tbody>${rows.map(row => `
-                                    <tr class="excel-row-hover"><td style="padding:12px; border-bottom:1px solid #f1f5f9; white-space:nowrap; color:#64748b; font-size:0.8rem;">${window.fmtDateLegacy(row.weekStart)}</td><td style="padding:12px; border-bottom:1px solid #f1f5f9; min-width:220px; font-weight:600; color:#334155; font-size:0.85rem;">${String(row.empId).startsWith('vacante-') ? `<button type="button" class="btn-premium" data-vacancy="${escapeHtml(row.empId)}" data-hotel="${escapeHtml(row.hotel)}" data-week="${row.weekStart}" onclick="window.openWeeklyVacancy(this)" style="font-size:0.8rem;">${row.displayName} · Asignar sustituto</button>` : row.displayName}</td>${[0, 1, 2, 3, 4, 5, 6].map(offset => {
+                                    <tr class="excel-row-hover"><td style="padding:12px; border-bottom:1px solid #f1f5f9; white-space:nowrap; color:#64748b; font-size:0.8rem;">${window.formatExcelDate(row.weekStart)}</td><td style="padding:12px; border-bottom:1px solid #f1f5f9; min-width:220px; font-weight:600; color:#334155; font-size:0.85rem;">${String(row.empId).startsWith('vacante-') ? `<button type="button" class="btn-premium" data-vacancy="${escapeHtml(row.empId)}" data-hotel="${escapeHtml(row.hotel)}" data-week="${row.weekStart}" onclick="window.openWeeklyVacancy(this)" style="font-size:0.8rem;">${row.displayName} · Asignar sustituto</button>` : row.displayName}</td>${[0, 1, 2, 3, 4, 5, 6].map(offset => {
                                             const dbVal = row.values[offset];
                                             const mappedVal = TURNO_MAP[dbVal] || dbVal;
                                             const isPendiente = (mappedVal === 'Pendiente de asignar');
@@ -2037,7 +2072,7 @@ window.renderExcelView = async () => {
                                             const dStr = window.isoDate(currDate);
                                             const isSupport = _isSupport(row.empId, dStr);
                                             const pendClass = isPendiente ? (isSupport ? 'turno-pendiente-soft' : 'turno-pendiente-alerta') : '';
-                                            return `<td style="padding:6px; border-bottom:1px solid #f1f5f9; text-align:center;"><select class="turno-edit-select ${pendClass}" data-hotel="${row.hotel}" data-emp="${row.empId}" data-date="${dStr}" data-original="${dbVal}" data-support="${isSupport ? '1' : '0'}" data-valid-id="${row.hasValidId ? '1' : '0'}" style="width:110px; padding:6px; border:1px solid #e2e8f0; border-radius:8px; background:#f8fafc; text-align:center; color:#475569; font-size:0.8rem; cursor:pointer;" onchange="window.handleExcelCellChange(this)">${options}</select></td>`;
+                                            return `<td style="padding:6px; border-bottom:1px solid #f1f5f9; text-align:center;"><span class="excel-cell-date">${window.formatExcelDate(dStr)}</span><select aria-label="Turno del ${window.formatExcelDate(dStr)}" class="turno-edit-select ${pendClass}" data-hotel="${row.hotel}" data-emp="${row.empId}" data-date="${dStr}" data-original="${dbVal}" data-support="${isSupport ? '1' : '0'}" data-valid-id="${row.hasValidId ? '1' : '0'}" style="width:110px; padding:6px; border:1px solid #e2e8f0; border-radius:8px; background:#f8fafc; text-align:center; color:#475569; font-size:0.8rem; cursor:pointer;" onchange="window.handleExcelCellChange(this)">${options}</select></td>`;
                                         }).join('')}</tr>`).join('')}</tbody></table></div></div>`;
         }).join('');
         container.innerHTML += sections || '<div style="padding: 3rem; text-align: center; color: #94a3b8; font-weight:600;">No hay registros que coincidan con los filtros.</div>';
