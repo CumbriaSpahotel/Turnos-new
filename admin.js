@@ -2062,7 +2062,7 @@ window.renderExcelView = async () => {
                 <div class="excel-hotel-section" data-hotel="${escapeHtml(hotel)}" style="background:white; border:1px solid #e2e8f0; border-radius:16px; overflow:hidden; margin-bottom:24px; box-shadow:0 4px 6px -1px rgba(0,0,0,0.05);">
                     <div style="padding:16px 20px; font-weight:800; color:#1e293b; background:#f8fafc; border-bottom:1px solid #e2e8f0; display:flex; justify-content:space-between;"><span>${hotel}</span><span style="font-size:0.7rem; color:#64748b; font-weight:600;">MOSTRANDO ${rows.length} FILAS</span></div>
                     ${renderExcelCoverageWarnings(coverageWarnings)}
-                    <div style="overflow:auto;"><table style="width:100%; border-collapse:collapse; min-width:980px;"><thead><tr style="background:#f8fafc;"><th style="padding:12px; border-bottom:1px solid #e2e8f0; text-align:left; font-size:0.7rem; color:#64748b; text-transform:uppercase;">Semana</th><th style="padding:12px; border-bottom:1px solid #e2e8f0; text-align:left; font-size:0.7rem; color:#64748b; text-transform:uppercase;">Empleado</th>${['LUN', 'MAR', 'MIE', 'JUE', 'VIE', 'SAB', 'DOM'].map(day => `<th style="padding:12px 8px; border-bottom:1px solid #e2e8f0; text-align:center; font-size:0.7rem; color:#64748b;">${day}</th>`).join('')}</tr></thead><tbody>${rows.map(row => `
+                    ${[...new Set(rows.map(row => row.weekStart))].map(weekStart => `<div style="overflow:auto;"><table style="width:100%; border-collapse:collapse; min-width:980px;"><thead><tr style="background:#f8fafc;"><th style="padding:12px; border-bottom:1px solid #e2e8f0; text-align:left; font-size:0.7rem; color:#64748b; text-transform:uppercase;">Semana</th><th style="padding:12px; border-bottom:1px solid #e2e8f0; text-align:left; font-size:0.7rem; color:#64748b; text-transform:uppercase;">Empleado</th>${['LUN', 'MAR', 'MIE', 'JUE', 'VIE', 'SAB', 'DOM'].map((day, offset) => { const date = new Date(weekStart + 'T12:00:00'); date.setDate(date.getDate() + offset); return `<th style="padding:12px 8px; border-bottom:1px solid #e2e8f0; text-align:center; font-size:0.7rem; color:#64748b;">${day}<span class="excel-header-date">${window.formatExcelDate(window.isoDate(date))}</span></th>`; }).join('')}</tr></thead><tbody>${rows.filter(row => row.weekStart === weekStart).map(row => `
                                     <tr class="excel-row-hover"><td style="padding:12px; border-bottom:1px solid #f1f5f9; white-space:nowrap; color:#64748b; font-size:0.8rem;">${window.formatExcelDate(row.weekStart)}</td><td style="padding:12px; border-bottom:1px solid #f1f5f9; min-width:220px; font-weight:600; color:#334155; font-size:0.85rem;">${String(row.empId).startsWith('vacante-') ? `<button type="button" class="btn-premium" data-vacancy="${escapeHtml(row.empId)}" data-hotel="${escapeHtml(row.hotel)}" data-week="${row.weekStart}" onclick="window.openWeeklyVacancy(this)" style="font-size:0.8rem;">${row.displayName} · Asignar sustituto</button>` : row.displayName}</td>${[0, 1, 2, 3, 4, 5, 6].map(offset => {
                                             const dbVal = row.values[offset];
                                             const mappedVal = TURNO_MAP[dbVal] || dbVal;
@@ -2071,9 +2071,9 @@ window.renderExcelView = async () => {
                                             const currDate = new Date(row.weekStart); currDate.setDate(currDate.getDate() + offset);
                                             const dStr = window.isoDate(currDate);
                                             const isSupport = _isSupport(row.empId, dStr);
-                                            const pendClass = isPendiente ? (isSupport ? 'turno-pendiente-soft' : 'turno-pendiente-alerta') : '';
-                                            return `<td style="padding:6px; border-bottom:1px solid #f1f5f9; text-align:center;"><span class="excel-cell-date">${window.formatExcelDate(dStr)}</span><select aria-label="Turno del ${window.formatExcelDate(dStr)}" class="turno-edit-select ${pendClass}" data-hotel="${row.hotel}" data-emp="${row.empId}" data-date="${dStr}" data-original="${dbVal}" data-support="${isSupport ? '1' : '0'}" data-valid-id="${row.hasValidId ? '1' : '0'}" style="width:110px; padding:6px; border:1px solid #e2e8f0; border-radius:8px; background:#f8fafc; text-align:center; color:#475569; font-size:0.8rem; cursor:pointer;" onchange="window.handleExcelCellChange(this)">${options}</select></td>`;
-                                        }).join('')}</tr>`).join('')}</tbody></table></div></div>`;
+                                            const pendClass = isPendiente ? 'turno-pendiente-alerta' : '';
+                                            return `<td style="padding:6px; border-bottom:1px solid #f1f5f9; text-align:center;"><select aria-label="Turno del ${window.formatExcelDate(dStr)}" class="turno-edit-select ${pendClass}" data-hotel="${row.hotel}" data-emp="${row.empId}" data-date="${dStr}" data-original="${dbVal}" data-support="${isSupport ? '1' : '0'}" data-valid-id="${row.hasValidId ? '1' : '0'}" style="width:110px; padding:6px; border:1px solid #e2e8f0; border-radius:8px; background:#f8fafc; text-align:center; color:#475569; font-size:0.8rem; cursor:pointer;" onchange="window.handleExcelCellChange(this)">${options}</select></td>`;
+                                        }).join('')}</tr>`).join('')}</tbody></table></div>`).join('')}</div>`;
         }).join('');
         container.innerHTML += sections || '<div style="padding: 3rem; text-align: center; color: #94a3b8; font-weight:600;">No hay registros que coincidan con los filtros.</div>';
 
@@ -2163,12 +2163,8 @@ window.refreshExcelCoverageAlarms = () => {
 
 window.handleExcelCellChange = (sel) => {
     const isPendiente = sel.value === 'Pendiente de asignar';
-    // Preserve soft class for support staff
-    if (sel.classList.contains('turno-pendiente-soft')) {
-        sel.classList.toggle('turno-pendiente-soft', isPendiente);
-    } else {
-        sel.classList.toggle('turno-pendiente-alerta', isPendiente);
-    }
+    sel.classList.remove('turno-pendiente-soft');
+    sel.classList.toggle('turno-pendiente-alerta', isPendiente);
     const selects = document.querySelectorAll('.turno-edit-select');
     let changes = 0;
     const REVERSE_MAP = { 'Mañana': 'M', 'Tarde': 'T', 'T/P': 'TP', 'Noche': 'N', 'Descanso': 'D', 'Pendiente de asignar': '—' };

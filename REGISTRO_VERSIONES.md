@@ -1,6 +1,6 @@
 # 📋 Registro de Versiones del Sistema (Turnos Web)
 
-**Versión Global Actual:** `v14.90`  
+**Versión Global Actual:** `v14.92`  
 **Última Actualización:** 2026-11-11  
 
 ---
@@ -21,6 +21,8 @@
 
 | Versión | Fecha | Módulos / Archivos Modificados | Descripción del Cambio |
 | :---: | :---: | :--- | :--- |
+| **`v14.92`** | 2026-11-11 | `admin.css`, `admin.html`, `admin.js`, `index.html`, `live.mobile.html` | Todos los turnos pendientes con fondo rojo y texto blanco |
+| **`v14.91`** | 2026-11-11 | `admin.css`, `admin.js` | Fechas solo bajo los días en la cabecera semanal del cuadrante |
 | **`v14.90`** | 2026-11-11 | `admin.css`, `admin.html`, `admin.js` | Menú lateral minimizable y fechas del cuadrante en formato dd/mes/aa |
 | **`v14.89`** | 2026-11-09 | `admin.html`, `index.html`, `live.mobile.html`, `package.json`, `service-worker.js`, `sw.js`, `paygold-config.js`, `paygold-server.js`, `paygold-service.js`, `paygold.html` | Modulo e interfaz PayGold Redsys REST para Hotel Guadiana (168355840) |
 | **`v14.88`** | 2026-11-09 | `admin.html`, `index.html`, `live.mobile.html`, `service-worker.js`, `sw.js` | Correccion critica en Service Worker: evitar interceptar Supabase/admin y eliminar TypeError convert Response |
