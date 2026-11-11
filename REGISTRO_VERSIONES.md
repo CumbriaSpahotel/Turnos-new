@@ -1,6 +1,6 @@
 # 📋 Registro de Versiones del Sistema (Turnos Web)
 
-**Versión Global Actual:** `v14.92`  
+**Versión Global Actual:** `v14.93`  
 **Última Actualización:** 2026-11-11  
 
 ---
@@ -21,6 +21,7 @@
 
 | Versión | Fecha | Módulos / Archivos Modificados | Descripción del Cambio |
 | :---: | :---: | :--- | :--- |
+| **`v14.93`** | 2026-11-11 | `admin.html` | Retirar acceso PayGold del menú de gestión de turnos |
 | **`v14.92`** | 2026-11-11 | `admin.css`, `admin.html`, `admin.js`, `index.html`, `live.mobile.html` | Todos los turnos pendientes con fondo rojo y texto blanco |
 | **`v14.91`** | 2026-11-11 | `admin.css`, `admin.js` | Fechas solo bajo los días en la cabecera semanal del cuadrante |
 | **`v14.90`** | 2026-11-11 | `admin.css`, `admin.html`, `admin.js` | Menú lateral minimizable y fechas del cuadrante en formato dd/mes/aa |
