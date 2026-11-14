@@ -440,8 +440,7 @@
       .v-m, .v-manana { background: var(--mint-bg); color: var(--mint-text); border-color: #c7e5ca; }
       .v-t, .v-tarde { background: var(--amber-bg); color: var(--amber-text); border-color: #f3df9b; }
       .v-n, .v-noche { background: var(--slate-bg); color: var(--slate-text); border-color: #d8dee5; }
-      .v-d, .v-descanso { background: #dcfce7 !important; color: #166534 !important; border: 1px solid #86efac !important; }
-      .v-descanso-especial { background: #fef08a !important; color: #854d0e !important; border: 1px solid #facc15 !important; }
+      .v-d, .v-descanso { background: #fee2e2 !important; color: #991b1b !important; border: 1px solid #fecaca !important; }
       .v-p, .v-partido { background: #ede9fe !important; color: #5b21b6 !important; border: 1px solid #c4b5fd !important; }
       .v-v, .v-vac {
           background: #e8f9ff;
@@ -869,11 +868,11 @@
   <script src="flatpickr_es.js"></script>
   <script src="html2pdf.bundle.min.js"></script>
   <script src="supabase.js"></script>
-  <script src="supabase-config.js?v=14.94"></script>
-  <script src="supabase-dao.js?v=14.94"></script>
-  <script src="turnos-rules.js?v=14.94"></script>
-  <script src="shift-resolver.js?v=14.94"></script>
-  <script src="publication-snapshot.js?v=14.94"></script>
+  <script src="supabase-config.js?v=14.95"></script>
+  <script src="supabase-dao.js?v=14.95"></script>
+  <script src="turnos-rules.js?v=14.95"></script>
+  <script src="shift-resolver.js?v=14.95"></script>
+  <script src="publication-snapshot.js?v=14.95"></script>
   <script src="virtualizer.js"></script>
   <script>
     let _picker;
@@ -1302,7 +1301,7 @@
                 <div style="display:flex; align-items:center; gap:6px;"><span style="width:12px; height:12px; border-radius:3px; background:var(--amber-bg); border:1px solid #f3df9b; display:inline-block;"></span> Tarde</div>
                 <div style="display:flex; align-items:center; gap:6px;"><span style="width:12px; height:12px; border-radius:3px; background:#ede9fe; border:1px solid #c4b5fd; display:inline-block;"></span> T/P = Turno Partido</div>
                 <div style="display:flex; align-items:center; gap:6px;"><span style="width:12px; height:12px; border-radius:3px; background:var(--slate-bg); border:1px solid #d8dee5; display:inline-block;"></span> Noche</div>
-                <div style="display:flex; align-items:center; gap:6px;"><span style="width:12px; height:12px; border-radius:3px; background:#dcfce7; border:1px solid #86efac; display:inline-block;"></span> Descanso</div>
+                <div style="display:flex; align-items:center; gap:6px;"><span style="width:12px; height:12px; border-radius:3px; background:#fee2e2; border:1px solid #fecaca; display:inline-block;"></span> Descanso</div>
                 <div style="display:flex; align-items:center; gap:6px;"><span style="width:12px; height:12px; border-radius:3px; background:#e8f9ff; border:1px solid #aee6ff; display:inline-block;"></span> Vacaciones</div>
                 <div style="display:flex; align-items:center; gap:6px;"><span style="width:12px; height:12px; border-radius:3px; background:#f3e8ff; border:1px solid #d8b4fe; display:inline-block;"></span> Baja</div>
                 <div style="display:flex; align-items:center; gap:6px;"><span style="width:12px; height:12px; border-radius:3px; background:#fdf4ff; border:1px solid #f5d0fe; display:inline-block;"></span> Permiso</div>
@@ -1873,8 +1872,7 @@
             
             cell.innerHTML = '';
             const pill = document.createElement('div');
-            const isSpecialRest = (cls === 'd' || cls === 'descanso') && window.TurnosRules?.isSpecialRestDate?.(fecha);
-            pill.className = isSpecialRest ? `turno-pill v-${cls} v-descanso-especial` : `turno-pill v-${cls}`;
+            pill.className = `turno-pill v-${cls}`;
             pill.textContent = display.label;
 
             const customHorario = data?.horario || data?.payload?.horario || display?.horario;
@@ -2152,7 +2150,7 @@
   </script>
   <script>
     if ('serviceWorker' in navigator && window.location.protocol !== 'file:') {
-      navigator.serviceWorker.register('sw.js?v=14.94').then(reg => {
+      navigator.serviceWorker.register('sw.js?v=14.95').then(reg => {
         if (reg) reg.update();
       }).catch(err => console.log("SW Error:", err));
     }

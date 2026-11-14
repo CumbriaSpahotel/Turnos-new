@@ -238,8 +238,7 @@ th:first-child, td:first-child {
 .turno-manana { background: #ebfbee; color: #2f9e44; border: 1px solid #d3f9d8; }
 .turno-tarde { background: #fff9db; color: #f08c00; border: 1px solid #fff3bf; }
 .turno-noche { background: #edf2ff; color: #364fc7; border: 1px solid #dbe4ff; }
-.turno-descanso { background: #dcfce7 !important; color: #166534 !important; border: 1px solid #86efac !important; }
-.turno-descanso-especial { background: #fef08a !important; color: #854d0e !important; border: 1px solid #facc15 !important; }
+.turno-descanso { background: #fee2e2 !important; color: #991b1b !important; border: 1px solid #fca5a5 !important; }
 .turno-vacaciones { background: #e3fafc; color: #0b7285; border: 1px solid #c5f6fa; }
 .turno-baja { background: #f3e8ff !important; color: #581c87 !important; border: 1px solid #d8b4fe !important; }
 .turno-permiso { background: #f3e8ff !important; color: #581c87 !important; border: 1px solid #d8b4fe !important; }
