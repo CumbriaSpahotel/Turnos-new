@@ -1415,7 +1415,8 @@ input, select, textarea { color: var(--text); }
 .v-tarde   { background: #fff9db !important; color: #f08c00 !important; border: 1px solid #ffec99 !important; }
 .v-partido { background: #ede9fe !important; color: #5b21b6 !important; border: 1px solid #c4b5fd !important; }
 .v-noche   { background: #edf2ff !important; color: #364fc7 !important; border: 1px solid #dbe4ff !important; }
-.v-descanso { background: #fee2e2 !important; color: #991b1b !important; border: 1px solid #fecaca !important; }
+.v-descanso { background: #dcfce7 !important; color: #166534 !important; border: 1px solid #86efac !important; }
+.v-descanso-especial { background: #fef08a !important; color: #854d0e !important; border: 1px solid #facc15 !important; }
 .v-vac     { background: #ef4444 !important; color: #ffffff !important; border: 1px solid #dc2626 !important; font-style: italic !important; }
 .v-baja    { background: #f3e8ff !important; color: #581c87 !important; border: 1px solid #d8b4fe !important; }
 .v-perm    { background: #f3e8ff !important; color: #581c87 !important; border: 1px solid #d8b4fe !important; }
@@ -2963,6 +2964,18 @@ input, select, textarea { color: var(--text); }
   color: #ffffff !important;
   font-weight: 700 !important;
 }
+.turno-descanso-verde {
+  background: #dcfce7 !important;
+  border: 1px solid #86efac !important;
+  color: #166534 !important;
+  font-weight: 600 !important;
+}
+.turno-descanso-especial {
+  background: #fef08a !important;
+  border: 1px solid #facc15 !important;
+  color: #854d0e !important;
+  font-weight: 700 !important;
+}
 .turno-edit-select option { background: #ffffff; color: #334155; }
 
 @keyframes turnoPendienteBlink {
@@ -4239,11 +4252,13 @@ input, select, textarea { color: var(--text); }
 }
 
 #empDrawer .emp-cal-cell.st-descanso {
-  background: #ffe4e6 !important;
-  border-color: #fb7185 !important;
+  background: #dcfce7 !important;
+  border-color: #86efac !important;
 }
 #empDrawer .emp-cal-cell.st-descanso .shift-tag {
-  color: #be123c !important;
+  color: #166534 !important; }
+#empDrawer .emp-cal-cell.st-descanso-especial { background: #fef08a !important; border-color: #facc15 !important; }
+#empDrawer .emp-cal-cell.st-descanso-especial .shift-tag { color: #854d0e !important;
 }
 
 #empDrawer .emp-cal-cell.st-vac {

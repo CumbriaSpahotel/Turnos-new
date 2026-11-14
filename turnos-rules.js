@@ -159,7 +159,7 @@
             icon: '',
             publicClass: 'v-descanso',
             mobileClass: 'd',
-            adminStyle: 'background:#fee2e2; color:#991b1b; border:1px solid #fecaca;'
+            adminStyle: 'background:#dcfce7; color:#166534; border:1px solid #86efac;'
         },
         v: {
             label: 'Vacaciones',
@@ -877,8 +877,24 @@
         return s.startsWith('N') || s.includes('/N') || s.includes('+N') || s.includes('N/') || s === 'MN' || s.includes('NOCHE');
     };
 
+    const SPECIAL_REST_MMDD = new Set(['12-24', '12-25', '12-31', '01-01']);
+
+    /**
+     * Devuelve true si la fecha corresponde a 24, 25, 31 de diciembre o 1 de enero (cualquier año).
+     */
+    const isSpecialRestDate = (fechaStr) => {
+        const raw = String(fechaStr || '').trim();
+        if (!raw) return false;
+        const isoMatch = raw.match(/^\d{4}-(\d{2}-\d{2})/);
+        if (isoMatch) return SPECIAL_REST_MMDD.has(isoMatch[1]);
+        const dmyMatch = raw.match(/^(\d{2})\/(\d{2})\/\d{2,4}$/);
+        if (dmyMatch) return SPECIAL_REST_MMDD.has(`${dmyMatch[2]}-${dmyMatch[1]}`);
+        return false;
+    };
+
     window.TurnosRules = {
         isNightShift,
+        isSpecialRestDate,
         normalizeText,
         titleIncludesHorario,
         cleanDuplicateHorarioTitle,

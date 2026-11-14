@@ -219,7 +219,7 @@ class VirtualTable {
                 cleanShiftColorCls = 'v-noche';
                 cleanLabel = 'Noche';
             } else if (rawTurno.includes('descanso') || rawTurno === 'd') {
-                cleanShiftColorCls = 'v-descanso';
+                cleanShiftColorCls = window.TurnosRules?.isSpecialRestDate?.(cellData.fecha || fecha) ? 'v-descanso-especial' : 'v-descanso';
                 cleanLabel = 'Descanso';
             } else {
                 cleanShiftColorCls = 'v-cambio';
@@ -236,7 +236,7 @@ class VirtualTable {
             cleanShiftColorCls = 'v-noche';
             cleanLabel = 'Noche';
         } else if (rawTurno.includes('descanso') || rawTurno === 'd') {
-            cleanShiftColorCls = 'v-descanso';
+            cleanShiftColorCls = window.TurnosRules?.isSpecialRestDate?.(cellData.fecha || fecha) ? 'v-descanso-especial' : 'v-descanso';
             cleanLabel = 'Descanso';
         } else if (rawTurno.includes('partido') || rawTurno === 'p' || rawTurno === 'tp' || rawTurno === 't/p') {
             cleanShiftColorCls = 'v-partido';

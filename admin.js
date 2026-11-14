@@ -2072,7 +2072,10 @@ window.renderExcelView = async () => {
                                             const dStr = window.isoDate(currDate);
                                             const isSupport = _isSupport(row.empId, dStr);
                                             const pendClass = isPendiente ? 'turno-pendiente-alerta' : '';
-                                            return `<td style="padding:6px; border-bottom:1px solid #f1f5f9; text-align:center;"><select aria-label="Turno del ${window.formatExcelDate(dStr)}" class="turno-edit-select ${pendClass}" data-hotel="${row.hotel}" data-emp="${row.empId}" data-date="${dStr}" data-original="${dbVal}" data-support="${isSupport ? '1' : '0'}" data-valid-id="${row.hasValidId ? '1' : '0'}" style="width:110px; padding:6px; border:1px solid #e2e8f0; border-radius:8px; background:#f8fafc; text-align:center; color:#475569; font-size:0.8rem; cursor:pointer;" onchange="window.handleExcelCellChange(this)">${options}</select></td>`;
+                                            const isDescanso = (mappedVal === 'Descanso');
+                                            const isSpecialRest = isDescanso && (window.TurnosRules?.isSpecialRestDate ? window.TurnosRules.isSpecialRestDate(dStr) : /(?:12-24|12-25|12-31|01-01)$/.test(dStr));
+                                            const descansoClass = isDescanso ? (isSpecialRest ? 'turno-descanso-especial' : 'turno-descanso-verde') : '';
+                                            return `<td style="padding:6px; border-bottom:1px solid #f1f5f9; text-align:center;"><select aria-label="Turno del ${window.formatExcelDate(dStr)}" class="turno-edit-select ${pendClass} ${descansoClass}" data-hotel="${row.hotel}" data-emp="${row.empId}" data-date="${dStr}" data-original="${dbVal}" data-support="${isSupport ? '1' : '0'}" data-valid-id="${row.hasValidId ? '1' : '0'}" style="width:110px; padding:6px; border:1px solid #e2e8f0; border-radius:8px; background:#f8fafc; text-align:center; color:#475569; font-size:0.8rem; cursor:pointer;" onchange="window.handleExcelCellChange(this)">${options}</select></td>`;
                                         }).join('')}</tr>`).join('')}</tbody></table></div>`).join('')}</div>`;
         }).join('');
         container.innerHTML += sections || '<div style="padding: 3rem; text-align: center; color: #94a3b8; font-weight:600;">No hay registros que coincidan con los filtros.</div>';
@@ -2163,8 +2166,13 @@ window.refreshExcelCoverageAlarms = () => {
 
 window.handleExcelCellChange = (sel) => {
     const isPendiente = sel.value === 'Pendiente de asignar';
+    const isDescanso = sel.value === 'Descanso';
+    const dStr = sel.dataset.date || '';
+    const isSpecialRest = isDescanso && (window.TurnosRules?.isSpecialRestDate ? window.TurnosRules.isSpecialRestDate(dStr) : /(?:12-24|12-25|12-31|01-01)$/.test(dStr));
     sel.classList.remove('turno-pendiente-soft');
     sel.classList.toggle('turno-pendiente-alerta', isPendiente);
+    sel.classList.toggle('turno-descanso-verde', isDescanso && !isSpecialRest);
+    sel.classList.toggle('turno-descanso-especial', isDescanso && isSpecialRest);
     const selects = document.querySelectorAll('.turno-edit-select');
     let changes = 0;
     const REVERSE_MAP = { 'Mañana': 'M', 'Tarde': 'T', 'T/P': 'TP', 'Noche': 'N', 'Descanso': 'D', 'Pendiente de asignar': '—' };
@@ -4216,7 +4224,7 @@ window.renderEmployeeProfileCalendar = (model) => {
                     } else if (isPartido) {
                         statusClass = 'tp';
                     } else if (label === 'D' || label === 'Descanso') {
-                        statusClass = 'descanso';
+                        statusClass = window.TurnosRules?.isSpecialRestDate?.(day.fecha) ? 'descanso-especial' : 'descanso';
                     } else if (['M','T','N'].includes(labelShort.toUpperCase())) {
                         statusClass = labelShort.toLowerCase();
                     }
@@ -5663,6 +5671,10 @@ window.renderPuestoRowHeader = (puesto, referenceDate) => {
 window.renderPuestoCell = (celda) => {
     const shiftKey = window.TurnosRules?.shiftKey(celda.turno || celda.turno_base, 'NORMAL') || 'empty';
     const def = window.TurnosRules?.definitions?.[shiftKey] || window.TurnosRules?.definitions?.empty || { adminStyle: '' };
+    const isSpecialRest = shiftKey === 'd' && window.TurnosRules?.isSpecialRestDate?.(celda.fecha);
+    const cellAdminStyle = isSpecialRest
+        ? 'background:#fef08a; color:#854d0e; border:1px solid #facc15;'
+        : (def.adminStyle || 'background:#f8fafc; color:#1e293b; border:1px solid #e2e8f0;');
     const replacementLine = celda.real && celda.real !== celda.titular
         ? `<div style="font-size:0.72rem; font-weight:700; color:#0f172a;">&rarr; ${escapeHtml(celda.real)}</div>`
         : '';
@@ -5672,7 +5684,7 @@ window.renderPuestoCell = (celda) => {
 
     return `
         <div title="${escapeHtml(window.buildPuestoCellTitle(celda))}" style="display:flex; flex-direction:column; gap:6px; min-height:82px; padding:10px 8px; border-radius:12px; background:#ffffff;">
-            <div style="display:inline-flex; align-items:center; justify-content:center; padding:8px 6px; border-radius:10px; font-size:0.8rem; font-weight:800; ${def.adminStyle || 'background:#f8fafc; color:#1e293b; border:1px solid #e2e8f0;'}">
+            <div style="display:inline-flex; align-items:center; justify-content:center; padding:8px 6px; border-radius:10px; font-size:0.8rem; font-weight:800; ${cellAdminStyle}">
                 ${escapeHtml(celda.turno || celda.turno_base || '-')}
             </div>
             <div style="font-size:0.73rem; line-height:1.25; color:#334155; font-weight:700;">
@@ -5936,7 +5948,7 @@ window.renderEmpleadoRowHeader = (employee, { showVacationIcon = false, isCompac
     </div>`;
 };
 
-window.renderEmpleadoCell = (turnoEmpleado, { isCompact = false } = {}) => {
+window.renderEmpleadoCell = (turnoEmpleado, { isCompact = false, fecha = '' } = {}) => {
     if (!turnoEmpleado) return '<div class="preview-cell-empty"></div>';
 
     const normalizeEmptyCellLabel = (value) => {
@@ -5958,13 +5970,16 @@ window.renderEmpleadoCell = (turnoEmpleado, { isCompact = false } = {}) => {
         t:    { bg: '#fef9c3', color: '#854d0e', border: '#fde047', label: 'Tarde', icon: '' },
         p:    { bg: '#ede9fe', color: '#5b21b6', border: '#c4b5fd', label: 'T/P', icon: '' },
         n:    { bg: '#dbeafe', color: '#1e40af', border: '#93c5fd', label: 'Noche', icon: '\u{1F319}' },
-        d:    { bg: '#fee2e2', color: '#991b1b', border: '#fecaca', label: 'Descanso', icon: '' }
+        d:    { bg: '#dcfce7', color: '#166534', border: '#86efac', label: 'Descanso', icon: '' }
     };
 
     const sKey = window.TurnosRules?.shiftKey?.(turnoVisible, 'NORMAL') || String(turnoVisible);
     // sKey ya viene en minúsculas desde shiftKey — NO convertir a mayúsculas
     const styleKey = sKey.toLowerCase();
-    const style = capsuleStyles[styleKey] || { bg: '#f8fafc', color: '#475569', border: '#e2e8f0', label: turnoVisible || '-', icon: '' };
+    const isSpecialRest = styleKey === 'd' && window.TurnosRules?.isSpecialRestDate?.(fecha || turnoEmpleado?.fecha);
+    const style = isSpecialRest
+        ? { bg: '#fef08a', color: '#854d0e', border: '#facc15', label: 'Descanso', icon: '' }
+        : (capsuleStyles[styleKey] || { bg: '#f8fafc', color: '#475569', border: '#e2e8f0', label: turnoVisible || '-', icon: '' });
 
     let cellTitle = window.TurnosRules?.cleanDuplicateHorarioTitle ? window.TurnosRules.cleanDuplicateHorarioTitle(turnoEmpleado?.title || '') : (turnoEmpleado?.title || '');
     const customHorario = turnoEmpleado?.horario || turnoEmpleado?.payload?.horario;
@@ -6544,7 +6559,7 @@ window.renderPreview = async () => {
                                         ${columns.map(c => {
                                             const isWeekend = c.dayName === 'SAB' || c.dayName === 'DOM';
                                             const bg = (!isWeekly && isWeekend) ? 'rgba(0,0,0,0.02)' : 'transparent';
-                                            return `<td style="padding:${cellPadding}; text-align:center; border-left:1px solid #f1f5f9; background:${bg};">${window.renderEmpleadoCell(previewModel.getTurnoEmpleado(employee.employee_id, c.date), { isCompact: !isWeekly })}</td>`;
+                                            return `<td style="padding:${cellPadding}; text-align:center; border-left:1px solid #f1f5f9; background:${bg};">${window.renderEmpleadoCell(previewModel.getTurnoEmpleado(employee.employee_id, c.date), { isCompact: !isWeekly, fecha: c.date })}</td>`;
                                         }).join('')}
                                     </tr>
                                 `).join('')}
