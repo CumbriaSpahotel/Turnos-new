@@ -9929,7 +9929,10 @@ window.renderDashboard = async () => {
                     allRisks.push(risk);
                 });
 
-                (globalStatus.outdatedSnapshots || []).filter(os => isWeekInRiskWindow(os.weekStart)).forEach(os => {
+                const outdatedInWindow = (globalStatus.outdatedSnapshots || []).filter(os => isWeekInRiskWindow(os.weekStart));
+                const unpublishedInWindow = (globalStatus.byHotelWeek || []).filter(b => !b.snapshotExists && isWeekInRiskWindow(b.weekStart));
+
+                outdatedInWindow.forEach(os => {
                     const snapDate = os.snapshotDate ? new Date(os.snapshotDate).toLocaleDateString() : '?';
                     const msg = `Snapshot desactualizado: ${os.hotel} semana ${os.weekStart} — publicado ${snapDate} pero hay ${os.pendingCount} evento(s) activo(s) posteriores. Debe republicarse.`;
                     allRisks.push({
@@ -9939,7 +9942,7 @@ window.renderDashboard = async () => {
                     });
                 });
 
-                (globalStatus.byHotelWeek || []).filter(b => !b.snapshotExists && isWeekInRiskWindow(b.weekStart)).forEach(b => {
+                unpublishedInWindow.forEach(b => {
                     const formattedWeek = window.formatDateES ? window.formatDateES(b.weekStart) : b.weekStart;
                     allRisks.push({
                         severity: 'warning',
@@ -9967,11 +9970,22 @@ window.renderDashboard = async () => {
                 renderRiskCards(allRisks);
 
                 const localExcelChanges = window.getExcelDiff ? window.getExcelDiff().length : 0;
+                const _globalChanges = outdatedInWindow.length + unpublishedInWindow.length;
+                const _finalCount = _globalChanges + localExcelChanges;
+                const pendingDetails = [
+                    ...(localExcelChanges > 0 ? [`Excel local: ${localExcelChanges} fila(s) sin publicar`] : []),
+                    ...outdatedInWindow.map(os => `${os.hotel} (sem. ${os.weekStart}): snapshot desactualizado (${os.pendingCount} evento(s))`),
+                    ...unpublishedInWindow.map(b => `${b.hotel} (sem. ${b.weekStart}): semana sin publicar`)
+                ];
+                const pendingTooltip = pendingDetails.length > 0
+                    ? pendingDetails.join('\n')
+                    : 'Sin cambios pendientes de publicar (hoy hasta 6 meses)';
                 if ($('#stat-pending-publish')) {
-                    const _globalChanges = globalStatus ? (globalStatus.totalPendingChanges || 0) : 0;
-                    const _finalCount = _globalChanges + localExcelChanges;
-                    $('#stat-pending-publish').textContent = _finalCount;
-                    $('#stat-pending-publish').style.color = _finalCount > 0 ? '#ef4444' : 'inherit';
+                    const statEl = $('#stat-pending-publish');
+                    statEl.textContent = _finalCount;
+                    statEl.style.color = _finalCount > 0 ? '#ef4444' : 'inherit';
+                    statEl.title = pendingTooltip;
+                    if (statEl.parentElement) statEl.parentElement.title = pendingTooltip;
                 }
 
                 if ($('#stat-published-until')) {
@@ -9995,9 +10009,9 @@ window.renderDashboard = async () => {
                 }
 
                 if ($('#sync-pending-changes')) {
-                    const _pendingCount = globalStatus ? globalStatus.totalPendingChanges : 0;
-                    $('#sync-pending-changes').textContent = _pendingCount;
-                    $('#sync-pending-changes').style.color = _pendingCount > 0 ? '#ef4444' : 'inherit';
+                    $('#sync-pending-changes').textContent = _globalChanges;
+                    $('#sync-pending-changes').style.color = _globalChanges > 0 ? '#ef4444' : 'inherit';
+                    $('#sync-pending-changes').title = pendingTooltip;
                 }
             } catch (bgErr) {
                 console.warn('[Dashboard Background Analysis Error]', bgErr);
