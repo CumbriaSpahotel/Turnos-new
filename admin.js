@@ -9051,13 +9051,18 @@ window.revertirPublicacion = async (logId) => {
 // Queries Supabase directly for ALL hotels/weeks with active events newer
 // than their published snapshot. Independent of any UI state / _previewDate.
 
-window.getCurrentYearPendingAssignments = async function(year = new Date().getFullYear()) {
-    const result = { year, count: 0, items: [], byHotel: new Map() };
+window.getCurrentYearPendingAssignments = async function(year = new Date().getFullYear(), endDateISO = null) {
+    const result = { year, count: 0, items: [], byHotel: new Map(), startDate: null, endDate: null };
     try {
         if (!window.TurnosDB?.fetchTurnosBase) return result;
         const todayISO = window.isoDate ? window.isoDate(new Date()) : new Date().toISOString().slice(0, 10);
-        const start = todayISO.slice(0, 4) === String(year) ? todayISO : `${year}-01-01`;
-        const end = `${year}-12-31`;
+        const start = endDateISO
+            ? todayISO
+            : (todayISO.slice(0, 4) === String(year) ? todayISO : `${year}-01-01`);
+        const end = endDateISO ? String(endDateISO).slice(0, 10) : `${year}-12-31`;
+        result.startDate = start;
+        result.endDate = end;
+        if (end < start) return result;
         const rows = await window.TurnosDB.fetchTurnosBase(start, end, null);
         let employees = window.empleadosGlobales || [];
         if ((!employees || employees.length === 0) && window.TurnosDB?.getEmpleados) {
@@ -9877,11 +9882,29 @@ window.renderDashboard = async () => {
         if ($('#sync-last-time')) $('#sync-last-time').textContent = new Date().toLocaleTimeString();
 
         // --- FASE 2 ASÍNCRONA: ANÁLISIS DE RIESGOS A LARGO PLAZO Y PUBLICACIÓN GLOBAL ---
+        // Ventana de avisos de riesgo operativo: desde hoy hasta 6 meses
+        const addMonthsISO = (dateStr, months) => {
+            const d = new Date(`${dateStr}T12:00:00`);
+            const day = d.getDate();
+            d.setDate(1);
+            d.setMonth(d.getMonth() + months);
+            const maxDay = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
+            d.setDate(Math.min(day, maxDay));
+            return window.isoDate ? window.isoDate(d) : d.toISOString().slice(0, 10);
+        };
+        const riskWindowEnd = addMonthsISO(today, 6);
+        const isWeekInRiskWindow = (weekStart) => {
+            if (!weekStart) return false;
+            const ws = String(weekStart).slice(0, 10);
+            const we = window.addIsoDays ? window.addIsoDays(ws, 6) : ws;
+            return we >= today && ws <= riskWindowEnd;
+        };
+
         (async () => {
             try {
                 const [pendingAssignments, coverageRisks, globalStatus] = await Promise.all([
-                    window.getCurrentYearPendingAssignments ? window.getCurrentYearPendingAssignments(new Date().getFullYear()) : Promise.resolve({ count: 0, items: [] }),
-                    window.getDailyShiftCoverageRisks ? window.getDailyShiftCoverageRisks(today, window.addIsoDays ? window.addIsoDays(today, 60) : today) : Promise.resolve([]),
+                    window.getCurrentYearPendingAssignments ? window.getCurrentYearPendingAssignments(new Date().getFullYear(), riskWindowEnd) : Promise.resolve({ count: 0, items: [] }),
+                    window.getDailyShiftCoverageRisks ? window.getDailyShiftCoverageRisks(today, riskWindowEnd) : Promise.resolve([]),
                     window.getGlobalPendingPublicationStatus ? window.getGlobalPendingPublicationStatus() : Promise.resolve({ totalPendingChanges: 0, totalOutdatedSnapshots: 0, outdatedSnapshots: [], byHotelWeek: [] })
                 ]);
 
@@ -9892,11 +9915,12 @@ window.renderDashboard = async () => {
                     const sample = pendingAssignments.items.slice(0, 6)
                         .map(item => `${window.fmtDateLegacy(item.fecha)} ${item.empleado}`)
                         .join(' · ');
+                    const endLabel = window.fmtDateLegacy ? window.fmtDateLegacy(riskWindowEnd) : riskWindowEnd;
                     allRisks.push({
                         severity: 'warning',
                         type: 'PENDING_ASSIGNMENTS_YEAR',
                         title: 'Días pendientes de asignar',
-                        desc: `${pendingAssignments.count} día(s) sin turno asignado en ${pendingAssignments.year}. ${sample}${pendingAssignments.count > 6 ? ' · ...' : ''}`,
+                        desc: `${pendingAssignments.count} día(s) sin turno asignado hasta ${endLabel}. ${sample}${pendingAssignments.count > 6 ? ' · ...' : ''}`,
                         action: { fn: `window.goToPendingAssignmentsExcel()`, label: 'Ir al Excel' }
                     });
                 }
@@ -9905,7 +9929,7 @@ window.renderDashboard = async () => {
                     allRisks.push(risk);
                 });
 
-                (globalStatus.outdatedSnapshots || []).forEach(os => {
+                (globalStatus.outdatedSnapshots || []).filter(os => isWeekInRiskWindow(os.weekStart)).forEach(os => {
                     const snapDate = os.snapshotDate ? new Date(os.snapshotDate).toLocaleDateString() : '?';
                     const msg = `Snapshot desactualizado: ${os.hotel} semana ${os.weekStart} — publicado ${snapDate} pero hay ${os.pendingCount} evento(s) activo(s) posteriores. Debe republicarse.`;
                     allRisks.push({
@@ -9915,7 +9939,7 @@ window.renderDashboard = async () => {
                     });
                 });
 
-                (globalStatus.byHotelWeek || []).filter(b => !b.snapshotExists).forEach(b => {
+                (globalStatus.byHotelWeek || []).filter(b => !b.snapshotExists && isWeekInRiskWindow(b.weekStart)).forEach(b => {
                     const formattedWeek = window.formatDateES ? window.formatDateES(b.weekStart) : b.weekStart;
                     allRisks.push({
                         severity: 'warning',

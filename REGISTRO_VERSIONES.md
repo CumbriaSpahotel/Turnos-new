@@ -1,7 +1,7 @@
 # 📋 Registro de Versiones del Sistema (Turnos Web)
 
-**Versión Global Actual:** `v14.95`  
-**Última Actualización:** 2026-11-14  
+**Versión Global Actual:** `v14.96`  
+**Última Actualización:** 2026-11-15  
 
 ---
 
@@ -21,6 +21,7 @@
 
 | Versión | Fecha | Módulos / Archivos Modificados | Descripción del Cambio |
 | :---: | :---: | :--- | :--- |
+| **`v14.96`** | 2026-11-15 | `admin.js` | Limitar avisos de riesgo operativo al rango desde hoy hasta 6 meses |
 | **`v14.95`** | 2026-11-14 | `admin.css`, `admin.js`, `index.html`, `styles.css`, `turnos-rules.js`, `virtualizer.js` | Alerta parpadeante <12h entre turnos y colores de descanso exclusivos de Modo Excel |
 | **`v14.94`** | 2026-11-14 | `admin.css`, `admin.js`, `index.html`, `styles.css`, `turnos-rules.js`, `virtualizer.js` | Descansos en verde claro y fondo amarillo excepcional en 24, 25, 31 dic y 1 ene para todos los años y hoteles |
 | **`v14.93`** | 2026-11-11 | `admin.html` | Retirar acceso PayGold del menú de gestión de turnos |
