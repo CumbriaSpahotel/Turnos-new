@@ -1,6 +1,6 @@
 # 📋 Registro de Versiones del Sistema (Turnos Web)
 
-**Versión Global Actual:** `v14.99`  
+**Versión Global Actual:** `v14.100`  
 **Última Actualización:** 2026-11-19  
 
 ---
@@ -21,6 +21,7 @@
 
 | Versión | Fecha | Módulos / Archivos Modificados | Descripción del Cambio |
 | :---: | :---: | :--- | :--- |
+| **`v14.100`** | 2026-11-19 | `admin.js` | Cache de modelo de ficha de empleado para cambio instantaneo de pestanas |
 | **`v14.99`** | 2026-11-19 | `admin.html`, `admin.js`, `index.html`, `live.mobile.html` | Optimizacion de apertura de ficha de personal con cache y consultas paralelas |
 | **`v14.98`** | 2026-11-19 | `admin.js` | Correccion de caracteres mal codificados en botones y mensajes de admin.js |
 | **`v14.97`** | 2026-11-15 | `admin.js` | Filtrar contador de cambios por publicar a ventana de 6 meses con tooltip de detalle |

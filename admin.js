@@ -177,6 +177,7 @@ window.invalidatePreviewSnapshotCache = (reason) => {
     window._lastRenderedPreviewSnapshotSource = null;
     window._employeeProfileDataCache = null;
     window._employeeProfileBaseIndexCache = null;
+    window._employeeProfileModelCache = null;
 };
 
 window.fmtDateLegacy = (dateStr) => {
@@ -10447,6 +10448,34 @@ window.employeeProfileHotelsByDate = (profile, rows) => {
 };
 
 window.buildEmployeeProfileModel = (empId, refISO) => {
+    const _modelCacheKey = {
+        empId: String(empId || ''),
+        refISO: String(refISO || ''),
+        selectedYear: window._employeeProfileYear || null,
+        rowsRef: window._employeeProfileBaseRows || null,
+        yearEventsRef: window._employeeProfileYearEvents || null,
+        rev: window._previewCacheRevision || 0,
+        restLen: (window._employeeRestAdjustmentLogs || []).length,
+        empsLen: (window.empleadosGlobales || []).length,
+        evActLen: (window.eventosActivos || []).length,
+        evGlobLen: (window.eventosGlobales || []).length
+    };
+    const _mc = window._employeeProfileModelCache;
+    if (_mc &&
+        _mc.empId === _modelCacheKey.empId &&
+        _mc.refISO === _modelCacheKey.refISO &&
+        _mc.selectedYear === _modelCacheKey.selectedYear &&
+        _mc.rowsRef === _modelCacheKey.rowsRef &&
+        _mc.yearEventsRef === _modelCacheKey.yearEventsRef &&
+        _mc.rev === _modelCacheKey.rev &&
+        _mc.restLen === _modelCacheKey.restLen &&
+        _mc.empsLen === _modelCacheKey.empsLen &&
+        _mc.evActLen === _modelCacheKey.evActLen &&
+        _mc.evGlobLen === _modelCacheKey.evGlobLen
+    ) {
+        return _mc.model;
+    }
+
     const profile = (window.empleadosGlobales || []).find(e =>
         window.normalizeId(e.id) === window.normalizeId(empId) ||
         window.normalizeId(e.nombre) === window.normalizeId(empId)
@@ -10565,6 +10594,14 @@ window.buildEmployeeProfileModel = (empId, refISO) => {
         const employees = window.empleadosGlobales || [];
         const canonical = (raw) => window.resolveEmployeeCanonicalId ? window.resolveEmployeeCanonicalId(raw, employees) : raw;
         const rowCanonical = (raw) => resolveId(canonical(raw));
+        const rowByCanonicalKey = new Map();
+        const rowByRawKey = new Map();
+        profileBaseRowsFlat.forEach(row => {
+            const rawKey = resolveId(row.empleadoId);
+            if (rawKey && !rowByRawKey.has(rawKey)) rowByRawKey.set(rawKey, row);
+            const canKey = rowCanonical(row.empleadoId);
+            if (canKey && !rowByCanonicalKey.has(canKey)) rowByCanonicalKey.set(canKey, row);
+        });
 
         eventos.forEach(ev => {
             const tipo = window.normalizeTipo ? window.normalizeTipo(ev.tipo) : String(ev.tipo || '').toUpperCase();
@@ -10576,7 +10613,7 @@ window.buildEmployeeProfileModel = (empId, refISO) => {
             if (!sustitutoRaw || !titularRaw) return;
 
             const titularKey = rowCanonical(titularRaw);
-            const titularRow = profileBaseRowsFlat.find(row => rowCanonical(row.empleadoId) === titularKey || resolveId(row.empleadoId) === resolveId(titularRaw));
+            const titularRow = rowByCanonicalKey.get(titularKey) || rowByRawKey.get(resolveId(titularRaw));
             if (!titularRow) return;
 
             const fi = window.normalizeDate ? window.normalizeDate(ev.fecha_inicio) : String(ev.fecha_inicio || '').slice(0, 10);
@@ -11303,7 +11340,7 @@ window.buildEmployeeProfileModel = (empId, refISO) => {
         proximosEventos: periodGroupedEvents.filter(ev => (ev.fecha_fin || ev.fecha_inicio) >= todayISO).length
     };
 
-    return {
+    const model = {
         emp,
         sickLeaveDates: yearSickLeaveDates,
         hoy,
@@ -11383,6 +11420,8 @@ window.buildEmployeeProfileModel = (empId, refISO) => {
             cambios: (window._lastStats?.[emp.nombre || emp.id]?.cambios || 0)
         }
     };
+    window._employeeProfileModelCache = { ..._modelCacheKey, model };
+    return model;
 };
 window.nextEmployeeInternalId = () => {
     const max = (window.empleadosGlobales || []).reduce((acc, emp) => {
