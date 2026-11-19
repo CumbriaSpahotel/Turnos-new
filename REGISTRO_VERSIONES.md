@@ -1,7 +1,7 @@
 # 📋 Registro de Versiones del Sistema (Turnos Web)
 
-**Versión Global Actual:** `v14.97`  
-**Última Actualización:** 2026-11-15  
+**Versión Global Actual:** `v14.99`  
+**Última Actualización:** 2026-11-19  
 
 ---
 
@@ -21,6 +21,8 @@
 
 | Versión | Fecha | Módulos / Archivos Modificados | Descripción del Cambio |
 | :---: | :---: | :--- | :--- |
+| **`v14.99`** | 2026-11-19 | `admin.html`, `admin.js`, `index.html`, `live.mobile.html` | Optimizacion de apertura de ficha de personal con cache y consultas paralelas |
+| **`v14.98`** | 2026-11-19 | `admin.js` | Correccion de caracteres mal codificados en botones y mensajes de admin.js |
 | **`v14.97`** | 2026-11-15 | `admin.js` | Filtrar contador de cambios por publicar a ventana de 6 meses con tooltip de detalle |
 | **`v14.96`** | 2026-11-15 | `admin.js` | Limitar avisos de riesgo operativo al rango desde hoy hasta 6 meses |
 | **`v14.95`** | 2026-11-14 | `admin.css`, `admin.js`, `index.html`, `styles.css`, `turnos-rules.js`, `virtualizer.js` | Alerta parpadeante <12h entre turnos y colores de descanso exclusivos de Modo Excel |

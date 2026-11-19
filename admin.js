@@ -175,6 +175,8 @@ window.invalidatePreviewSnapshotCache = (reason) => {
         console.log(`[CACHE_INVALIDATION] Cache invalidated. Reason: ${reason}. New revision: ${window._previewCacheRevision}`);
     }
     window._lastRenderedPreviewSnapshotSource = null;
+    window._employeeProfileDataCache = null;
+    window._employeeProfileBaseIndexCache = null;
 };
 
 window.fmtDateLegacy = (dateStr) => {
@@ -1495,7 +1497,7 @@ window.renderCustomHorariosList = async (empsList) => {
                     <td style="padding:10px 12px; font-size:0.8rem;"><span style="padding:2px 8px; border-radius:6px; background:var(--bg3); font-weight:800;">${escapeHtml(turno)}</span></td>
                     <td style="padding:10px 12px; font-weight:800; color:#2563eb; font-size:0.8rem;">${escapeHtml(customHorario)}</td>
                     <td style="padding:10px 12px; text-align:center;">
-                        <button class="btn-premium" style="font-size:0.7rem; padding:4px 8px; margin-right:4px;" onclick="window.loadHorarioCustomEvent('${safeEvId}')" title="Cargar en el formulario para editar">âœï¸ Editar</button>
+                        <button class="btn-premium" style="font-size:0.7rem; padding:4px 8px; margin-right:4px;" onclick="window.loadHorarioCustomEvent('${safeEvId}')" title="Cargar en el formulario para editar">✏️ Editar</button>
                         <button class="btn-premium" style="font-size:0.7rem; padding:4px 8px; background:rgba(239,68,68,0.1); color:#ef4444; border:1px solid rgba(239,68,68,0.3);" onclick="window.deleteHorarioCustomEvent('${safeEvId}')" title="Eliminar este horario personalizado">🗑️ Eliminar</button>
                     </td>
                 </tr>
@@ -1580,7 +1582,7 @@ window.saveHorariosConfig = () => {
 
     const status = document.getElementById('horariosSaveStatus');
     if (status) {
-        status.textContent = 'âœ“ Horarios estándar guardados y aplicados correctamente.';
+        status.textContent = '✓ Horarios estándar guardados y aplicados correctamente.';
         setTimeout(() => { status.textContent = ''; }, 4000);
     }
 };
@@ -1651,7 +1653,7 @@ window.saveHorarioDailyOverride = async () => {
 
         if (status) {
             status.style.color = '#10b981';
-            status.textContent = 'âœ“ Horario del día guardado correctamente para ' + fecha;
+            status.textContent = '✓ Horario del día guardado correctamente para ' + fecha;
             setTimeout(() => { status.textContent = ''; }, 4000);
         }
 
@@ -3339,7 +3341,7 @@ window.renderRequests = async () => {
                 </div>
 
                 <!-- Botón Limpiar -->
-                <button onclick="window.clearRequestsFilters()" style="border:none; background:rgba(239,68,68,0.1); color:#ef4444; padding:6px 12px; border-radius:8px; font-weight:800; font-size:0.78rem; cursor:pointer; margin-left:auto;">âœ• Limpiar</button>
+                <button onclick="window.clearRequestsFilters()" style="border:none; background:rgba(239,68,68,0.1); color:#ef4444; padding:6px 12px; border-radius:8px; font-weight:800; font-size:0.78rem; cursor:pointer; margin-left:auto;">✕ Limpiar</button>
             </div>
 
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; padding:0 4px;">
@@ -10367,7 +10369,7 @@ window.employeeProfileShiftCodeMeta = (value) => {
     return { code: raw || '—', cls: 'x', label: raw || '—' };
 };
 
-window.loadEmployeeProfileBaseRows = async (empId, refISO) => {
+window.loadEmployeeProfileBaseRows = async (empId, refISO, forceRefresh = false) => {
     if (!window.TurnosDB?.fetchTurnosBase) return [];
     const profile = (window.empleadosGlobales || []).find(e =>
         window.normalizeId(e.id) === window.normalizeId(empId) ||
@@ -10382,39 +10384,51 @@ window.loadEmployeeProfileBaseRows = async (empId, refISO) => {
     const endYear = Math.max(...yearsToLoad);
     const startISO = `${startYear}-01-01`;
     const endISO = `${endYear}-12-31`;
+    const year1 = refDate.getFullYear();
+    const year2 = window._employeeProfileYear || year1;
+    const cacheKey = `${startISO}|${endISO}|${year1}|${year2}`;
+
+    const cached = window._employeeProfileDataCache;
+    if (!forceRefresh && cached && cached.key === cacheKey && (Date.now() - cached.ts) < 60000) {
+        window._employeeProfileBaseRows = cached.rows;
+        window._employeeProfileYearEvents = cached.events;
+        return window._employeeProfileBaseRows;
+    }
 
     // The current employee hotel must not hide shifts from before a transfer.
     // Keep other employees too: the resolver needs their shifts for substitutions.
-    const rows = await window.TurnosDB.fetchTurnosBase(startISO, endISO, null);
-    window._employeeProfileBaseRows = Array.isArray(rows) ? rows : [];
-
-    // Cargar eventos del año seleccionado y del año del mes actual
-    try {
-        const year1 = refDate.getFullYear();
-        const year2 = window._employeeProfileYear || year1;
-        
-        let yearEvents = [];
-        if (year1 === year2) {
-            yearEvents = await window.TurnosDB.fetchEventos(`${year1}-01-01`, `${year1}-12-31`);
-        } else {
+    const rowsPromise = window.TurnosDB.fetchTurnosBase(startISO, endISO, null);
+    const eventsPromise = (async () => {
+        try {
+            if (year1 === year2) {
+                const evts = await window.TurnosDB.fetchEventos(`${year1}-01-01`, `${year1}-12-31`);
+                return Array.isArray(evts) ? evts : [];
+            }
             const [evts1, evts2] = await Promise.all([
                 window.TurnosDB.fetchEventos(`${year1}-01-01`, `${year1}-12-31`).catch(err => { console.error(err); return null; }),
                 window.TurnosDB.fetchEventos(`${year2}-01-01`, `${year2}-12-31`).catch(err => { console.error(err); return null; })
             ]);
             if (evts1 === null || evts2 === null) {
-                // Point 10: Fallo parcial
                 console.error('[loadEmployeeProfileBaseRows] Fallo parcial en consulta múltiple.');
-                // Mantenemos la caché anterior válida sin corromper el modelo
                 throw new Error("FETCH_PARTIAL_FAILURE");
             }
-            yearEvents = [...(Array.isArray(evts1) ? evts1 : []), ...(Array.isArray(evts2) ? evts2 : [])];
+            return [...(Array.isArray(evts1) ? evts1 : []), ...(Array.isArray(evts2) ? evts2 : [])];
+        } catch (e) {
+            console.warn('[loadEmployeeProfileBaseRows] Error cargando eventos anuales:', e);
+            return window._employeeProfileYearEvents || [];
         }
-        window._employeeProfileYearEvents = Array.isArray(yearEvents) ? yearEvents : [];
-    } catch (e) {
-        console.warn('[loadEmployeeProfileBaseRows] Error cargando eventos anuales:', e);
-        // Si hay error, conservamos la caché anterior si existe, o array vacío
-        window._employeeProfileYearEvents = window._employeeProfileYearEvents || [];
-    }
+    })();
+
+    const [rows, yearEvents] = await Promise.all([rowsPromise, eventsPromise]);
+    window._employeeProfileBaseRows = Array.isArray(rows) ? rows : [];
+    window._employeeProfileYearEvents = Array.isArray(yearEvents) ? yearEvents : [];
+    window._employeeProfileBaseIndexCache = null;
+    window._employeeProfileDataCache = {
+        key: cacheKey,
+        ts: Date.now(),
+        rows: window._employeeProfileBaseRows,
+        events: window._employeeProfileYearEvents
+    };
 
     return window._employeeProfileBaseRows;
 };
@@ -10483,14 +10497,27 @@ window.buildEmployeeProfileModel = (empId, refISO) => {
     ].filter(Boolean));
 
     if (Array.isArray(window._employeeProfileBaseRows) && window._employeeProfileBaseRows.length > 0 && window.buildIndices) {
-        profileBaseRowsFlat = window._employeeProfileBaseRows
-            .map(row => ({
-                empleadoId: row.empleado_id || row.empleadoId || profile.id,
-                fecha: row.fecha,
-                turno: row.turno || null
-            }));
-        if (profileBaseRowsFlat.length > 0) {
-            baseIndex = window.buildIndices(window.empleadosGlobales || [], [], profileBaseRowsFlat).baseIndex;
+        const empsLen = (window.empleadosGlobales || []).length;
+        const idxCache = window._employeeProfileBaseIndexCache;
+        if (idxCache && idxCache.rowsRef === window._employeeProfileBaseRows && idxCache.empsLen === empsLen) {
+            profileBaseRowsFlat = idxCache.flatRows;
+            baseIndex = idxCache.baseIndex;
+        } else {
+            profileBaseRowsFlat = window._employeeProfileBaseRows
+                .map(row => ({
+                    empleadoId: row.empleado_id || row.empleadoId || profile.id,
+                    fecha: row.fecha,
+                    turno: row.turno || null
+                }));
+            if (profileBaseRowsFlat.length > 0) {
+                baseIndex = window.buildIndices(window.empleadosGlobales || [], [], profileBaseRowsFlat).baseIndex;
+                window._employeeProfileBaseIndexCache = {
+                    rowsRef: window._employeeProfileBaseRows,
+                    empsLen,
+                    flatRows: profileBaseRowsFlat,
+                    baseIndex
+                };
+            }
         }
     }
 
@@ -11510,14 +11537,29 @@ window.openEmpDrawer = async (id) => {
     window._employeeProfileId = id;
     window._employeeProfileTab = 'summary';
     window._employeeProfileDate = window.isoDate(new Date());
-    await window.loadEmployeeProfileBaseRows(id, window._employeeProfileDate);
-    if (window.TurnosDB?.fetchAjustesDescanso) {
-        window._employeeRestAdjustmentLogs = await window.TurnosDB.fetchAjustesDescanso(id, null, 100);
-    } else {
-        window._employeeRestAdjustmentLogs = [];
-    }
-    
+
     const drawer = $('#empDrawer');
+    const body = $('#drawerBody');
+    if (drawer) {
+        drawer.classList.add('open');
+        const hasWarmCache = window._employeeProfileDataCache && (Date.now() - window._employeeProfileDataCache.ts) < 60000;
+        if (body && !hasWarmCache) {
+            body.innerHTML = '<div style="padding:4rem 2rem; text-align:center; color:var(--text-dim); font-weight:700;">⏳ Cargando ficha del empleado...</div>';
+        }
+    }
+
+    const ajustesPromise = window.TurnosDB?.fetchAjustesDescanso
+        ? window.TurnosDB.fetchAjustesDescanso(id, null, 100)
+        : Promise.resolve([]);
+
+    const [, ajustes] = await Promise.all([
+        window.loadEmployeeProfileBaseRows(id, window._employeeProfileDate),
+        ajustesPromise
+    ]);
+
+    if (window._employeeProfileId !== id) return;
+    window._employeeRestAdjustmentLogs = ajustes || [];
+
     if (drawer) {
         drawer.classList.add('open');
         window.renderEmployeeProfile();
